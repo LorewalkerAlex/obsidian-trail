@@ -41,6 +41,44 @@ interface AreaFiles<
   projectFiles: FileType[];
 }
 
+export function isTrailManagedMarkdownPath(
+  filePath: string,
+): boolean {
+  const parts = filePath.split("/");
+
+  return (
+    parts.length === 4
+    && parts[0] === "Trail"
+    && parts[1] === "Areas"
+    && parts[2] !== ""
+    && parts[3]?.endsWith(".md") === true
+  );
+}
+
+export function isTrailDataEventPath(
+  filePath: string,
+): boolean {
+  if (
+    filePath === "Trail"
+    || filePath === TRAIL_AREAS_ROOT
+  ) {
+    return true;
+  }
+
+  const parts = filePath.split("/");
+
+  if (
+    parts.length === 3
+    && parts[0] === "Trail"
+    && parts[1] === "Areas"
+    && parts[2] !== ""
+  ) {
+    return true;
+  }
+
+  return isTrailManagedMarkdownPath(filePath);
+}
+
 export function createObsidianTrailSource(
   app: App,
 ): TrailVaultSource<TFile> {
@@ -277,19 +315,11 @@ function groupAreaFiles<
 function getAreaName(
   filePath: string,
 ): string | undefined {
-  const parts = filePath.split("/");
-
-  if (
-    parts.length !== 4
-    || parts[0] !== "Trail"
-    || parts[1] !== "Areas"
-    || !parts[2]
-    || !parts[3]
-  ) {
+  if (!isTrailManagedMarkdownPath(filePath)) {
     return undefined;
   }
 
-  return parts[2];
+  return filePath.split("/")[2];
 }
 
 function toRecord(

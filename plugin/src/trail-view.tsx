@@ -7,19 +7,19 @@ import {
   createObsidianTrailMutationSource,
   updateTaskStatusInVault,
 } from "./domain/trail-mutation-service";
-import {
-  createObsidianTrailSource,
-  readTrailVault,
-  type TrailVaultReadResult,
-} from "./domain/trail-vault-reader";
+import type { TrailRuntimeStore } from "./domain/trail-runtime-store";
 import { TrailApp } from "./trail-app";
 
 export const TRAIL_VIEW_TYPE = "trail-view";
 
 export class TrailView extends ItemView {
   private root: Root | null = null;
+  private unsubscribe: (() => void) | null = null;
 
-  constructor(leaf: WorkspaceLeaf) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    private readonly runtimeStore: TrailRuntimeStore,
+  ) {
     super(leaf);
   }
 
@@ -43,11 +43,17 @@ export class TrailView extends ItemView {
       cls: "trail-view__root",
     });
     this.root = createRoot(mountElement);
+    this.unsubscribe = this.runtimeStore.subscribe(
+      this.renderSnapshot,
+    );
 
-    await this.renderData();
+    this.renderSnapshot();
+    await this.runtimeStore.initialize();
   }
 
   async onClose(): Promise<void> {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
     this.root?.unmount();
     this.root = null;
     this.contentEl.empty();
@@ -64,45 +70,23 @@ export class TrailView extends ItemView {
       },
     );
 
-    await this.renderData();
+    await this.runtimeStore.refresh();
   };
 
-  private async renderData(): Promise<void> {
-    const data = await this.readData();
+  private readonly renderSnapshot = (): void => {
+    const snapshot = this.runtimeStore.getSnapshot();
+
+    if (!snapshot.isInitialized) {
+      return;
+    }
 
     this.root?.render(
       <StrictMode>
         <TrailApp
-          data={data}
+          data={snapshot.data}
           onMarkTaskDoing={this.handleMarkTaskDoing}
         />
       </StrictMode>,
     );
-  }
-
-  private async readData(): Promise<TrailVaultReadResult> {
-    try {
-      return await readTrailVault(
-        createObsidianTrailSource(this.app),
-      );
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unknown Vault read error.";
-
-      return {
-        areas: [],
-        projects: [],
-        issues: [
-          {
-            scope: "file",
-            code: "vault.read.failed",
-            message: `Trail could not read the Vault: ${message}`,
-            filePath: "Trail",
-          },
-        ],
-      };
-    }
-  }
+  };
 }

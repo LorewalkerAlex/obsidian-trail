@@ -519,7 +519,7 @@ AI 不应默认：
 
 ## 8. Minimum Demo / POC
 
-当前已经完成读取链路和第一条最小写回垂直切片：
+当前已经完成读取、最小写回、Plugin-level Runtime Store 和文件事件 Reconciliation：
 
 - Obsidian Custom View 和 React 应用可以正常加载；
 - 四个顶层页面可以切换；
@@ -531,14 +531,23 @@ AI 不应默认：
 - Task Writer 可以按 UUID 在最新文件内容中重新定位对象、校验完整 Task Block Fingerprint，并只修改目标 Task 标题行；
 - 状态写回会同步规范化 checkbox 和 `completed`，并执行父 Task 完成约束；
 - Mutation Service 可以通过 `Vault.process()` 原子写入并重新解析确认；
-- Project 页面可以将一个既有 `todo` Task 更新为 `doing`，写入后重新读取 Vault 并刷新 UI；
+- Project 页面可以将一个既有 `todo` Task 更新为 `doing`；
+- 插件入口维护唯一 Runtime Store，Trail View 共享同一份已确认 Snapshot；
+- 刷新期间保留上一份数据，并对连续刷新请求和文件事件进行合并与防抖；
+- `create / modify / delete / rename` 可以驱动打开中的 Trail 页面自动收敛；
+- 外部逐字修改 Task 标题时 UI 自动同步；
+- 删除 Project 文件后 Area 仍保留，恢复文件后 Project 与 Task 自动恢复；
+- Project 文件重命名不会留下重复或旧 Project；
+- Trail 自身写回后没有可见闪回；
+- Trail 管理范围外的普通 Markdown 修改不会改变 Trail 数据；
 - 重新加载插件后，写入后的状态仍能从 Markdown 恢复；
 - 实机字节比较确认除目标 Task 的状态字段外没有其他内容变化；
-- 验证结束后 Fixture 已精确恢复。
+- 验证结束后 Fixture 已精确恢复；
+- 本地 ESLint、7 个测试文件中的 42 个自动化测试、TypeScript typecheck 和生产构建通过。
 
-Fleeting Note、Runtime Store、文件事件同步、Modal、Board、全局 Mutation Queue、通用状态操作、拖拽、乐观 UI 和恢复机制仍属于后续 POC 范围。
+Fleeting Note、Modal、Board、全局 Mutation Queue、通用状态操作、乐观 UI、失败回滚和恢复机制仍属于后续 POC 范围。当前文件事件实现采用防抖后的全量 Trail Vault 重读，增量 Reconciliation 和更精确的自身事件去重留待后续数据规模验证。
 
-完整 Minimum Demo 的验证范围如下；其中读取链路与既有 Task `todo → doing` 的单次精确写回已经完成，其余写回、同步和交互部分仍待验证：
+完整 Minimum Demo 的验证范围如下；其中读取链路、既有 Task `todo → doing` 的单次精确写回、Plugin-level Runtime Store 和基础文件事件 Reconciliation 已经完成，其余写回与交互部分仍待验证：
 
 - 打开一个完整的 Obsidian Custom View；
 - 使用 React + TypeScript 渲染 Trail；

@@ -12,9 +12,11 @@ The active POC branch is:
 poc/plugin-shell
 ~~~
 
-The current POC has established the plugin shell, a read-only Markdown data path, and a minimal Task status write-back path. Trail discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the result in the custom `ItemView`.
+The current POC has established the plugin shell, Markdown reading, minimal Task status write-back, a plugin-level Runtime Store, and Vault file-event reconciliation. Trail discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the shared Store snapshot in the custom `ItemView`.
 
-On the Project page, a temporary `Mark doing` action can change an existing `todo` Task to `doing`. The write path relocates the Task by UUID in the latest file content, verifies its source Fingerprint, applies a minimal title-line replacement through `Vault.process()`, reparses the written Markdown, and refreshes the view.
+The plugin listens for relevant `create`, `modify`, `delete`, and `rename` events under `Trail/Areas/`, debounces refreshes, and ignores unrelated or nested files outside the managed scope. External Markdown changes, Project file creation, deletion, and rename now update an open Trail view without reopening it.
+
+On the Project page, a temporary `Mark doing` action can change an existing `todo` Task to `doing`. The write path relocates the Task by UUID in the latest file content, verifies its source Fingerprint, applies a minimal title-line replacement through `Vault.process()`, reparses the written Markdown, and reconciles the shared Runtime Store.
 
 ## Git worktrees
 
@@ -140,7 +142,9 @@ npm run check
 
 With the checked-in fixture, the Dashboard should show `1 Area · 1 Project · 3 Tasks`.
 
-On the Project page, a `todo` Task exposes the temporary `Mark doing` action. Clicking it should change only the Task metadata status from `todo` to `doing`, keep the checkbox unchecked, refresh the Project view, and remain `doing` after reloading Trail. Restore the checked-in fixture before committing.
+While Trail is open, editing a managed Project Markdown file should update the view automatically. Creating, deleting, or renaming a direct Project file under `Trail/Areas/<Area>/` should also reconcile the displayed data, while unrelated Markdown outside the managed scope should not affect Trail.
+
+On the Project page, a `todo` Task exposes the temporary `Mark doing` action. Clicking it should change only the Task metadata status from `todo` to `doing`, keep the checkbox unchecked, refresh the shared Store without a visible flashback, and remain `doing` after reloading Trail. Restore the checked-in fixture before committing.
 
 ## Continuous integration
 
