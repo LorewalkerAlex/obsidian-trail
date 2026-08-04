@@ -12,7 +12,7 @@ The active POC branch is:
 poc/plugin-shell
 ~~~
 
-The current goal is to establish a minimal Obsidian plugin that can be built, loaded, enabled, and opened as a custom `ItemView`.
+The current POC has established the plugin shell and a read-only Markdown data path. Trail now discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the result in the custom `ItemView`.
 
 ## Git worktrees
 
@@ -30,14 +30,15 @@ Development work should be performed in `obsidian-trail-active/`.
 During the POC, the Git repository root is also used as the Obsidian Vault root.
 
 ~~~text
-.
-鈹溾攢鈹€ .obsidian/
-鈹?  鈹斺攢鈹€ plugins/
-鈹?      鈹斺攢鈹€ trail/        Generated files loaded by Obsidian
-鈹溾攢鈹€ plugin/
-鈹?  鈹斺攢鈹€ src/              Trail plugin source code
-鈹溾攢鈹€ Trail/                Planned POC Markdown data directory
-鈹斺攢鈹€ docs/                 Product and technical design documents
+obsidian-trail-active/
+|-- .obsidian/
+|   |-- community-plugins.json
+|   `-- plugins/
+|       `-- trail/        Generated files loaded by Obsidian
+|-- plugin/
+|   `-- src/              Trail plugin source code
+|-- Trail/                Checked-in POC Markdown fixtures
+`-- docs/                 Product and technical design documents
 ~~~
 
 The POC layout is provisional and may change after testing.
@@ -135,6 +136,8 @@ npm run check
 4. Open Trail from the Ribbon or run the **Trail: Open** command.
 5. Reload Trail after rebuilding when Obsidian still has an older build loaded.
 
+With the checked-in read-only fixture, the Dashboard should show `1 Area · 1 Project · 3 Tasks`. The current POC reads Markdown but does not write back to it.
+
 ## Continuous integration
 
 GitHub Actions uses the Node.js version from `.nvmrc`, installs the exact dependency tree with `npm ci`, and runs:
@@ -145,5 +148,5 @@ npm run check
 
 ## Design documents
 
-- `docs/product/product-domain-hld.md`
-- `docs/technical/technical-design.md`
+- `docs/product-domain-hld.md`
+- `docs/technical-design.md`

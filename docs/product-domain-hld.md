@@ -1,9 +1,9 @@
 # Trail 产品与高层设计
 
-> 状态：当前设计基线  
-> 最后更新：2026-08-03  
-> 适用对象：个人使用  
-> 当前阶段：Product Brief、Domain Model 与 High-Level Design 已完成，Technical Design 已形成，准备进入 Minimum Demo / POC  
+> 状态：当前设计基线<br>
+> 最后更新：2026-08-04<br>
+> 适用对象：个人使用<br>
+> 当前阶段：Product Brief、Domain Model 与 High-Level Design 已完成，正在通过真实 Obsidian Vault 逐步验证 Minimum Demo / POC<br>
 > 本文用途：替代此前过时的设计文档，作为后续 Technical Design、POC、LLD 和实施计划的共同基线
 
 ## 1. 产品定位
@@ -274,12 +274,12 @@ Fleeting Note 在 UI 中以轻量卡片展示。卡片的上下文操作包括�
 
 ### 4.9 底层数据组织
 
-Trail 使用固定的 `.trail/` 管理目录。
+当前 POC 使用 Vault 内可见的 `Trail/` 管理目录。是否将其作为第一版正式目录，将在写回、同步和跨环境验证后确认。
 
-每个 Area 对应 `.trail/Areas/` 下的一个目录：
+在当前 POC 中，每个 Area 对应 `Trail/Areas/` 下的一个目录：
 
 ```text
-.trail/
+Trail/
 ├── Areas/
 │   └── <Area>/
 │       ├── Area.md
@@ -519,7 +519,19 @@ AI 不应默认：
 
 ## 8. Minimum Demo / POC
 
-Minimum Demo 需要验证核心可行性和当前主要风险：
+当前已经完成第一段只读验证：
+
+- Obsidian Custom View 和 React 应用可以正常加载；
+- 四个顶层页面可以切换；
+- `Trail/Areas/` 下的 Area、Project 和 Task Fixture 可以被发现和读取；
+- Area、Project、Task、Subtask、Task Note 和 Project Note 可以解析；
+- 合法对象、损坏 Task、损坏 Project 和重复 UUID 已有自动化测试；
+- 真实 Obsidian 中可以显示 `1 Area · 1 Project · 3 Tasks`；
+- 当前读取过程不会修改 Markdown。
+
+Fleeting Note、Runtime Store、实时同步、Modal、Board、写回、拖拽、乐观 UI 和恢复机制仍属于后续 POC 范围。
+
+完整 Minimum Demo 的验证范围如下；其中上述只读链路已经完成，写回、同步和交互部分仍待验证：
 
 - 打开一个完整的 Obsidian Custom View；
 - 使用 React + TypeScript 渲染 Trail；

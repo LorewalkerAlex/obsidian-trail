@@ -1,0 +1,307 @@
+import type { App, TFile } from "obsidian";
+
+import type {
+  TrailArea,
+  TrailParseIssue,
+  TrailProject,
+} from "./trail-model";
+import {
+  parseArea,
+  parseProject,
+} from "./trail-parser";
+
+const TRAIL_AREAS_ROOT = "Trail/Areas";
+const AREA_FILE_NAME = "Area.md";
+
+export interface TrailReadableFile {
+  path: string;
+  basename: string;
+}
+
+export interface TrailVaultSource<
+  FileType extends TrailReadableFile,
+> {
+  getMarkdownFiles(): FileType[];
+  cachedRead(file: FileType): Promise<string>;
+  getFrontmatter(
+    file: FileType,
+  ): Record<string, unknown> | undefined;
+}
+
+export interface TrailVaultReadResult {
+  areas: TrailArea[];
+  projects: TrailProject[];
+  issues: TrailParseIssue[];
+}
+
+interface AreaFiles<
+  FileType extends TrailReadableFile,
+> {
+  areaFile?: FileType;
+  projectFiles: FileType[];
+}
+
+export function createObsidianTrailSource(
+  app: App,
+): TrailVaultSource<TFile> {
+  return {
+    getMarkdownFiles: () =>
+      app.vault.getMarkdownFiles(),
+
+    cachedRead: (file) =>
+      app.vault.cachedRead(file),
+
+    getFrontmatter: (file) =>
+      toRecord(
+        app.metadataCache.getFileCache(file)?.frontmatter,
+      ),
+  };
+}
+
+export async function readTrailVault<
+  FileType extends TrailReadableFile,
+>(
+  source: TrailVaultSource<FileType>,
+): Promise<TrailVaultReadResult> {
+  const issues: TrailParseIssue[] = [];
+  const areas: TrailArea[] = [];
+  const projects: TrailProject[] = [];
+
+  const areaFiles = groupAreaFiles(
+    source.getMarkdownFiles(),
+  );
+
+  const seenAreaIds = new Set<string>();
+  const seenProjectIds = new Set<string>();
+  const seenTaskIds = new Set<string>();
+
+  for (
+    const [areaName, files]
+    of [...areaFiles.entries()].sort(
+      ([left], [right]) =>
+        left.localeCompare(right),
+    )
+  ) {
+    if (!files.areaFile) {
+      issues.push({
+        scope: "file",
+        code: "area.file.missing",
+        message:
+          `Area "${areaName}" does not contain Area.md.`,
+        filePath:
+          `${TRAIL_AREAS_ROOT}/${areaName}/${AREA_FILE_NAME}`,
+      });
+
+      continue;
+    }
+
+    const areaMarkdown = await readMarkdown(
+      source,
+      files.areaFile,
+      issues,
+    );
+
+    if (areaMarkdown === undefined) {
+      continue;
+    }
+
+    const areaResult = parseArea({
+      areaName,
+      filePath: files.areaFile.path,
+      markdown: areaMarkdown,
+      frontmatter:
+        source.getFrontmatter(files.areaFile) ?? {},
+    });
+
+    issues.push(...areaResult.issues);
+
+    if (!areaResult.value) {
+      continue;
+    }
+
+    const area = areaResult.value;
+
+    if (seenAreaIds.has(area.id)) {
+      issues.push({
+        scope: "file",
+        code: "area.id.duplicate",
+        message:
+          `Area UUID "${area.id}" is already in use.`,
+        filePath: area.filePath,
+        objectId: area.id,
+      });
+
+      continue;
+    }
+
+    seenAreaIds.add(area.id);
+    areas.push(area);
+
+    for (
+      const projectFile
+      of [...files.projectFiles].sort(
+        (left, right) =>
+          left.path.localeCompare(right.path),
+      )
+    ) {
+      const projectMarkdown = await readMarkdown(
+        source,
+        projectFile,
+        issues,
+      );
+
+      if (projectMarkdown === undefined) {
+        continue;
+      }
+
+      const projectResult = parseProject({
+        area,
+        projectName: projectFile.basename,
+        filePath: projectFile.path,
+        markdown: projectMarkdown,
+        frontmatter:
+          source.getFrontmatter(projectFile) ?? {},
+      });
+
+      issues.push(...projectResult.issues);
+
+      if (!projectResult.value) {
+        continue;
+      }
+
+      const project = projectResult.value;
+
+      if (seenProjectIds.has(project.id)) {
+        issues.push({
+          scope: "file",
+          code: "project.id.duplicate",
+          message:
+            `Project UUID "${project.id}" is already in use.`,
+          filePath: project.filePath,
+          objectId: project.id,
+        });
+
+        continue;
+      }
+
+      seenProjectIds.add(project.id);
+
+      const tasks = project.tasks.filter((task) => {
+        if (seenTaskIds.has(task.id)) {
+          issues.push({
+            scope: "task",
+            code: "task.id.duplicate",
+            message:
+              `Task UUID "${task.id}" is already in use.`,
+            filePath: project.filePath,
+            objectId: task.id,
+          });
+
+          return false;
+        }
+
+        seenTaskIds.add(task.id);
+        return true;
+      });
+
+      projects.push({
+        ...project,
+        tasks,
+      });
+    }
+  }
+
+  return {
+    areas,
+    projects,
+    issues,
+  };
+}
+
+async function readMarkdown<
+  FileType extends TrailReadableFile,
+>(
+  source: TrailVaultSource<FileType>,
+  file: FileType,
+  issues: TrailParseIssue[],
+): Promise<string | undefined> {
+  try {
+    return await source.cachedRead(file);
+  } catch (error: unknown) {
+    const message = error instanceof Error
+      ? error.message
+      : "Unknown read error.";
+
+    issues.push({
+      scope: "file",
+      code: "file.read.failed",
+      message: `Trail could not read this file: ${message}`,
+      filePath: file.path,
+    });
+
+    return undefined;
+  }
+}
+
+function groupAreaFiles<
+  FileType extends TrailReadableFile,
+>(
+  files: FileType[],
+): Map<string, AreaFiles<FileType>> {
+  const result =
+    new Map<string, AreaFiles<FileType>>();
+
+  for (const file of files) {
+    const areaName = getAreaName(file.path);
+
+    if (!areaName) {
+      continue;
+    }
+
+    const grouped = result.get(areaName) ?? {
+      projectFiles: [],
+    };
+
+    if (file.path.endsWith(`/${AREA_FILE_NAME}`)) {
+      grouped.areaFile = file;
+    } else {
+      grouped.projectFiles.push(file);
+    }
+
+    result.set(areaName, grouped);
+  }
+
+  return result;
+}
+
+function getAreaName(
+  filePath: string,
+): string | undefined {
+  const parts = filePath.split("/");
+
+  if (
+    parts.length !== 4
+    || parts[0] !== "Trail"
+    || parts[1] !== "Areas"
+    || !parts[2]
+    || !parts[3]
+  ) {
+    return undefined;
+  }
+
+  return parts[2];
+}
+
+function toRecord(
+  value: unknown,
+): Record<string, unknown> | undefined {
+  if (
+    typeof value !== "object"
+    || value === null
+    || Array.isArray(value)
+  ) {
+    return undefined;
+  }
+
+  return value as Record<string, unknown>;
+}

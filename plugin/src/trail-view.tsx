@@ -3,6 +3,11 @@ import { createRoot, type Root } from "react-dom/client";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 
 import { TrailApp } from "./trail-app";
+import {
+  createObsidianTrailSource,
+  readTrailVault,
+  type TrailVaultReadResult,
+} from "./domain/trail-vault-reader";
 
 export const TRAIL_VIEW_TYPE = "trail-view";
 
@@ -29,6 +34,8 @@ export class TrailView extends ItemView {
     this.contentEl.empty();
     this.contentEl.addClass("trail-view");
 
+    const data = await this.readData();
+
     const mountElement = this.contentEl.createDiv({
       cls: "trail-view__root",
     });
@@ -36,7 +43,7 @@ export class TrailView extends ItemView {
     this.root = createRoot(mountElement);
     this.root.render(
       <StrictMode>
-        <TrailApp />
+        <TrailApp data={data} />
       </StrictMode>,
     );
   }
@@ -45,5 +52,31 @@ export class TrailView extends ItemView {
     this.root?.unmount();
     this.root = null;
     this.contentEl.empty();
+  }
+
+  private async readData(): Promise<TrailVaultReadResult> {
+    try {
+      return await readTrailVault(
+        createObsidianTrailSource(this.app),
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unknown Vault read error.";
+
+      return {
+        areas: [],
+        projects: [],
+        issues: [
+          {
+            scope: "file",
+            code: "vault.read.failed",
+            message: `Trail could not read the Vault: ${message}`,
+            filePath: "Trail",
+          },
+        ],
+      };
+    }
   }
 }

@@ -1,10 +1,10 @@
 # Trail Technical Design
 
-> 状态：Technical Design 当前基线  
-> 最后更新：2026-08-03  
-> 适用对象：个人使用  
-> 上游基线：`../product/product-domain-hld.md`  
-> 当前目标：冻结进入 Minimum Demo / POC 前的 Markdown Schema、对象身份、解析与写回边界、运行时数据模型、主要领域命令和验证范围
+> 状态：Technical Design 当前基线<br>
+> 最后更新：2026-08-04<br>
+> 适用对象：个人使用<br>
+> 上游基线：`./product-domain-hld.md`<br>
+> 当前目标：以已验证的只读 Markdown 数据链路为起点，继续验证写回、同步和交互边界
 
 ## 1. 文档边界
 
@@ -29,14 +29,40 @@
 - 完整 Undo 历史、状态事件日志和长期迁移工具；
 - 生产级 Low-Level Design 与完整测试矩阵。
 
+### 1.1 当前 POC 事实状态
+
+截至 2026-08-04，当前代码已经验证：
+
+- 仓库根目录同时作为 Obsidian Vault；
+- 可见的 `Trail/Areas/<Area>/` 作为当前 POC 数据目录；
+- 使用 `Vault.getMarkdownFiles()` 发现文件；
+- 使用 `Vault.cachedRead()` 读取原始 Markdown；
+- 使用 `MetadataCache` 获取 Frontmatter；
+- 纯 TypeScript Parser 可以解析 Area、Project、Task、Subtask、Task Note 和 Project Note；
+- 典型对象级和文件级异常可以隔离并形成结构化 issue；
+- Dashboard、Areas 和 Project 页面可以展示真实解析结果；
+- 本地 ESLint、14 个自动化测试、TypeScript typecheck 和生产构建通过；
+- Windows Desktop Obsidian 实机读取成功；
+- 页面未显示 `Data issues`；
+- 读取前后的 Fixture Hash 保持不变。
+
+当前尚未实现：
+
+- Fleeting Note Parser；
+- Runtime Store 和文件事件同步；
+- Markdown 写回与 Mutation Queue；
+- Task Modal、Board、拖拽和乐观 UI；
+- Archive、Trash 和恢复。
+
+当前 Project 页面直接显示 Task 标题字符串，Inline Markdown 尚未渲染为富文本。
+
 ## 2. 已冻结的关键技术决策
 
-进入 POC 前，以下内容不再作为开放设计项：
+当前 POC 阶段，以下内容不再作为开放设计项：
 
 - 公开插件名为 `Trail`；
 - 插件 ID、Markdown 元数据命名空间和代码前缀使用 `trail`；
 - GitHub 仓库名使用 `obsidian-trail`；
-- Vault 内固定使用 `.trail/` 作为 Trail 管理目录；
 - Task 私有元数据使用单行 JSON HTML comment；
 - Area、Project、Task 和 Fleeting Note 创建时生成随机 UUID；
 - UUID 创建后永久不变，不随改名、排序、归档或路径变化而改变；
@@ -99,12 +125,12 @@ Obsidian Vault / Markdown
 - 排除 Archive 与 Trash，不纳入日常 Dashboard、Area 和 Project 统计；
 - 发现创建、修改、重命名和删除事件，并只触发受影响范围的重新解析。
 
-POC 与第一版实现使用以下目录约定：
+当前 POC 使用以下目录约定：
 
 ```text
 <test-vault>/
 ├── .obsidian/
-└── .trail/
+└── Trail/
     ├── Areas/
     │   └── <Area>/
     │       ├── Area.md
@@ -115,7 +141,7 @@ POC 与第一版实现使用以下目录约定：
     └── Trash/
 ```
 
-`.trail/` 是 Trail 的正式管理目录名称；Archive 与 Trash 的物理组织仍可在后续实现中细化。
+`Trail/` 是当前 POC 的管理目录名称；是否作为第一版正式目录，以及 Archive 与 Trash 的物理组织，将在写回和同步验证后确认。
 
 ### 3.2 Metadata + Source Reader
 
@@ -156,20 +182,19 @@ Runtime Store 是缓存和交互状态，不是新的业务事实来源。
 
 ### 3.5 POC 技术组合
 
-POC 采用：
+当前已验证的只读 POC 采用：
 
 ```text
 TypeScript
 Obsidian 官方 Sample Plugin 结构
 esbuild
 React
-Obsidian ItemView + Modal
-Zustand vanilla store
-dnd-kit
-date-fns + @date-fns/tz
+Obsidian ItemView
 Vitest
 React Testing Library
 ```
+
+`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续交互与写回阶段的候选方案，当前只读 POC 尚未安装或验证这些依赖。
 
 第一版不引入：
 
@@ -587,7 +612,7 @@ Project 文件必须满足：
 
 POC 文件发现规则：
 
-- `.trail/Areas/` 下的直接子目录是 Area；
+- `Trail/Areas/` 下的直接子目录是 Area；
 - `Area.md` 是 Area 描述文件；
 - Area 目录下其他直接 `.md` 文件是 Project 候选；
 - 候选不满足 Project Schema 时报告文件级错误；
