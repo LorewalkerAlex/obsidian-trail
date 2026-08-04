@@ -113,8 +113,29 @@ export function parseProject(
   };
 }
 
+export function parseProjectTasks(
+  input: TrailMarkdownInput,
+  projectId: string,
+): { tasks: TrailTask[]; issues: TrailParseIssue[] } {
+  const issues: TrailParseIssue[] = [];
+  const sections = projectSections(input, issues);
+
+  if (!sections) {
+    return { tasks: [], issues };
+  }
+
+  const result = parseTasks(input, projectId, sections.Tasks);
+
+  parseProjectNotes(input, sections.Notes, issues);
+
+  return {
+    tasks: result.tasks,
+    issues: [...issues, ...result.issues],
+  };
+}
+
 function parseTasks(
-  input: TrailProjectParseInput,
+  input: TrailMarkdownInput,
   projectId: string,
   section: SectionRange,
 ): { tasks: TrailTask[]; issues: TrailParseIssue[] } {
@@ -164,7 +185,7 @@ function parseTasks(
 }
 
 function parseTask(
-  input: TrailProjectParseInput,
+  input: TrailMarkdownInput,
   projectId: string,
   header: string,
   block: string,
@@ -246,6 +267,7 @@ function parseTask(
         filePath: input.filePath,
         startOffset,
         endOffset,
+        fingerprint: block,
       },
     },
     issues: [],
@@ -299,7 +321,7 @@ function taskMetadata(json: string): TaskMetadata | undefined {
 }
 
 function parseProjectNotes(
-  input: TrailProjectParseInput,
+  input: TrailMarkdownInput,
   section: SectionRange,
   issues: TrailParseIssue[],
 ): { text: string }[] {
@@ -329,7 +351,7 @@ function parseProjectNotes(
 }
 
 function projectSections(
-  input: TrailProjectParseInput,
+  input: TrailMarkdownInput,
   issues: TrailParseIssue[],
 ): Record<"Overview" | "Tasks" | "Notes", SectionRange> | undefined {
   const expected = ["Overview", "Tasks", "Notes"] as const;

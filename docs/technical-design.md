@@ -4,7 +4,7 @@
 > 最后更新：2026-08-04<br>
 > 适用对象：个人使用<br>
 > 上游基线：`./product-domain-hld.md`<br>
-> 当前目标：以已验证的只读 Markdown 数据链路为起点，继续验证写回、同步和交互边界
+> 当前目标：以已验证的 Markdown 读取与最小 Task 状态写回链路为起点，继续验证 Runtime Store、文件事件同步、通用交互和串行写入边界
 
 ## 1. 文档边界
 
@@ -41,16 +41,22 @@
 - 纯 TypeScript Parser 可以解析 Area、Project、Task、Subtask、Task Note 和 Project Note；
 - 典型对象级和文件级异常可以隔离并形成结构化 issue；
 - Dashboard、Areas 和 Project 页面可以展示真实解析结果；
-- 本地 ESLint、14 个自动化测试、TypeScript typecheck 和生产构建通过；
-- Windows Desktop Obsidian 实机读取成功；
-- 页面未显示 `Data issues`；
-- 读取前后的 Fixture Hash 保持不变。
+- Task Writer 可以在最新 Markdown 中按 UUID 重新定位 Task、校验完整 Task Block Fingerprint，并只替换目标 Task 标题行；
+- Task 状态写回会同步规范化 checkbox 和 `completed`，并在存在未完成 Subtask 时拒绝完成父 Task；
+- Mutation Service 使用 `Vault.process()` 原子修改文件，并重新解析其返回的 Markdown 确认写入结果；
+- Project 页面提供临时 `Mark doing` 操作，可以将既有 `todo` Task 更新为 `doing`；
+- 写入成功后会重新读取 Trail Vault 并刷新 Project 页面；写入失败时在当前页面显示错误；
+- 本地 ESLint、5 个测试文件中的 33 个自动化测试、TypeScript typecheck 和生产构建通过；
+- Windows Desktop Obsidian 实机读取与最小状态写回成功；
+- 插件重新加载后仍能从 Markdown 读取写入后的 `doing` 状态；
+- 实机写回后的文件与“只替换目标状态字段”生成的预期文件 SHA-256 完全一致；
+- 验证结束后 Fixture 已按原始 SHA-256 精确恢复。
 
 当前尚未实现：
 
 - Fleeting Note Parser；
-- Runtime Store 和文件事件同步；
-- Markdown 写回与 Mutation Queue；
+- Plugin-level Runtime Store 和文件事件同步；
+- 全局 Mutation Queue 与通用 Task 状态操作；
 - Task Modal、Board、拖拽和乐观 UI；
 - Archive、Trash 和恢复。
 
@@ -182,7 +188,7 @@ Runtime Store 是缓存和交互状态，不是新的业务事实来源。
 
 ### 3.5 POC 技术组合
 
-当前已验证的只读 POC 采用：
+当前已验证的最小读写 POC 采用：
 
 ```text
 TypeScript
@@ -194,7 +200,7 @@ Vitest
 React Testing Library
 ```
 
-`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续交互与写回阶段的候选方案，当前只读 POC 尚未安装或验证这些依赖。
+`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续 Runtime Store、通用交互、队列和完整状态操作阶段的候选方案，当前 POC 尚未安装或验证这些依赖。
 
 第一版不引入：
 
@@ -772,6 +778,19 @@ Mutation Service 负责：
 8. 成功后重新解析并确认 Store；
 9. 失败时回滚乐观状态并显示 Notice。
 
+当前 POC 已实现一个不经过 Runtime Store、全局队列和乐观 UI 的最小垂直切片：Project 页面将既有 `todo` Task 更新为 `doing`。当前实现会：
+
+1. 使用 UI 读取时获得的 Task UUID 和 Fingerprint 表达预期对象版本；
+2. 在 `Vault.process()` 提供的最新文件内容中重新解析 Project Tasks；
+3. 按 UUID 重新定位目标 Task；
+4. 校验完整 Task Block Fingerprint；
+5. 只替换目标 Task 标题行中的 checkbox 与 `trail:task` JSON；
+6. 重新解析 `Vault.process()` 返回的 Markdown，确认目标状态；
+7. 成功后重新读取 Trail Vault 并刷新 UI；
+8. 失败时保持文件和已确认 UI 数据不变，并在 Project 页面显示错误。
+
+这一实现验证了单次精确写回链路，但不代表全局 Mutation Queue、通用状态控件、文件事件 Reconciliation 或乐观回滚已经完成。
+
 队列中某一命令失败时：
 
 - 当前命令失败并回滚；
@@ -1037,6 +1056,10 @@ Delete
 
 以下为同一个完整 POC 的优先级清单，不拆成多个产品阶段。
 
+当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff 以及重启后从 Markdown 恢复状态。
+
+尚未完成的条目仍保留在同一清单中，不因最小写回垂直切片通过而视为完整 POC 已通过。
+
 | 优先级 | 验证内容 | 通过标准 |
 |---|---|---|
 | P0 | 扫描 Trail 根目录 | 只发现预设管理目录中的对象 |
@@ -1139,15 +1162,13 @@ POC 通过至少需要满足：
 ## 19. 下一步
 
 ```text
-Technical Design 评审
-→ 创建带 .obsidian 初始化的测试 Vault Git 仓库
-→ 按预设目录创建合法与异常 Fixture
-→ 建立 Obsidian 插件 POC 工程
-→ 实现 UUID / JSON Parser
-→ 实现 Runtime Store 与 Project Board
-→ 实现全局 Mutation Queue 与精确写回
-→ 实现 Task Detail Modal
+已完成：Plugin Shell、真实 Vault 读取、Parser、错误隔离与只读实机验证
+→ 已完成：Task 状态 Writer、UUID 重新定位、Fingerprint 冲突检测与最小文本替换
+→ 已完成：Vault.process() Mutation Service、写后重新解析与 todo → doing UI 实机验证
+→ 下一步：实现 Plugin-level Runtime Store 与文件事件 Reconciliation
+→ 实现全局 Mutation Queue 与通用 Task 状态操作
+→ 实现 Project Board / List 与 Task Detail Modal
 → 实现 Fleeting Note 与 Trash 薄链路
-→ 完成 POC 验证清单
+→ 完成剩余 POC 验证清单
 → 根据结果形成 ADR、LLD 和 Implementation & Test Plan
 ```

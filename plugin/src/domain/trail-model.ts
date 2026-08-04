@@ -33,6 +33,7 @@ export interface TrailSourceRange {
   filePath: string;
   startOffset: number;
   endOffset: number;
+  fingerprint?: string;
 }
 
 export interface TrailArea {

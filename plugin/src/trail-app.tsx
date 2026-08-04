@@ -3,6 +3,7 @@ import { useState } from "react";
 import type {
   TrailArea,
   TrailProject,
+  TrailTask,
 } from "./domain/trail-model";
 import type { TrailVaultReadResult } from "./domain/trail-vault-reader";
 
@@ -29,10 +30,12 @@ type TrailPageId = (typeof TRAIL_PAGES)[number]["id"];
 
 export interface TrailAppProps {
   data: TrailVaultReadResult;
+  onMarkTaskDoing: (task: TrailTask) => Promise<void>;
 }
 
 export function TrailApp({
   data,
+  onMarkTaskDoing,
 }: TrailAppProps) {
   const [activePageId, setActivePageId] =
     useState<TrailPageId>("dashboard");
@@ -45,7 +48,6 @@ export function TrailApp({
         </p>
         <h1 className="trail-app__title">Trail</h1>
       </header>
-
       <nav
         className="trail-app__navigation"
         aria-label="Trail pages"
@@ -70,7 +72,6 @@ export function TrailApp({
           </button>
         ))}
       </nav>
-
       <main className="trail-app__content">
         {activePageId === "dashboard" && (
           <DashboardPage data={data} />
@@ -84,14 +85,16 @@ export function TrailApp({
         )}
 
         {activePageId === "project" && (
-          <ProjectPage project={data.projects[0]} />
+          <ProjectPage
+            project={data.projects[0]}
+            onMarkTaskDoing={onMarkTaskDoing}
+          />
         )}
 
         {activePageId === "fleeting-notes" && (
           <FleetingNotesPage />
         )}
       </main>
-
       {data.issues.length > 0 && (
         <section
           className="trail-app__issues"
@@ -120,7 +123,7 @@ export function TrailApp({
 
 function DashboardPage({
   data,
-}: TrailAppProps) {
+}: Pick<TrailAppProps, "data">) {
   const taskCount = data.projects.reduce(
     (total, project) =>
       total + project.tasks.length,
@@ -166,7 +169,6 @@ function AreasPage({
             return (
               <li key={area.id}>
                 <strong>{area.name}</strong>
-
                 {areaProjects.length === 0 ? (
                   <p>No projects found.</p>
                 ) : (
@@ -189,11 +191,18 @@ function AreasPage({
 
 interface ProjectPageProps {
   project?: TrailProject;
+  onMarkTaskDoing: (task: TrailTask) => Promise<void>;
 }
 
 function ProjectPage({
   project,
+  onMarkTaskDoing,
 }: ProjectPageProps) {
+  const [pendingTaskId, setPendingTaskId] =
+    useState<string>();
+  const [mutationError, setMutationError] =
+    useState<string>();
+
   if (!project) {
     return (
       <>
@@ -203,6 +212,25 @@ function ProjectPage({
     );
   }
 
+  const markTaskDoing = async (
+    task: TrailTask,
+  ): Promise<void> => {
+    setPendingTaskId(task.id);
+    setMutationError(undefined);
+
+    try {
+      await onMarkTaskDoing(task);
+    } catch (error: unknown) {
+      setMutationError(
+        error instanceof Error
+          ? error.message
+          : "Unknown Task update error.",
+      );
+    } finally {
+      setPendingTaskId(undefined);
+    }
+  };
+
   return (
     <>
       <h2>Project</h2>
@@ -210,7 +238,11 @@ function ProjectPage({
       <p>{project.overview}</p>
 
       <h4>Tasks</h4>
-
+      {mutationError !== undefined && (
+        <p role="alert">
+          Task update failed: {mutationError}
+        </p>
+      )}
       {project.tasks.length === 0 ? (
         <p>No tasks found.</p>
       ) : (
@@ -220,7 +252,20 @@ function ProjectPage({
               <p>
                 {task.title} ({task.status})
               </p>
-
+              {task.status === "todo" && (
+                <button
+                  type="button"
+                  aria-label={`Mark ${task.title} as doing`}
+                  disabled={pendingTaskId !== undefined}
+                  onClick={() => {
+                    void markTaskDoing(task);
+                  }}
+                >
+                  {pendingTaskId === task.id
+                    ? "Updating..."
+                    : "Mark doing"}
+                </button>
+              )}
               {task.subtasks.length > 0 && (
                 <>
                   <h5>Subtasks</h5>
@@ -240,7 +285,6 @@ function ProjectPage({
                   </ul>
                 </>
               )}
-
               {task.notes.length > 0 && (
                 <>
                   <h5>Task notes</h5>
@@ -261,7 +305,6 @@ function ProjectPage({
       )}
 
       <h4>Notes</h4>
-
       {project.notes.length === 0 ? (
         <p>No project notes found.</p>
       ) : (

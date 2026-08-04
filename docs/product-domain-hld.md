@@ -519,7 +519,7 @@ AI 不应默认：
 
 ## 8. Minimum Demo / POC
 
-当前已经完成第一段只读验证：
+当前已经完成读取链路和第一条最小写回垂直切片：
 
 - Obsidian Custom View 和 React 应用可以正常加载；
 - 四个顶层页面可以切换；
@@ -527,11 +527,18 @@ AI 不应默认：
 - Area、Project、Task、Subtask、Task Note 和 Project Note 可以解析；
 - 合法对象、损坏 Task、损坏 Project 和重复 UUID 已有自动化测试；
 - 真实 Obsidian 中可以显示 `1 Area · 1 Project · 3 Tasks`；
-- 当前读取过程不会修改 Markdown。
+- 只读链路不会修改 Markdown；
+- Task Writer 可以按 UUID 在最新文件内容中重新定位对象、校验完整 Task Block Fingerprint，并只修改目标 Task 标题行；
+- 状态写回会同步规范化 checkbox 和 `completed`，并执行父 Task 完成约束；
+- Mutation Service 可以通过 `Vault.process()` 原子写入并重新解析确认；
+- Project 页面可以将一个既有 `todo` Task 更新为 `doing`，写入后重新读取 Vault 并刷新 UI；
+- 重新加载插件后，写入后的状态仍能从 Markdown 恢复；
+- 实机字节比较确认除目标 Task 的状态字段外没有其他内容变化；
+- 验证结束后 Fixture 已精确恢复。
 
-Fleeting Note、Runtime Store、实时同步、Modal、Board、写回、拖拽、乐观 UI 和恢复机制仍属于后续 POC 范围。
+Fleeting Note、Runtime Store、文件事件同步、Modal、Board、全局 Mutation Queue、通用状态操作、拖拽、乐观 UI 和恢复机制仍属于后续 POC 范围。
 
-完整 Minimum Demo 的验证范围如下；其中上述只读链路已经完成，写回、同步和交互部分仍待验证：
+完整 Minimum Demo 的验证范围如下；其中读取链路与既有 Task `todo → doing` 的单次精确写回已经完成，其余写回、同步和交互部分仍待验证：
 
 - 打开一个完整的 Obsidian Custom View；
 - 使用 React + TypeScript 渲染 Trail；

@@ -2,11 +2,23 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
+import type {
+  TrailTask,
+} from "./domain/trail-model";
 import type { TrailVaultReadResult } from "./domain/trail-vault-reader";
-import { TrailApp } from "./trail-app";
+import {
+  TrailApp,
+  type TrailAppProps,
+} from "./trail-app";
 
 const data: TrailVaultReadResult = {
   areas: [
@@ -74,9 +86,46 @@ const data: TrailVaultReadResult = {
   issues: [],
 };
 
+const todoTask: TrailTask = {
+  ...data.projects[0].tasks[0],
+  status: "todo",
+  subtasks: [],
+};
+
+const todoData: TrailVaultReadResult = {
+  ...data,
+  projects: [
+    {
+      ...data.projects[0],
+      tasks: [todoTask],
+    },
+  ],
+};
+
+function renderTrailApp(
+  appData: TrailVaultReadResult = data,
+  onMarkTaskDoing: TrailAppProps["onMarkTaskDoing"] =
+    () => Promise.resolve(),
+): void {
+  render(
+    <TrailApp
+      data={appData}
+      onMarkTaskDoing={onMarkTaskDoing}
+    />,
+  );
+}
+
+function openProjectPage(): void {
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Project",
+    }),
+  );
+}
+
 describe("TrailApp", () => {
   it("renders the four top-level page controls", () => {
-    render(<TrailApp data={data} />);
+    renderTrailApp();
 
     expect(
       screen.getByRole("button", {
@@ -101,7 +150,7 @@ describe("TrailApp", () => {
   });
 
   it("shows the parsed data summary", () => {
-    render(<TrailApp data={data} />);
+    renderTrailApp();
 
     expect(
       screen.getByRole("heading", {
@@ -116,7 +165,7 @@ describe("TrailApp", () => {
   });
 
   it("shows Areas and their Projects", () => {
-    render(<TrailApp data={data} />);
+    renderTrailApp();
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -136,13 +185,8 @@ describe("TrailApp", () => {
   });
 
   it("shows the first parsed Project", () => {
-    render(<TrailApp data={data} />);
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Project",
-      }),
-    );
+    renderTrailApp();
+    openProjectPage();
 
     expect(
       screen.getByRole("heading", {
@@ -168,5 +212,50 @@ describe("TrailApp", () => {
     expect(
       screen.getByText("The POC is read-only."),
     ).toBeInTheDocument();
+  });
+
+  it("requests a todo Task status update", async () => {
+    const onMarkTaskDoing = vi.fn(
+      () => Promise.resolve(),
+    );
+
+    renderTrailApp(todoData, onMarkTaskDoing);
+    openProjectPage();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Mark Build the Trail parser as doing",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(onMarkTaskDoing).toHaveBeenCalledOnce();
+    });
+    expect(onMarkTaskDoing).toHaveBeenCalledWith(
+      todoTask,
+    );
+  });
+
+  it("shows a Task update failure", async () => {
+    const onMarkTaskDoing = vi.fn(
+      () => Promise.reject(
+        new Error("The task changed after it was read."),
+      ),
+    );
+
+    renderTrailApp(todoData, onMarkTaskDoing);
+    openProjectPage();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Mark Build the Trail parser as doing",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("alert"),
+    ).toHaveTextContent(
+      "Task update failed: The task changed after it was read.",
+    );
   });
 });
