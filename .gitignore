@@ -1,0 +1,22 @@
+# Node.js dependencies
+node_modules/
+
+# Test output
+coverage/
+
+# npm logs
+npm-debug.log*
+
+# Obsidian machine-specific state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# Installed and generated Obsidian plugins
+.obsidian/plugins/
+
+# Obsidian local trash
+.trash/
+
+# Operating system files
+.DS_Store
+Thumbs.db

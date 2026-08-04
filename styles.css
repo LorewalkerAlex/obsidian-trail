@@ -1,0 +1,68 @@
+.trail-view {
+  height: 100%;
+  padding: 0;
+}
+
+.trail-view__root,
+.trail-app {
+  min-height: 100%;
+}
+
+.trail-app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-6);
+  padding: var(--size-4-6);
+  color: var(--text-normal);
+  background: var(--background-primary);
+}
+
+.trail-app__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+}
+
+.trail-app__eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-app__title {
+  margin: 0;
+}
+
+.trail-app__navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+
+.trail-app__nav-button {
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.trail-app__nav-button:hover,
+.trail-app__nav-button.is-active {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.trail-app__content {
+  flex: 1;
+  padding: var(--size-4-5);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+}
+
+.trail-app__content h2,
+.trail-app__content p {
+  margin-top: 0;
+}

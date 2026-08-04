@@ -1,0 +1,9 @@
+{
+  "id": "trail",
+  "name": "Trail",
+  "version": "0.0.1",
+  "minAppVersion": "1.13.0",
+  "description": "A Markdown-first personal project and task management plugin.",
+  "author": "LorewalkerAlex",
+  "isDesktopOnly": false
+}
