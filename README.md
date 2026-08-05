@@ -12,11 +12,11 @@ The active POC branch is:
 poc/plugin-shell
 ~~~
 
-The current POC has established the plugin shell, Markdown reading, precise Task status write-back, a plugin-level Runtime Store, a plugin-level global Mutation Queue for Task status changes, and Vault file-event reconciliation. Trail discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the confirmed Store snapshot in a single Trail `ItemView`.
+The current POC has established the plugin shell, Markdown reading, precise Task status write-back, a plugin-level Runtime Store, a plugin-level generic global Mutation Queue, and Vault file-event reconciliation. Task status changes are the first command type routed through that Queue. Trail discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the confirmed Store snapshot in a single Trail `ItemView`.
 
 The plugin listens for relevant `create`, `modify`, `delete`, and `rename` events under `Trail/Areas/`, debounces refreshes, and ignores unrelated or nested files outside the managed scope. External Markdown changes, Project file creation, deletion, and rename now update an open Trail view without reopening it.
 
-On the Project page, temporary `Mark doing` and `Mark todo` actions can move an existing Task between `todo` and `doing`. Each Task shows pending feedback while its command enters the plugin-level serial queue. The write path relocates the Task by UUID in the latest file content, verifies its source Fingerprint, applies a minimal title-line replacement through `Vault.process()`, reparses the written Markdown, and reconciles the shared Runtime Store.
+On the Project page, temporary `Mark doing` and `Mark todo` actions can move an existing Task between `todo` and `doing`. Each Task shows pending feedback while a typed update callback submits its command to the plugin-level serial queue. The write path relocates the Task by UUID in the latest file content, verifies its source Fingerprint, applies a minimal title-line replacement through `Vault.process()`, reparses the written Markdown, and reconciles the shared Runtime Store.
 
 ## Git worktrees
 

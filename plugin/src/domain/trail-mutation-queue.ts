@@ -1,9 +1,4 @@
-import type { TrailTask } from "./trail-model";
-import type { TrailTaskStatusMutationInput } from "./trail-mutation-service";
-
-export type TrailTaskStatusMutationExecutor = (
-  input: TrailTaskStatusMutationInput,
-) => Promise<TrailTask>;
+export type TrailMutationCommand<Result> = () => Promise<Result>;
 
 export type TrailMutationQueueErrorCode =
   | "queue-disposed";
@@ -18,33 +13,28 @@ export class TrailMutationQueueError extends Error {
   }
 }
 
-interface QueuedTaskStatusMutation {
-  input: TrailTaskStatusMutationInput;
-  resolve(task: TrailTask): void;
+interface QueuedMutation {
+  run(): Promise<void>;
   reject(error: unknown): void;
 }
 
 export class TrailMutationQueue {
-  private readonly pending: QueuedTaskStatusMutation[] = [];
+  private readonly pending: QueuedMutation[] = [];
   private isRunning = false;
   private disposed = false;
 
-  constructor(
-    private readonly executeTaskStatus:
-      TrailTaskStatusMutationExecutor,
-  ) {}
-
-  enqueueTaskStatus(
-    input: TrailTaskStatusMutationInput,
-  ): Promise<TrailTask> {
+  enqueue<Result>(
+    command: TrailMutationCommand<Result>,
+  ): Promise<Result> {
     if (this.disposed) {
       return Promise.reject(createDisposedError());
     }
 
-    return new Promise<TrailTask>((resolve, reject) => {
+    return new Promise<Result>((resolve, reject) => {
       this.pending.push({
-        input,
-        resolve,
+        run: async () => {
+          resolve(await command());
+        },
         reject,
       });
 
@@ -82,11 +72,7 @@ export class TrailMutationQueue {
         }
 
         try {
-          const task = await this.executeTaskStatus(
-            mutation.input,
-          );
-
-          mutation.resolve(task);
+          await mutation.run();
         } catch (error: unknown) {
           mutation.reject(error);
         }

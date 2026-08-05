@@ -11,12 +11,14 @@ import {
   isTrailDataEventPath,
   readTrailVault,
 } from "./domain/trail-vault-reader";
-import { TRAIL_VIEW_TYPE, TrailView } from "./trail-view";
-
+import {
+  TRAIL_VIEW_TYPE,
+  TrailView,
+  type TrailTaskStatusUpdater,
+} from "./trail-view";
 export default class TrailPlugin extends Plugin {
   private runtimeStore: TrailRuntimeStore | null = null;
   private mutationQueue: TrailMutationQueue | null = null;
-
   onload(): void {
     const source = createObsidianTrailSource(this.app);
     const runtimeStore = new TrailRuntimeStore(
@@ -24,19 +26,23 @@ export default class TrailPlugin extends Plugin {
     );
     const mutationSource =
       createObsidianTrailMutationSource(this.app);
-    const mutationQueue = new TrailMutationQueue(
-      async (input) => {
-        const updatedTask =
-          await updateTaskStatusInVault(
-            mutationSource,
-            input,
-          );
+    const mutationQueue = new TrailMutationQueue();
+    const updateTaskStatus: TrailTaskStatusUpdater = async (
+      task,
+      targetStatus,
+    ): Promise<void> => {
+      await mutationQueue.enqueue(async () => {
+        await updateTaskStatusInVault(
+          mutationSource,
+          {
+            expectedTask: task,
+            targetStatus,
+          },
+        );
 
         await runtimeStore.refresh();
-
-        return updatedTask;
-      },
-    );
+      });
+    };
 
     this.runtimeStore = runtimeStore;
     this.mutationQueue = mutationQueue;
@@ -46,7 +52,7 @@ export default class TrailPlugin extends Plugin {
       (leaf) => new TrailView(
         leaf,
         runtimeStore,
-        mutationQueue,
+        updateTaskStatus,
       ),
     );
 
@@ -57,7 +63,6 @@ export default class TrailPlugin extends Plugin {
 
       this.registerVaultReconciliation(runtimeStore);
     });
-
     this.addRibbonIcon("route", "Open trail", () => {
       void this.activateView();
     });
@@ -78,7 +83,6 @@ export default class TrailPlugin extends Plugin {
     this.runtimeStore?.dispose();
     this.runtimeStore = null;
   }
-
   private registerVaultReconciliation(
     runtimeStore: TrailRuntimeStore,
   ): void {
@@ -99,7 +103,6 @@ export default class TrailPlugin extends Plugin {
         scheduleForPath(file.path);
       }),
     );
-
     this.registerEvent(
       this.app.vault.on("delete", (file) => {
         scheduleForPath(file.path);
@@ -117,7 +120,6 @@ export default class TrailPlugin extends Plugin {
       }),
     );
   }
-
   private async activateView(): Promise<void> {
     const { workspace } = this.app;
     let leaf = workspace.getLeavesOfType(

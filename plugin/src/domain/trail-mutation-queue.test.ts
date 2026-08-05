@@ -5,15 +5,10 @@ import {
   vi,
 } from "vitest";
 
-import type {
-  TrailTask,
-  TrailTaskStatus,
-} from "./trail-model";
 import {
   TrailMutationQueue,
   TrailMutationQueueError,
 } from "./trail-mutation-queue";
-import type { TrailTaskStatusMutationInput } from "./trail-mutation-service";
 
 interface Deferred<Value> {
   promise: Promise<Value>;
@@ -24,7 +19,6 @@ function deferred<Value>(): Deferred<Value> {
   let resolvePromise:
     | ((value: Value) => void)
     | undefined;
-
   const promise = new Promise<Value>((resolve) => {
     resolvePromise = resolve;
   });
@@ -41,159 +35,70 @@ function deferred<Value>(): Deferred<Value> {
   };
 }
 
-function createTask(
-  id: string,
-  title: string,
-  status: TrailTaskStatus,
-): TrailTask {
-  const projectPath =
-    "Trail/Areas/Work/Trail POC.md";
-
-  return {
-    id,
-    projectId: "9e600f80-6b24-4738-b5cf-ef9f6f2974b6",
-    projectPath,
-    title,
-    status,
-    priority: "medium",
-    created: "2026-08-05T09:00:00+08:00",
-    labels: [],
-    subtasks: [],
-    notes: [],
-    source: {
-      filePath: projectPath,
-      startOffset: 0,
-      endOffset: 100,
-      fingerprint: `fingerprint:${id}:${status}`,
-    },
-  };
-}
-
-function createInput(
-  expectedTask: TrailTask,
-  targetStatus: TrailTaskStatus,
-): TrailTaskStatusMutationInput {
-  return {
-    expectedTask,
-    targetStatus,
-  };
-}
-
-const firstTask = createTask(
-  "8c774a86-54aa-48d3-9010-99372d0738fc",
-  "First task",
-  "todo",
-);
-
-const secondTask = createTask(
-  "fa3b3a46-f818-416a-9dd0-59aa168bc467",
-  "Second task",
-  "doing",
-);
-
 describe("Trail mutation queue", () => {
-  it("executes mutations one at a time in enqueue order", async () => {
-    const firstRun = deferred<TrailTask>();
-    const secondRun = deferred<TrailTask>();
-    const executeTaskStatus = vi.fn()
-      .mockReturnValueOnce(firstRun.promise)
-      .mockReturnValueOnce(secondRun.promise);
-    const queue = new TrailMutationQueue(
-      executeTaskStatus,
+  it("executes commands one at a time in enqueue order", async () => {
+    const firstRun = deferred<string>();
+    const secondRun = deferred<number>();
+    const firstCommand = vi.fn(
+      () => firstRun.promise,
     );
-    const firstInput = createInput(
-      firstTask,
-      "doing",
+    const secondCommand = vi.fn(
+      () => secondRun.promise,
     );
-    const secondInput = createInput(
-      secondTask,
-      "todo",
-    );
+    const queue = new TrailMutationQueue();
+    const firstResult = queue.enqueue(firstCommand);
+    const secondResult = queue.enqueue(secondCommand);
 
-    const firstResult =
-      queue.enqueueTaskStatus(firstInput);
-    const secondResult =
-      queue.enqueueTaskStatus(secondInput);
+    expect(firstCommand).toHaveBeenCalledOnce();
+    expect(secondCommand).not.toHaveBeenCalled();
 
-    expect(executeTaskStatus).toHaveBeenCalledOnce();
-    expect(executeTaskStatus).toHaveBeenNthCalledWith(
-      1,
-      firstInput,
-    );
-
-    const updatedFirstTask = {
-      ...firstTask,
-      status: "doing" as const,
-    };
-
-    firstRun.resolve(updatedFirstTask);
-
+    firstRun.resolve("first result");
     await expect(firstResult).resolves.toBe(
-      updatedFirstTask,
+      "first result",
     );
-    expect(executeTaskStatus).toHaveBeenCalledTimes(2);
-    expect(executeTaskStatus).toHaveBeenNthCalledWith(
-      2,
-      secondInput,
-    );
+    expect(secondCommand).toHaveBeenCalledOnce();
 
-    const updatedSecondTask = {
-      ...secondTask,
-      status: "todo" as const,
-    };
+    secondRun.resolve(42);
 
-    secondRun.resolve(updatedSecondTask);
-
-    await expect(secondResult).resolves.toBe(
-      updatedSecondTask,
-    );
+    await expect(secondResult).resolves.toBe(42);
   });
 
-  it("continues with the next mutation after a failure", async () => {
+  it("continues with the next command after a failure", async () => {
     const failure = new Error(
       "The task changed after it was read.",
     );
-    const updatedSecondTask = {
-      ...secondTask,
-      status: "todo" as const,
-    };
-    const executeTaskStatus = vi.fn()
-      .mockRejectedValueOnce(failure)
-      .mockResolvedValueOnce(updatedSecondTask);
-    const queue = new TrailMutationQueue(
-      executeTaskStatus,
+    const failedCommand = vi.fn(
+      () => Promise.reject(failure),
     );
-
-    const failedResult = queue.enqueueTaskStatus(
-      createInput(firstTask, "doing"),
+    const successfulCommand = vi.fn(
+      () => Promise.resolve("updated"),
     );
-    const successfulResult = queue.enqueueTaskStatus(
-      createInput(secondTask, "todo"),
+    const queue = new TrailMutationQueue();
+    const failedResult = queue.enqueue(failedCommand);
+    const successfulResult = queue.enqueue(
+      successfulCommand,
     );
 
     await expect(failedResult).rejects.toBe(failure);
     await expect(successfulResult).resolves.toBe(
-      updatedSecondTask,
+      "updated",
     );
 
-    expect(executeTaskStatus).toHaveBeenCalledTimes(2);
+    expect(failedCommand).toHaveBeenCalledOnce();
+    expect(successfulCommand).toHaveBeenCalledOnce();
   });
 
   it("rejects queued work when disposed", async () => {
-    const activeRun = deferred<TrailTask>();
-    const executeTaskStatus = vi.fn(
+    const activeRun = deferred<string>();
+    const activeCommand = vi.fn(
       () => activeRun.promise,
     );
-    const queue = new TrailMutationQueue(
-      executeTaskStatus,
+    const queuedCommand = vi.fn(
+      () => Promise.resolve("queued result"),
     );
-
-    const activeResult = queue.enqueueTaskStatus(
-      createInput(firstTask, "doing"),
-    );
-    const queuedResult = queue.enqueueTaskStatus(
-      createInput(secondTask, "todo"),
-    );
+    const queue = new TrailMutationQueue();
+    const activeResult = queue.enqueue(activeCommand);
+    const queuedResult = queue.enqueue(queuedCommand);
     const queuedRejection = expect(
       queuedResult,
     ).rejects.toMatchObject({
@@ -203,21 +108,17 @@ describe("Trail mutation queue", () => {
     queue.dispose();
 
     await queuedRejection;
-    expect(executeTaskStatus).toHaveBeenCalledOnce();
+    expect(activeCommand).toHaveBeenCalledOnce();
+    expect(queuedCommand).not.toHaveBeenCalled();
 
-    const updatedFirstTask = {
-      ...firstTask,
-      status: "doing" as const,
-    };
-
-    activeRun.resolve(updatedFirstTask);
+    activeRun.resolve("active result");
 
     await expect(activeResult).resolves.toBe(
-      updatedFirstTask,
+      "active result",
     );
     await expect(
-      queue.enqueueTaskStatus(
-        createInput(secondTask, "todo"),
+      queue.enqueue(
+        () => Promise.resolve("late result"),
       ),
     ).rejects.toBeInstanceOf(
       TrailMutationQueueError,

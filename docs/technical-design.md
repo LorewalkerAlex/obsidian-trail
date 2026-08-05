@@ -4,7 +4,7 @@
 > 最后更新：2026-08-05<br>
 > 适用对象：个人使用<br>
 > 上游基线：`./product-domain-hld.md`<br>
-> 当前目标：以已验证的 Plugin-level Runtime Store、文件事件 Reconciliation、Task 状态 Mutation Queue 与正常数据规模边界为起点，继续验证代表性跨文件 Mutation 和正式交互方案
+> 当前目标：以已验证的 Plugin-level Runtime Store、文件事件 Reconciliation、通用全局 Mutation Queue 与正常数据规模边界为起点，继续验证代表性跨文件 Mutation 和正式交互方案
 
 ## 1. 文档边界
 
@@ -44,10 +44,11 @@
 - Task Writer 可以在最新 Markdown 中按 UUID 重新定位 Task、校验完整 Task Block Fingerprint，并只替换目标 Task 标题行；
 - Task 状态写回会同步规范化 checkbox 和 `completed`，并在存在未完成 Subtask 时拒绝完成父 Task；
 - Mutation Service 使用 `Vault.process()` 原子修改文件，并重新解析其返回的 Markdown 确认写入结果；
-- 插件入口创建唯一的 Plugin-level Runtime Store 和 Task 状态 Mutation Queue；
-- Task 状态命令严格按进入顺序串行执行，单个命令失败不会阻塞后续命令；
+- 插件入口创建唯一的 Plugin-level Runtime Store 和通用全局 Mutation Queue；
+- Queue 接受任意返回类型的异步 Mutation Command，严格按进入顺序串行执行，单个命令失败不会阻塞后续命令；
 - 插件卸载时，尚未开始的排队命令会被拒绝；
 - Project 页面提供临时 `Mark doing` 和 `Mark todo` 操作，可以在既有 Task 的 `todo` 与 `doing` 之间双向转移；
+- Trail View 只接收类型化的 Task 状态更新函数，不直接持有或调用 Queue；
 - UI 按 Task 显示短暂 Pending 状态，不提前改变 Store 中的已确认状态；
 - UI 允许不同 Task 的状态操作分别提交，Queue 单元测试确认它们按进入顺序串行执行；
 - Trail View 采用单实例打开方式，重复使用 Ribbon 或 `Trail: Open` 会激活已有 View；
@@ -230,7 +231,7 @@ Vitest
 React Testing Library
 ```
 
-`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续通用交互和完整状态操作阶段的候选方案。当前 Runtime Store 和 Task 状态 Mutation Queue 均使用纯 TypeScript 实现，尚未证明需要引入 Zustand；其他候选依赖也尚未安装或验证。
+`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续通用交互和完整状态操作阶段的候选方案。当前 Runtime Store 和通用全局 Mutation Queue 均使用纯 TypeScript 实现，尚未证明需要引入 Zustand；其他候选依赖也尚未安装或验证。
 
 第一版不引入：
 
@@ -775,27 +776,30 @@ RestoreFromTrash
 
 ### 11.2 全局 Mutation Queue
 
-目标架构要求所有 Trail 写入最终进入一条插件级全局串行队列。当前 POC 已实现其中的 Task 状态命令切片：
+目标架构要求所有 Trail 写入最终进入一条插件级全局串行队列。当前 POC 已将 Queue 泛化为与具体领域对象和 Mutation Service 无关的异步 Command 执行器，Task 状态修改是首个接入类型：
 
 ```text
-Task Status Command A
-→ 写回并重新解析确认
-→ Task Status Command B
-→ 写回并重新解析确认
-→ Task Status Command C
+Task Status UI Intent
+→ 类型化 Task 状态更新函数
+→ Queue.enqueue(async Command)
+→ Mutation Service 写回并重新解析确认
+→ Runtime Store refresh
 ```
 
 当前 Queue 行为：
 
 - 插件生命周期内只创建一个 Queue；
-- Task 状态命令严格按进入顺序执行；
-- 当前命令执行期间，后续命令保留在队列中；
-- 单个命令失败只拒绝该命令，Queue 继续执行后续命令；
-- 插件卸载时拒绝尚未开始的命令；
-- 已经进入 `Vault.process()` 的命令不伪装成可取消操作，允许其自然结束；
+- `enqueue<Result>()` 可以承载不同返回类型的异步 Command；
+- Queue 本身不依赖 `TrailTask`、Task 状态或具体 Mutation Service；
+- Command 严格按进入顺序执行，当前 Command 执行期间后续 Command 保留在队列中；
+- 单个 Command 失败只拒绝该 Command，Queue 继续执行后续 Command；
+- 插件卸载时拒绝尚未开始的 Command；
+- 已经开始的 Command 不伪装成可取消操作，允许其自然结束；
+- 每个 Command 自行定义内部文件操作、写后确认和返回结果；
+- 当前 Task 状态 Command 将 Mutation Service 调用和成功后的 Runtime Store 主动刷新封装在同一个 Queue 单元内；
 - 当前 UI 只显示每个 Task 的 Pending 状态，不提前改变已确认业务状态。
 
-当前实现已经证明 Task 状态命令的串行机制可用，但 Queue 尚未扩展到创建、删除、移动、Fleeting Note 转换或其他跨文件操作。
+通用调度机制已经完成，但当前只有 Task 状态修改接入。创建、删除、移动、Fleeting Note 转换和其他跨文件 Command 尚未实现。
 
 ### 11.3 Mutation Service
 
@@ -815,8 +819,8 @@ Mutation Service 负责：
 当前 POC 已实现一个经过 Plugin-level Mutation Queue 和 Runtime Store、但不使用乐观 UI 的最小垂直切片：Project 页面在既有 Task 的 `todo` 与 `doing` 之间双向转移。当前实现会：
 
 1. 使用 Store Snapshot 中的 Task UUID 和 Fingerprint 表达预期对象版本；
-2. 将 Task、目标状态和预期版本提交到插件级 Queue；
-3. Queue 按进入顺序调用 Mutation Service；
+2. 类型化 Task 状态更新函数将 Mutation Service 调用和成功后的 Runtime Store 刷新封装为一个异步 Command，并提交到插件级 Queue；
+3. Queue 按进入顺序执行该 Command；
 4. 在 `Vault.process()` 提供的最新文件内容中重新解析 Project Tasks；
 5. 按 UUID 重新定位目标 Task；
 6. 校验完整 Task Block Fingerprint；
@@ -826,7 +830,7 @@ Mutation Service 负责：
 10. 主动刷新取消尚未执行的文件事件防抖刷新；
 11. 失败时保持文件和已确认 Store 数据不变，并在 Project 页面显示错误。
 
-当前 Task 状态 Queue 中某一命令失败时：
+当前通用 Queue 中某一 Task 状态 Command 失败时：
 
 - 当前命令的 Promise 被拒绝；
 - UI 清除该 Task 的 Pending 状态并显示错误；
@@ -1128,7 +1132,7 @@ Trail/Areas/<Area>/<File>.md
 
 以下为同一个完整 POC 的优先级清单，不拆成多个产品阶段。
 
-当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、Task 状态 Mutation Queue、Queue 串行与失败隔离、`todo ↔ doing` 双向状态转移、每 Task Pending 状态、Trail View 单实例激活、自身写回无可见闪回、插件重载后从 Markdown 恢复状态，以及正常数据规模下的全量读取与真实 Obsidian 收敛验证。
+当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、通用全局 Mutation Queue、不同返回类型 Command 的串行调度与失败隔离、Task 状态 Command 接入、`todo ↔ doing` 双向状态转移、每 Task Pending 状态、Trail View 单实例激活、自身写回无可见闪回、插件重载后从 Markdown 恢复状态，以及正常数据规模下的全量读取与真实 Obsidian 收敛验证。
 
 尚未完成的条目仍保留在同一清单中，不因最小写回和文件事件 Reconciliation 通过而视为完整 POC 已通过。
 
@@ -1238,7 +1242,7 @@ POC 通过至少需要满足：
 → 已完成：Task 状态 Writer、UUID 重新定位、Fingerprint 冲突检测与最小文本替换
 → 已完成：Vault.process() Mutation Service、写后重新解析与 todo ↔ doing UI 实机验证
 → 已完成：Plugin-level Runtime Store、文件事件 Reconciliation 与刷新协调
-→ 已完成：Plugin-level Task 状态 Mutation Queue、串行失败隔离、每 Task Pending 与 Trail View 单实例验证
+→ 已完成：Plugin-level 通用全局 Mutation Queue、Task 状态 Command 接入、串行失败隔离、每 Task Pending 与 Trail View 单实例验证
 → 已完成：正常数据规模下的全量读取 Benchmark、真实 Obsidian 收敛、重载与清理验证
 → 下一步：验证代表性跨文件 Mutation 与中途失败处理
 → 实现乐观 UI、失败回滚和 Project Board / List
