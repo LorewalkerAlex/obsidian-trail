@@ -3,6 +3,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 
 import type {
+  TrailFleetingNote,
+  TrailProject,
   TrailTask,
   TrailTaskStatus,
 } from "./domain/trail-model";
@@ -10,10 +12,17 @@ import type { TrailRuntimeStore } from "./domain/trail-runtime-store";
 import { TrailApp } from "./trail-app";
 
 export const TRAIL_VIEW_TYPE = "trail-view";
+
 export type TrailTaskStatusUpdater = (
   task: TrailTask,
   targetStatus: TrailTaskStatus,
 ) => Promise<void>;
+
+export type TrailFleetingNoteConverter = (
+  note: TrailFleetingNote,
+  project: TrailProject,
+) => Promise<void>;
+
 export class TrailView extends ItemView {
   private root: Root | null = null;
   private unsubscribe: (() => void) | null = null;
@@ -22,6 +31,8 @@ export class TrailView extends ItemView {
     leaf: WorkspaceLeaf,
     private readonly runtimeStore: TrailRuntimeStore,
     private readonly updateTaskStatus: TrailTaskStatusUpdater,
+    private readonly convertFleetingNoteToTask:
+      TrailFleetingNoteConverter,
   ) {
     super(leaf);
   }
@@ -37,6 +48,7 @@ export class TrailView extends ItemView {
   getIcon(): string {
     return "route";
   }
+
   async onOpen(): Promise<void> {
     this.contentEl.empty();
     this.contentEl.addClass("trail-view");
@@ -57,6 +69,7 @@ export class TrailView extends ItemView {
   async onClose(): Promise<void> {
     this.unsubscribe?.();
     this.unsubscribe = null;
+
     this.root?.unmount();
     this.root = null;
 
@@ -70,17 +83,28 @@ export class TrailView extends ItemView {
     await this.updateTaskStatus(task, targetStatus);
   };
 
+  private readonly handleConvertFleetingNoteToTask = async (
+    note: TrailFleetingNote,
+    project: TrailProject,
+  ): Promise<void> => {
+    await this.convertFleetingNoteToTask(note, project);
+  };
+
   private readonly renderSnapshot = (): void => {
     const snapshot = this.runtimeStore.getSnapshot();
 
     if (!snapshot.isInitialized) {
       return;
     }
+
     this.root?.render(
       <StrictMode>
         <TrailApp
           data={snapshot.data}
           onUpdateTaskStatus={this.handleUpdateTaskStatus}
+          onConvertFleetingNoteToTask={
+            this.handleConvertFleetingNoteToTask
+          }
         />
       </StrictMode>,
     );

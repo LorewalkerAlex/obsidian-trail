@@ -1,5 +1,12 @@
-import { Plugin } from "obsidian";
+import {
+  getFrontMatterInfo,
+  parseYaml,
+  Plugin,
+} from "obsidian";
 
+import {
+  convertFleetingNoteToTaskInVault,
+} from "./domain/trail-fleeting-to-task-command";
 import { TrailMutationQueue } from "./domain/trail-mutation-queue";
 import {
   createObsidianTrailMutationSource,
@@ -8,27 +15,40 @@ import {
 import { TrailRuntimeStore } from "./domain/trail-runtime-store";
 import {
   createObsidianTrailSource,
+  createTrailFrontmatterParser,
   isTrailDataEventPath,
   readTrailVault,
 } from "./domain/trail-vault-reader";
 import {
   TRAIL_VIEW_TYPE,
   TrailView,
+  type TrailFleetingNoteConverter,
   type TrailTaskStatusUpdater,
 } from "./trail-view";
+
+const TRAIL_TIME_ZONE_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 export default class TrailPlugin extends Plugin {
   private runtimeStore: TrailRuntimeStore | null = null;
   private mutationQueue: TrailMutationQueue | null = null;
 
   onload(): void {
-    const source = createObsidianTrailSource(this.app);
+    const parseFrontmatter =
+      createTrailFrontmatterParser(
+        getFrontMatterInfo,
+        parseYaml,
+      );
+    const source = createObsidianTrailSource(
+      this.app,
+      parseFrontmatter,
+    );
     const runtimeStore = new TrailRuntimeStore(
       () => readTrailVault(source),
     );
     const mutationSource =
       createObsidianTrailMutationSource(this.app);
     const mutationQueue = new TrailMutationQueue();
+
     const updateTaskStatus: TrailTaskStatusUpdater = async (
       task,
       targetStatus,
@@ -46,6 +66,30 @@ export default class TrailPlugin extends Plugin {
       );
     };
 
+    const convertFleetingNoteToTask:
+      TrailFleetingNoteConverter = async (
+        note,
+        project,
+      ): Promise<void> => {
+        const taskId = crypto.randomUUID();
+        const taskCreatedAt = createTrailTimestamp(new Date());
+
+        await mutationQueue.enqueue(() =>
+          runtimeStore.runMutation(async () => {
+            await convertFleetingNoteToTaskInVault(
+              mutationSource,
+              {
+                expectedNote: note,
+                targetProjectId: project.id,
+                targetProjectPath: project.filePath,
+                taskId,
+                taskCreatedAt,
+              },
+            );
+          }),
+        );
+      };
+
     this.runtimeStore = runtimeStore;
     this.mutationQueue = mutationQueue;
 
@@ -55,6 +99,7 @@ export default class TrailPlugin extends Plugin {
         leaf,
         runtimeStore,
         updateTaskStatus,
+        convertFleetingNoteToTask,
       ),
     );
 
@@ -82,6 +127,7 @@ export default class TrailPlugin extends Plugin {
   onunload(): void {
     this.mutationQueue?.dispose();
     this.mutationQueue = null;
+
     this.runtimeStore?.dispose();
     this.runtimeStore = null;
   }
@@ -100,16 +146,19 @@ export default class TrailPlugin extends Plugin {
         scheduleForPath(file.path);
       }),
     );
+
     this.registerEvent(
       this.app.vault.on("modify", (file) => {
         scheduleForPath(file.path);
       }),
     );
+
     this.registerEvent(
       this.app.vault.on("delete", (file) => {
         scheduleForPath(file.path);
       }),
     );
+
     this.registerEvent(
       this.app.vault.on("rename", (file, oldPath) => {
         if (
@@ -130,6 +179,7 @@ export default class TrailPlugin extends Plugin {
 
     if (!leaf) {
       leaf = workspace.getLeaf("tab");
+
       await leaf.setViewState({
         type: TRAIL_VIEW_TYPE,
         active: true,
@@ -138,4 +188,12 @@ export default class TrailPlugin extends Plugin {
 
     await workspace.revealLeaf(leaf);
   }
+}
+
+function createTrailTimestamp(now: Date): string {
+  const trailTime = new Date(
+    now.getTime() + TRAIL_TIME_ZONE_OFFSET_MS,
+  );
+
+  return `${trailTime.toISOString().slice(0, 19)}+08:00`;
 }

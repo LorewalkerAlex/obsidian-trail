@@ -148,11 +148,17 @@ function renderTrailApp(
   appData: TrailVaultReadResult = data,
   onUpdateTaskStatus: TrailAppProps["onUpdateTaskStatus"] =
     () => Promise.resolve(),
+  onConvertFleetingNoteToTask:
+    TrailAppProps["onConvertFleetingNoteToTask"] =
+      () => Promise.resolve(),
 ): void {
   render(
     <TrailApp
       data={appData}
       onUpdateTaskStatus={onUpdateTaskStatus}
+      onConvertFleetingNoteToTask={
+        onConvertFleetingNoteToTask
+      }
     />,
   );
 }
