@@ -2,22 +2,24 @@ import type { App, TFile } from "obsidian";
 
 import type {
   TrailArea,
+  TrailFleetingNote,
   TrailParseIssue,
   TrailProject,
 } from "./trail-model";
+import { parseFleetingNotes } from "./trail-fleeting-note-parser";
 import {
   parseArea,
   parseProject,
 } from "./trail-parser";
 
 const TRAIL_AREAS_ROOT = "Trail/Areas";
+const TRAIL_FLEETING_NOTES_PATH = "Trail/Fleeting Notes.md";
 const AREA_FILE_NAME = "Area.md";
 
 export interface TrailReadableFile {
   path: string;
   basename: string;
 }
-
 export interface TrailVaultSource<
   FileType extends TrailReadableFile,
 > {
@@ -31,6 +33,7 @@ export interface TrailVaultSource<
 export interface TrailVaultReadResult {
   areas: TrailArea[];
   projects: TrailProject[];
+  fleetingNotes: TrailFleetingNote[];
   issues: TrailParseIssue[];
 }
 
@@ -40,7 +43,6 @@ interface AreaFiles<
   areaFile?: FileType;
   projectFiles: FileType[];
 }
-
 export function isTrailManagedMarkdownPath(
   filePath: string,
 ): boolean {
@@ -61,12 +63,12 @@ export function isTrailDataEventPath(
   if (
     filePath === "Trail"
     || filePath === TRAIL_AREAS_ROOT
+    || filePath === TRAIL_FLEETING_NOTES_PATH
   ) {
     return true;
   }
 
   const parts = filePath.split("/");
-
   if (
     parts.length === 3
     && parts[0] === "Trail"
@@ -88,7 +90,6 @@ export function createObsidianTrailSource(
 
     cachedRead: (file) =>
       app.vault.cachedRead(file),
-
     getFrontmatter: (file) =>
       toRecord(
         app.metadataCache.getFileCache(file)?.frontmatter,
@@ -104,15 +105,13 @@ export async function readTrailVault<
   const issues: TrailParseIssue[] = [];
   const areas: TrailArea[] = [];
   const projects: TrailProject[] = [];
+  const fleetingNotes: TrailFleetingNote[] = [];
 
-  const areaFiles = groupAreaFiles(
-    source.getMarkdownFiles(),
-  );
-
+  const markdownFiles = source.getMarkdownFiles();
+  const areaFiles = groupAreaFiles(markdownFiles);
   const seenAreaIds = new Set<string>();
   const seenProjectIds = new Set<string>();
   const seenTaskIds = new Set<string>();
-
   for (
     const [areaName, files]
     of [...areaFiles.entries()].sort(
@@ -132,7 +131,6 @@ export async function readTrailVault<
 
       continue;
     }
-
     const areaMarkdown = await readMarkdown(
       source,
       files.areaFile,
@@ -158,7 +156,6 @@ export async function readTrailVault<
     }
 
     const area = areaResult.value;
-
     if (seenAreaIds.has(area.id)) {
       issues.push({
         scope: "file",
@@ -174,7 +171,6 @@ export async function readTrailVault<
 
     seenAreaIds.add(area.id);
     areas.push(area);
-
     for (
       const projectFile
       of [...files.projectFiles].sort(
@@ -191,7 +187,6 @@ export async function readTrailVault<
       if (projectMarkdown === undefined) {
         continue;
       }
-
       const projectResult = parseProject({
         area,
         projectName: projectFile.basename,
@@ -208,7 +203,6 @@ export async function readTrailVault<
       }
 
       const project = projectResult.value;
-
       if (seenProjectIds.has(project.id)) {
         issues.push({
           scope: "file",
@@ -223,7 +217,6 @@ export async function readTrailVault<
       }
 
       seenProjectIds.add(project.id);
-
       const tasks = project.tasks.filter((task) => {
         if (seenTaskIds.has(task.id)) {
           issues.push({
@@ -241,7 +234,6 @@ export async function readTrailVault<
         seenTaskIds.add(task.id);
         return true;
       });
-
       projects.push({
         ...project,
         tasks,
@@ -249,9 +241,32 @@ export async function readTrailVault<
     }
   }
 
+  const fleetingNotesFile = markdownFiles.find(
+    (file) => file.path === TRAIL_FLEETING_NOTES_PATH,
+  );
+
+  if (fleetingNotesFile) {
+    const fleetingMarkdown = await readMarkdown(
+      source,
+      fleetingNotesFile,
+      issues,
+    );
+
+    if (fleetingMarkdown !== undefined) {
+      const fleetingResult = parseFleetingNotes({
+        filePath: fleetingNotesFile.path,
+        markdown: fleetingMarkdown,
+      });
+
+      fleetingNotes.push(...fleetingResult.notes);
+      issues.push(...fleetingResult.issues);
+    }
+  }
+
   return {
     areas,
     projects,
+    fleetingNotes,
     issues,
   };
 }
@@ -269,7 +284,6 @@ async function readMarkdown<
     const message = error instanceof Error
       ? error.message
       : "Unknown read error.";
-
     issues.push({
       scope: "file",
       code: "file.read.failed",
@@ -295,7 +309,6 @@ function groupAreaFiles<
     if (!areaName) {
       continue;
     }
-
     const grouped = result.get(areaName) ?? {
       projectFiles: [],
     };
@@ -321,7 +334,6 @@ function getAreaName(
 
   return filePath.split("/")[2];
 }
-
 function toRecord(
   value: unknown,
 ): Record<string, unknown> | undefined {

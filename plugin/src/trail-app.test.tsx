@@ -83,7 +83,25 @@ const data: TrailVaultReadResult = {
         "Trail/Areas/Work/Trail POC.md",
     },
   ],
+  fleetingNotes: [],
   issues: [],
+};
+
+const fleetingData: TrailVaultReadResult = {
+  ...data,
+  fleetingNotes: [
+    {
+      id: "6bce718b-03df-4a9a-865d-b374139a962e",
+      text: "Wire Fleeting Notes into Trail",
+      created: "2026-08-05T20:00:00+08:00",
+      cleanupDue: "2026-08-12",
+      source: {
+        filePath: "Trail/Fleeting Notes.md",
+        startOffset: 0,
+        endOffset: 120,
+      },
+    },
+  ],
 };
 
 const todoTask: TrailTask = {
@@ -147,6 +165,14 @@ function openProjectPage(): void {
   );
 }
 
+function openFleetingNotesPage(): void {
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Fleeting Notes",
+    }),
+  );
+}
+
 describe("TrailApp", () => {
   it("renders the four top-level page controls", () => {
     renderTrailApp();
@@ -205,6 +231,37 @@ describe("TrailApp", () => {
     expect(screen.getByText("Work")).toBeInTheDocument();
     expect(
       screen.getByText("Trail POC"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows parsed Fleeting Notes", () => {
+    renderTrailApp(fleetingData);
+    openFleetingNotesPage();
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Fleeting Notes",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Wire Fleeting Notes into Trail"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Created: 2026-08-05T20:00:00+08:00",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Cleanup due: 2026-08-12"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows an empty Fleeting Notes state", () => {
+    renderTrailApp();
+    openFleetingNotesPage();
+
+    expect(
+      screen.getByText("No Fleeting Notes found."),
     ).toBeInTheDocument();
   });
 
@@ -289,7 +346,6 @@ describe("TrailApp", () => {
     let resolveFirstUpdate:
       | (() => void)
       | undefined;
-
     const firstUpdate = new Promise<void>((resolve) => {
       resolveFirstUpdate = resolve;
     });

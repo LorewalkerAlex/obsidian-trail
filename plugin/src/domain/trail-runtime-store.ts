@@ -12,11 +12,11 @@ export type TrailRuntimeListener = () => void;
 const EMPTY_DATA: TrailVaultReadResult = {
   areas: [],
   projects: [],
+  fleetingNotes: [],
   issues: [],
 };
 
 const DEFAULT_REFRESH_DELAY_MS = 100;
-
 export class TrailRuntimeStore {
   private readonly listeners = new Set<TrailRuntimeListener>();
   private snapshot: TrailRuntimeSnapshot = {
@@ -29,7 +29,6 @@ export class TrailRuntimeStore {
   private scheduledRefresh: number | null = null;
   private mutationDepth = 0;
   private disposed = false;
-
   constructor(
     private readonly readData: TrailRuntimeReader,
     private readonly refreshDelayMs = DEFAULT_REFRESH_DELAY_MS,
@@ -51,7 +50,6 @@ export class TrailRuntimeStore {
       this.listeners.delete(listener);
     };
   };
-
   initialize(): Promise<void> {
     if (this.disposed) {
       return Promise.resolve();
@@ -72,7 +70,6 @@ export class TrailRuntimeStore {
     if (this.disposed) {
       return Promise.resolve();
     }
-
     this.cancelScheduledRefresh();
     if (this.refreshPromise) {
       this.refreshRequested = true;
@@ -96,7 +93,6 @@ export class TrailRuntimeStore {
     ) {
       return;
     }
-
     this.cancelScheduledRefresh();
     this.scheduledRefresh = window.setTimeout(() => {
       this.scheduledRefresh = null;
@@ -113,7 +109,6 @@ export class TrailRuntimeStore {
 
     this.mutationDepth += 1;
     this.cancelScheduledRefresh();
-
     try {
       if (this.refreshPromise) {
         await this.refreshPromise;
@@ -140,7 +135,6 @@ export class TrailRuntimeStore {
     this.cancelScheduledRefresh();
     this.listeners.clear();
   }
-
   private async runRefresh(): Promise<void> {
     try {
       const data = await this.readData();
@@ -170,7 +164,6 @@ export class TrailRuntimeStore {
       }
     }
   }
-
   private setSnapshot(
     snapshot: TrailRuntimeSnapshot,
   ): void {
@@ -190,7 +183,6 @@ export class TrailRuntimeStore {
     this.scheduledRefresh = null;
   }
 }
-
 function readFailureResult(
   error: unknown,
 ): TrailVaultReadResult {
@@ -201,6 +193,7 @@ function readFailureResult(
   return {
     areas: [],
     projects: [],
+    fleetingNotes: [],
     issues: [
       {
         scope: "file",

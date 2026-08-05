@@ -80,7 +80,6 @@ export function TrailApp({
         {activePageId === "dashboard" && (
           <DashboardPage data={data} />
         )}
-
         {activePageId === "areas" && (
           <AreasPage
             areas={data.areas}
@@ -94,9 +93,10 @@ export function TrailApp({
             onUpdateTaskStatus={onUpdateTaskStatus}
           />
         )}
-
         {activePageId === "fleeting-notes" && (
-          <FleetingNotesPage />
+          <FleetingNotesPage
+            notes={data.fleetingNotes}
+          />
         )}
       </main>
       {data.issues.length > 0 && (
@@ -252,7 +252,6 @@ function ProjectPage({
       <h2>Project</h2>
       <h3>{project.name}</h3>
       <p>{project.overview}</p>
-
       <h4>Tasks</h4>
       {mutationError !== undefined && (
         <p role="alert">
@@ -310,7 +309,6 @@ function ProjectPage({
           ))}
         </ul>
       )}
-
       <h4>Notes</h4>
       {project.notes.length === 0 ? (
         <p>No project notes found.</p>
@@ -364,13 +362,31 @@ function TaskStatusButton({
   );
 }
 
-function FleetingNotesPage() {
+interface FleetingNotesPageProps {
+  notes: TrailVaultReadResult["fleetingNotes"];
+}
+
+function FleetingNotesPage({
+  notes,
+}: FleetingNotesPageProps) {
   return (
     <>
       <h2>Fleeting Notes</h2>
-      <p>
-        Fleeting Note parsing is outside this POC stage.
-      </p>
+      {notes.length === 0 ? (
+        <p>No Fleeting Notes found.</p>
+      ) : (
+        <ul aria-label="Fleeting Notes">
+          {notes.map((note) => (
+            <li key={note.id}>
+              <strong>{note.text}</strong>
+              <p>Created: {note.created}</p>
+              {note.cleanupDue !== undefined && (
+                <p>Cleanup due: {note.cleanupDue}</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }

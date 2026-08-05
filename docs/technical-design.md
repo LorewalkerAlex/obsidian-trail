@@ -4,7 +4,7 @@
 > 最后更新：2026-08-05<br>
 > 适用对象：个人使用<br>
 > 上游基线：`./product-domain-hld.md`<br>
-> 当前目标：以已验证的 Plugin-level Runtime Store、文件事件 Reconciliation、通用全局 Mutation Queue、正常数据规模边界与代表性跨文件 Mutation 领域/服务 POC 为起点，继续完成 Fleeting Note 读路径接入和真实 Obsidian 交互验证
+> 当前目标：以已验证的 Fleeting Note Vault 读取、Runtime Store、只读 UI 与代表性跨文件 Mutation 领域/服务 POC 为起点，继续接入最小转换入口并完成真实 Obsidian 端到端验证
 
 ## 1. 文档边界
 
@@ -39,9 +39,9 @@
 - 使用 `Vault.cachedRead()` 读取原始 Markdown；
 - 使用 `MetadataCache` 获取 Frontmatter；
 - 纯 TypeScript Parser 可以解析 Area、Project、Task、Subtask、Task Note 和 Project Note；
-- 独立 Fleeting Note Parser 可以解析顶层列表、UUID、`created`、可选 `cleanup_due`、精确源码范围和 Fingerprint，并隔离损坏对象；该 Parser 尚未接入完整 Vault 读取与 Runtime Store；
+- Fleeting Note Parser 可以解析顶层列表、UUID、`created`、可选 `cleanup_due`、精确源码范围和 Fingerprint，并隔离损坏对象；`Trail/Fleeting Notes.md` 已接入完整 Vault 读取与 Runtime Store；
 - 典型对象级和文件级异常可以隔离并形成结构化 issue；
-- Dashboard、Areas 和 Project 页面可以展示真实解析结果；
+- Dashboard、Areas、Project 和 Fleeting Notes 页面可以展示真实解析结果；Fleeting Notes 当前为只读列表，并提供空状态；
 - Task Writer 可以在最新 Markdown 中按 UUID 重新定位 Task、校验完整 Task Block Fingerprint，并只替换目标 Task 标题行；
 - Task 状态写回会同步规范化 checkbox 和 `completed`，并在存在未完成 Subtask 时拒绝完成父 Task；
 - Task Creation Writer 可以创建默认 `backlog / medium` Task，支持相同命令幂等重试，并按 UUID 与 Fingerprint 精确撤销刚创建的 Task；
@@ -60,10 +60,10 @@
 - Store 支持一次性初始化、主动刷新、刷新期间保留上一份已确认数据、并发刷新尾随合并、文件事件防抖、Mutation 边界和销毁清理；
 - `runMutation()` 会取消已安排的文件事件刷新、等待正在进行的刷新结束、在 Mutation 期间抑制新的事件刷新，并在最外层 Mutation 成功或失败后统一刷新一次；
 - 现有 Task 状态 Command 已使用该 Mutation 边界，避免写回期间暴露中间 Store Snapshot；
-- Vault 在布局完成后监听 `create / modify / delete / rename`，只对 Trail 管理范围内的 Markdown 或相关目录安排刷新；
+- Vault 在布局完成后监听 `create / modify / delete / rename`，只对 `Trail/Areas/` 管理范围、`Trail/Fleeting Notes.md` 或相关目录安排刷新；
 - `rename` 同时检查新旧路径，Trail 范围外、嵌套过深和非 Markdown 文件不会触发数据刷新；
 - 当前事件处理采用防抖后的全量 Trail Vault 重读，而不是受影响文件的增量解析；
-- 本地 ESLint、13 个测试文件中的 96 个自动化测试、TypeScript typecheck 和生产构建通过；
+- 本地 ESLint、13 个测试文件中的 99 个自动化测试、TypeScript typecheck 和生产构建通过；
 - Windows Desktop Obsidian 实机读取、Mutation 边界接入后的 `todo ↔ doing` 状态写回、文件事件 Reconciliation、Trail View 单实例激活和插件重新加载成功；
 - `Updating...` Pending 状态在实机写回时短暂出现；
 - 外部逐字修改 Task 标题时，打开中的 Project 页面可以自动同步；
@@ -75,11 +75,11 @@
 - 内存基准中，20 Areas、500 Projects、10,000 Tasks 的全量读取平均约 98 ms；40 Areas、1,000 Projects、25,000 Tasks 的压力场景平均约 519 ms；
 - 通过 Obsidian Vault API 创建 20 Areas、500 Projects 和 10,000 Tasks 后，最后一个文件创建完成约 251 ms 后 UI 自动收敛，插件重载与批量清理均正常；
 - 验证结束后 Fixture 已按原始 SHA-256 精确恢复；
-- 代表性跨文件 Command 当前只完成领域层、Writer、Mutation Service 和自动化测试验证，尚未接入插件入口、Runtime Store 数据读取或真实 Obsidian 端到端操作。
+- Fleeting Notes 已完成固定文件发现、Vault 读取、Runtime Store Snapshot、文件事件 Reconciliation、只读页面和真实 Obsidian 创建 / 修改 / 删除自动收敛验证；
+- 代表性跨文件 Command 当前只完成领域层、Writer、Mutation Service 和自动化测试验证，尚未接入插件入口或真实 Obsidian 端到端转换操作。
 
 当前尚未实现或验证：
 
-- Fleeting Note 文件发现、完整 Vault 读取、Runtime Store Snapshot 和 Fleeting Notes 页面接入；
 - `ConvertFleetingToTask` 的插件 Queue 入口、真实 Obsidian 成功/补偿路径验证和用户可触发交互；
 - `ConvertFleetingToProject`、Quick Capture 和其他 Fleeting Note Mutation；
 - 最终 Task 状态模型、完整状态入口和其他 Mutation 类型；
@@ -889,7 +889,7 @@ Mutation Service 负责：
 
 完整成功后使用同一输入重试不会重复创建 Task，也不会因来源已经不存在而失败。跨文件执行器本身可作为一个 Queue Command 执行，保证后续命令不会插入多个文件步骤之间；接入插件时还必须由 `runtimeStore.runMutation()` 包裹，使 UI 只在整个 Command 结束后读取最终状态。
 
-当前限制：该 Command 尚未接入插件入口、Fleeting Notes Runtime Store 数据或 UI，因此真实 Obsidian 端到端成功、补偿与部分失败路径仍待验证。
+当前限制：Fleeting Notes 已接入 Runtime Store 和只读 UI，但该 Command 尚未接入插件入口或用户交互，因此真实 Obsidian 端到端成功、补偿与部分失败路径仍待验证。
 
 ## 12. 写回策略
 
@@ -1040,6 +1040,15 @@ Delete
 不包含跨 Project Move。
 
 ### 14.3 Fleeting Notes UI
+
+当前 POC 已实现只读 Fleeting Notes 页面：
+
+- 从 Runtime Store Snapshot 读取合法 Fleeting Note；
+- 展示文本、创建时间和可选 `cleanup_due`；
+- 没有记录时展示空状态；
+- `Trail/Fleeting Notes.md` 的创建、修改和删除通过文件事件自动刷新页面。
+
+正式交互仍需实现：
 
 - Fleeting Note 以卡片展示；
 - 右键或上下文菜单提供转为 Project、转为 Task、Archive、Delete；
@@ -1192,7 +1201,7 @@ Trail/Areas/<Area>/<File>.md
 
 以下为同一个完整 POC 的优先级清单，不拆成多个产品阶段。
 
-当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、通用全局 Mutation Queue、不同返回类型 Command 的串行调度与失败隔离、Task 状态 Command 接入、`todo ↔ doing` 双向状态转移、每 Task Pending 状态、Trail View 单实例激活、自身写回无可见闪回、插件重载后从 Markdown 恢复状态，以及正常数据规模下的全量读取与真实 Obsidian 收敛验证。
+当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task / Fleeting Note 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Fleeting Notes 固定文件发现、Runtime Store Snapshot、只读页面与文件事件自动收敛、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、通用全局 Mutation Queue、不同返回类型 Command 的串行调度与失败隔离、Task 状态 Command 接入、`todo ↔ doing` 双向状态转移、每 Task Pending 状态、Trail View 单实例激活、自身写回无可见闪回、插件重载后从 Markdown 恢复状态，以及正常数据规模下的全量读取与真实 Obsidian 收敛验证。
 
 尚未完成的条目仍保留在同一清单中，不因最小写回和文件事件 Reconciliation 通过而视为完整 POC 已通过。
 
@@ -1307,8 +1316,9 @@ POC 通过至少需要满足：
 → 已完成：Plugin-level 通用全局 Mutation Queue、Task 状态 Command 接入、串行失败隔离、每 Task Pending 与 Trail View 单实例验证
 → 已完成：正常数据规模下的全量读取 Benchmark、真实 Obsidian 收敛、重载与清理验证
 → 已完成：Fleeting Note Parser、目标 Task 创建与补偿、来源删除、Mutation 刷新边界、代表性 ConvertFleetingToTask Command 与 unchanged / compensated / partial 自动化验证
-→ 下一步：将 Fleeting Notes 接入 Vault 读取与 Runtime Store，并提供最小插件入口完成真实 Obsidian 端到端验证
-→ 实现 Fleeting Notes 页面和正式转换交互
+→ 已完成：Fleeting Notes 固定文件发现、Vault 读取、Runtime Store Snapshot、文件事件 Reconciliation、只读页面和真实 Obsidian 自动收敛验证
+→ 下一步：将 ConvertFleetingToTask 接入插件 Queue 与最小用户入口，完成真实 Obsidian 成功 / 补偿路径验证
+→ 实现 Fleeting Notes 正式卡片与转换交互
 → 实现乐观 UI、失败回滚和 Project Board / List
 → 实现 Task Detail Modal
 → 实现 Archive、Trash 与恢复薄链路

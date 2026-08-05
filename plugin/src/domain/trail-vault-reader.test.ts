@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isTrailDataEventPath,
   readTrailVault,
   type TrailReadableFile,
   type TrailVaultSource,
 } from "./trail-vault-reader";
-
 const AREA_ID = "df4ec59e-bfe4-4a09-a079-43ff9350642d";
 const SECOND_AREA_ID =
   "dd080222-f987-41f5-a903-22d4f7bb8806";
@@ -15,6 +15,8 @@ const SECOND_PROJECT_ID =
 const TASK_ID = "fa3b3a46-f818-416a-9dd0-59aa168bc467";
 const SECOND_TASK_ID =
   "cdd5c730-a516-40ed-a21b-cdd97055a2f8";
+const FLEETING_NOTE_ID =
+  "6bce718b-03df-4a9a-865d-b374139a962e";
 
 type TestFile = TrailReadableFile;
 
@@ -22,7 +24,6 @@ interface TestSource {
   source: TrailVaultSource<TestFile>;
   readPaths: string[];
 }
-
 function createFile(path: string): TestFile {
   const fileName = path.split("/").pop();
 
@@ -46,7 +47,6 @@ function createSource(
   readErrorByPath: Record<string, string> = {},
 ): TestSource {
   const readPaths: string[] = [];
-
   return {
     readPaths,
     source: {
@@ -71,7 +71,6 @@ function createSource(
     },
   };
 }
-
 function createAreaMarkdown(
   areaId = AREA_ID,
 ): string {
@@ -85,7 +84,6 @@ function createAreaMarkdown(
     "",
   ].join("\n");
 }
-
 function createProjectMarkdown(
   projectId: string,
   taskId = TASK_ID,
@@ -112,12 +110,19 @@ function createProjectMarkdown(
   ].join("\n");
 }
 
+function createFleetingNotesMarkdown(): string {
+  return [
+    `- Read Fleeting Notes <!-- trail:fleeting {"id":"${FLEETING_NOTE_ID}","created":"2026-08-05T09:30:00+08:00","cleanup_due":"2026-08-12"} -->`,
+    "",
+  ].join("\n");
+}
+
 describe("Trail Vault reader", () => {
-  it("discovers direct Area and Project files", async () => {
+  it("discovers direct Area, Project, and Fleeting Notes files", async () => {
     const areaPath = "Trail/Areas/Work/Area.md";
     const projectPath =
       "Trail/Areas/Work/Trail POC.md";
-
+    const fleetingNotesPath = "Trail/Fleeting Notes.md";
     const { source, readPaths } = createSource(
       [
         "docs/technical-design.md",
@@ -125,11 +130,14 @@ describe("Trail Vault reader", () => {
         "Trail/Areas/Work/Nested/Ignored.md",
         projectPath,
         areaPath,
+        fleetingNotesPath,
       ],
       {
         [areaPath]: createAreaMarkdown(),
         [projectPath]:
           createProjectMarkdown(PROJECT_ID),
+        [fleetingNotesPath]:
+          createFleetingNotesMarkdown(),
       },
       {
         [areaPath]: {
@@ -143,12 +151,12 @@ describe("Trail Vault reader", () => {
         },
       },
     );
-
     const result = await readTrailVault(source);
 
     expect(result.issues).toEqual([]);
     expect(result.areas).toHaveLength(1);
     expect(result.projects).toHaveLength(1);
+    expect(result.fleetingNotes).toHaveLength(1);
 
     expect(result.areas[0]).toMatchObject({
       id: AREA_ID,
@@ -163,17 +171,46 @@ describe("Trail Vault reader", () => {
       name: "Trail POC",
       filePath: projectPath,
     });
-
     expect(result.projects[0].tasks).toHaveLength(1);
+    expect(result.fleetingNotes[0]).toMatchObject({
+      id: FLEETING_NOTE_ID,
+      text: "Read Fleeting Notes",
+      cleanupDue: "2026-08-12",
+      source: {
+        filePath: fleetingNotesPath,
+      },
+    });
+    expect(isTrailDataEventPath(
+      fleetingNotesPath,
+    )).toBe(true);
+    expect(isTrailDataEventPath(
+      "Trail/Fleeting/Idea.md",
+    )).toBe(false);
     expect(readPaths.sort()).toEqual(
-      [areaPath, projectPath].sort(),
+      [
+        areaPath,
+        projectPath,
+        fleetingNotesPath,
+      ].sort(),
     );
+  });
+
+  it("returns no Fleeting Notes when the file is absent", async () => {
+    const { source } = createSource(
+      [],
+      {},
+      {},
+    );
+
+    const result = await readTrailVault(source);
+
+    expect(result.fleetingNotes).toEqual([]);
+    expect(result.issues).toEqual([]);
   });
 
   it("reports an Area directory without Area.md", async () => {
     const projectPath =
       "Trail/Areas/Work/Trail POC.md";
-
     const { source } = createSource(
       [projectPath],
       {
@@ -190,9 +227,9 @@ describe("Trail Vault reader", () => {
     );
 
     const result = await readTrailVault(source);
-
     expect(result.areas).toEqual([]);
     expect(result.projects).toEqual([]);
+    expect(result.fleetingNotes).toEqual([]);
     expect(result.issues).toContainEqual({
       scope: "file",
       code: "area.file.missing",
@@ -201,14 +238,12 @@ describe("Trail Vault reader", () => {
       filePath: "Trail/Areas/Work/Area.md",
     });
   });
-
   it("keeps valid Projects when another file is invalid", async () => {
     const areaPath = "Trail/Areas/Work/Area.md";
     const validPath =
       "Trail/Areas/Work/Valid Project.md";
     const invalidPath =
       "Trail/Areas/Work/Broken Project.md";
-
     const invalidMarkdown = [
       "---",
       `id: "${SECOND_PROJECT_ID}"`,
@@ -221,7 +256,6 @@ describe("Trail Vault reader", () => {
       "The required sections are missing.",
       "",
     ].join("\n");
-
     const { source } = createSource(
       [areaPath, invalidPath, validPath],
       {
@@ -247,7 +281,6 @@ describe("Trail Vault reader", () => {
         },
       },
     );
-
     const result = await readTrailVault(source);
 
     expect(result.areas).toHaveLength(1);
@@ -264,7 +297,6 @@ describe("Trail Vault reader", () => {
       }),
     );
   });
-
   it("isolates Area and Project read failures", async () => {
     const personalAreaPath =
       "Trail/Areas/Personal/Area.md";
@@ -273,7 +305,6 @@ describe("Trail Vault reader", () => {
       "Trail/Areas/Work/Broken Project.md";
     const validProjectPath =
       "Trail/Areas/Work/Valid Project.md";
-
     const { source } = createSource(
       [
         personalAreaPath,
@@ -313,9 +344,7 @@ describe("Trail Vault reader", () => {
         [brokenProjectPath]: "Project read failed.",
       },
     );
-
     const result = await readTrailVault(source);
-
     expect(result.areas).toHaveLength(1);
     expect(result.areas[0].name).toBe("Work");
     expect(result.projects).toHaveLength(1);
@@ -337,14 +366,12 @@ describe("Trail Vault reader", () => {
       ]),
     );
   });
-
   it("reports duplicate Task ids across Projects", async () => {
     const areaPath = "Trail/Areas/Work/Area.md";
     const firstPath =
       "Trail/Areas/Work/First Project.md";
     const secondPath =
       "Trail/Areas/Work/Second Project.md";
-
     const { source } = createSource(
       [areaPath, firstPath, secondPath],
       {
@@ -371,7 +398,6 @@ describe("Trail Vault reader", () => {
         },
       },
     );
-
     const result = await readTrailVault(source);
 
     expect(result.projects).toHaveLength(2);
@@ -386,14 +412,12 @@ describe("Trail Vault reader", () => {
       objectId: TASK_ID,
     });
   });
-
   it("reports and omits duplicate Project ids", async () => {
     const areaPath = "Trail/Areas/Work/Area.md";
     const firstPath =
       "Trail/Areas/Work/First Project.md";
     const secondPath =
       "Trail/Areas/Work/Second Project.md";
-
     const { source } = createSource(
       [areaPath, firstPath, secondPath],
       {
@@ -420,7 +444,6 @@ describe("Trail Vault reader", () => {
         },
       },
     );
-
     const result = await readTrailVault(source);
 
     expect(result.projects).toHaveLength(1);

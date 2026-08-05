@@ -15,6 +15,7 @@ function createData(
   return {
     areas: [],
     projects: [],
+    fleetingNotes: [],
     issues: [
       {
         scope: "file",
@@ -25,7 +26,6 @@ function createData(
     ],
   };
 }
-
 interface Deferred<Value> {
   promise: Promise<Value>;
   resolve(value: Value): void;
@@ -48,7 +48,6 @@ function deferred<Value>(): Deferred<Value> {
     },
   };
 }
-
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -60,7 +59,6 @@ describe("Trail runtime store", () => {
     const readData = vi.fn(() => pendingRead.promise);
     const store = new TrailRuntimeStore(readData);
     const listener = vi.fn();
-
     store.subscribe(listener);
     const firstInitialize = store.initialize();
     const secondInitialize = store.initialize();
@@ -73,7 +71,6 @@ describe("Trail runtime store", () => {
       secondInitialize,
     ]);
     await store.initialize();
-
     expect(readData).toHaveBeenCalledOnce();
     expect(store.getSnapshot()).toEqual({
       data,
@@ -82,7 +79,6 @@ describe("Trail runtime store", () => {
     });
     expect(listener).toHaveBeenCalled();
   });
-
   it("keeps confirmed data while a refresh is in progress", async () => {
     const initialData = createData("initial");
     const refreshedData = createData("refreshed");
@@ -93,7 +89,6 @@ describe("Trail runtime store", () => {
     const store = new TrailRuntimeStore(readData);
 
     await store.initialize();
-
     const refreshPromise = store.refresh();
     expect(store.getSnapshot()).toEqual({
       data: initialData,
@@ -110,7 +105,6 @@ describe("Trail runtime store", () => {
       isRefreshing: false,
     });
   });
-
   it("runs one trailing refresh when another refresh is requested", async () => {
     const firstRead = deferred<TrailVaultReadResult>();
     const secondRead = deferred<TrailVaultReadResult>();
@@ -121,7 +115,6 @@ describe("Trail runtime store", () => {
 
     const initialRefresh = store.initialize();
     const trailingRefresh = store.refresh();
-
     expect(readData).toHaveBeenCalledOnce();
     firstRead.resolve(createData("first"));
     await Promise.resolve();
@@ -138,7 +131,6 @@ describe("Trail runtime store", () => {
 
     expect(store.getSnapshot().data).toBe(finalData);
   });
-
   it("debounces scheduled file-event refreshes", async () => {
     vi.useFakeTimers();
     const initialData = createData("initial");
@@ -154,7 +146,6 @@ describe("Trail runtime store", () => {
     store.scheduleRefresh();
 
     expect(readData).toHaveBeenCalledOnce();
-
     await vi.advanceTimersByTimeAsync(50);
     expect(readData).toHaveBeenCalledTimes(2);
     expect(store.getSnapshot().data).toBe(refreshedData);
@@ -162,7 +153,6 @@ describe("Trail runtime store", () => {
 
   it("cancels a scheduled file-event refresh when refreshing directly", async () => {
     vi.useFakeTimers();
-
     const initialData = createData("initial");
     const refreshedData = createData("refreshed");
     const readData = vi.fn()
@@ -178,7 +168,6 @@ describe("Trail runtime store", () => {
     expect(store.getSnapshot().data).toBe(refreshedData);
 
     await vi.advanceTimersByTimeAsync(50);
-
     expect(readData).toHaveBeenCalledTimes(2);
   });
 
@@ -193,7 +182,6 @@ describe("Trail runtime store", () => {
       .mockResolvedValueOnce(reconciledData);
     const store = new TrailRuntimeStore(readData, 50);
     await store.initialize();
-
     const mutationPromise = store.runMutation(async () => {
       store.scheduleRefresh();
       await pendingMutation.promise;
@@ -211,7 +199,6 @@ describe("Trail runtime store", () => {
     await vi.advanceTimersByTimeAsync(50);
     expect(readData).toHaveBeenCalledTimes(2);
   });
-
   it("reconciles once after a failed mutation", async () => {
     vi.useFakeTimers();
 
@@ -224,7 +211,6 @@ describe("Trail runtime store", () => {
     await store.initialize();
 
     store.scheduleRefresh();
-
     await expect(store.runMutation(async () => {
       store.scheduleRefresh();
       throw new Error("Mutation failed.");
@@ -236,12 +222,10 @@ describe("Trail runtime store", () => {
     await vi.advanceTimersByTimeAsync(50);
     expect(readData).toHaveBeenCalledTimes(2);
   });
-
   it("publishes a structured issue when the Vault read fails", async () => {
     const store = new TrailRuntimeStore(
       () => Promise.reject(new Error("Read failed.")),
     );
-
     await store.initialize();
     expect(store.getSnapshot()).toMatchObject({
       isInitialized: true,
@@ -249,6 +233,7 @@ describe("Trail runtime store", () => {
       data: {
         areas: [],
         projects: [],
+        fleetingNotes: [],
         issues: [
           {
             scope: "file",
@@ -261,7 +246,6 @@ describe("Trail runtime store", () => {
       },
     });
   });
-
   it("cancels scheduled work and notifications when disposed", async () => {
     vi.useFakeTimers();
 
@@ -275,7 +259,6 @@ describe("Trail runtime store", () => {
     store.subscribe(listener);
     store.scheduleRefresh();
     store.dispose();
-
     await vi.advanceTimersByTimeAsync(50);
     await store.refresh();
     expect(readData).toHaveBeenCalledOnce();
