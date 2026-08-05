@@ -1,10 +1,10 @@
 # Trail Technical Design
 
 > 状态：Technical Design 当前基线<br>
-> 最后更新：2026-08-04<br>
+> 最后更新：2026-08-05<br>
 > 适用对象：个人使用<br>
 > 上游基线：`./product-domain-hld.md`<br>
-> 当前目标：以已验证的 Plugin-level Runtime Store 与文件事件 Reconciliation 为起点，继续验证全局 Mutation Queue、通用状态操作和乐观 UI 边界
+> 当前目标：以已验证的 Plugin-level Runtime Store、文件事件 Reconciliation 与 Task 状态 Mutation Queue 为起点，继续验证代表性跨文件 Mutation、正常数据规模边界和正式交互方案
 
 ## 1. 文档边界
 
@@ -31,7 +31,7 @@
 
 ### 1.1 当前 POC 事实状态
 
-截至 2026-08-04，当前代码已经验证：
+截至 2026-08-05，当前代码已经验证：
 
 - 仓库根目录同时作为 Obsidian Vault；
 - 可见的 `Trail/Areas/<Area>/` 作为当前 POC 数据目录；
@@ -44,26 +44,35 @@
 - Task Writer 可以在最新 Markdown 中按 UUID 重新定位 Task、校验完整 Task Block Fingerprint，并只替换目标 Task 标题行；
 - Task 状态写回会同步规范化 checkbox 和 `completed`，并在存在未完成 Subtask 时拒绝完成父 Task；
 - Mutation Service 使用 `Vault.process()` 原子修改文件，并重新解析其返回的 Markdown 确认写入结果；
-- Project 页面提供临时 `Mark doing` 操作，可以将既有 `todo` Task 更新为 `doing`；
-- 插件入口创建唯一的 Plugin-level Runtime Store，Trail View 订阅同一份已确认 Snapshot；
+- 插件入口创建唯一的 Plugin-level Runtime Store 和 Task 状态 Mutation Queue；
+- Task 状态命令严格按进入顺序串行执行，单个命令失败不会阻塞后续命令；
+- 插件卸载时，尚未开始的排队命令会被拒绝；
+- Project 页面提供临时 `Mark doing` 和 `Mark todo` 操作，可以在既有 Task 的 `todo` 与 `doing` 之间双向转移；
+- UI 按 Task 显示短暂 Pending 状态，不提前改变 Store 中的已确认状态；
+- UI 允许不同 Task 的状态操作分别提交，Queue 单元测试确认它们按进入顺序串行执行；
+- Trail View 采用单实例打开方式，重复使用 Ribbon 或 `Trail: Open` 会激活已有 View；
 - Store 支持一次性初始化、主动刷新、刷新期间保留上一份已确认数据、并发刷新尾随合并、文件事件防抖和销毁清理；
+- Mutation 成功后的主动刷新会取消尚未执行的文件事件防抖刷新；
 - Vault 在布局完成后监听 `create / modify / delete / rename`，只对 Trail 管理范围内的 Markdown 或相关目录安排刷新；
 - `rename` 同时检查新旧路径，Trail 范围外、嵌套过深和非 Markdown 文件不会触发数据刷新；
 - 当前事件处理采用防抖后的全量 Trail Vault 重读，而不是受影响文件的增量解析；
-- 本地 ESLint、7 个测试文件中的 42 个自动化测试、TypeScript typecheck 和生产构建通过；
-- Windows Desktop Obsidian 实机读取、最小状态写回和文件事件 Reconciliation 成功；
+- 本地 ESLint、8 个测试文件中的 48 个自动化测试、TypeScript typecheck 和生产构建通过；
+- Windows Desktop Obsidian 实机读取、`todo ↔ doing` 状态写回、文件事件 Reconciliation、Trail View 单实例激活和插件重新加载成功；
+- `Updating...` Pending 状态在实机写回时短暂出现；
 - 外部逐字修改 Task 标题时，打开中的 Project 页面可以自动同步；
 - Project 文件的创建、删除和重命名可以自动更新 Areas 与 Project 页面；
-- Trail 自身写回后 UI 保持 `doing`，没有可见闪回；
+- Trail 自身双向状态写回后 UI 收敛到目标状态，没有可见闪回；
 - Trail 管理范围外的普通 Markdown 修改不会改变 Trail 数据；
-- 插件重新加载后仍能从 Markdown 读取写入后的状态；
+- 插件 disable / enable 或重新加载后，Store 和 Queue 可以正常重建；
 - 实机写回后的文件与“只替换目标状态字段”生成的预期文件 SHA-256 完全一致；
 - 验证结束后 Fixture 已按原始 SHA-256 精确恢复。
 
-当前尚未实现：
+当前尚未实现或验证：
 
 - Fleeting Note Parser；
-- 全局 Mutation Queue 与通用 Task 状态操作；
+- 最终 Task 状态模型、完整状态入口和其他 Mutation 类型；
+- 代表性跨文件 Mutation 与中途失败处理；
+- 正常数据规模下全量重读的性能边界；
 - 乐观 UI 与失败回滚；
 - 受影响文件级增量 Reconciliation 和更精确的自身事件去重；
 - Task Modal、Board 和拖拽；
@@ -184,7 +193,7 @@ MetadataCache 只负责提供 Markdown 基础结构。`trail:*` 私有元数据�
 
 ### 3.4 Runtime Store
 
-插件入口创建唯一的 Runtime Store，并将同一个实例传给所有 Trail View。Store 当前保存：
+插件入口创建唯一的 Runtime Store，并将其传给单实例 Trail View。Store 当前保存：
 
 - 最新一次已确认的 `TrailVaultReadResult`；
 - 是否已经完成首次初始化；
@@ -194,13 +203,15 @@ MetadataCache 只负责提供 Markdown 基础结构。`trail:*` 私有元数据�
 
 当前行为：
 
-- 首次打开任意 Trail View 时只初始化一次；
-- 多个 View 共享同一份 Snapshot；
+- 首次打开 Trail View 时只初始化一次；
+- 重复打开 Trail 只激活已有 View；
+- Trail View 关闭后取消订阅，再次打开时继续订阅插件级 Store；
 - 刷新期间保留上一份已确认数据，不先清空 UI；
 - 刷新进行中再次请求刷新时，合并为一次尾随刷新；
 - 文件事件使用短延迟防抖，连续保存不会立即并行读取；
+- 主动刷新会取消尚未执行的文件事件防抖刷新；
 - Vault 读取异常转换为结构化 issue；
-- View 关闭时取消订阅，插件卸载时清理计时器和全部订阅者。
+- 插件卸载时清理计时器和全部订阅者。
 
 Runtime Store 是缓存和交互状态，不是新的业务事实来源。当前实现使用轻量纯 TypeScript Store，没有引入 Zustand；是否在后续复杂交互中更换 Store 实现，应由实际需求决定。
 
@@ -218,7 +229,7 @@ Vitest
 React Testing Library
 ```
 
-`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续通用交互、队列和完整状态操作阶段的候选方案。当前 Runtime Store 使用纯 TypeScript 实现，尚未证明需要引入 Zustand；其他候选依赖也尚未安装或验证。
+`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续通用交互和完整状态操作阶段的候选方案。当前 Runtime Store 和 Task 状态 Mutation Queue 均使用纯 TypeScript 实现，尚未证明需要引入 Zustand；其他候选依赖也尚未安装或验证。
 
 第一版不引入：
 
@@ -763,24 +774,27 @@ RestoreFromTrash
 
 ### 11.2 全局 Mutation Queue
 
-所有 Trail 写入进入一条全局串行队列：
+目标架构要求所有 Trail 写入最终进入一条插件级全局串行队列。当前 POC 已实现其中的 Task 状态命令切片：
 
 ```text
-Command A
+Task Status Command A
 → 写回并重新解析确认
-→ Command B
+→ Task Status Command B
 → 写回并重新解析确认
-→ Command C
+→ Task Status Command C
 ```
 
-用户可以连续操作，UI 可以先应用乐观状态，但文件写回按队列顺序执行。
+当前 Queue 行为：
 
-该设计避免：
+- 插件生命周期内只创建一个 Queue；
+- Task 状态命令严格按进入顺序执行；
+- 当前命令执行期间，后续命令保留在队列中；
+- 单个命令失败只拒绝该命令，Queue 继续执行后续命令；
+- 插件卸载时拒绝尚未开始的命令；
+- 已经进入 `Vault.process()` 的命令不伪装成可取消操作，允许其自然结束；
+- 当前 UI 只显示每个 Task 的 Pending 状态，不提前改变已确认业务状态。
 
-- 两个命令同时基于旧文件版本写回；
-- 后写命令覆盖先写命令；
-- 跨文件转换与普通写入交错；
-- POC 阶段引入不必要的并发调度。
+当前实现已经证明 Task 状态命令的串行机制可用，但 Queue 尚未扩展到创建、删除、移动、Fleeting Note 转换或其他跨文件操作。
 
 ### 11.3 Mutation Service
 
@@ -788,35 +802,39 @@ Mutation Service 负责：
 
 1. 验证命令前置条件；
 2. 根据 UUID 获取当前对象；
-3. 生成目标领域状态；
+3. 接收目标领域状态；
 4. 在最新文件内容中重新定位对象；
 5. 校验 Fingerprint；
 6. 生成最小文本修改；
 7. 使用 `Vault.process()` 或等价 Obsidian File API 原子修改文件；
-8. 成功后重新解析并确认 Store；
-9. 失败时回滚乐观状态并显示 Notice。
+8. 重新解析写入后的 Markdown，确认命令目标已经成立；
+9. 将更新后的 Task 返回调用方；
+10. 失败时保持文件和已确认 Store 状态不变，并将错误返回 UI。
 
-当前 POC 已实现一个经过 Plugin-level Runtime Store、但不经过全局队列和乐观 UI 的最小垂直切片：Project 页面将既有 `todo` Task 更新为 `doing`。当前实现会：
+当前 POC 已实现一个经过 Plugin-level Mutation Queue 和 Runtime Store、但不使用乐观 UI 的最小垂直切片：Project 页面在既有 Task 的 `todo` 与 `doing` 之间双向转移。当前实现会：
 
 1. 使用 Store Snapshot 中的 Task UUID 和 Fingerprint 表达预期对象版本；
-2. 在 `Vault.process()` 提供的最新文件内容中重新解析 Project Tasks；
-3. 按 UUID 重新定位目标 Task；
-4. 校验完整 Task Block Fingerprint；
-5. 只替换目标 Task 标题行中的 checkbox 与 `trail:task` JSON；
-6. 重新解析 `Vault.process()` 返回的 Markdown，确认目标状态；
-7. 成功后主动刷新共享 Runtime Store；
-8. 同一写入产生的 Vault 文件事件也进入防抖 Reconciliation，Store 会收敛到 Markdown 最新事实；
-9. 失败时保持文件和已确认 Store 数据不变，并在 Project 页面显示错误。
+2. 将 Task、目标状态和预期版本提交到插件级 Queue；
+3. Queue 按进入顺序调用 Mutation Service；
+4. 在 `Vault.process()` 提供的最新文件内容中重新解析 Project Tasks；
+5. 按 UUID 重新定位目标 Task；
+6. 校验完整 Task Block Fingerprint；
+7. 只替换目标 Task 标题行中的 checkbox 与 `trail:task` JSON；
+8. 重新解析 `Vault.process()` 返回的 Markdown，确认目标状态；
+9. 成功后主动刷新共享 Runtime Store；
+10. 主动刷新取消尚未执行的文件事件防抖刷新；
+11. 失败时保持文件和已确认 Store 数据不变，并在 Project 页面显示错误。
 
-这一实现已经验证单次精确写回、共享 Store 确认和自身文件事件下无可见闪回，但不代表全局 Mutation Queue、通用状态控件或乐观回滚已经完成。
+当前 Task 状态 Queue 中某一命令失败时：
 
-队列中某一命令失败时：
+- 当前命令的 Promise 被拒绝；
+- UI 清除该 Task 的 Pending 状态并显示错误；
+- 文件和已确认 Store 不因失败命令发生变化；
+- 后续排队命令继续执行；
+- 后续命令仍使用自己的 UUID、Fingerprint 和目标状态重新校验；
+- 如果后续命令的预期版本已经过期，则该命令独立失败。
 
-- 当前命令失败并回滚；
-- 重新解析受影响文件；
-- 后续命令执行前重新校验前置条件；
-- 合法则继续，不合法则单独失败；
-- 不因一次失败清空整个队列。
+当前 UI 不提前修改已确认业务状态，因此失败时不需要回滚业务状态。未来引入乐观 UI 后，需要在此基础上增加临时状态回滚层。
 
 ## 12. 写回策略
 
@@ -1042,7 +1060,15 @@ Delete
 
 ### 15.4 乐观 UI
 
-适用于：
+当前临时 `todo ↔ doing` 控件采用保守 UI：
+
+- 点击后只显示 `Updating...`；
+- Store 中的已确认 Task 状态不提前变化；
+- 等待写入和 Runtime Store 刷新完成后展示目标状态；
+- 写入失败时清除 Pending 状态并显示错误；
+- 当前不需要执行乐观业务状态回滚。
+
+未来乐观 UI 适用于：
 
 - Board 状态拖拽；
 - Priority 修改；
@@ -1050,15 +1076,15 @@ Delete
 - Label 修改；
 - Subtask checkbox。
 
-流程：
+未来流程：
 
 ```text
 用户操作
-→ Store 立即应用目标状态
+→ Store 应用临时目标状态
 → UI 立即更新
 → Command 进入全局串行队列
 ├── 成功：以重新解析结果确认
-└── 失败：回滚到最后确认状态并显示 Notice
+└── 失败：回滚到最后确认状态并显示错误
 ```
 
 ### 15.5 文件事件
@@ -1078,20 +1104,22 @@ Trail/Areas/<Area>/<File>.md
 
 事件范围额外接受 `Trail`、`Trail/Areas` 和直接 Area 目录，以便整目录创建、删除或重命名时也能触发 Reconciliation。Trail 范围外文件、嵌套更深的 Markdown 和非 Markdown 文件会被忽略。
 
-事件进入 Runtime Store 后使用短延迟防抖，并在刷新重叠时合并为尾随刷新。当前 POC 采用防抖后的全量 Trail Vault 重读，已经实机验证：
+事件进入 Runtime Store 后使用短延迟防抖，并在刷新重叠时合并为尾随刷新。Mutation 成功后的主动刷新会先取消尚未执行的文件事件防抖刷新，使同一次写入不会在延迟结束后再次全量读取。
+
+当前 POC 采用防抖后的全量 Trail Vault 重读，已经实机验证：
 
 - 外部编辑 Task 标题时 UI 自动同步；
-- Trail 自身写回不会造成可见闪回；
+- Trail 自身双向状态写回不会造成可见闪回；
 - Project 文件创建、删除和重命名后 UI 自动收敛；
 - 无关 Markdown 修改不会改变 Trail 数据。
 
-受影响文件级增量解析、更精确的自身事件标识与性能阈值留到数据规模验证后决定。
+主动刷新与防抖刷新协调已经通过自动化测试。受影响文件级增量解析、更精确的自身事件标识与性能阈值留到数据规模验证后决定。
 
 ## 16. Minimum Demo / POC 验证清单
 
 以下为同一个完整 POC 的优先级清单，不拆成多个产品阶段。
 
-当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、共享 Snapshot、刷新尾随合并、文件事件防抖、create / modify / delete / rename Reconciliation、无关路径过滤、自身写回无可见闪回以及重启后从 Markdown 恢复状态。
+当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、Task 状态 Mutation Queue、Queue 串行与失败隔离、`todo ↔ doing` 双向状态转移、每 Task Pending 状态、Trail View 单实例激活、自身写回无可见闪回以及插件重载后从 Markdown 恢复状态。
 
 尚未完成的条目仍保留在同一清单中，不因最小写回和文件事件 Reconciliation 通过而视为完整 POC 已通过。
 
@@ -1191,7 +1219,7 @@ POC 通过至少需要满足：
 - 受影响文件级增量 Reconciliation、性能阈值和更精确的自身事件去重；
 - Search 排序与索引结构；
 - 最终组件库版本、视觉样式和动画；
-- 移动端支持；
+- 移动端不在当前产品范围；
 - 完整 Undo 历史。
 
 ## 19. 下一步
@@ -1199,9 +1227,10 @@ POC 通过至少需要满足：
 ```text
 已完成：Plugin Shell、真实 Vault 读取、Parser、错误隔离与只读实机验证
 → 已完成：Task 状态 Writer、UUID 重新定位、Fingerprint 冲突检测与最小文本替换
-→ 已完成：Vault.process() Mutation Service、写后重新解析与 todo → doing UI 实机验证
-→ 已完成：Plugin-level Runtime Store、共享 Snapshot 与文件事件 Reconciliation
-→ 下一步：实现全局 Mutation Queue 与通用 Task 状态操作
+→ 已完成：Vault.process() Mutation Service、写后重新解析与 todo ↔ doing UI 实机验证
+→ 已完成：Plugin-level Runtime Store、文件事件 Reconciliation 与刷新协调
+→ 已完成：Plugin-level Task 状态 Mutation Queue、串行失败隔离、每 Task Pending 与 Trail View 单实例验证
+→ 下一步：验证代表性跨文件 Mutation 与正常数据规模下的全量重读边界
 → 实现乐观 UI、失败回滚和 Project Board / List
 → 实现 Task Detail Modal
 → 实现 Fleeting Note 与 Trash 薄链路

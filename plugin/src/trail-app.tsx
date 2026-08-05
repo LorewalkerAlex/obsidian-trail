@@ -4,6 +4,7 @@ import type {
   TrailArea,
   TrailProject,
   TrailTask,
+  TrailTaskStatus,
 } from "./domain/trail-model";
 import type { TrailVaultReadResult } from "./domain/trail-vault-reader";
 
@@ -30,12 +31,15 @@ type TrailPageId = (typeof TRAIL_PAGES)[number]["id"];
 
 export interface TrailAppProps {
   data: TrailVaultReadResult;
-  onMarkTaskDoing: (task: TrailTask) => Promise<void>;
+  onUpdateTaskStatus: (
+    task: TrailTask,
+    targetStatus: TrailTaskStatus,
+  ) => Promise<void>;
 }
 
 export function TrailApp({
   data,
-  onMarkTaskDoing,
+  onUpdateTaskStatus,
 }: TrailAppProps) {
   const [activePageId, setActivePageId] =
     useState<TrailPageId>("dashboard");
@@ -87,7 +91,7 @@ export function TrailApp({
         {activePageId === "project" && (
           <ProjectPage
             project={data.projects[0]}
-            onMarkTaskDoing={onMarkTaskDoing}
+            onUpdateTaskStatus={onUpdateTaskStatus}
           />
         )}
 
@@ -191,15 +195,18 @@ function AreasPage({
 
 interface ProjectPageProps {
   project?: TrailProject;
-  onMarkTaskDoing: (task: TrailTask) => Promise<void>;
+  onUpdateTaskStatus: (
+    task: TrailTask,
+    targetStatus: TrailTaskStatus,
+  ) => Promise<void>;
 }
 
 function ProjectPage({
   project,
-  onMarkTaskDoing,
+  onUpdateTaskStatus,
 }: ProjectPageProps) {
-  const [pendingTaskId, setPendingTaskId] =
-    useState<string>();
+  const [pendingTaskIds, setPendingTaskIds] =
+    useState<Set<string>>(() => new Set());
   const [mutationError, setMutationError] =
     useState<string>();
 
@@ -212,14 +219,19 @@ function ProjectPage({
     );
   }
 
-  const markTaskDoing = async (
+  const updateTaskStatus = async (
     task: TrailTask,
+    targetStatus: TrailTaskStatus,
   ): Promise<void> => {
-    setPendingTaskId(task.id);
+    setPendingTaskIds((current) => {
+      const next = new Set(current);
+      next.add(task.id);
+      return next;
+    });
     setMutationError(undefined);
 
     try {
-      await onMarkTaskDoing(task);
+      await onUpdateTaskStatus(task, targetStatus);
     } catch (error: unknown) {
       setMutationError(
         error instanceof Error
@@ -227,7 +239,11 @@ function ProjectPage({
           : "Unknown Task update error.",
       );
     } finally {
-      setPendingTaskId(undefined);
+      setPendingTaskIds((current) => {
+        const next = new Set(current);
+        next.delete(task.id);
+        return next;
+      });
     }
   };
 
@@ -252,20 +268,11 @@ function ProjectPage({
               <p>
                 {task.title} ({task.status})
               </p>
-              {task.status === "todo" && (
-                <button
-                  type="button"
-                  aria-label={`Mark ${task.title} as doing`}
-                  disabled={pendingTaskId !== undefined}
-                  onClick={() => {
-                    void markTaskDoing(task);
-                  }}
-                >
-                  {pendingTaskId === task.id
-                    ? "Updating..."
-                    : "Mark doing"}
-                </button>
-              )}
+              <TaskStatusButton
+                task={task}
+                isPending={pendingTaskIds.has(task.id)}
+                onUpdateTaskStatus={updateTaskStatus}
+              />
               {task.subtasks.length > 0 && (
                 <>
                   <h5>Subtasks</h5>
@@ -317,6 +324,43 @@ function ProjectPage({
         </ul>
       )}
     </>
+  );
+}
+
+interface TaskStatusButtonProps {
+  task: TrailTask;
+  isPending: boolean;
+  onUpdateTaskStatus: TrailAppProps["onUpdateTaskStatus"];
+}
+
+function TaskStatusButton({
+  task,
+  isPending,
+  onUpdateTaskStatus,
+}: TaskStatusButtonProps) {
+  let targetStatus: TrailTaskStatus;
+
+  if (task.status === "todo") {
+    targetStatus = "doing";
+  } else if (task.status === "doing") {
+    targetStatus = "todo";
+  } else {
+    return null;
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={`Mark ${task.title} as ${targetStatus}`}
+      disabled={isPending}
+      onClick={() => {
+        void onUpdateTaskStatus(task, targetStatus);
+      }}
+    >
+      {isPending
+        ? "Updating..."
+        : `Mark ${targetStatus}`}
+    </button>
   );
 }
 

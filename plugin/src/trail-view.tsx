@@ -2,11 +2,11 @@ import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 
-import type { TrailTask } from "./domain/trail-model";
-import {
-  createObsidianTrailMutationSource,
-  updateTaskStatusInVault,
-} from "./domain/trail-mutation-service";
+import type {
+  TrailTask,
+  TrailTaskStatus,
+} from "./domain/trail-model";
+import type { TrailMutationQueue } from "./domain/trail-mutation-queue";
 import type { TrailRuntimeStore } from "./domain/trail-runtime-store";
 import { TrailApp } from "./trail-app";
 
@@ -19,6 +19,7 @@ export class TrailView extends ItemView {
   constructor(
     leaf: WorkspaceLeaf,
     private readonly runtimeStore: TrailRuntimeStore,
+    private readonly mutationQueue: TrailMutationQueue,
   ) {
     super(leaf);
   }
@@ -42,6 +43,7 @@ export class TrailView extends ItemView {
     const mountElement = this.contentEl.createDiv({
       cls: "trail-view__root",
     });
+
     this.root = createRoot(mountElement);
     this.unsubscribe = this.runtimeStore.subscribe(
       this.renderSnapshot,
@@ -54,23 +56,21 @@ export class TrailView extends ItemView {
   async onClose(): Promise<void> {
     this.unsubscribe?.();
     this.unsubscribe = null;
+
     this.root?.unmount();
     this.root = null;
+
     this.contentEl.empty();
   }
 
-  private readonly handleMarkTaskDoing = async (
+  private readonly handleUpdateTaskStatus = async (
     task: TrailTask,
+    targetStatus: TrailTaskStatus,
   ): Promise<void> => {
-    await updateTaskStatusInVault(
-      createObsidianTrailMutationSource(this.app),
-      {
-        expectedTask: task,
-        targetStatus: "doing",
-      },
-    );
-
-    await this.runtimeStore.refresh();
+    await this.mutationQueue.enqueueTaskStatus({
+      expectedTask: task,
+      targetStatus,
+    });
   };
 
   private readonly renderSnapshot = (): void => {
@@ -84,7 +84,7 @@ export class TrailView extends ItemView {
       <StrictMode>
         <TrailApp
           data={snapshot.data}
-          onMarkTaskDoing={this.handleMarkTaskDoing}
+          onUpdateTaskStatus={this.handleUpdateTaskStatus}
         />
       </StrictMode>,
     );

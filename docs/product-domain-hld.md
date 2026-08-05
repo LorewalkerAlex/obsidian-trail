@@ -1,7 +1,7 @@
 # Trail 产品与高层设计
 
 > 状态：当前设计基线<br>
-> 最后更新：2026-08-04<br>
+> 最后更新：2026-08-05<br>
 > 适用对象：个人使用<br>
 > 当前阶段：Product Brief、Domain Model 与 High-Level Design 已完成，正在通过真实 Obsidian Vault 逐步验证 Minimum Demo / POC<br>
 > 本文用途：替代此前过时的设计文档，作为后续 Technical Design、POC、LLD 和实施计划的共同基线
@@ -376,6 +376,7 @@ Trail-managed Markdown
 → Plugin-level Runtime Store
 → React UI
 → Domain Command
+→ Plugin-level Mutation Queue
 → Mutation Service
 → Obsidian File API
 → Store / File Event Reconciliation
@@ -386,6 +387,7 @@ Trail-managed Markdown
 - Trail 启动时扫描并解析自己的管理目录；
 - 插件层维护统一的内存数据模型，供 Dashboard、Areas、Project、Board、List、Modal 和 Fleeting Notes 共用；
 - React 组件只发出领域操作，不直接拼接或修改 Markdown；
+- Task 状态命令先进入插件级 Mutation Queue 串行执行，单个命令失败不会阻塞后续排队命令；
 - 同一 Project 文件作为一个完整聚合读取和校验；写回时由领域命令精确修改受影响对象，避免无关内容产生变化；
 - 普通 Note 的链接、打开和重命名兼容优先复用 Obsidian 官方能力；
 - 管理目录发生创建、修改、重命名或删除时，集中数据层重新解析受影响文件并更新 Store；
@@ -519,7 +521,7 @@ AI 不应默认：
 
 ## 8. Minimum Demo / POC
 
-当前已经完成读取、最小写回、Plugin-level Runtime Store 和文件事件 Reconciliation：
+当前已经完成读取、精确 Task 状态写回、Plugin-level Runtime Store、Task 状态 Mutation Queue 和文件事件 Reconciliation：
 
 - Obsidian Custom View 和 React 应用可以正常加载；
 - 四个顶层页面可以切换；
@@ -531,9 +533,11 @@ AI 不应默认：
 - Task Writer 可以按 UUID 在最新文件内容中重新定位对象、校验完整 Task Block Fingerprint，并只修改目标 Task 标题行；
 - 状态写回会同步规范化 checkbox 和 `completed`，并执行父 Task 完成约束；
 - Mutation Service 可以通过 `Vault.process()` 原子写入并重新解析确认；
-- Project 页面可以将一个既有 `todo` Task 更新为 `doing`；
-- 插件入口维护唯一 Runtime Store，Trail View 共享同一份已确认 Snapshot；
+- Project 页面可以在既有 Task 的 `todo` 与 `doing` 之间双向转移，并按 Task 显示短暂 Pending 状态；
+- 插件入口维护唯一 Runtime Store 和 Task 状态 Mutation Queue；Trail View 订阅统一的已确认 Snapshot，并将状态命令提交到 Queue；
+- Queue 按进入顺序串行执行状态命令，单个命令失败后仍会继续处理后续命令，插件卸载时拒绝尚未开始的排队命令；
 - 刷新期间保留上一份数据，并对连续刷新请求和文件事件进行合并与防抖；
+- Mutation 写回后的主动刷新会取消尚未执行的文件事件防抖刷新，避免同一次写入再触发一次延迟全量读取；
 - `create / modify / delete / rename` 可以驱动打开中的 Trail 页面自动收敛；
 - 外部逐字修改 Task 标题时 UI 自动同步；
 - 删除 Project 文件后 Area 仍保留，恢复文件后 Project 与 Task 自动恢复；
@@ -541,13 +545,14 @@ AI 不应默认：
 - Trail 自身写回后没有可见闪回；
 - Trail 管理范围外的普通 Markdown 修改不会改变 Trail 数据；
 - 重新加载插件后，写入后的状态仍能从 Markdown 恢复；
+- 重复使用 Ribbon 或 `Trail: Open` 会激活已有 Trail View；关闭后可以重新创建唯一 Trail View；
 - 实机字节比较确认除目标 Task 的状态字段外没有其他内容变化；
 - 验证结束后 Fixture 已精确恢复；
-- 本地 ESLint、7 个测试文件中的 42 个自动化测试、TypeScript typecheck 和生产构建通过。
+- 本地 ESLint、8 个测试文件中的 48 个自动化测试、TypeScript typecheck 和生产构建通过。
 
-Fleeting Note、Modal、Board、全局 Mutation Queue、通用状态操作、乐观 UI、失败回滚和恢复机制仍属于后续 POC 范围。当前文件事件实现采用防抖后的全量 Trail Vault 重读，增量 Reconciliation 和更精确的自身事件去重留待后续数据规模验证。
+Fleeting Note、Modal、Board、最终 Task 状态与转换规则、其他 Mutation 类型、跨文件操作、乐观 UI、失败回滚和恢复机制仍属于后续 POC 范围。当前文件事件实现采用防抖后的全量 Trail Vault 重读，增量 Reconciliation 和更精确的自身事件去重留待后续数据规模验证。
 
-完整 Minimum Demo 的验证范围如下；其中读取链路、既有 Task `todo → doing` 的单次精确写回、Plugin-level Runtime Store 和基础文件事件 Reconciliation 已经完成，其余写回与交互部分仍待验证：
+完整 Minimum Demo 的验证范围如下；其中读取链路、既有 Task `todo ↔ doing` 的串行精确写回、Plugin-level Runtime Store、Task 状态 Mutation Queue、基础文件事件 Reconciliation 和 Trail View 单实例激活已经完成，其余写回与交互部分仍待验证：
 
 - 打开一个完整的 Obsidian Custom View；
 - 使用 React + TypeScript 渲染 Trail；

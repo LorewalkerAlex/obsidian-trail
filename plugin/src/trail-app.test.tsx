@@ -102,15 +102,39 @@ const todoData: TrailVaultReadResult = {
   ],
 };
 
+const secondTodoTask: TrailTask = {
+  ...todoTask,
+  id: "8c774a86-54aa-48d3-9010-99372d0738fc",
+  title: "Test the mutation queue",
+  source: {
+    ...todoTask.source,
+    startOffset: 200,
+    endOffset: 300,
+  },
+};
+
+const twoTodoTaskData: TrailVaultReadResult = {
+  ...data,
+  projects: [
+    {
+      ...data.projects[0],
+      tasks: [
+        todoTask,
+        secondTodoTask,
+      ],
+    },
+  ],
+};
+
 function renderTrailApp(
   appData: TrailVaultReadResult = data,
-  onMarkTaskDoing: TrailAppProps["onMarkTaskDoing"] =
+  onUpdateTaskStatus: TrailAppProps["onUpdateTaskStatus"] =
     () => Promise.resolve(),
 ): void {
   render(
     <TrailApp
       data={appData}
-      onMarkTaskDoing={onMarkTaskDoing}
+      onUpdateTaskStatus={onUpdateTaskStatus}
     />,
   );
 }
@@ -214,12 +238,12 @@ describe("TrailApp", () => {
     ).toBeInTheDocument();
   });
 
-  it("requests a todo Task status update", async () => {
-    const onMarkTaskDoing = vi.fn(
+  it("requests a todo to doing Task status update", async () => {
+    const onUpdateTaskStatus = vi.fn(
       () => Promise.resolve(),
     );
 
-    renderTrailApp(todoData, onMarkTaskDoing);
+    renderTrailApp(todoData, onUpdateTaskStatus);
     openProjectPage();
 
     fireEvent.click(
@@ -229,21 +253,95 @@ describe("TrailApp", () => {
     );
 
     await waitFor(() => {
-      expect(onMarkTaskDoing).toHaveBeenCalledOnce();
+      expect(onUpdateTaskStatus).toHaveBeenCalledOnce();
     });
-    expect(onMarkTaskDoing).toHaveBeenCalledWith(
+    expect(onUpdateTaskStatus).toHaveBeenCalledWith(
       todoTask,
+      "doing",
     );
   });
 
+  it("requests a doing to todo Task status update", async () => {
+    const onUpdateTaskStatus = vi.fn(
+      () => Promise.resolve(),
+    );
+    const doingTask = data.projects[0].tasks[0];
+
+    renderTrailApp(data, onUpdateTaskStatus);
+    openProjectPage();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Mark Build the Trail parser as todo",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(onUpdateTaskStatus).toHaveBeenCalledOnce();
+    });
+    expect(onUpdateTaskStatus).toHaveBeenCalledWith(
+      doingTask,
+      "todo",
+    );
+  });
+
+  it("keeps another Task action available while one is pending", async () => {
+    let resolveFirstUpdate:
+      | (() => void)
+      | undefined;
+
+    const firstUpdate = new Promise<void>((resolve) => {
+      resolveFirstUpdate = resolve;
+    });
+    const onUpdateTaskStatus = vi.fn()
+      .mockReturnValueOnce(firstUpdate)
+      .mockResolvedValueOnce(undefined);
+
+    renderTrailApp(
+      twoTodoTaskData,
+      onUpdateTaskStatus,
+    );
+    openProjectPage();
+
+    const firstButton = screen.getByRole("button", {
+      name: "Mark Build the Trail parser as doing",
+    });
+    const secondButton = screen.getByRole("button", {
+      name: "Mark Test the mutation queue as doing",
+    });
+
+    fireEvent.click(firstButton);
+
+    expect(firstButton).toBeDisabled();
+    expect(secondButton).toBeEnabled();
+
+    fireEvent.click(secondButton);
+
+    await waitFor(() => {
+      expect(onUpdateTaskStatus).toHaveBeenCalledTimes(2);
+    });
+
+    if (!resolveFirstUpdate) {
+      throw new Error(
+        "The first Task update did not start.",
+      );
+    }
+
+    resolveFirstUpdate();
+
+    await waitFor(() => {
+      expect(firstButton).toBeEnabled();
+    });
+  });
+
   it("shows a Task update failure", async () => {
-    const onMarkTaskDoing = vi.fn(
+    const onUpdateTaskStatus = vi.fn(
       () => Promise.reject(
         new Error("The task changed after it was read."),
       ),
     );
 
-    renderTrailApp(todoData, onMarkTaskDoing);
+    renderTrailApp(todoData, onUpdateTaskStatus);
     openProjectPage();
 
     fireEvent.click(

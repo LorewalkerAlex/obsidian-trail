@@ -165,6 +165,29 @@ describe("Trail runtime store", () => {
     expect(store.getSnapshot().data).toBe(refreshedData);
   });
 
+  it("cancels a scheduled file-event refresh when refreshing directly", async () => {
+    vi.useFakeTimers();
+
+    const initialData = createData("initial");
+    const refreshedData = createData("refreshed");
+    const readData = vi.fn()
+      .mockResolvedValueOnce(initialData)
+      .mockResolvedValueOnce(refreshedData);
+    const store = new TrailRuntimeStore(readData, 50);
+
+    await store.initialize();
+
+    store.scheduleRefresh();
+    await store.refresh();
+
+    expect(readData).toHaveBeenCalledTimes(2);
+    expect(store.getSnapshot().data).toBe(refreshedData);
+
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(readData).toHaveBeenCalledTimes(2);
+  });
+
   it("publishes a structured issue when the Vault read fails", async () => {
     const store = new TrailRuntimeStore(
       () => Promise.reject(new Error("Read failed.")),

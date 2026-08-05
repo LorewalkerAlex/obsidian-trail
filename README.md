@@ -12,11 +12,11 @@ The active POC branch is:
 poc/plugin-shell
 ~~~
 
-The current POC has established the plugin shell, Markdown reading, minimal Task status write-back, a plugin-level Runtime Store, and Vault file-event reconciliation. Trail discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the shared Store snapshot in the custom `ItemView`.
+The current POC has established the plugin shell, Markdown reading, precise Task status write-back, a plugin-level Runtime Store, a plugin-level global Mutation Queue for Task status changes, and Vault file-event reconciliation. Trail discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the confirmed Store snapshot in a single Trail `ItemView`.
 
 The plugin listens for relevant `create`, `modify`, `delete`, and `rename` events under `Trail/Areas/`, debounces refreshes, and ignores unrelated or nested files outside the managed scope. External Markdown changes, Project file creation, deletion, and rename now update an open Trail view without reopening it.
 
-On the Project page, a temporary `Mark doing` action can change an existing `todo` Task to `doing`. The write path relocates the Task by UUID in the latest file content, verifies its source Fingerprint, applies a minimal title-line replacement through `Vault.process()`, reparses the written Markdown, and reconciles the shared Runtime Store.
+On the Project page, temporary `Mark doing` and `Mark todo` actions can move an existing Task between `todo` and `doing`. Each Task shows pending feedback while its command enters the plugin-level serial queue. The write path relocates the Task by UUID in the latest file content, verifies its source Fingerprint, applies a minimal title-line replacement through `Vault.process()`, reparses the written Markdown, and reconciles the shared Runtime Store.
 
 ## Git worktrees
 
@@ -138,13 +138,14 @@ npm run check
 2. Run `npm run build`, or keep `npm run dev` active during development.
 3. Enable Trail under **Settings → Community plugins**.
 4. Open Trail from the Ribbon or run the **Trail: Open** command.
-5. Reload Trail after rebuilding when Obsidian still has an older build loaded.
+5. Opening Trail again should reveal the existing Trail view instead of creating another Trail view.
+6. Reload Trail after rebuilding when Obsidian still has an older build loaded.
 
 With the checked-in fixture, the Dashboard should show `1 Area · 1 Project · 3 Tasks`.
 
 While Trail is open, editing a managed Project Markdown file should update the view automatically. Creating, deleting, or renaming a direct Project file under `Trail/Areas/<Area>/` should also reconcile the displayed data, while unrelated Markdown outside the managed scope should not affect Trail.
 
-On the Project page, a `todo` Task exposes the temporary `Mark doing` action. Clicking it should change only the Task metadata status from `todo` to `doing`, keep the checkbox unchecked, refresh the shared Store without a visible flashback, and remain `doing` after reloading Trail. Restore the checked-in fixture before committing.
+On the Project page, `todo` and `doing` Tasks expose temporary `Mark doing` and `Mark todo` actions. Clicking either action may show `Updating...` briefly, should change only the Task status metadata, keep the checkbox unchecked, pass the write through the plugin-level serial queue, and refresh the shared Store without a visible flashback. Test both directions and restore the checked-in fixture before committing.
 
 ## Continuous integration
 
