@@ -12,11 +12,13 @@ The active POC branch is:
 poc/plugin-shell
 ~~~
 
-The current POC has established the plugin shell, Markdown reading, precise Task status write-back, a plugin-level Runtime Store, a plugin-level generic global Mutation Queue, and Vault file-event reconciliation. Task status changes are the first command type routed through that Queue. Trail discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the confirmed Store snapshot in a single Trail `ItemView`.
+The current POC has established the plugin shell, Markdown reading, precise Task status write-back, a plugin-level Runtime Store with a mutation refresh boundary, a plugin-level generic global Mutation Queue, Vault file-event reconciliation, and a representative domain/service-level cross-file Mutation. Task status changes remain the first command type routed through the plugin entrypoint. Trail discovers checked-in fixtures under `Trail/`, parses Area, Project, Task, Subtask, Task Note, and Project Note data, and renders the confirmed Store snapshot in a single Trail `ItemView`. A standalone Fleeting Note parser and writer are also verified, but Fleeting Notes are not yet part of the Runtime Store read path or UI.
 
-The plugin listens for relevant `create`, `modify`, `delete`, and `rename` events under `Trail/Areas/`, debounces refreshes, and ignores unrelated or nested files outside the managed scope. External Markdown changes, Project file creation, deletion, and rename now update an open Trail view without reopening it.
+The plugin listens for relevant `create`, `modify`, `delete`, and `rename` events under `Trail/Areas/`, debounces refreshes, and ignores unrelated or nested files outside the managed scope. External Markdown changes, Project file creation, deletion, and rename now update an open Trail view without reopening it. While a queued Mutation is running, the Runtime Store suppresses file-event refreshes and performs one final reconciliation after the Mutation finishes, including failure paths.
 
 On the Project page, temporary `Mark doing` and `Mark todo` actions can move an existing Task between `todo` and `doing`. Each Task shows pending feedback while a typed update callback submits its command to the plugin-level serial queue. The write path relocates the Task by UUID in the latest file content, verifies its source Fingerprint, applies a minimal title-line replacement through `Vault.process()`, reparses the written Markdown, and reconciles the shared Runtime Store.
+
+The representative cross-file POC converts a Fleeting Note into a new `backlog` / `medium` Task with a new UUID, confirms the target write, removes the source record, and compensates the created Task if source removal fails. It distinguishes `unchanged`, `compensated`, and `partial` failure outcomes. This path is covered by automated domain and Vault-service tests but is not yet exposed through the plugin entrypoint or UI.
 
 ## Git worktrees
 
@@ -147,7 +149,7 @@ With the checked-in fixture, the Dashboard should show `1 Area · 1 Project · 3
 
 While Trail is open, editing a managed Project Markdown file should update the view automatically. Creating, deleting, or renaming a direct Project file under `Trail/Areas/<Area>/` should also reconcile the displayed data, while unrelated Markdown outside the managed scope should not affect Trail.
 
-On the Project page, `todo` and `doing` Tasks expose temporary `Mark doing` and `Mark todo` actions. Clicking either action may show `Updating...` briefly, should change only the Task status metadata, keep the checkbox unchecked, pass the write through the plugin-level serial queue, and refresh the shared Store without a visible flashback. Test both directions and restore the checked-in fixture before committing.
+On the Project page, `todo` and `doing` Tasks expose temporary `Mark doing` and `Mark todo` actions. Clicking either action may show `Updating...` briefly, should change only the Task status metadata, keep the checkbox unchecked, pass the write through the plugin-level serial queue, and refresh the shared Store without a visible flashback. Test both directions and restore the checked-in fixture before committing. The Fleeting Note conversion POC currently has no Obsidian command or UI entrypoint, so its host-level end-to-end test belongs to the next integration step.
 
 ## Continuous integration
 

@@ -16,9 +16,11 @@ import {
   TrailView,
   type TrailTaskStatusUpdater,
 } from "./trail-view";
+
 export default class TrailPlugin extends Plugin {
   private runtimeStore: TrailRuntimeStore | null = null;
   private mutationQueue: TrailMutationQueue | null = null;
+
   onload(): void {
     const source = createObsidianTrailSource(this.app);
     const runtimeStore = new TrailRuntimeStore(
@@ -31,17 +33,17 @@ export default class TrailPlugin extends Plugin {
       task,
       targetStatus,
     ): Promise<void> => {
-      await mutationQueue.enqueue(async () => {
-        await updateTaskStatusInVault(
-          mutationSource,
-          {
-            expectedTask: task,
-            targetStatus,
-          },
-        );
-
-        await runtimeStore.refresh();
-      });
+      await mutationQueue.enqueue(() =>
+        runtimeStore.runMutation(async () => {
+          await updateTaskStatusInVault(
+            mutationSource,
+            {
+              expectedTask: task,
+              targetStatus,
+            },
+          );
+        }),
+      );
     };
 
     this.runtimeStore = runtimeStore;
@@ -63,6 +65,7 @@ export default class TrailPlugin extends Plugin {
 
       this.registerVaultReconciliation(runtimeStore);
     });
+
     this.addRibbonIcon("route", "Open trail", () => {
       void this.activateView();
     });
@@ -79,10 +82,10 @@ export default class TrailPlugin extends Plugin {
   onunload(): void {
     this.mutationQueue?.dispose();
     this.mutationQueue = null;
-
     this.runtimeStore?.dispose();
     this.runtimeStore = null;
   }
+
   private registerVaultReconciliation(
     runtimeStore: TrailRuntimeStore,
   ): void {
@@ -97,7 +100,6 @@ export default class TrailPlugin extends Plugin {
         scheduleForPath(file.path);
       }),
     );
-
     this.registerEvent(
       this.app.vault.on("modify", (file) => {
         scheduleForPath(file.path);
@@ -108,7 +110,6 @@ export default class TrailPlugin extends Plugin {
         scheduleForPath(file.path);
       }),
     );
-
     this.registerEvent(
       this.app.vault.on("rename", (file, oldPath) => {
         if (
@@ -120,6 +121,7 @@ export default class TrailPlugin extends Plugin {
       }),
     );
   }
+
   private async activateView(): Promise<void> {
     const { workspace } = this.app;
     let leaf = workspace.getLeavesOfType(
@@ -128,7 +130,6 @@ export default class TrailPlugin extends Plugin {
 
     if (!leaf) {
       leaf = workspace.getLeaf("tab");
-
       await leaf.setViewState({
         type: TRAIL_VIEW_TYPE,
         active: true,

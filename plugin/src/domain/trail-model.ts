@@ -74,6 +74,14 @@ export interface TrailTask {
   source: TrailSourceRange;
 }
 
+export interface TrailFleetingNote {
+  id: string;
+  text: string;
+  created: string;
+  cleanupDue?: string;
+  source: TrailSourceRange;
+}
+
 export interface TrailSubtask {
   text: string;
   completed: boolean;
@@ -89,7 +97,8 @@ export interface TrailProjectNote {
 
 export type TrailParseIssueScope =
   | "file"
-  | "task";
+  | "task"
+  | "fleeting";
 
 export interface TrailParseIssue {
   scope: TrailParseIssueScope;

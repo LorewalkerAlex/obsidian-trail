@@ -27,6 +27,7 @@ export class TrailRuntimeStore {
   private refreshPromise: Promise<void> | null = null;
   private refreshRequested = false;
   private scheduledRefresh: number | null = null;
+  private mutationDepth = 0;
   private disposed = false;
 
   constructor(
@@ -73,7 +74,6 @@ export class TrailRuntimeStore {
     }
 
     this.cancelScheduledRefresh();
-
     if (this.refreshPromise) {
       this.refreshRequested = true;
       return this.refreshPromise;
@@ -90,7 +90,10 @@ export class TrailRuntimeStore {
   }
 
   scheduleRefresh(): void {
-    if (this.disposed) {
+    if (
+      this.disposed
+      || this.mutationDepth > 0
+    ) {
       return;
     }
 
@@ -99,6 +102,33 @@ export class TrailRuntimeStore {
       this.scheduledRefresh = null;
       void this.refresh();
     }, this.refreshDelayMs);
+  }
+
+  async runMutation<Result>(
+    mutation: () => Promise<Result>,
+  ): Promise<Result> {
+    if (this.disposed) {
+      throw new Error("Trail runtime store is disposed.");
+    }
+
+    this.mutationDepth += 1;
+    this.cancelScheduledRefresh();
+
+    try {
+      if (this.refreshPromise) {
+        await this.refreshPromise;
+      }
+
+      return await mutation();
+    } finally {
+      this.mutationDepth -= 1;
+      if (
+        this.mutationDepth === 0
+        && !this.disposed
+      ) {
+        await this.refresh();
+      }
+    }
   }
 
   dispose(): void {
@@ -114,7 +144,6 @@ export class TrailRuntimeStore {
   private async runRefresh(): Promise<void> {
     try {
       const data = await this.readData();
-
       if (!this.disposed) {
         this.setSnapshot({
           data,
@@ -132,7 +161,6 @@ export class TrailRuntimeStore {
       }
     } finally {
       this.refreshPromise = null;
-
       if (
         this.refreshRequested
         && !this.disposed
