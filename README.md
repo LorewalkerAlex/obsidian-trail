@@ -121,6 +121,7 @@ npm run test
 npm run test:run
 npm run typecheck
 npm run build
+npm run bench:vault
 npm run check
 ~~~
 
@@ -130,6 +131,7 @@ npm run check
 - `npm run test:run` runs the test suite once.
 - `npm run typecheck` checks TypeScript without generating files.
 - `npm run build` type-checks and creates a production plugin build.
+- `npm run bench:vault` runs the repeatable full-read benchmark without adding it to the normal test or CI path.
 - `npm run check` runs lint, tests, type-checking, and the production build.
 
 ## Testing in Obsidian

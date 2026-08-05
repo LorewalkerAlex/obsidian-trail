@@ -4,7 +4,7 @@
 > 最后更新：2026-08-05<br>
 > 适用对象：个人使用<br>
 > 上游基线：`./product-domain-hld.md`<br>
-> 当前目标：以已验证的 Plugin-level Runtime Store、文件事件 Reconciliation 与 Task 状态 Mutation Queue 为起点，继续验证代表性跨文件 Mutation、正常数据规模边界和正式交互方案
+> 当前目标：以已验证的 Plugin-level Runtime Store、文件事件 Reconciliation、Task 状态 Mutation Queue 与正常数据规模边界为起点，继续验证代表性跨文件 Mutation 和正式交互方案
 
 ## 1. 文档边界
 
@@ -65,6 +65,8 @@
 - Trail 管理范围外的普通 Markdown 修改不会改变 Trail 数据；
 - 插件 disable / enable 或重新加载后，Store 和 Queue 可以正常重建；
 - 实机写回后的文件与“只替换目标状态字段”生成的预期文件 SHA-256 完全一致；
+- 内存基准中，20 Areas、500 Projects、10,000 Tasks 的全量读取平均约 98 ms；40 Areas、1,000 Projects、25,000 Tasks 的压力场景平均约 519 ms；
+- 通过 Obsidian Vault API 创建 20 Areas、500 Projects 和 10,000 Tasks 后，最后一个文件创建完成约 251 ms 后 UI 自动收敛，插件重载与批量清理均正常；
 - 验证结束后 Fixture 已按原始 SHA-256 精确恢复。
 
 当前尚未实现或验证：
@@ -72,7 +74,6 @@
 - Fleeting Note Parser；
 - 最终 Task 状态模型、完整状态入口和其他 Mutation 类型；
 - 代表性跨文件 Mutation 与中途失败处理；
-- 正常数据规模下全量重读的性能边界；
 - 乐观 UI 与失败回滚；
 - 受影响文件级增量 Reconciliation 和更精确的自身事件去重；
 - Task Modal、Board 和拖拽；
@@ -1113,13 +1114,21 @@ Trail/Areas/<Area>/<File>.md
 - Project 文件创建、删除和重命名后 UI 自动收敛；
 - 无关 Markdown 修改不会改变 Trail 数据。
 
-主动刷新与防抖刷新协调已经通过自动化测试。受影响文件级增量解析、更精确的自身事件标识与性能阈值留到数据规模验证后决定。
+主动刷新与防抖刷新协调已经通过自动化测试。正常数据规模验证未显示需要提前引入受影响文件级增量解析；更精确的自身事件标识仍由后续真实交互问题驱动。
+
+### 15.6 正常数据规模验证
+
+`npm run bench:vault` 提供可重复的全量读取基准，但不加入日常测试或 CI 硬阈值。当前公司电脑上，10,000 Tasks 场景平均约 98 ms，25,000 Tasks 压力场景平均约 519 ms。
+
+真实 Obsidian 验证通过 Vault API 创建 20 Areas、500 Projects 和 10,000 Tasks。最后一个文件创建完成约 251 ms 后，Trail 自动收敛到正确数量且没有 Data issues；插件 disable / enable、页面切换和通过 Vault API 批量清理均正常。
+
+当前继续保留防抖后的全量 Trail Vault 重读。只有未来真实交互或更大数据规模出现明确阻塞时，才进入增量解析和局部 Store 更新设计。
 
 ## 16. Minimum Demo / POC 验证清单
 
 以下为同一个完整 POC 的优先级清单，不拆成多个产品阶段。
 
-当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、Task 状态 Mutation Queue、Queue 串行与失败隔离、`todo ↔ doing` 双向状态转移、每 Task Pending 状态、Trail View 单实例激活、自身写回无可见闪回以及插件重载后从 Markdown 恢复状态。
+当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task 解析、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、Task 状态 Mutation Queue、Queue 串行与失败隔离、`todo ↔ doing` 双向状态转移、每 Task Pending 状态、Trail View 单实例激活、自身写回无可见闪回、插件重载后从 Markdown 恢复状态，以及正常数据规模下的全量读取与真实 Obsidian 收敛验证。
 
 尚未完成的条目仍保留在同一清单中，不因最小写回和文件事件 Reconciliation 通过而视为完整 POC 已通过。
 
@@ -1230,7 +1239,8 @@ POC 通过至少需要满足：
 → 已完成：Vault.process() Mutation Service、写后重新解析与 todo ↔ doing UI 实机验证
 → 已完成：Plugin-level Runtime Store、文件事件 Reconciliation 与刷新协调
 → 已完成：Plugin-level Task 状态 Mutation Queue、串行失败隔离、每 Task Pending 与 Trail View 单实例验证
-→ 下一步：验证代表性跨文件 Mutation 与正常数据规模下的全量重读边界
+→ 已完成：正常数据规模下的全量读取 Benchmark、真实 Obsidian 收敛、重载与清理验证
+→ 下一步：验证代表性跨文件 Mutation 与中途失败处理
 → 实现乐观 UI、失败回滚和 Project Board / List
 → 实现 Task Detail Modal
 → 实现 Fleeting Note 与 Trash 薄链路
