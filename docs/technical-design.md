@@ -4,7 +4,7 @@
 > 最后更新：2026-08-06<br>
 > 适用对象：个人使用<br>
 > 上游基线：`./product-domain-hld.md`<br>
-> 当前目标：以已完成的 Fleeting Note → Task、Archive、Delete to Trash、Restore、生命周期 `partial` 暴露与人工恢复为当前基线，推进下一项完整 Fleeting Notes 功能切片
+> 当前目标：以已完成的 Fleeting Note → Task / Project、Archive、Delete to Trash、Restore、代表性 `partial` 暴露与人工恢复为当前基线，推进 Quick Capture 与 Fleeting Note 创建 / 编辑闭环
 
 ## 1. 文档边界
 
@@ -41,30 +41,31 @@
 - 纯 TypeScript Parser 可以解析 Area、Project、Task、Subtask、Task Note 和 Project Note；
 - Fleeting Note Parser 可以解析顶层列表、UUID、`created`、可选 `cleanup_due`、精确源码范围和 Fingerprint，并隔离损坏对象；Active、Archive 和 Trash 三个 Fleeting Note 生命周期文件均已接入 Vault 读取与 Runtime Store；
 - 典型对象级和文件级异常可以隔离并形成结构化 issue；
-- Dashboard、Areas、Project 和 Fleeting Notes 页面可以展示真实解析结果；Fleeting Notes 使用 Active、Archived、Trash 卡片分区，提供目标 Project 选择、`Convert to Task`、Archive、Delete 和 Restore，并按原始 `created` 稳定排序；
+- Dashboard、Areas、Project 和 Fleeting Notes 页面可以展示真实解析结果；Fleeting Notes 使用 Active、Archived、Trash 卡片分区，提供目标 Area、可编辑 Project 名称、目标 Project、`Convert to Project`、`Convert to Task`、Archive、Delete 和 Restore，并按原始 `created` 稳定排序；
 - Task Writer 可以在最新 Markdown 中按 UUID 重新定位 Task、校验完整 Task Block Fingerprint，并只替换目标 Task 标题行；
 - Task 状态写回会同步规范化 checkbox 和 `completed`，并在存在未完成 Subtask 时拒绝完成父 Task；
 - Task Creation Writer 可以创建默认 `backlog / medium` Task，支持相同命令幂等重试，并按 UUID 与 Fingerprint 精确撤销刚创建的 Task；
+- Project Creation Service 可以在目标 Area 下创建新的 `planned` Project，生成新 UUID 与 `YYYY-MM-DD` 创建日期，将 Fleeting Note 文本写入 `Overview`，生成标准 `Overview / Tasks / Notes` 结构，校验 Windows 文件名与同名文件 / 文件夹冲突，重新读取并解析确认结果；补偿只删除内容仍与创建快照一致的 Project，并通过 `FileManager.trashFile()` 遵循用户的删除偏好；
 - Fleeting Note Writer 可以在最新 Markdown 中重新定位并删除预期记录，已不存在时视为幂等成功，内容变化或 UUID 重复时拒绝写回；生命周期 Writer 可以向 Archive、Trash 或 Active 文件追加完整记录、保留 UUID / `created` / `cleanup_due`，并写入 `archived_at` 或 `deleted_at`；
 - Mutation Service 使用 `Vault.process()` 原子修改文件，并重新解析其返回的 Markdown 确认 Task 状态、Task 创建、创建补偿和 Fleeting Note 删除结果；
-- 代表性 `ConvertFleetingToTask` Command 已组合“创建目标 Task → 删除来源 Fleeting Note → 来源失败时补偿目标 Task”，并使用新 Task UUID；Archive、Delete to Trash 和 Restore Command 复用同一跨文件执行器，并保留 Fleeting Note UUID；
+- `ConvertFleetingToTask` 与 `ConvertFleetingToProject` Command 均组合“创建并确认新目标 → 删除来源 Fleeting Note → 来源失败时补偿目标”，并为新对象生成独立 UUID；Archive、Delete to Trash 和 Restore Command 复用同一跨文件执行器，并保留 Fleeting Note UUID；
 - 跨文件执行器明确区分 `unchanged`、`compensated` 和 `partial` 结果，补偿失败时保留可人工处理的部分结果和原始错误信息；
-- 插件入口创建唯一的 Plugin-level Runtime Store 和通用全局 Mutation Queue，并接入 Task 状态修改、`ConvertFleetingToTask`、Archive、Delete to Trash 和 Restore；
+- 插件入口创建唯一的 Plugin-level Runtime Store 和通用全局 Mutation Queue，并接入 Task 状态修改、`ConvertFleetingToTask`、`ConvertFleetingToProject`、Archive、Delete to Trash 和 Restore；
 - Queue 接受任意返回类型的异步 Mutation Command，严格按进入顺序串行执行，单个命令失败不会阻塞后续命令；
 - 插件卸载时，尚未开始的排队命令会被拒绝；
 - Project 页面提供临时 `Mark doing` 和 `Mark todo` 操作，可以在既有 Task 的 `todo` 与 `doing` 之间双向转移；
-- Trail View 只接收类型化的 Task 状态更新、Fleeting Note 转换、Archive、Delete 和 Restore 函数，不直接持有或调用 Queue；
+- Trail View 只接收类型化的 Task 状态更新、Fleeting Note → Task / Project 转换、Archive、Delete 和 Restore 函数，不直接持有或调用 Queue；
 - UI 按 Task 显示短暂 Pending 状态，不提前改变 Store 中的已确认状态；
 - UI 允许不同 Task 的状态操作分别提交，Queue 单元测试确认它们按进入顺序串行执行；
 - Trail View 采用单实例打开方式，重复使用 Ribbon 或 `Trail: Open` 会激活已有 View；
 - Store 支持一次性初始化、主动刷新、刷新期间保留上一份已确认数据、并发刷新尾随合并、文件事件防抖、Mutation 边界和销毁清理；
 - `runMutation()` 会取消已安排的文件事件刷新、等待正在进行的刷新结束、在 Mutation 期间抑制新的事件刷新，并在最外层 Mutation 成功或失败后统一刷新一次；
-- Task 状态 Command、`ConvertFleetingToTask` 与 Fleeting Note 生命周期 Command 均使用该 Mutation 边界，避免正常路径在写回期间暴露中间 Store Snapshot；
+- Task 状态 Command、`ConvertFleetingToTask`、`ConvertFleetingToProject` 与 Fleeting Note 生命周期 Command 均使用该 Mutation 边界，避免正常路径在写回期间暴露中间 Store Snapshot；
 - Vault 在布局完成后监听 `create / modify / delete / rename`，只对 `Trail/Areas/` 管理范围、三个 Fleeting Note 生命周期文件或相关目录安排刷新；
 - `rename` 同时检查新旧路径，Trail 范围外、嵌套过深和非 Markdown 文件不会触发数据刷新；
 - 当前事件处理采用防抖后的全量 Trail Vault 重读，而不是受影响文件的增量解析；
-- 本地 ESLint、19 个测试文件中的 125 个自动化测试、TypeScript typecheck 和生产构建通过；
-- Windows Desktop Obsidian 实机读取、Mutation 边界接入后的 `todo ↔ doing` 状态写回、Fleeting Note → Task 成功转换、Archive、Delete to Trash、Restore、文件事件 Reconciliation、Trail View 单实例激活和插件重新加载成功；
+- 本地 ESLint、23 个测试文件中的 148 个自动化测试、TypeScript typecheck 和生产构建通过；
+- Windows Desktop Obsidian 实机读取、Mutation 边界接入后的 `todo ↔ doing` 状态写回、Fleeting Note → Task / Project 成功转换、Archive、Delete to Trash、Restore、文件事件 Reconciliation、Trail View 单实例激活和插件重新加载成功；
 - `Updating...` Pending 状态在实机写回时短暂出现；
 - 外部逐字修改 Task 标题时，打开中的 Project 页面可以自动同步；
 - Project 文件的创建、删除和重命名可以自动更新 Areas 与 Project 页面；
@@ -78,12 +79,13 @@
 - Fleeting Notes 已完成 Active / Archive / Trash 固定文件发现、Vault 读取、Runtime Store Snapshot、文件事件 Reconciliation、卡片式生命周期 UI、按 `created` 稳定排序和真实 Obsidian 自动收敛验证；
 - 代表性跨文件 Command 已接入插件级 Queue 与 `runtimeStore.runMutation()`，真实 Obsidian 成功路径验证通过；转换完成后 Note 消失、Task 出现在目标 Project，且不需要重载插件消除 Data issues；
 - 通过临时拦截宿主 `Vault.process()` 的故障注入，真实 Obsidian 已验证目标创建失败返回 `unchanged`、来源删除失败且目标补偿成功返回 `compensated`、来源删除与目标补偿同时失败返回 `partial`；三种结果均由 Runtime Store 最终刷新收敛到磁盘真实状态，且未出现 Frontmatter Data issues；
-- `partial` 结果会在 UI 中明确提示并阻止直接重试；Fleeting Note → Task 与生命周期 Archive 的代表性 `partial` 均已完成真实宿主验证。生命周期 `partial` 会保留 Active 与 Archived 中的同 UUID 记录并报告 Data issue；人工删除重复目标记录、重新打开 Trail View 后可以恢复正常操作，后续 Delete / Restore 也证明 Queue 未被前一失败阻塞。
+- `partial` 结果会在 UI 中明确提示并阻止直接重试；Fleeting Note → Task、Fleeting Note → Project 与生命周期 Archive 的代表性 `partial` 均已完成真实宿主验证。生命周期 `partial` 会保留 Active 与 Archived 中的同 UUID 记录并报告 Data issue；Project 转换 `partial` 会保留来源 Note 与新 Project，但两者使用不同 UUID。人工删除重复目标记录或新 Project、重新打开 Trail View 后可以恢复正常操作，后续 Delete / Restore 或另一条 Project 转换也证明 Queue 未被前一失败阻塞。
+- Fleeting Note → Project 真实宿主验证覆盖：建议名称与手动编辑、默认目标 Area、创建 `planned` Project、标准 Frontmatter 与 `Overview / Tasks / Notes`、Overview 保留来源文本、目标路径冲突返回 `unchanged` 且不覆盖既有 Project、代表性 `partial`、人工回滚目标文件、无需重载插件的正常重试、Runtime Store 自动收敛，以及 `partial` 后后续 Project 转换继续执行；测试结束后所有临时 Developer Console Hook 已确认恢复为 `undefined`。
 
 当前尚未实现或验证：
 
 - `partial` 的产品化人工恢复入口，以及人工修复后无需重新打开 View 的交互状态清理；
-- `ConvertFleetingToProject`、Quick Capture、Fleeting Note 创建 / 编辑和其他 Fleeting Note Mutation；
+- Quick Capture、Fleeting Note 创建 / 编辑和其他尚未实现的 Fleeting Note Mutation；
 - 最终 Task 状态模型、完整状态入口和其他 Mutation 类型；
 - 乐观 UI 与业务状态回滚；
 - 受影响文件级增量 Reconciliation 和更精确的自身事件去重；
@@ -380,6 +382,19 @@ archived_from_area: Work
 - 进入 `archived` 时移动到 Archive 并写入 `archived_from_area`；
 - 不保存 Project 进度、Task 数量或 Area 字段。
 
+当前 Fleeting Note → Project 创建路径固定生成：
+
+```text
+new Project UUID
+created=<当前本地日期，YYYY-MM-DD>
+status=planned
+Overview=<来源 Fleeting Note 文本>
+Tasks=空
+Notes=空
+```
+
+Project 名称由用户确认，可从 Fleeting Note 可见文本生成建议值。名称必须是单行、无 `.md` 后缀、长度不超过当前限制且不包含 Windows 非法字符或保留名称。目标 Area 由用户选择，物理路径为 `Trail/Areas/<Area>/<Project name>.md`。若目标路径已经存在不同文件或文件夹，返回路径冲突，不覆盖现有内容。
+
 Project 生命周期日期第一版使用 `YYYY-MM-DD`。
 
 ### 5.3 Project Body
@@ -614,9 +629,12 @@ Delete
 转为 Project：
 
 ```text
-CreateProject(new UUID, content derived from Fleeting Note)
-→ 确认目标 Project 创建成功
-→ Archive 或删除原 Fleeting Note
+用户确认 Project name 与目标 Area
+→ CreateProject(new UUID, created=today, status=planned)
+→ 将 Fleeting Note 文本写入 Overview
+→ 生成并确认标准 Overview / Tasks / Notes Markdown
+→ 从 Active Fleeting Notes 文件删除来源记录
+→ 来源删除失败时，仅补偿删除仍与创建快照一致的新 Project
 ```
 
 转为 Task：
@@ -625,10 +643,11 @@ CreateProject(new UUID, content derived from Fleeting Note)
 用户选择目标 Project
 → CreateTask(new UUID, status=backlog, priority=medium)
 → 确认目标 Task 创建成功
-→ Archive 或删除原 Fleeting Note
+→ 从 Active Fleeting Notes 文件删除来源记录
+→ 来源删除失败时补偿删除新 Task
 ```
 
-新对象不复用 Fleeting Note UUID，因为它是新创建的 Project 或 Task。
+新对象不复用 Fleeting Note UUID，因为它是新创建的 Project 或 Task。 Project 创建使用 `Vault.create()`，写后通过 `cachedRead()` 与 Project Parser 确认完整结果；补偿使用 `FileManager.trashFile()`，并在删除前校验目标 Markdown 仍等于创建快照。相同命令遇到完全一致的既有目标时可幂等确认；遇到不同文件或文件夹时返回 `project-path-conflict`。
 
 当前 POC 已实现 Archive、Delete to Trash 和 Restore：先在目标生命周期文件创建并重新解析确认完整记录，再从来源文件精确删除；来源删除失败时补偿删除目标记录。目标生命周期文件不存在时，先在内存生成完整 Markdown，再通过一次 `Vault.create()` 创建，避免写入失败后留下空文件。Fleeting Notes 在实现上复用 UUID、Fingerprint、精确删除、跨文件补偿、全局串行 Queue 和 Runtime Store Mutation 边界，但领域类型仍保持独立。
 
@@ -811,7 +830,7 @@ RestoreFromTrash
 
 ### 11.2 全局 Mutation Queue
 
-目标架构要求所有 Trail 写入最终进入一条插件级全局串行队列。当前 POC 已将 Queue 泛化为与具体领域对象和 Mutation Service 无关的异步 Command 执行器，并接入 Task 状态修改、Fleeting Note → Task、Archive、Delete to Trash 与 Restore：
+目标架构要求所有 Trail 写入最终进入一条插件级全局串行队列。当前 POC 已将 Queue 泛化为与具体领域对象和 Mutation Service 无关的异步 Command 执行器，并接入 Task 状态修改、Fleeting Note → Task / Project、Archive、Delete to Trash 与 Restore：
 
 ```text
 Task Status UI Intent
@@ -821,11 +840,18 @@ Task Status UI Intent
 → Mutation Service 写回并重新解析确认
 → Runtime Store refresh
 
-Fleeting Note Convert UI Intent
-→ 类型化 Fleeting Note 转换函数
+Fleeting Note Convert to Task UI Intent
+→ 类型化 Fleeting Note → Task 函数
 → Queue.enqueue(async Command)
 → runtimeStore.runMutation()
 → Create Task / Delete Source / Compensation
+→ Runtime Store refresh
+
+Fleeting Note Convert to Project UI Intent
+→ 类型化 Fleeting Note → Project 函数
+→ Queue.enqueue(async Command)
+→ runtimeStore.runMutation()
+→ Create Project / Delete Source / Compensation
 → Runtime Store refresh
 
 Fleeting Note Lifecycle UI Intent
@@ -846,11 +872,11 @@ Fleeting Note Lifecycle UI Intent
 - 插件卸载时拒绝尚未开始的 Command；
 - 已经开始的 Command 不伪装成可取消操作，允许其自然结束；
 - 每个 Command 自行定义内部文件操作、写后确认和返回结果；
-- Task 状态 Command、`ConvertFleetingToTask` 与 Fleeting Note 生命周期 Command 都将写入调用封装在 `runtimeStore.runMutation()` 中，并分别作为一个 Queue 单元执行；
+- Task 状态 Command、`ConvertFleetingToTask`、`ConvertFleetingToProject` 与 Fleeting Note 生命周期 Command 都将写入调用封装在 `runtimeStore.runMutation()` 中，并分别作为一个 Queue 单元执行；
 - Task UI 显示每个 Task 的 Pending 状态，Fleeting Notes UI 显示每条 Note 的转换、Archive、Delete 或 Restore Pending 状态，均不提前改变已确认业务状态；
 - 任一 Fleeting Note 跨文件 Command 返回 `partial` 时，会阻止该 UUID 在所有生命周期分区中的直接操作，并显示人工复核提示。
 
-通用调度机制已经完成。Task 状态修改、`ConvertFleetingToTask`、Archive、Delete to Trash 和 Restore 均已接入插件级 Queue。真实 Obsidian 已验证 lifecycle `partial` 后其他 Note 的 Delete / Restore 仍可继续，Queue 不会被前一失败阻塞。
+通用调度机制已经完成。Task 状态修改、`ConvertFleetingToTask`、`ConvertFleetingToProject`、Archive、Delete to Trash 和 Restore 均已接入插件级 Queue。真实 Obsidian 已验证 lifecycle `partial` 后其他 Note 的 Delete / Restore 仍可继续，也已验证 Project 转换 `partial` 后另一条 Project 转换仍可完成，Queue 不会被前一失败阻塞。
 
 ### 11.3 Mutation Service
 
@@ -929,6 +955,22 @@ Mutation Service 负责：
 完整成功后使用同一输入重试不会重复创建 Task，也不会因来源已经不存在而失败。跨文件执行器本身可作为一个 Queue Command 执行，保证后续命令不会插入多个文件步骤之间；接入插件时还必须由 `runtimeStore.runMutation()` 包裹，使 UI 只在整个 Command 结束后读取最终状态。
 
 真实 Obsidian 已通过临时宿主级故障注入验证成功、`unchanged`、`compensated` 和 `partial` 路径。`unchanged` 不留下目标 Task，`compensated` 撤销已创建目标并保留来源 Note，`partial` 同时保留来源 Note 与已创建目标 Task 并进入人工复核状态；每种结果都由 Runtime Store 最终刷新收敛到磁盘真实状态，且未出现 Frontmatter Data issues。`partial` 后人工恢复目标文件并重新打开 Trail View，无需重载插件即可再次正常转换，Queue 也能继续执行后续命令。故障注入仅在 Obsidian Developer Console 中临时拦截 `Vault.process()`，没有加入永久生产入口。当前仍缺少产品化人工恢复操作与恢复后自动解除 `Review required` 的交互。最小 UI 不做乐观删除，转换完成后依赖 Runtime Store 最终刷新收敛。
+
+`ConvertFleetingToProject` 复用同一跨文件执行器，并新增可复用的 Project Creation Service：
+
+```text
+输入：预期 Fleeting Note、目标 Area、用户确认的 Project name、全新 Project UUID、Project created 日期
+→ 校验 Project name 与目标路径
+→ 使用 Vault.create() 创建 planned Project
+→ cachedRead() 读取创建结果
+→ Project Parser 确认 UUID、Area、created、status、Overview、空 Tasks 与空 Notes
+→ 从 Active Fleeting Notes 文件删除预期来源记录
+→ 来源失败时，通过 FileManager.trashFile() 补偿未变化的新 Project
+```
+
+Project 文件名建议值从 Fleeting Note 的可见文本派生，移除 Markdown 链接包装和 Windows 非法字符，保留用户最终编辑权。目标路径已有不同文件或文件夹时返回 `unchanged`，不得覆盖；完全一致的目标可作为幂等重试确认。补偿前比较完整 Markdown 创建快照，目标已经变化时拒绝删除并返回 `partial`。
+
+真实 Obsidian 已验证：成功路径创建一个新 UUID 的 `planned` Project，Frontmatter 与 `Overview / Tasks / Notes` 结构正确，Overview 保留来源 Fleeting Note 文本；同名 `Trail POC.md` 路径冲突返回 `unchanged` 且既有文件未修改；来源删除与 Project 补偿同时失败时返回 `partial`，来源 Note 与新 Project 同时保留并阻止直接重试。人工删除 partial 目标 Project、重新打开 Trail View 后，无需重载插件即可正常再次转换；同一插件实例中的后续 Project 转换也正常完成，证明 Queue 继续执行。故障注入完成后，`Vault.process()` 与 `FileManager.trashFile()` 临时 Hook 均已明确恢复并确认不存在残留。
 
 同一跨文件执行器已经用于 Fleeting Note 生命周期：
 
@@ -1259,11 +1301,32 @@ Trail/Areas/<Area>/<File>.md
 
 当前继续保留防抖后的全量 Trail Vault 重读。只有未来真实交互或更大数据规模出现明确阻塞时，才进入增量解析和局部 Store 更新设计。
 
+### 15.8 真实 Obsidian 测试协议
+
+每次真实 Obsidian 测试开始前必须明确：
+
+1. 当前分支、HEAD、工作区与测试数据状态；
+2. Obsidian 是否保持打开，Trail 插件是否需要重新加载；
+3. 应打开的 Trail 页面或原生 Markdown 文件；
+4. 精确测试数据、目标名称，以及哪些控件保持默认值；
+5. 是否需要 Developer Console 故障注入、使用的全局 Hook 名称及恢复命令；
+6. UI、文件和 Git 工作区的预期结束状态。
+
+测试数据使用简短且明显不同的名称，避免多个长标题只相差少数字词。当前仍处于功能 POC，而非 UI 设计阶段；只增加验证功能所需的最小布局，不为测试便利提前扩展产品页面。
+
+每次测试结束必须明确：
+
+- 哪些测试文件保留到下一步，哪些立即清理；
+- Trail View 是否保持打开、关闭后重开、重新加载插件或关闭 Obsidian；
+- Runtime Store 应收敛到什么状态；
+- 临时 Console Hook 是否已经恢复；故障注入结束后必须执行统一恢复命令，并确认对应 `globalThis` Hook 为 `undefined` 后再关闭 Developer Tools；
+- 失败现场是否仍需保留用于人工恢复验证。
+
 ## 16. Minimum Demo / POC 验证清单
 
 以下为同一个完整 POC 的优先级清单，不拆成多个产品阶段。
 
-当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task / Fleeting Note 解析、同一 Markdown Snapshot 的 Frontmatter 与正文读取、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Fleeting Notes Active / Archive / Trash 固定文件发现、Runtime Store Snapshot、卡片式生命周期页面、按 `created` 稳定排序与文件事件自动收敛、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、通用全局 Mutation Queue、不同返回类型 Command 的串行调度与失败隔离、Task 状态 Command、`ConvertFleetingToTask`、Archive、Delete to Trash 与 Restore 接入、`todo ↔ doing` 双向状态转移、每 Task / Note Pending 状态、`partial` 人工复核提示、跨生命周期 UUID 重复暴露、Trail View 单实例激活、自身写回无可见闪回、插件重载后从 Markdown 恢复状态、真实 Obsidian Fleeting Note → Task 与 lifecycle 成功 / 失败 / 人工恢复路径、失败后 Queue 延续执行，以及正常数据规模下的全量读取与真实 Obsidian 收敛验证。
+当前已经完成并自动化或实机验证的相关子集包括：管理目录扫描、Area / Project / Task / Fleeting Note 解析、同一 Markdown Snapshot 的 Frontmatter 与正文读取、固定区域与 Task Block 边界、Subtask 与 Note 区分、对象级和文件级错误隔离、Fleeting Notes Active / Archive / Trash 固定文件发现、Runtime Store Snapshot、卡片式生命周期页面、按 `created` 稳定排序与文件事件自动收敛、Task 标题行精确修改、状态与完成字段规范化、完成约束、UUID 重新定位、Fingerprint 冲突拒绝、写后重新解析确认、Windows 换行保持、最小 Git Diff、Plugin-level Runtime Store、刷新尾随合并、文件事件防抖、主动刷新取消待执行防抖刷新、create / modify / delete / rename Reconciliation、无关路径过滤、通用全局 Mutation Queue、不同返回类型 Command 的串行调度与失败隔离、Task 状态 Command、`ConvertFleetingToTask`、`ConvertFleetingToProject`、Archive、Delete to Trash 与 Restore 接入、`todo ↔ doing` 双向状态转移、每 Task / Note Pending 状态、`partial` 人工复核提示、跨生命周期 UUID 重复暴露、Trail View 单实例激活、自身写回无可见闪回、插件重载后从 Markdown 恢复状态、真实 Obsidian Fleeting Note → Task、Fleeting Note → Project 与 lifecycle 成功 / 失败 / 人工恢复路径、目标路径冲突、失败后 Queue 延续执行，以及正常数据规模下的全量读取与真实 Obsidian 收敛验证。
 
 尚未完成的条目仍保留在同一清单中，不因最小写回和文件事件 Reconciliation 通过而视为完整 POC 已通过。
 
@@ -1383,7 +1446,8 @@ POC 通过至少需要满足：
 → 已完成：通过临时宿主故障注入验证 unchanged / compensated / partial、人工恢复、最终磁盘收敛与失败后 Queue 延续执行
 → 已完成：Fleeting Note Archive、Delete to Trash、Restore、Active / Archived / Trash 卡片 UI、按 created 稳定排序与生命周期文件事件 Reconciliation
 → 已完成：真实 Obsidian lifecycle 成功路径、代表性 partial、重复 UUID Data issue、人工恢复与 Queue 延续验证
-→ 下一步：选择一个完整 Fleeting Notes 功能包，优先评估 Quick Capture + 创建 / 编辑，或 ConvertFleetingToProject；第一版不直接实现 Convert to Subtask
+→ 已完成：ConvertFleetingToProject 的 Project 名称 / Area 输入、planned Project 创建与解析确认、路径冲突保护、补偿、Queue / Runtime Store 接入、自动化与真实 Obsidian 成功 / unchanged / partial / 人工恢复 / Queue 延续验证
+→ 下一步：推进 Quick Capture + Fleeting Note 创建 / 编辑完整功能包；第一版不直接实现 Convert to Subtask
 → 实现乐观 UI、失败回滚和 Project Board / List
 → 实现 Task Detail Modal
 → 完成剩余 POC 验证清单

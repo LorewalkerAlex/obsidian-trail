@@ -11,9 +11,15 @@ import {
   createObsidianTrailFleetingNoteLifecycleSource,
 } from "./domain/trail-fleeting-note-lifecycle-service";
 import {
+  convertFleetingNoteToProjectInVault,
+} from "./domain/trail-fleeting-to-project-command";
+import {
   convertFleetingNoteToTaskInVault,
 } from "./domain/trail-fleeting-to-task-command";
 import { TrailMutationQueue } from "./domain/trail-mutation-queue";
+import {
+  createObsidianTrailProjectCreationSource,
+} from "./domain/trail-project-creation-service";
 import {
   updateTaskStatusInVault,
 } from "./domain/trail-mutation-service";
@@ -28,6 +34,7 @@ import {
   TRAIL_VIEW_TYPE,
   TrailView,
   type TrailFleetingNoteAction,
+  type TrailFleetingNoteProjectConverter,
   type TrailFleetingNoteConverter,
   type TrailStoredFleetingNoteRestorer,
   type TrailTaskStatusUpdater,
@@ -54,6 +61,11 @@ export default class TrailPlugin extends Plugin {
       createObsidianTrailFleetingNoteLifecycleSource(
         this.app,
       );
+    const projectMutationSource =
+      createObsidianTrailProjectCreationSource(
+        this.app,
+        parseFrontmatter,
+      );
     const mutationQueue = new TrailMutationQueue();
     const updateTaskStatus: TrailTaskStatusUpdater = async (
       task,
@@ -71,6 +83,31 @@ export default class TrailPlugin extends Plugin {
         }),
       );
     };
+    const convertFleetingNoteToProject:
+      TrailFleetingNoteProjectConverter = async (
+        note,
+        area,
+        projectName,
+      ): Promise<void> => {
+        const projectId = crypto.randomUUID();
+        const projectCreatedOn = createTrailDate(
+          new Date(),
+        );
+        await mutationQueue.enqueue(() =>
+          runtimeStore.runMutation(async () => {
+            await convertFleetingNoteToProjectInVault(
+              projectMutationSource,
+              {
+                expectedNote: note,
+                targetArea: area,
+                projectId,
+                projectName,
+                projectCreatedOn,
+              },
+            );
+          }),
+        );
+      };
     const convertFleetingNoteToTask:
       TrailFleetingNoteConverter = async (
         note,
@@ -145,6 +182,7 @@ export default class TrailPlugin extends Plugin {
         leaf,
         runtimeStore,
         updateTaskStatus,
+        convertFleetingNoteToProject,
         convertFleetingNoteToTask,
         archiveFleetingNote,
         deleteFleetingNote,
@@ -233,6 +271,13 @@ export default class TrailPlugin extends Plugin {
 
     await workspace.revealLeaf(leaf);
   }
+}
+
+function createTrailDate(now: Date): string {
+  const trailTime = new Date(
+    now.getTime() + TRAIL_TIME_ZONE_OFFSET_MS,
+  );
+  return trailTime.toISOString().slice(0, 10);
 }
 
 function createTrailTimestamp(now: Date): string {

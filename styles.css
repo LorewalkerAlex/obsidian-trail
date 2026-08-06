@@ -145,14 +145,48 @@
 
 .trail-fleeting-note-card__controls {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  flex-direction: column;
   gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__conversion-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 18rem), 1fr)
+  );
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__conversion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+}
+
+.trail-fleeting-note-card__conversion-title {
+  font-size: var(--font-ui-small);
+}
+
+.trail-fleeting-note-card__conversion-fields {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 10rem), 1fr)
+  );
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__conversion > button {
+  align-self: flex-start;
 }
 
 .trail-fleeting-note-card__target {
   display: flex;
-  flex: 1 1 14rem;
   flex-direction: column;
   gap: var(--size-4-1);
   min-width: 0;
@@ -160,16 +194,21 @@
   font-size: var(--font-ui-smaller);
 }
 
+.trail-fleeting-note-card__target input,
 .trail-fleeting-note-card__target select {
   width: 100%;
   min-width: 0;
 }
 
-.trail-fleeting-note-card__actions {
+.trail-fleeting-note-card__actions,
+.trail-fleeting-note-card__lifecycle-actions {
   display: flex;
-  flex: 0 1 auto;
   flex-wrap: wrap;
   gap: var(--size-4-2);
+}
+
+.trail-fleeting-note-card__lifecycle-actions {
+  justify-content: flex-end;
 }
 
 .trail-fleeting-note-card__error {

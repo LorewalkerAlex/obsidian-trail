@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 
 import type {
+  TrailArea,
   TrailFleetingNote,
   TrailProject,
   TrailStoredFleetingNote,
@@ -16,6 +17,12 @@ export const TRAIL_VIEW_TYPE = "trail-view";
 export type TrailTaskStatusUpdater = (
   task: TrailTask,
   targetStatus: TrailTaskStatus,
+) => Promise<void>;
+
+export type TrailFleetingNoteProjectConverter = (
+  note: TrailFleetingNote,
+  area: TrailArea,
+  projectName: string,
 ) => Promise<void>;
 
 export type TrailFleetingNoteConverter = (
@@ -38,6 +45,8 @@ export class TrailView extends ItemView {
     leaf: WorkspaceLeaf,
     private readonly runtimeStore: TrailRuntimeStore,
     private readonly updateTaskStatus: TrailTaskStatusUpdater,
+    private readonly convertFleetingNoteToProject:
+      TrailFleetingNoteProjectConverter,
     private readonly convertFleetingNoteToTask:
       TrailFleetingNoteConverter,
     private readonly archiveFleetingNote:
@@ -94,6 +103,18 @@ export class TrailView extends ItemView {
     await this.updateTaskStatus(task, targetStatus);
   };
 
+  private readonly handleConvertFleetingNoteToProject = async (
+    note: TrailFleetingNote,
+    area: TrailArea,
+    projectName: string,
+  ): Promise<void> => {
+    await this.convertFleetingNoteToProject(
+      note,
+      area,
+      projectName,
+    );
+  };
+
   private readonly handleConvertFleetingNoteToTask = async (
     note: TrailFleetingNote,
     project: TrailProject,
@@ -130,6 +151,9 @@ export class TrailView extends ItemView {
         <TrailApp
           data={snapshot.data}
           onUpdateTaskStatus={this.handleUpdateTaskStatus}
+          onConvertFleetingNoteToProject={
+            this.handleConvertFleetingNoteToProject
+          }
           onConvertFleetingNoteToTask={
             this.handleConvertFleetingNoteToTask
           }

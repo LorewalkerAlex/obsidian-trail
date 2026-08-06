@@ -11,6 +11,9 @@ import type {
   TrailTask,
   TrailTaskStatus,
 } from "./domain/trail-model";
+import {
+  suggestTrailProjectName,
+} from "./domain/trail-project-creation";
 import type { TrailVaultReadResult } from "./domain/trail-vault-reader";
 const TRAIL_PAGES = [
   {
@@ -38,6 +41,11 @@ export interface TrailAppProps {
     task: TrailTask,
     targetStatus: TrailTaskStatus,
   ) => Promise<void>;
+  onConvertFleetingNoteToProject?: (
+    note: TrailFleetingNote,
+    area: TrailArea,
+    projectName: string,
+  ) => Promise<void>;
   onConvertFleetingNoteToTask: (
     note: TrailFleetingNote,
     project: TrailProject,
@@ -56,6 +64,7 @@ export interface TrailAppProps {
 export function TrailApp({
   data,
   onUpdateTaskStatus,
+  onConvertFleetingNoteToProject,
   onConvertFleetingNoteToTask,
   onArchiveFleetingNote,
   onDeleteFleetingNote,
@@ -116,6 +125,7 @@ export function TrailApp({
         {activePageId === "fleeting-notes" && (
           <FleetingNotesPage
             notes={data.fleetingNotes}
+            areas={data.areas}
             archivedNotes={
               data.archivedFleetingNotes ?? []
             }
@@ -123,6 +133,9 @@ export function TrailApp({
               data.trashedFleetingNotes ?? []
             }
             projects={data.projects}
+            onConvertFleetingNoteToProject={
+              onConvertFleetingNoteToProject
+            }
             onConvertFleetingNoteToTask={
               onConvertFleetingNoteToTask
             }
@@ -397,8 +410,11 @@ function TaskStatusButton({
 interface FleetingNotesPageProps {
   notes: TrailVaultReadResult["fleetingNotes"];
   archivedNotes: TrailStoredFleetingNote[];
+  areas: TrailArea[];
   trashedNotes: TrailStoredFleetingNote[];
   projects: TrailProject[];
+  onConvertFleetingNoteToProject:
+    TrailAppProps["onConvertFleetingNoteToProject"];
   onConvertFleetingNoteToTask:
     TrailAppProps["onConvertFleetingNoteToTask"];
   onArchiveFleetingNote:
@@ -410,6 +426,7 @@ interface FleetingNotesPageProps {
 }
 
 type FleetingNoteAction =
+  | "convert-project"
   | "convert"
   | "archive"
   | "delete"
@@ -419,12 +436,18 @@ function FleetingNotesPage({
   notes,
   archivedNotes,
   trashedNotes,
+  areas,
   projects,
+  onConvertFleetingNoteToProject,
   onConvertFleetingNoteToTask,
   onArchiveFleetingNote,
   onDeleteFleetingNote,
   onRestoreFleetingNote,
 }: FleetingNotesPageProps) {
+  const [selectedAreaIds, setSelectedAreaIds] =
+    useState<Map<string, string>>(() => new Map());
+  const [projectNames, setProjectNames] =
+    useState<Map<string, string>>(() => new Map());
   const [selectedProjectIds, setSelectedProjectIds] =
     useState<Map<string, string>>(() => new Map());
   const [pendingActions, setPendingActions] =
@@ -522,6 +545,15 @@ function FleetingNotesPage({
           >
             {sortedNotes.map((note) => {
               const rowKey = `active:${note.id}`;
+              const selectedAreaId =
+                selectedAreaIds.get(note.id)
+                ?? areas[0]?.id
+                ?? "";
+              const selectedArea = areas.find(
+                (area) => area.id === selectedAreaId,
+              );
+              const projectName = projectNames.get(note.id)
+                ?? suggestTrailProjectName(note.text);
               const selectedProjectId =
                 selectedProjectIds.get(note.id)
                 ?? projects[0]?.id
@@ -554,73 +586,181 @@ function FleetingNotesPage({
                   </div>
 
                   <div className="trail-fleeting-note-card__controls">
-                    {projects.length === 0 ? (
-                      <p className="trail-fleeting-notes__empty">
-                        No target Projects available.
-                      </p>
-                    ) : (
-                      <label className="trail-fleeting-note-card__target">
-                        <span>Target Project</span>
-                        <select
-                          aria-label={
-                            `Target Project for ${note.text}`
+                    <div className="trail-fleeting-note-card__conversion-grid">
+                      <div className="trail-fleeting-note-card__conversion">
+                        <strong className="trail-fleeting-note-card__conversion-title">
+                          New Project
+                        </strong>
+
+                        {areas.length === 0 ? (
+                          <p className="trail-fleeting-notes__empty">
+                            No target Areas available.
+                          </p>
+                        ) : (
+                          <div className="trail-fleeting-note-card__conversion-fields">
+                            <label className="trail-fleeting-note-card__target">
+                              <span>Project name</span>
+                              <input
+                                type="text"
+                                aria-label={
+                                  `Project name for ${note.text}`
+                                }
+                                value={projectName}
+                                disabled={isPending || isBlocked}
+                                onChange={(
+                                  event: ChangeEvent<HTMLInputElement>,
+                                ) => {
+                                  const value = event.currentTarget.value;
+                                  setProjectNames((current) => {
+                                    const next = new Map(current);
+                                    next.set(note.id, value);
+                                    return next;
+                                  });
+                                }}
+                              />
+                            </label>
+                            <label className="trail-fleeting-note-card__target">
+                              <span>Target Area</span>
+                              <select
+                                aria-label={
+                                  `Target Area for ${note.text}`
+                                }
+                                value={selectedAreaId}
+                                disabled={isPending || isBlocked}
+                                onChange={(
+                                  event: ChangeEvent<HTMLSelectElement>,
+                                ) => {
+                                  const value = event.currentTarget.value;
+                                  setSelectedAreaIds((current) => {
+                                    const next = new Map(current);
+                                    next.set(note.id, value);
+                                    return next;
+                                  });
+                                }}
+                              >
+                                {areas.map((area) => (
+                                  <option
+                                    key={area.id}
+                                    value={area.id}
+                                  >
+                                    {area.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          aria-label={`Convert ${note.text} to Project`}
+                          disabled={
+                            onConvertFleetingNoteToProject === undefined
+                            || selectedArea === undefined
+                            || projectName.trim() === ""
+                            || isPending
+                            || isBlocked
                           }
-                          value={selectedProjectId}
-                          disabled={isPending || isBlocked}
-                          onChange={(
-                            event: ChangeEvent<HTMLSelectElement>,
-                          ) => {
-                            setSelectedProjectIds((current) => {
-                              const next = new Map(current);
-                              next.set(
+                          onClick={() => {
+                            if (
+                              onConvertFleetingNoteToProject !== undefined
+                              && selectedArea !== undefined
+                              && projectName.trim() !== ""
+                            ) {
+                              void runNoteAction(
                                 note.id,
-                                event.currentTarget.value,
+                                rowKey,
+                                "convert-project",
+                                () => onConvertFleetingNoteToProject(
+                                  note,
+                                  selectedArea,
+                                  projectName.trim(),
+                                ),
                               );
-                              return next;
-                            });
+                            }
                           }}
                         >
-                          {projects.map((project) => (
-                            <option
-                              key={project.id}
-                              value={project.id}
-                            >
-                              {project.areaName} / {project.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
+                          {fleetingNoteActionButtonLabel(
+                            "convert-project",
+                            pendingAction,
+                            isBlocked,
+                          )}
+                        </button>
+                      </div>
 
-                    <div className="trail-fleeting-note-card__actions">
-                      <button
-                        type="button"
-                        aria-label={`Convert ${note.text} to Task`}
-                        disabled={
-                          selectedProject === undefined
-                          || isPending
-                          || isBlocked
-                        }
-                        onClick={() => {
-                          if (selectedProject !== undefined) {
-                            void runNoteAction(
-                              note.id,
-                              rowKey,
-                              "convert",
-                              () => onConvertFleetingNoteToTask(
-                                note,
-                                selectedProject,
-                              ),
-                            );
-                          }
-                        }}
-                      >
-                        {fleetingNoteActionButtonLabel(
-                          "convert",
-                          pendingAction,
-                          isBlocked,
+                      <div className="trail-fleeting-note-card__conversion">
+                        <strong className="trail-fleeting-note-card__conversion-title">
+                          New Task
+                        </strong>
+
+                        {projects.length === 0 ? (
+                          <p className="trail-fleeting-notes__empty">
+                            No target Projects available.
+                          </p>
+                        ) : (
+                          <label className="trail-fleeting-note-card__target">
+                            <span>Target Project</span>
+                            <select
+                              aria-label={
+                                `Target Project for ${note.text}`
+                              }
+                              value={selectedProjectId}
+                              disabled={isPending || isBlocked}
+                              onChange={(
+                                event: ChangeEvent<HTMLSelectElement>,
+                              ) => {
+                                const value = event.currentTarget.value;
+                                setSelectedProjectIds((current) => {
+                                  const next = new Map(current);
+                                  next.set(note.id, value);
+                                  return next;
+                                });
+                              }}
+                            >
+                              {projects.map((project) => (
+                                <option
+                                  key={project.id}
+                                  value={project.id}
+                                >
+                                  {project.areaName} / {project.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
                         )}
-                      </button>
+
+                        <button
+                          type="button"
+                          aria-label={`Convert ${note.text} to Task`}
+                          disabled={
+                            selectedProject === undefined
+                            || isPending
+                            || isBlocked
+                          }
+                          onClick={() => {
+                            if (selectedProject !== undefined) {
+                              void runNoteAction(
+                                note.id,
+                                rowKey,
+                                "convert",
+                                () => onConvertFleetingNoteToTask(
+                                  note,
+                                  selectedProject,
+                                ),
+                              );
+                            }
+                          }}
+                        >
+                          {fleetingNoteActionButtonLabel(
+                            "convert",
+                            pendingAction,
+                            isBlocked,
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="trail-fleeting-note-card__lifecycle-actions">
                       <button
                         type="button"
                         aria-label={`Archive ${note.text}`}
@@ -870,6 +1010,8 @@ function fleetingNoteActionButtonLabel(
 
   if (pendingAction === action) {
     switch (action) {
+      case "convert-project":
+        return "Converting to Project...";
       case "convert":
         return "Converting...";
       case "archive":
@@ -882,6 +1024,8 @@ function fleetingNoteActionButtonLabel(
   }
 
   switch (action) {
+    case "convert-project":
+      return "Convert to Project";
     case "convert":
       return "Convert to Task";
     case "archive":
@@ -896,16 +1040,25 @@ function formatFleetingNoteActionError(
   action: FleetingNoteAction,
   error: unknown,
 ): string {
-  const label = action === "convert"
-    ? "Conversion"
-    : `${action[0].toUpperCase()}${action.slice(1)}`;
+  let label: string;
+  if (action === "convert") {
+    label = "Conversion";
+  } else if (action === "convert-project") {
+    label = "Project conversion";
+  } else {
+    label = `${action[0].toUpperCase()}${action.slice(1)}`;
+  }
 
   if (error instanceof TrailCrossFileMutationError) {
     const guidance = error.outcome === "partial"
       ? " Manual review is required before retrying."
       : " The Fleeting Note remains available to retry.";
+    const causeDetail = error.cause instanceof Error
+      ? ` ${error.cause.message}`
+      : "";
 
-    return `${label} result: ${error.outcome}. ${error.message}${guidance}`;
+    return `${label} result: ${error.outcome}. `
+      + `${error.message}${causeDetail}${guidance}`;
   }
 
   const message = error instanceof Error
