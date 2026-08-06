@@ -311,4 +311,3 @@ function relevantIssue(
       || candidate.objectId === projectId,
   );
 }
-
