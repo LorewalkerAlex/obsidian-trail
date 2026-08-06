@@ -43,11 +43,13 @@ import {
   type TrailStoredFleetingNoteRestorer,
   type TrailTaskStatusUpdater,
 } from "./trail-view";
+
 const TRAIL_TIME_ZONE_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 export default class TrailPlugin extends Plugin {
   private runtimeStore: TrailRuntimeStore | null = null;
   private mutationQueue: TrailMutationQueue | null = null;
+
   onload(): void {
     const parseFrontmatter =
       createTrailFrontmatterParser(
@@ -71,6 +73,7 @@ export default class TrailPlugin extends Plugin {
         parseFrontmatter,
       );
     const mutationQueue = new TrailMutationQueue();
+
     const createFleetingNote: TrailFleetingNoteCreator = async (
       text,
     ): Promise<void> => {
@@ -89,6 +92,7 @@ export default class TrailPlugin extends Plugin {
         }),
       );
     };
+
     const editFleetingNote: TrailFleetingNoteEditor = async (
       note,
       text,
@@ -102,6 +106,7 @@ export default class TrailPlugin extends Plugin {
         }),
       );
     };
+
     const updateTaskStatus: TrailTaskStatusUpdater = async (
       task,
       targetStatus,
@@ -113,11 +118,15 @@ export default class TrailPlugin extends Plugin {
             {
               expectedTask: task,
               targetStatus,
+              completedAt: targetStatus === "completed"
+                ? createTrailTimestamp(new Date())
+                : undefined,
             },
           );
         }),
       );
     };
+
     const convertFleetingNoteToProject:
       TrailFleetingNoteProjectConverter = async (
         note,
@@ -128,6 +137,7 @@ export default class TrailPlugin extends Plugin {
         const projectCreatedOn = createTrailDate(
           new Date(),
         );
+
         await mutationQueue.enqueue(() =>
           runtimeStore.runMutation(async () => {
             await convertFleetingNoteToProjectInVault(
@@ -143,6 +153,7 @@ export default class TrailPlugin extends Plugin {
           }),
         );
       };
+
     const convertFleetingNoteToTask:
       TrailFleetingNoteConverter = async (
         note,
@@ -150,6 +161,7 @@ export default class TrailPlugin extends Plugin {
       ): Promise<void> => {
         const taskId = crypto.randomUUID();
         const taskCreatedAt = createTrailTimestamp(new Date());
+
         await mutationQueue.enqueue(() =>
           runtimeStore.runMutation(async () => {
             await convertFleetingNoteToTaskInVault(
@@ -165,6 +177,7 @@ export default class TrailPlugin extends Plugin {
           }),
         );
       };
+
     const archiveFleetingNote: TrailFleetingNoteAction =
       async (note): Promise<void> => {
         await mutationQueue.enqueue(() =>
@@ -180,6 +193,7 @@ export default class TrailPlugin extends Plugin {
           }),
         );
       };
+
     const deleteFleetingNote: TrailFleetingNoteAction =
       async (note): Promise<void> => {
         await mutationQueue.enqueue(() =>
@@ -195,6 +209,7 @@ export default class TrailPlugin extends Plugin {
           }),
         );
       };
+
     const restoreFleetingNote:
       TrailStoredFleetingNoteRestorer = async (
         note,
@@ -208,6 +223,7 @@ export default class TrailPlugin extends Plugin {
           }),
         );
       };
+
     this.runtimeStore = runtimeStore;
     this.mutationQueue = mutationQueue;
 
@@ -234,6 +250,7 @@ export default class TrailPlugin extends Plugin {
 
       this.registerVaultReconciliation(runtimeStore);
     });
+
     this.addRibbonIcon("route", "Open trail", () => {
       void this.activateView();
     });
@@ -254,6 +271,7 @@ export default class TrailPlugin extends Plugin {
     this.runtimeStore?.dispose();
     this.runtimeStore = null;
   }
+
   private registerVaultReconciliation(
     runtimeStore: TrailRuntimeStore,
   ): void {
@@ -274,6 +292,7 @@ export default class TrailPlugin extends Plugin {
         scheduleForPath(file.path);
       }),
     );
+
     this.registerEvent(
       this.app.vault.on("delete", (file) => {
         scheduleForPath(file.path);
@@ -291,6 +310,7 @@ export default class TrailPlugin extends Plugin {
       }),
     );
   }
+
   private async activateView(): Promise<void> {
     const { workspace } = this.app;
     let leaf = workspace.getLeavesOfType(

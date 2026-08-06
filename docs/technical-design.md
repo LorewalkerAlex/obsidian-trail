@@ -31,7 +31,7 @@
 
 ### 1.1 当前 POC 事实状态
 
-截至 2026-08-06，当前代码已经验证：
+截至 2026-08-06，基线提交 `584d419` 已完成下列验证；本次 Project Workspace 代码切片的实现状态与待验证项在列表中另行标注：
 
 - 仓库根目录同时作为 Obsidian Vault；
 - 可见的 `Trail/Areas/<Area>/` 作为当前 POC 数据目录；
@@ -53,9 +53,13 @@
 - 插件入口创建唯一的 Plugin-level Runtime Store 和通用全局 Mutation Queue，并接入 Task 状态修改、Quick Capture、Active Fleeting Note 编辑、`ConvertFleetingToTask`、`ConvertFleetingToProject`、Archive、Delete to Trash 和 Restore；
 - Queue 接受任意返回类型的异步 Mutation Command，严格按进入顺序串行执行，单个命令失败不会阻塞后续命令；
 - 插件卸载时，尚未开始的排队命令会被拒绝；
-- Project 页面提供临时 `Mark doing` 和 `Mark todo` 操作，可以在既有 Task 的 `todo` 与 `doing` 之间双向转移；
+- 本次代码切片已实现以下 Project Workspace 能力，但尚待本地完整检查和真实 Obsidian 验证：
+  - Areas 页面提供明确的 Project 入口，当前选择在 Dashboard、Areas、Project 与 Fleeting Notes 顶层页面切换期间保持；
+  - Project 页面提供共用同一选中 Project 与 Task 集合的 Board / List，Board 按 `backlog / todo / doing / blocked / completed` 五列分组；
+  - Board 使用原生 HTML5 跨栏拖拽，不支持同栏手工排序；每个 Task 同时保留状态下拉框作为键盘、测试与不支持拖拽环境的等价入口；
+  - Task 卡片显示 Priority、Due、Label 和 Subtask 完成摘要；每列按 Priority、Due、Created 与 UUID 稳定自动排序；
+  - Project UI 使用每 Task 的临时 optimistic status 覆盖层，拖拽或状态选择后卡片立即进入目标状态并显示 Pending；失败时只回滚该 Task 并显示局部错误，其他 Task 仍可继续提交；
 - Trail View 只接收类型化的 Task 状态更新、Quick Capture、Active Fleeting Note 编辑、Fleeting Note → Task / Project 转换、Archive、Delete 和 Restore 函数，不直接持有或调用 Queue；
-- UI 按 Task 显示短暂 Pending 状态，不提前改变 Store 中的已确认状态；
 - UI 允许不同 Task 的状态操作分别提交，Queue 单元测试确认它们按进入顺序串行执行；
 - Trail View 采用单实例打开方式，重复使用 Ribbon 或 `Trail: Open` 会激活已有 View；
 - Store 支持一次性初始化、主动刷新、刷新期间保留上一份已确认数据、并发刷新尾随合并、文件事件防抖、Mutation 边界和销毁清理；
@@ -64,7 +68,7 @@
 - Vault 在布局完成后监听 `create / modify / delete / rename`，只对 `Trail/Areas/` 管理范围、三个 Fleeting Note 生命周期文件或相关目录安排刷新；
 - `rename` 同时检查新旧路径，Trail 范围外、嵌套过深和非 Markdown 文件不会触发数据刷新；
 - 当前事件处理采用防抖后的全量 Trail Vault 重读，而不是受影响文件的增量解析；
-- 本地 ESLint、26 个测试文件中的 168 个自动化测试、TypeScript typecheck 和生产构建通过；
+- 基线提交 `584d419` 的本地 ESLint、26 个测试文件中的 168 个自动化测试、TypeScript typecheck 和生产构建通过；本次 Project Workspace / Board / List / 拖拽代码切片新增了定向 UI 测试，仍需在用户本地运行完整 `npm run check` 后更新最终数字；
 - Windows Desktop Obsidian 实机读取、Mutation 边界接入后的 `todo ↔ doing` 状态写回、Fleeting Note → Task / Project 成功转换、Archive、Delete to Trash、Restore、文件事件 Reconciliation、Trail View 单实例激活和插件重新加载成功；
 - `Updating...` Pending 状态在实机写回时短暂出现；
 - 外部逐字修改 Task 标题时，打开中的 Project 页面可以自动同步；
@@ -87,10 +91,10 @@
 
 - `partial` 的产品化人工恢复入口，以及人工修复后无需重新打开 View 的交互状态清理；
 - Convert to Subtask 与其他尚未实现的 Fleeting Note Mutation；
-- 最终 Task 状态模型、完整状态入口和其他 Mutation 类型；
-- 乐观 UI 与业务状态回滚；
+- Task Priority、Due、Label、标题、Subtask 与 Task Note 等其他 Mutation 类型；
+- 本次 Project Workspace、Board / List、五状态入口、原生拖拽、乐观更新与回滚的本地完整检查和真实 Obsidian 宿主验证；
 - 受影响文件级增量 Reconciliation 和更精确的自身事件去重；
-- Task Modal、Board 和拖拽；
+- Task Detail Modal；
 - Archive / Trash 的自动保留期清理和永久删除策略。
 
 当前 Project 页面直接显示 Task 标题字符串，Inline Markdown 尚未渲染为富文本。
@@ -248,7 +252,7 @@ Vitest
 React Testing Library
 ```
 
-`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续通用交互和完整状态操作阶段的候选方案。当前 Runtime Store 和通用全局 Mutation Queue 均使用纯 TypeScript 实现，尚未证明需要引入 Zustand；其他候选依赖也尚未安装或验证。
+`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续通用交互和完整状态操作阶段的候选方案。当前 Runtime Store 和通用全局 Mutation Queue 均使用纯 TypeScript 实现，尚未证明需要引入 Zustand。Project Board 当前只需要跨状态栏移动、不允许同栏排序，因此先使用浏览器原生 HTML5 Drag and Drop，并保留状态下拉框作为键盘与不支持拖拽环境的等价入口；没有安装 dnd-kit。若后续需要移动端、完整键盘拖拽、Drag Overlay、复杂碰撞检测或同栏排序，再重新评估 dnd-kit 或 Pragmatic Drag and Drop。
 
 第一版不引入：
 
@@ -938,30 +942,32 @@ Mutation Service 负责：
 11. 由跨文件 Command 编排补偿并返回结构化结果；
 12. 失败时由 Runtime Store Mutation 边界重新读取最终文件状态，而不是假设所有失败都完全无写入。
 
-当前 POC 已实现一个经过 Plugin-level Mutation Queue 和 Runtime Store、但不使用乐观 UI 的最小垂直切片：Project 页面在既有 Task 的 `todo` 与 `doing` 之间双向转移。当前实现会：
+当前 Project Workspace 将既有 Task 状态写回扩展为一个完整 UI 切片：Areas 可选择 Project；Project 页面提供 Board / List、五状态入口、跨栏拖拽、局部 optimistic 状态与失败回滚。当前实现会：
 
 1. 使用 Store Snapshot 中的 Task UUID 和 Fingerprint 表达预期对象版本；
-2. 类型化 Task 状态更新函数将 Mutation Service 调用封装在 `runtimeStore.runMutation()` 中，并将其作为一个异步 Command 提交到插件级 Queue；
-3. Queue 按进入顺序执行该 Command；
-4. 在 `Vault.process()` 提供的最新文件内容中重新解析 Project Tasks；
-5. 按 UUID 重新定位目标 Task；
-6. 校验完整 Task Block Fingerprint；
-7. 只替换目标 Task 标题行中的 checkbox 与 `trail:task` JSON；
-8. 重新解析 `Vault.process()` 返回的 Markdown，确认目标状态；
-9. Mutation 边界在命令完成后统一刷新共享 Runtime Store；
-10. Mutation 期间的自身文件事件不触发中间刷新；
-11. 失败时同样刷新最终文件状态，并在 Project 页面显示错误。
+2. React 只在 Project Workspace 内维护 `taskId → targetStatus` 临时覆盖，不修改 Runtime Store 的已确认业务对象；
+3. 原生拖拽或状态下拉框提交后，卡片立即按临时目标状态重新分组并只对该 Task 显示 Pending；
+4. 类型化 Task 状态更新函数将 Mutation Service 调用封装在 `runtimeStore.runMutation()` 中，并将其作为一个异步 Command 提交到插件级 Queue；
+5. 进入 `completed` 时插件入口生成 `+08:00` `completedAt`；离开 `completed` 时不传完成时间，由既有 Writer 移除 `completed` 字段；
+6. Queue 按进入顺序执行该 Command；
+7. 在 `Vault.process()` 提供的最新文件内容中重新解析 Project Tasks；
+8. 按 UUID 重新定位目标 Task，并校验完整 Task Block Fingerprint；
+9. 只替换目标 Task 标题行中的 checkbox 与 `trail:task` JSON；
+10. 重新解析 `Vault.process()` 返回的 Markdown，确认目标状态；
+11. Mutation 边界在命令完成后统一刷新共享 Runtime Store，确认 Snapshot 到达目标状态后移除临时覆盖；
+12. Mutation 期间的自身文件事件不触发中间刷新；
+13. 失败时同样刷新最终文件状态，移除该 Task 的临时覆盖，使卡片回到已确认状态，并在卡片附近显示错误。
 
 当前通用 Queue 中某一 Task 状态 Command 失败时：
 
 - 当前命令的 Promise 被拒绝；
-- UI 清除该 Task 的 Pending 状态并显示错误；
-- 文件和已确认 Store 不因失败命令发生变化；
+- UI 只清除并回滚该 Task 的 Pending / optimistic 状态；
+- 文件和已确认 Runtime Store 不因失败命令发生变化；
 - 后续排队命令继续执行；
 - 后续命令仍使用自己的 UUID、Fingerprint 和目标状态重新校验；
 - 如果后续命令的预期版本已经过期，则该命令独立失败。
 
-当前 UI 不提前修改已确认业务状态，因此失败时不需要回滚业务状态。未来引入乐观 UI 后，需要在此基础上增加临时状态回滚层。
+该 optimistic 层是 UI 派生状态，不是新的事实来源。正常成功路径在 Runtime Store 刷新完成前保持目标卡片位置，避免先移动再闪回；失败路径以最终 Store Snapshot 为准回滚。
 
 ### 11.4 代表性跨文件 Mutation POC
 
@@ -1158,14 +1164,20 @@ Area + Label    → 当前 Area 跨 Project Task
 
 ## 14. UI 行为
 
-### 14.1 Project Board
+### 14.1 Project Board / List
 
-- 按 `backlog / todo / doing / blocked / completed` 分栏；
-- 只允许跨状态栏拖拽；
-- 同栏不允许手动排序；
+- Areas 中的 Project 是可操作入口，点击后设置当前 Project 并进入 Project 页面；
+- 当前 Project 在四个顶层页面切换期间保持；若该 Project 被外部删除，则回退到当前 Snapshot 的第一个 Project；
+- Board 与 List 读取同一个当前 Project、同一批 Task 和同一套有效状态；
+- Board 按 `backlog / todo / doing / blocked / completed` 分栏；
+- 使用原生 HTML5 Drag and Drop，只允许跨状态栏拖拽；
+- 同栏不允许手工排序，Drop 到当前状态不提交 Command；
+- 状态下拉框与拖拽调用同一个状态更新函数，作为键盘与测试兜底；
 - 主 Task 原生 Markdown checkbox 不在卡片中直接显示；
-- Task 卡片展示 Priority、Due、Label 和 Subtask 摘要；
-- Completed 第一版展示当前 Project 的全部已完成 Task。
+- Task 卡片展示 Priority、Due、Label 和 Subtask 完成摘要；
+- Board 每列与 List 均按 Priority（urgent → high → medium → low）、有 Due 优先、Due 升序、Created 升序、UUID 稳定排序；
+- Completed 第一版展示当前 Project 的全部已完成 Task；
+- Board / List 切换不改变当前 Project、Task optimistic 状态、Pending 或局部错误。
 
 ### 14.2 Task Detail Modal
 
@@ -1306,28 +1318,35 @@ Delete
 
 ### 15.5 乐观 UI
 
-当前临时 `todo ↔ doing` 控件采用保守 UI：
+Project Workspace 已为 Task 状态流转实现局部 optimistic UI：
 
-- 点击后只显示 `Updating...`；
-- Store 中的已确认 Task 状态不提前变化；
-- 等待写入和 Runtime Store 刷新完成后展示目标状态；
-- 写入失败时清除 Pending 状态并显示错误；
-- 当前不需要执行乐观业务状态回滚。
+- 已确认的 Runtime Store Snapshot 保持不可变，不直接写入临时业务状态；
+- Workspace 维护每 Task 的临时目标状态 Map，并据此派生 Board / List 中的有效状态；
+- 拖拽或状态选择后卡片立即移动，只有当前 Task 显示 `Updating...`；
+- 成功时保持临时目标状态直到 Runtime Store Snapshot 确认相同状态，再清除覆盖，避免可见回跳；
+- 失败时清除该 Task 的临时覆盖，卡片回到最终已确认状态，并显示局部错误；
+- 其他 Task 不被禁用，仍可进入全局 Queue；
+- 切换 Board / List 不丢失当前 Project、optimistic 状态或错误；
+- Project 切换会清理上一 Project 的临时交互状态，避免跨 Project 污染。
 
-未来乐观 UI 适用于：
+当前流程：
 
-- Board 状态拖拽；
-- Priority 修改；
-- Due Date 修改；
-- Label 修改；
-- Subtask checkbox。
+```text
+用户拖拽或选择状态
+→ Project Workspace 应用 Task 局部临时目标状态
+→ UI 立即更新
+→ Command 进入全局串行队列
+├── 成功：Runtime Store 最终刷新确认，移除临时覆盖
+└── 失败：Runtime Store 最终刷新 + 移除临时覆盖 + 显示局部错误
+```
 
-未来流程：
+Priority、Due Date、Label 与 Subtask checkbox 尚未实现 Mutation；未来可复用相同的局部 optimistic 模式，但必须分别定义冲突、回滚和写后验证语义。
+
+后续通用流程参考：
 
 ```text
 用户操作
-→ Store 应用临时目标状态
-→ UI 立即更新
+→ UI 应用局部临时目标状态
 → Command 进入全局串行队列
 ├── 成功：以重新解析结果确认
 └── 失败：回滚到最后确认状态并显示错误
@@ -1517,9 +1536,9 @@ POC 通过至少需要满足：
 → 已完成：真实 Obsidian lifecycle 成功路径、代表性 partial、重复 UUID Data issue、人工恢复与 Queue 延续验证
 → 已完成：ConvertFleetingToProject 的 Project 名称 / Area 输入、planned Project 创建与解析确认、路径冲突保护、补偿、Queue / Runtime Store 接入、自动化与真实 Obsidian 成功 / unchanged / partial / 人工恢复 / Queue 延续验证
 → 已完成：Quick Capture、Active 文件创建 / 追加、Dashboard Fleeting Note 统计、Active 文本编辑、编辑开始 Snapshot 固定、外部变化冲突拒绝、draft 保留与真实 Obsidian Queue 延续验证
-→ 下一步：推进产品化 `partial` 人工恢复、完整 Task Mutation 或 Project Board / List 的下一个可独立验收功能包；第一版不直接实现 Convert to Subtask
-→ 实现乐观 UI、失败回滚和 Project Board / List
-→ 实现 Task Detail Modal
+→ 当前交付中：Areas Project 入口、Project Board / List、五状态入口、原生跨栏拖拽、局部 optimistic UI、失败回滚与 completed 时间接线；等待本地完整检查和真实 Obsidian 验证后提交
+→ 下一步：完成本轮真实宿主测试、文档事实校准与 commit / push；第一版不直接实现 Convert to Subtask
+→ 后续候选：产品化 `partial` 人工恢复、Task Detail Modal 或 Priority / Due / Label 等完整 Task Mutation
 → 完成剩余 POC 验证清单
 → 根据结果形成 ADR、LLD 和 Implementation & Test Plan
 ```

@@ -3,6 +3,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import {
   describe,
@@ -12,6 +13,7 @@ import {
 } from "vitest";
 
 import type {
+  TrailProject,
   TrailTask,
 } from "./domain/trail-model";
 import type { TrailVaultReadResult } from "./domain/trail-vault-reader";
@@ -144,6 +146,24 @@ const twoTodoTaskData: TrailVaultReadResult = {
   ],
 };
 
+const secondProject: TrailProject = {
+  id: "52d0ba61-09a6-4b9d-b97a-c15d09c12683",
+  areaId: data.areas[0].id,
+  areaName: data.areas[0].name,
+  name: "Project Navigation",
+  created: "2026-08-06",
+  status: "planned",
+  overview: "Open a specific Project from Areas.",
+  tasks: [],
+  notes: [],
+  filePath: "Trail/Areas/Work/Project Navigation.md",
+};
+
+const navigationData: TrailVaultReadResult = {
+  ...data,
+  projects: [data.projects[0], secondProject],
+};
+
 function renderTrailApp(
   appData: TrailVaultReadResult = data,
   onUpdateTaskStatus: TrailAppProps["onUpdateTaskStatus"] =
@@ -167,6 +187,14 @@ function openProjectPage(): void {
   fireEvent.click(
     screen.getByRole("button", {
       name: "Project",
+    }),
+  );
+}
+
+function openAreasPage(): void {
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Areas",
     }),
   );
 }
@@ -222,12 +250,7 @@ describe("TrailApp", () => {
 
   it("shows Areas and their Projects", () => {
     renderTrailApp();
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Areas",
-      }),
-    );
+    openAreasPage();
 
     expect(
       screen.getByRole("heading", {
@@ -236,7 +259,41 @@ describe("TrailApp", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Work")).toBeInTheDocument();
     expect(
-      screen.getByText("Trail POC"),
+      screen.getByRole("button", {
+        name: "Open Trail POC",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens and retains a selected Project from Areas", () => {
+    renderTrailApp(navigationData);
+    openAreasPage();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: `Open ${secondProject.name}`,
+      }),
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: secondProject.name,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(secondProject.overview))
+      .toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Dashboard",
+      }),
+    );
+    openProjectPage();
+
+    expect(
+      screen.getByRole("heading", {
+        name: secondProject.name,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -271,7 +328,7 @@ describe("TrailApp", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the first parsed Project", () => {
+  it("shows the first parsed Project workspace", () => {
     renderTrailApp();
     openProjectPage();
 
@@ -280,24 +337,36 @@ describe("TrailApp", () => {
         name: "Trail POC",
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Build the Trail parser (doing)",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("[x] Define the fixture"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("[ ] Validate issue isolation"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Read again after cache update.",
-      ),
-    ).toBeInTheDocument();
+
+    const taskCard = within(
+      screen.getByRole("region", {
+        name: "Doing Tasks",
+      }),
+    ).getByRole("article", {
+      name: "Build the Trail parser Task",
+    });
+
+    expect(taskCard).toHaveTextContent(
+      "Build the Trail parser",
+    );
+    expect(taskCard).toHaveTextContent("Priority: high");
+    expect(taskCard).toHaveTextContent("Due: None");
+    expect(taskCard).toHaveTextContent("Subtasks: 1/2");
+    expect(taskCard).toHaveTextContent("type:spike");
     expect(
       screen.getByText("The POC is read-only."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows an empty Project state", () => {
+    renderTrailApp({
+      ...data,
+      projects: [],
+    });
+    openProjectPage();
+
+    expect(
+      screen.getByText("No Trail projects found."),
     ).toBeInTheDocument();
   });
 
@@ -309,10 +378,11 @@ describe("TrailApp", () => {
     renderTrailApp(todoData, onUpdateTaskStatus);
     openProjectPage();
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Mark Build the Trail parser as doing",
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: "Status for Build the Trail parser",
       }),
+      { target: { value: "doing" } },
     );
 
     await waitFor(() => {
@@ -333,10 +403,11 @@ describe("TrailApp", () => {
     renderTrailApp(data, onUpdateTaskStatus);
     openProjectPage();
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Mark Build the Trail parser as todo",
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: "Status for Build the Trail parser",
       }),
+      { target: { value: "todo" } },
     );
 
     await waitFor(() => {
@@ -348,53 +419,67 @@ describe("TrailApp", () => {
     );
   });
 
-  it("keeps another Task action available while one is pending", async () => {
-    let resolveFirstUpdate:
-      | (() => void)
-      | undefined;
-    const firstUpdate = new Promise<void>((resolve) => {
-      resolveFirstUpdate = resolve;
-    });
-    const onUpdateTaskStatus = vi.fn()
-      .mockReturnValueOnce(firstUpdate)
-      .mockResolvedValueOnce(undefined);
+  it(
+    "keeps another Task action available while one is pending",
+    async () => {
+      let resolveFirstUpdate:
+        | (() => void)
+        | undefined;
+      const firstUpdate = new Promise<void>((resolve) => {
+        resolveFirstUpdate = resolve;
+      });
+      const onUpdateTaskStatus = vi.fn()
+        .mockReturnValueOnce(firstUpdate)
+        .mockResolvedValueOnce(undefined);
 
-    renderTrailApp(
-      twoTodoTaskData,
-      onUpdateTaskStatus,
-    );
-    openProjectPage();
-
-    const firstButton = screen.getByRole("button", {
-      name: "Mark Build the Trail parser as doing",
-    });
-    const secondButton = screen.getByRole("button", {
-      name: "Mark Test the mutation queue as doing",
-    });
-
-    fireEvent.click(firstButton);
-
-    expect(firstButton).toBeDisabled();
-    expect(secondButton).toBeEnabled();
-
-    fireEvent.click(secondButton);
-
-    await waitFor(() => {
-      expect(onUpdateTaskStatus).toHaveBeenCalledTimes(2);
-    });
-
-    if (!resolveFirstUpdate) {
-      throw new Error(
-        "The first Task update did not start.",
+      renderTrailApp(
+        twoTodoTaskData,
+        onUpdateTaskStatus,
       );
-    }
+      openProjectPage();
 
-    resolveFirstUpdate();
+      const firstSelect = screen.getByRole("combobox", {
+        name: "Status for Build the Trail parser",
+      });
 
-    await waitFor(() => {
-      expect(firstButton).toBeEnabled();
-    });
-  });
+      fireEvent.change(firstSelect, {
+        target: { value: "doing" },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole("combobox", {
+          name: "Status for Build the Trail parser",
+        })).toBeDisabled();
+      });
+      expect(screen.getByRole("combobox", {
+        name: "Status for Test the mutation queue",
+      })).toBeEnabled();
+
+      fireEvent.change(screen.getByRole("combobox", {
+        name: "Status for Test the mutation queue",
+      }), {
+        target: { value: "doing" },
+      });
+
+      await waitFor(() => {
+        expect(onUpdateTaskStatus).toHaveBeenCalledTimes(2);
+      });
+
+      if (!resolveFirstUpdate) {
+        throw new Error(
+          "The first Task update did not start.",
+        );
+      }
+
+      resolveFirstUpdate();
+
+      await waitFor(() => {
+        expect(screen.getByRole("combobox", {
+          name: "Status for Build the Trail parser",
+        })).toBeEnabled();
+      });
+    },
+  );
 
   it("shows a Task update failure", async () => {
     const onUpdateTaskStatus = vi.fn(
@@ -406,10 +491,11 @@ describe("TrailApp", () => {
     renderTrailApp(todoData, onUpdateTaskStatus);
     openProjectPage();
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Mark Build the Trail parser as doing",
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: "Status for Build the Trail parser",
       }),
+      { target: { value: "doing" } },
     );
 
     expect(

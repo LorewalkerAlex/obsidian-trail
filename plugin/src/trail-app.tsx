@@ -20,6 +20,8 @@ import {
   suggestTrailProjectName,
 } from "./domain/trail-project-creation";
 import type { TrailVaultReadResult } from "./domain/trail-vault-reader";
+import { TrailProjectWorkspace } from "./trail-project-workspace";
+
 const TRAIL_PAGES = [
   {
     id: "dashboard",
@@ -40,6 +42,7 @@ const TRAIL_PAGES = [
 ] as const;
 
 type TrailPageId = (typeof TRAIL_PAGES)[number]["id"];
+
 export interface TrailAppProps {
   data: TrailVaultReadResult;
   onUpdateTaskStatus: (
@@ -84,6 +87,17 @@ export function TrailApp({
 }: TrailAppProps) {
   const [activePageId, setActivePageId] =
     useState<TrailPageId>("dashboard");
+  const [selectedProjectId, setSelectedProjectId] =
+    useState<string | undefined>(data.projects[0]?.id);
+  const selectedProject = data.projects.find(
+    (project) => project.id === selectedProjectId,
+  ) ?? data.projects[0];
+
+  const openProject = (project: TrailProject): void => {
+    setSelectedProjectId(project.id);
+    setActivePageId("project");
+  };
+
   return (
     <div className="trail-app">
       <header className="trail-app__header">
@@ -128,15 +142,17 @@ export function TrailApp({
           <AreasPage
             areas={data.areas}
             projects={data.projects}
+            onOpenProject={openProject}
           />
         )}
 
         {activePageId === "project" && (
-          <ProjectPage
-            project={data.projects[0]}
+          <TrailProjectWorkspace
+            project={selectedProject}
             onUpdateTaskStatus={onUpdateTaskStatus}
           />
         )}
+
         {activePageId === "fleeting-notes" && (
           <FleetingNotesPage
             notes={data.fleetingNotes}
@@ -192,6 +208,7 @@ export function TrailApp({
     </div>
   );
 }
+
 interface DashboardPageProps {
   data: TrailVaultReadResult;
   onCreateFleetingNote:
@@ -210,6 +227,7 @@ function DashboardPage({
       total + project.tasks.length,
     0,
   );
+
   const submitCapture = async (
     event: SyntheticEvent<HTMLFormElement>,
   ): Promise<void> => {
@@ -311,37 +329,51 @@ function DashboardPage({
     </>
   );
 }
+
 interface AreasPageProps {
   areas: TrailArea[];
   projects: TrailProject[];
+  onOpenProject: (project: TrailProject) => void;
 }
 
 function AreasPage({
   areas,
   projects,
+  onOpenProject,
 }: AreasPageProps) {
   return (
-    <>
-      <h2>Areas</h2>
+    <section className="trail-areas" aria-labelledby="trail-areas-title">
+      <h2 id="trail-areas-title">Areas</h2>
 
       {areas.length === 0 ? (
         <p>No Trail areas found.</p>
       ) : (
-        <ul>
+        <ul className="trail-areas__list">
           {areas.map((area) => {
             const areaProjects = projects.filter(
               (project) => project.areaId === area.id,
             );
+
             return (
-              <li key={area.id}>
+              <li key={area.id} className="trail-area-card">
                 <strong>{area.name}</strong>
+                {area.description !== "" && (
+                  <p>{area.description}</p>
+                )}
                 {areaProjects.length === 0 ? (
                   <p>No projects found.</p>
                 ) : (
-                  <ul>
+                  <ul className="trail-area-card__projects">
                     {areaProjects.map((project) => (
                       <li key={project.id}>
-                        {project.name}
+                        <button
+                          type="button"
+                          aria-label={`Open ${project.name}`}
+                          onClick={() => onOpenProject(project)}
+                        >
+                          <span>{project.name}</span>
+                          <span>{project.status}</span>
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -351,172 +383,7 @@ function AreasPage({
           })}
         </ul>
       )}
-    </>
-  );
-}
-interface ProjectPageProps {
-  project?: TrailProject;
-  onUpdateTaskStatus: (
-    task: TrailTask,
-    targetStatus: TrailTaskStatus,
-  ) => Promise<void>;
-}
-
-function ProjectPage({
-  project,
-  onUpdateTaskStatus,
-}: ProjectPageProps) {
-  const [pendingTaskIds, setPendingTaskIds] =
-    useState<Set<string>>(() => new Set());
-  const [mutationError, setMutationError] =
-    useState<string>();
-  if (!project) {
-    return (
-      <>
-        <h2>Project</h2>
-        <p>No Trail projects found.</p>
-      </>
-    );
-  }
-
-  const updateTaskStatus = async (
-    task: TrailTask,
-    targetStatus: TrailTaskStatus,
-  ): Promise<void> => {
-    setPendingTaskIds((current) => {
-      const next = new Set(current);
-      next.add(task.id);
-      return next;
-    });
-    setMutationError(undefined);
-    try {
-      await onUpdateTaskStatus(task, targetStatus);
-    } catch (error: unknown) {
-      setMutationError(
-        error instanceof Error
-          ? error.message
-          : "Unknown Task update error.",
-      );
-    } finally {
-      setPendingTaskIds((current) => {
-        const next = new Set(current);
-        next.delete(task.id);
-        return next;
-      });
-    }
-  };
-
-  return (
-    <>
-      <h2>Project</h2>
-      <h3>{project.name}</h3>
-      <p>{project.overview}</p>
-      <h4>Tasks</h4>
-      {mutationError !== undefined && (
-        <p role="alert">
-          Task update failed: {mutationError}
-        </p>
-      )}
-
-      {project.tasks.length === 0 ? (
-        <p>No tasks found.</p>
-      ) : (
-        <ul>
-          {project.tasks.map((task) => (
-            <li key={task.id}>
-              <p>
-                {task.title} ({task.status})
-              </p>
-              <TaskStatusButton
-                task={task}
-                isPending={pendingTaskIds.has(task.id)}
-                onUpdateTaskStatus={updateTaskStatus}
-              />
-              {task.subtasks.length > 0 && (
-                <>
-                  <h5>Subtasks</h5>
-                  <ul>
-                    {task.subtasks.map(
-                      (subtask, index) => (
-                        <li
-                          key={`${task.id}:subtask:${index}`}
-                        >
-                          {subtask.completed
-                            ? "[x]"
-                            : "[ ]"}{" "}
-                          {subtask.text}
-                        </li>
-                      ),
-                    )}
-                  </ul>
-                </>
-              )}
-              {task.notes.length > 0 && (
-                <>
-                  <h5>Task notes</h5>
-                  <ul>
-                    {task.notes.map((note, index) => (
-                      <li
-                        key={`${task.id}:note:${index}`}
-                      >
-                        {note.text}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <h4>Notes</h4>
-      {project.notes.length === 0 ? (
-        <p>No project notes found.</p>
-      ) : (
-        <ul>
-          {project.notes.map((note, index) => (
-            <li key={`${project.id}:note:${index}`}>
-              {note.text}
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
-  );
-}
-
-interface TaskStatusButtonProps {
-  task: TrailTask;
-  isPending: boolean;
-  onUpdateTaskStatus: TrailAppProps["onUpdateTaskStatus"];
-}
-function TaskStatusButton({
-  task,
-  isPending,
-  onUpdateTaskStatus,
-}: TaskStatusButtonProps) {
-  let targetStatus: TrailTaskStatus;
-
-  if (task.status === "todo") {
-    targetStatus = "doing";
-  } else if (task.status === "doing") {
-    targetStatus = "todo";
-  } else {
-    return null;
-  }
-  return (
-    <button
-      type="button"
-      aria-label={`Mark ${task.title} as ${targetStatus}`}
-      disabled={isPending}
-      onClick={() => {
-        void onUpdateTaskStatus(task, targetStatus);
-      }}
-    >
-      {isPending
-        ? "Updating..."
-        : `Mark ${targetStatus}`}
-    </button>
+    </section>
   );
 }
 
@@ -696,6 +563,7 @@ function FleetingNotesPage({
                 ?? note.text;
               const editSourceNote = editSourceNotes.get(note.id)
                 ?? note;
+
               return (
                 <li
                   key={note.id}
@@ -1170,6 +1038,7 @@ function StoredFleetingNotesSection({
             const isPending = pendingAction !== undefined;
             const isBlocked = blockedNoteIds.has(note.id);
             const actionError = actionErrors.get(rowKey);
+
             return (
               <li
                 key={rowKey}
@@ -1306,6 +1175,7 @@ function fleetingNoteActionButtonLabel(
       return "Restore";
   }
 }
+
 function formatFleetingNoteActionError(
   action: FleetingNoteAction,
   error: unknown,
