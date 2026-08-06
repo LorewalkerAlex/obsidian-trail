@@ -14,6 +14,15 @@ import type { TrailRuntimeStore } from "./domain/trail-runtime-store";
 import { TrailApp } from "./trail-app";
 
 export const TRAIL_VIEW_TYPE = "trail-view";
+export type TrailFleetingNoteCreator = (
+  text: string,
+) => Promise<void>;
+
+export type TrailFleetingNoteEditor = (
+  note: TrailFleetingNote,
+  text: string,
+) => Promise<void>;
+
 export type TrailTaskStatusUpdater = (
   task: TrailTask,
   targetStatus: TrailTaskStatus,
@@ -44,6 +53,10 @@ export class TrailView extends ItemView {
   constructor(
     leaf: WorkspaceLeaf,
     private readonly runtimeStore: TrailRuntimeStore,
+    private readonly createFleetingNote:
+      TrailFleetingNoteCreator,
+    private readonly editFleetingNote:
+      TrailFleetingNoteEditor,
     private readonly updateTaskStatus: TrailTaskStatusUpdater,
     private readonly convertFleetingNoteToProject:
       TrailFleetingNoteProjectConverter,
@@ -95,6 +108,19 @@ export class TrailView extends ItemView {
 
     this.contentEl.empty();
   }
+
+  private readonly handleCreateFleetingNote = async (
+    text: string,
+  ): Promise<void> => {
+    await this.createFleetingNote(text);
+  };
+
+  private readonly handleEditFleetingNote = async (
+    note: TrailFleetingNote,
+    text: string,
+  ): Promise<void> => {
+    await this.editFleetingNote(note, text);
+  };
 
   private readonly handleUpdateTaskStatus = async (
     task: TrailTask,
@@ -150,6 +176,12 @@ export class TrailView extends ItemView {
       <StrictMode>
         <TrailApp
           data={snapshot.data}
+          onCreateFleetingNote={
+            this.handleCreateFleetingNote
+          }
+          onEditFleetingNote={
+            this.handleEditFleetingNote
+          }
           onUpdateTaskStatus={this.handleUpdateTaskStatus}
           onConvertFleetingNoteToProject={
             this.handleConvertFleetingNoteToProject

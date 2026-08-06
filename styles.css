@@ -215,3 +215,65 @@
   margin: 0;
   color: var(--text-error);
 }
+
+.trail-quick-capture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  margin-top: var(--size-4-5);
+  padding-top: var(--size-4-5);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.trail-quick-capture h3 {
+  margin: 0;
+}
+
+.trail-quick-capture__form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--size-4-3);
+}
+
+.trail-quick-capture__field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-quick-capture__field input {
+  width: 100%;
+}
+
+.trail-quick-capture__error {
+  margin: 0;
+  color: var(--text-error);
+}
+
+.trail-fleeting-note-card__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+@media (max-width: 36rem) {
+  .trail-quick-capture__form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .trail-fleeting-note-card__header-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

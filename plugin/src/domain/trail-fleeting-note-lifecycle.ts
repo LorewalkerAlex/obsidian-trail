@@ -5,6 +5,7 @@ import type {
   TrailStoredFleetingNote,
 } from "./trail-model";
 import { parseFleetingNotes } from "./trail-fleeting-note-parser";
+import { normalizeFleetingNoteText } from "./trail-fleeting-note-editor";
 import type { TrailMarkdownInput } from "./trail-parser";
 
 export const TRAIL_FLEETING_NOTES_PATH =
@@ -44,6 +45,11 @@ export interface TrailStoredFleetingNotesParseResult {
   notes: TrailStoredFleetingNote[];
   issues: TrailParseIssue[];
 }
+
+export type TrailFleetingNoteContent = Pick<
+  TrailFleetingNote,
+  "id" | "text" | "created" | "cleanupDue"
+>;
 
 export function storedFleetingNotePath(
   storage: TrailFleetingNoteStorage,
@@ -159,7 +165,7 @@ export function createStoredFleetingNoteMarkdown({
 export interface TrailCreateActiveFleetingNoteInput {
   markdown: string;
   filePath: string;
-  note: TrailStoredFleetingNote;
+  note: TrailFleetingNoteContent;
 }
 
 export function createActiveFleetingNoteMarkdown({
@@ -196,7 +202,7 @@ export function createActiveFleetingNoteMarkdown({
 }
 
 interface TrailSerializeFleetingNoteInput {
-  note: TrailFleetingNote;
+  note: TrailFleetingNoteContent;
   storage?: TrailFleetingNoteStorage;
   storedAt?: string;
 }
@@ -223,7 +229,9 @@ function serializeFleetingNote({
     metadata.deleted_at = storedAt;
   }
 
-  return `- ${note.text.trim()} <!-- trail:fleeting ${JSON.stringify(metadata)} -->`;
+  const text = normalizeFleetingNoteText(note.text);
+
+  return `- ${text} <!-- trail:fleeting ${JSON.stringify(metadata)} -->`;
 }
 
 function appendLine(
@@ -257,8 +265,8 @@ function rejectInvalidFile(
 }
 
 function sameFleetingNote(
-  left: TrailFleetingNote,
-  right: TrailFleetingNote,
+  left: TrailFleetingNoteContent,
+  right: TrailFleetingNoteContent,
 ): boolean {
   return left.text === right.text.trim()
     && left.created === right.created

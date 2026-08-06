@@ -215,7 +215,7 @@ describe("TrailApp", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "1 Area · 1 Project · 1 Task",
+        "1 Area · 1 Project · 1 Task · 0 Fleeting Notes",
       ),
     ).toBeInTheDocument();
   });

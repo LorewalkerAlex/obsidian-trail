@@ -1,4 +1,9 @@
-import { useState, type ChangeEvent } from "react";
+import {
+  useState,
+  type ChangeEvent,
+  type SyntheticEvent,
+  type KeyboardEvent,
+} from "react";
 
 import {
   TrailCrossFileMutationError,
@@ -41,6 +46,11 @@ export interface TrailAppProps {
     task: TrailTask,
     targetStatus: TrailTaskStatus,
   ) => Promise<void>;
+  onCreateFleetingNote?: (text: string) => Promise<void>;
+  onEditFleetingNote?: (
+    note: TrailFleetingNote,
+    text: string,
+  ) => Promise<void>;
   onConvertFleetingNoteToProject?: (
     note: TrailFleetingNote,
     area: TrailArea,
@@ -64,6 +74,8 @@ export interface TrailAppProps {
 export function TrailApp({
   data,
   onUpdateTaskStatus,
+  onCreateFleetingNote,
+  onEditFleetingNote,
   onConvertFleetingNoteToProject,
   onConvertFleetingNoteToTask,
   onArchiveFleetingNote,
@@ -106,7 +118,10 @@ export function TrailApp({
       </nav>
       <main className="trail-app__content">
         {activePageId === "dashboard" && (
-          <DashboardPage data={data} />
+          <DashboardPage
+            data={data}
+            onCreateFleetingNote={onCreateFleetingNote}
+          />
         )}
 
         {activePageId === "areas" && (
@@ -133,6 +148,7 @@ export function TrailApp({
               data.trashedFleetingNotes ?? []
             }
             projects={data.projects}
+            onEditFleetingNote={onEditFleetingNote}
             onConvertFleetingNoteToProject={
               onConvertFleetingNoteToProject
             }
@@ -176,14 +192,50 @@ export function TrailApp({
     </div>
   );
 }
+interface DashboardPageProps {
+  data: TrailVaultReadResult;
+  onCreateFleetingNote:
+    TrailAppProps["onCreateFleetingNote"];
+}
+
 function DashboardPage({
   data,
-}: Pick<TrailAppProps, "data">) {
+  onCreateFleetingNote,
+}: DashboardPageProps) {
+  const [captureText, setCaptureText] = useState("");
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState<string>();
   const taskCount = data.projects.reduce(
     (total, project) =>
       total + project.tasks.length,
     0,
   );
+  const submitCapture = async (
+    event: SyntheticEvent<HTMLFormElement>,
+  ): Promise<void> => {
+    event.preventDefault();
+    const text = captureText.trim();
+
+    if (text === "" || onCreateFleetingNote === undefined) {
+      return;
+    }
+
+    setIsCapturing(true);
+    setCaptureError(undefined);
+
+    try {
+      await onCreateFleetingNote(text);
+      setCaptureText("");
+    } catch (error: unknown) {
+      setCaptureError(
+        error instanceof Error
+          ? error.message
+          : "Unknown Quick Capture error.",
+      );
+    } finally {
+      setIsCapturing(false);
+    }
+  };
 
   return (
     <>
@@ -194,7 +246,68 @@ function DashboardPage({
         {formatCount(data.projects.length, "Project")}
         {" · "}
         {formatCount(taskCount, "Task")}
+        {" · "}
+        {formatCount(
+          data.fleetingNotes.length,
+          "Fleeting Note",
+        )}
       </p>
+      <section
+        className="trail-quick-capture"
+        aria-labelledby="trail-quick-capture-title"
+      >
+        <h3 id="trail-quick-capture-title">Quick Capture</h3>
+        <form
+          className="trail-quick-capture__form"
+          onSubmit={(event) => {
+            void submitCapture(event);
+          }}
+        >
+          <label className="trail-quick-capture__field">
+            <span>Fleeting Note</span>
+            <input
+              type="text"
+              aria-label="Quick Capture text"
+              value={captureText}
+              disabled={
+                isCapturing
+                || onCreateFleetingNote === undefined
+              }
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setCaptureText(event.currentTarget.value);
+              }}
+              onKeyDown={(
+                event: KeyboardEvent<HTMLInputElement>,
+              ) => {
+                if (
+                  event.key === "Enter"
+                  && event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault();
+                }
+              }}
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={
+              isCapturing
+              || captureText.trim() === ""
+              || onCreateFleetingNote === undefined
+            }
+          >
+            {isCapturing ? "Capturing..." : "Capture"}
+          </button>
+        </form>
+        {captureError !== undefined && (
+          <p
+            className="trail-quick-capture__error"
+            role="alert"
+          >
+            Quick Capture failed: {captureError}
+          </p>
+        )}
+      </section>
     </>
   );
 }
@@ -413,6 +526,8 @@ interface FleetingNotesPageProps {
   areas: TrailArea[];
   trashedNotes: TrailStoredFleetingNote[];
   projects: TrailProject[];
+  onEditFleetingNote:
+    TrailAppProps["onEditFleetingNote"];
   onConvertFleetingNoteToProject:
     TrailAppProps["onConvertFleetingNoteToProject"];
   onConvertFleetingNoteToTask:
@@ -426,6 +541,7 @@ interface FleetingNotesPageProps {
 }
 
 type FleetingNoteAction =
+  | "edit"
   | "convert-project"
   | "convert"
   | "archive"
@@ -438,6 +554,7 @@ function FleetingNotesPage({
   trashedNotes,
   areas,
   projects,
+  onEditFleetingNote,
   onConvertFleetingNoteToProject,
   onConvertFleetingNoteToTask,
   onArchiveFleetingNote,
@@ -450,6 +567,12 @@ function FleetingNotesPage({
     useState<Map<string, string>>(() => new Map());
   const [selectedProjectIds, setSelectedProjectIds] =
     useState<Map<string, string>>(() => new Map());
+  const [editingNoteIds, setEditingNoteIds] =
+    useState<Set<string>>(() => new Set());
+  const [editDrafts, setEditDrafts] =
+    useState<Map<string, string>>(() => new Map());
+  const [editSourceNotes, setEditSourceNotes] =
+    useState<Map<string, TrailFleetingNote>>(() => new Map());
   const [pendingActions, setPendingActions] =
     useState<Map<string, FleetingNoteAction>>(
       () => new Map(),
@@ -464,7 +587,7 @@ function FleetingNotesPage({
     rowKey: string,
     action: FleetingNoteAction,
     execute: () => Promise<void>,
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     setPendingActions((current) => {
       const next = new Map(current);
       next.set(rowKey, action);
@@ -478,6 +601,7 @@ function FleetingNotesPage({
 
     try {
       await execute();
+      return true;
     } catch (error: unknown) {
       if (
         error instanceof TrailCrossFileMutationError
@@ -498,6 +622,7 @@ function FleetingNotesPage({
         );
         return next;
       });
+      return false;
     } finally {
       setPendingActions((current) => {
         const next = new Map(current);
@@ -566,15 +691,156 @@ function FleetingNotesPage({
               const isPending = pendingAction !== undefined;
               const isBlocked = blockedNoteIds.has(note.id);
               const actionError = actionErrors.get(rowKey);
+              const isEditing = editingNoteIds.has(note.id);
+              const editDraft = editDrafts.get(note.id)
+                ?? note.text;
+              const editSourceNote = editSourceNotes.get(note.id)
+                ?? note;
               return (
                 <li
                   key={note.id}
                   className="trail-fleeting-note-card"
                 >
                   <div className="trail-fleeting-note-card__header">
-                    <strong className="trail-fleeting-note-card__title">
-                      {note.text}
-                    </strong>
+                    {isEditing ? (
+                      <div className="trail-fleeting-note-card__editor">
+                        <label className="trail-fleeting-note-card__target">
+                          <span>Fleeting Note text</span>
+                          <input
+                            type="text"
+                            aria-label={`Edit ${note.text}`}
+                            value={editDraft}
+                            disabled={isPending || isBlocked}
+                            onChange={(
+                              event: ChangeEvent<HTMLInputElement>,
+                            ) => {
+                              const value = event.currentTarget.value;
+                              setEditDrafts((current) => {
+                                const next = new Map(current);
+                                next.set(note.id, value);
+                                return next;
+                              });
+                            }}
+                          />
+                        </label>
+                        <div className="trail-fleeting-note-card__actions">
+                          <button
+                            type="button"
+                            aria-label={`Save edits for ${note.text}`}
+                            disabled={
+                              onEditFleetingNote === undefined
+                              || isPending
+                              || isBlocked
+                              || editDraft.trim() === ""
+                            }
+                            onClick={() => {
+                              if (onEditFleetingNote === undefined) {
+                                return;
+                              }
+
+                              void runNoteAction(
+                                note.id,
+                                rowKey,
+                                "edit",
+                                () => onEditFleetingNote(
+                                  editSourceNote,
+                                  editDraft,
+                                ),
+                              ).then((wasSuccessful) => {
+                                if (!wasSuccessful) {
+                                  return;
+                                }
+
+                                setEditingNoteIds((current) => {
+                                  const next = new Set(current);
+                                  next.delete(note.id);
+                                  return next;
+                                });
+                                setEditDrafts((current) => {
+                                  const next = new Map(current);
+                                  next.delete(note.id);
+                                  return next;
+                                });
+                                setEditSourceNotes((current) => {
+                                  const next = new Map(current);
+                                  next.delete(note.id);
+                                  return next;
+                                });
+                              });
+                            }}
+                          >
+                            {fleetingNoteActionButtonLabel(
+                              "edit",
+                              pendingAction,
+                              isBlocked,
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Cancel editing ${note.text}`}
+                            disabled={isPending}
+                            onClick={() => {
+                              setEditingNoteIds((current) => {
+                                const next = new Set(current);
+                                next.delete(note.id);
+                                return next;
+                              });
+                              setEditDrafts((current) => {
+                                const next = new Map(current);
+                                next.delete(note.id);
+                                return next;
+                              });
+                              setEditSourceNotes((current) => {
+                                const next = new Map(current);
+                                next.delete(note.id);
+                                return next;
+                              });
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="trail-fleeting-note-card__header-row">
+                        <strong className="trail-fleeting-note-card__title">
+                          {note.text}
+                        </strong>
+                        <button
+                          type="button"
+                          aria-label={`Edit ${note.text}`}
+                          disabled={
+                            onEditFleetingNote === undefined
+                            || isPending
+                            || isBlocked
+                          }
+                          onClick={() => {
+                            setEditingNoteIds((current) => {
+                              const next = new Set(current);
+                              next.add(note.id);
+                              return next;
+                            });
+                            setEditDrafts((current) => {
+                              const next = new Map(current);
+                              next.set(note.id, note.text);
+                              return next;
+                            });
+                            setEditSourceNotes((current) => {
+                              const next = new Map(current);
+                              next.set(note.id, note);
+                              return next;
+                            });
+                            setActionErrors((current) => {
+                              const next = new Map(current);
+                              next.delete(rowKey);
+                              return next;
+                            });
+                          }}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    )}
                     <div className="trail-fleeting-note-card__meta">
                       <span>Created: {note.created}</span>
                       {note.cleanupDue !== undefined && (
@@ -867,7 +1133,7 @@ interface StoredFleetingNotesSectionProps {
     rowKey: string,
     action: FleetingNoteAction,
     execute: () => Promise<void>,
-  ) => Promise<void>;
+  ) => Promise<boolean>;
 }
 
 function StoredFleetingNotesSection({
@@ -1010,6 +1276,8 @@ function fleetingNoteActionButtonLabel(
 
   if (pendingAction === action) {
     switch (action) {
+      case "edit":
+        return "Saving...";
       case "convert-project":
         return "Converting to Project...";
       case "convert":
@@ -1024,6 +1292,8 @@ function fleetingNoteActionButtonLabel(
   }
 
   switch (action) {
+    case "edit":
+      return "Save";
     case "convert-project":
       return "Convert to Project";
     case "convert":
@@ -1041,7 +1311,9 @@ function formatFleetingNoteActionError(
   error: unknown,
 ): string {
   let label: string;
-  if (action === "convert") {
+  if (action === "edit") {
+    label = "Edit";
+  } else if (action === "convert") {
     label = "Conversion";
   } else if (action === "convert-project") {
     label = "Project conversion";

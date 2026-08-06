@@ -11,6 +11,7 @@ import type {
 } from "./trail-model";
 import {
   createActiveFleetingNoteMarkdown,
+  type TrailFleetingNoteContent,
   createStoredFleetingNoteMarkdown,
   parseStoredFleetingNotes,
   storedFleetingNotePath,
@@ -18,6 +19,10 @@ import {
   TrailFleetingNoteLifecycleWriteError,
 } from "./trail-fleeting-note-lifecycle";
 import { parseFleetingNotes } from "./trail-fleeting-note-parser";
+import {
+  updateFleetingNoteMarkdown,
+  TrailFleetingNoteUpdateError,
+} from "./trail-fleeting-note-editor";
 import type {
   TrailMutableFile,
   TrailMutationSource,
@@ -34,6 +39,7 @@ export interface TrailFleetingNoteLifecycleSource<
 
 export type TrailFleetingNoteLifecycleMutationErrorCode =
   | "lifecycle-path-invalid"
+  | "fleeting-file-not-found"
   | "vault-process-failed"
   | "write-verification-failed";
 
@@ -63,6 +69,97 @@ export function createObsidianTrailFleetingNoteLifecycleSource(
     processOrCreate: (path, update) =>
       processOrCreateObsidianFile(app, path, update),
   };
+}
+
+export interface TrailCreateFleetingNoteMutationInput {
+  note: TrailFleetingNoteContent;
+}
+
+export async function createFleetingNoteInVault<
+  FileType extends TrailMutableFile,
+>(
+  source: TrailFleetingNoteLifecycleSource<FileType>,
+  { note }: TrailCreateFleetingNoteMutationInput,
+): Promise<TrailFleetingNote> {
+  let writtenMarkdown: string;
+
+  try {
+    writtenMarkdown = await source.processOrCreate(
+      TRAIL_FLEETING_NOTES_PATH,
+      (markdown) => createActiveFleetingNoteMarkdown({
+        markdown,
+        filePath: TRAIL_FLEETING_NOTES_PATH,
+        note,
+      }),
+    );
+  } catch (error: unknown) {
+    if (
+      error instanceof TrailFleetingNoteLifecycleWriteError
+      || error instanceof TrailFleetingNoteLifecycleMutationError
+      || error instanceof TrailFleetingNoteUpdateError
+    ) {
+      throw error;
+    }
+
+    throw new TrailFleetingNoteLifecycleMutationError(
+      "vault-process-failed",
+      `Trail could not create Fleeting Note UUID "${note.id}" in ${TRAIL_FLEETING_NOTES_PATH}.`,
+      error,
+    );
+  }
+
+  return requireWrittenActiveNote(writtenMarkdown, note);
+}
+
+export interface TrailUpdateFleetingNoteMutationInput {
+  expectedNote: TrailFleetingNote;
+  text: string;
+}
+
+export async function updateFleetingNoteInVault<
+  FileType extends TrailMutableFile,
+>(
+  source: TrailFleetingNoteLifecycleSource<FileType>,
+  { expectedNote, text }: TrailUpdateFleetingNoteMutationInput,
+): Promise<TrailFleetingNote> {
+  const file = source.getFileByPath(
+    expectedNote.source.filePath,
+  );
+
+  if (!file) {
+    throw new TrailFleetingNoteLifecycleMutationError(
+      "fleeting-file-not-found",
+      `Fleeting Notes file was not found: ${expectedNote.source.filePath}`,
+    );
+  }
+
+  let writtenMarkdown: string;
+
+  try {
+    writtenMarkdown = await source.process(
+      file,
+      (markdown) => updateFleetingNoteMarkdown({
+        markdown,
+        expectedNote,
+        text,
+      }),
+    );
+  } catch (error: unknown) {
+    if (error instanceof TrailFleetingNoteUpdateError) {
+      throw error;
+    }
+
+    throw new TrailFleetingNoteLifecycleMutationError(
+      "vault-process-failed",
+      `Trail could not update Fleeting Note UUID "${expectedNote.id}" in ${file.path}.`,
+      error,
+    );
+  }
+
+  return requireWrittenActiveNote(writtenMarkdown, {
+    ...expectedNote,
+    text,
+  });
 }
 
 export interface TrailStoreFleetingNoteMutationInput {
@@ -210,6 +307,36 @@ export async function createActiveFleetingNoteInVault<
   }
 
   return createdNote;
+}
+
+function requireWrittenActiveNote(
+  markdown: string,
+  expected: TrailFleetingNoteContent,
+): TrailFleetingNote {
+  const result = parseFleetingNotes({
+    filePath: TRAIL_FLEETING_NOTES_PATH,
+    markdown,
+  });
+  const note = result.notes.find(
+    (candidate) => candidate.id === expected.id,
+  );
+  const issue = relevantIssue(result.issues, expected.id);
+
+  if (
+    issue
+    || !note
+    || note.text !== expected.text.trim()
+    || note.created !== expected.created
+    || note.cleanupDue !== expected.cleanupDue
+  ) {
+    throw new TrailFleetingNoteLifecycleMutationError(
+      "write-verification-failed",
+      issue?.message
+        ?? `Trail could not confirm Fleeting Note UUID "${expected.id}" after writing.`,
+    );
+  }
+
+  return note;
 }
 
 async function processOrCreateObsidianFile(

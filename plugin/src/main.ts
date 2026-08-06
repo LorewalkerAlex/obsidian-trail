@@ -8,7 +8,9 @@ import {
   storeFleetingNoteInVault,
 } from "./domain/trail-fleeting-note-lifecycle-command";
 import {
+  createFleetingNoteInVault,
   createObsidianTrailFleetingNoteLifecycleSource,
+  updateFleetingNoteInVault,
 } from "./domain/trail-fleeting-note-lifecycle-service";
 import {
   convertFleetingNoteToProjectInVault,
@@ -34,6 +36,8 @@ import {
   TRAIL_VIEW_TYPE,
   TrailView,
   type TrailFleetingNoteAction,
+  type TrailFleetingNoteCreator,
+  type TrailFleetingNoteEditor,
   type TrailFleetingNoteProjectConverter,
   type TrailFleetingNoteConverter,
   type TrailStoredFleetingNoteRestorer,
@@ -67,6 +71,37 @@ export default class TrailPlugin extends Plugin {
         parseFrontmatter,
       );
     const mutationQueue = new TrailMutationQueue();
+    const createFleetingNote: TrailFleetingNoteCreator = async (
+      text,
+    ): Promise<void> => {
+      const note = {
+        id: crypto.randomUUID(),
+        text,
+        created: createTrailTimestamp(new Date()),
+      };
+
+      await mutationQueue.enqueue(() =>
+        runtimeStore.runMutation(async () => {
+          await createFleetingNoteInVault(
+            mutationSource,
+            { note },
+          );
+        }),
+      );
+    };
+    const editFleetingNote: TrailFleetingNoteEditor = async (
+      note,
+      text,
+    ): Promise<void> => {
+      await mutationQueue.enqueue(() =>
+        runtimeStore.runMutation(async () => {
+          await updateFleetingNoteInVault(
+            mutationSource,
+            { expectedNote: note, text },
+          );
+        }),
+      );
+    };
     const updateTaskStatus: TrailTaskStatusUpdater = async (
       task,
       targetStatus,
@@ -181,6 +216,8 @@ export default class TrailPlugin extends Plugin {
       (leaf) => new TrailView(
         leaf,
         runtimeStore,
+        createFleetingNote,
+        editFleetingNote,
         updateTaskStatus,
         convertFleetingNoteToProject,
         convertFleetingNoteToTask,

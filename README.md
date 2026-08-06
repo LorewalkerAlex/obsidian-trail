@@ -22,6 +22,8 @@ The representative cross-file POC converts a Fleeting Note into either a new `ba
 
 The Fleeting Notes page uses card-based Active, Archived, and Trash sections, keeps each section ordered by `created`, and exposes pending, error, and `Review required` states. Fleeting Note-to-Task, lifecycle, and Fleeting Note-to-Project success and representative failure paths have been verified end to end in Windows Desktop Obsidian. Project conversion host verification covered successful creation, an existing-path `unchanged` result, a representative `partial` result, manual recovery, Runtime Store convergence, and queue continuation.
 
+The Dashboard now shows the active Fleeting Note count and provides a minimal Quick Capture form. A successful capture trims one non-empty line, generates a new UUID and `+08:00` `created` timestamp, creates `Trail/Fleeting Notes.md` when needed, confirms the parsed record, and clears the input. Creation failures keep the draft visible. Active Fleeting Notes can also edit only their visible text while preserving UUID, `created`, and optional `cleanup_due` metadata. The editor pins the Note snapshot from the moment editing begins, so a Runtime Store refresh cannot silently replace the expected Fingerprint; an external Markdown change rejects Save, keeps the draft open, and still allows a later valid edit after cancellation. Quick Capture, normal editing, external-change conflict rejection, Dashboard counting, Runtime Store convergence, and queue continuation have been verified in Windows Desktop Obsidian.
+
 ## Git worktrees
 
 Each development machine uses two Git worktrees:
@@ -123,6 +125,7 @@ npm run dev
 npm run lint
 npm run test
 npm run test:run
+npm run test:run:verbose
 npm run typecheck
 npm run build
 npm run bench:vault
@@ -132,11 +135,14 @@ npm run check
 - `npm run dev` watches source and static files and updates `.obsidian/plugins/trail/`.
 - `npm run lint` checks the source against ESLint and the Obsidian plugin rules.
 - `npm run test` starts Vitest in interactive watch mode.
-- `npm run test:run` runs the test suite once.
+- `npm run test:run` runs the test suite once with the compact Vitest dot reporter.
+- `npm run test:run:verbose` runs the same test suite with Vitest's default detailed reporter.
 - `npm run typecheck` checks TypeScript without generating files.
 - `npm run build` type-checks and creates a production plugin build.
 - `npm run bench:vault` runs the repeatable full-read benchmark without adding it to the normal test or CI path.
 - `npm run check` runs lint, tests, type-checking, and the production build.
+
+During one development slice, run the new or changed tests plus the directly affected regression tests. Add targeted lint, type-checking, or a production build when shared infrastructure or the Obsidian-loaded bundle changes. Run the full `npm run check` once when the slice is complete and ready to commit or push.
 
 ## Testing in Obsidian
 
@@ -147,13 +153,13 @@ npm run check
 5. Opening Trail again should reveal the existing Trail view instead of creating another Trail view.
 6. Reload Trail after rebuilding when Obsidian still has an older build loaded.
 
-With the checked-in fixture, the Dashboard should show `1 Area · 1 Project · 3 Tasks`.
+With the checked-in fixture, the Dashboard should show `1 Area · 1 Project · 3 Tasks · 0 Fleeting Notes`.
 
 While Trail is open, editing a managed Project Markdown file should update the view automatically. Creating, deleting, or renaming a direct Project file under `Trail/Areas/<Area>/` should also reconcile the displayed data, while unrelated Markdown outside the managed scope should not affect Trail.
 
 On the Project page, `todo` and `doing` Tasks expose temporary `Mark doing` and `Mark todo` actions. Clicking either action may show `Updating...` briefly, should change only the Task status metadata, keep the checkbox unchecked, pass the write through the plugin-level serial queue, and refresh the shared Store without a visible flashback. Test both directions and restore the checked-in fixture before committing.
 
-The Fleeting Notes page reads the active, archived, and deleted lifecycle files. Creating or editing a valid top-level record in any managed lifecycle file should update the open page automatically. To test Task conversion, select a target Project and click `Convert to Task`; the Note should disappear only after the queued cross-file Mutation completes, the new `backlog` / `medium` Task should appear in the selected Project, and no transient Data issues should appear. To test Project conversion, keep or choose the target Area, review the suggested Project name, and click `Convert to Project`; Trail should create one `planned` Project with a new UUID and canonical `Overview / Tasks / Notes` sections, then remove the source Note only after the Project is confirmed. An existing file or folder at the target path must remain untouched and return an `unchanged` result. Archive should move an active Note to `Trail/Archive/Fleeting Notes.md`; Delete should move it to `Trail/Trash/Fleeting Notes.md`; Restore should return it to the active file while preserving its UUID and `created` timestamp. The UI remains ordered by `created` even though restored records are appended physically. Remove local lifecycle and conversion test files before committing.
+The Fleeting Notes page reads the active, archived, and deleted lifecycle files. Creating or editing a valid top-level record in any managed lifecycle file should update the open page automatically. Quick Capture should create the active file when absent, add one UUID-backed record, clear the input only after success, and update both the Dashboard count and the Fleeting Notes page without reloading the plugin. Editing an active Note should preserve its UUID and lifecycle metadata. If the same Markdown record changes outside Trail after Edit begins, Save must reject the stale Fingerprint and keep the draft open instead of overwriting the external change. To test Task conversion, select a target Project and click `Convert to Task`; the Note should disappear only after the queued cross-file Mutation completes, the new `backlog` / `medium` Task should appear in the selected Project, and no transient Data issues should appear. To test Project conversion, keep or choose the target Area, review the suggested Project name, and click `Convert to Project`; Trail should create one `planned` Project with a new UUID and canonical `Overview / Tasks / Notes` sections, then remove the source Note only after the Project is confirmed. An existing file or folder at the target path must remain untouched and return an `unchanged` result. Archive should move an active Note to `Trail/Archive/Fleeting Notes.md`; Delete should move it to `Trail/Trash/Fleeting Notes.md`; Restore should return it to the active file while preserving its UUID and `created` timestamp. The UI remains ordered by `created` even though restored records are appended physically. Remove local Quick Capture, lifecycle, and conversion test files before committing.
 
 Each real Obsidian test should state the starting repository and Obsidian state, whether the plugin must be reloaded, the exact view and test data, which values remain at their defaults, any Developer Console hook and its restore command, the expected disk and UI end state, and whether Obsidian should remain open. Use short, visually distinct fixture names. Before closing Developer Tools after fault injection, confirm every temporary restore hook is `undefined`.
 
