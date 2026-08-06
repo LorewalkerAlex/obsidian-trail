@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 
 import {
   TrailCrossFileMutationError,
@@ -7,11 +7,11 @@ import type {
   TrailArea,
   TrailFleetingNote,
   TrailProject,
+  TrailStoredFleetingNote,
   TrailTask,
   TrailTaskStatus,
 } from "./domain/trail-model";
 import type { TrailVaultReadResult } from "./domain/trail-vault-reader";
-
 const TRAIL_PAGES = [
   {
     id: "dashboard",
@@ -32,7 +32,6 @@ const TRAIL_PAGES = [
 ] as const;
 
 type TrailPageId = (typeof TRAIL_PAGES)[number]["id"];
-
 export interface TrailAppProps {
   data: TrailVaultReadResult;
   onUpdateTaskStatus: (
@@ -43,16 +42,27 @@ export interface TrailAppProps {
     note: TrailFleetingNote,
     project: TrailProject,
   ) => Promise<void>;
+  onArchiveFleetingNote?: (
+    note: TrailFleetingNote,
+  ) => Promise<void>;
+  onDeleteFleetingNote?: (
+    note: TrailFleetingNote,
+  ) => Promise<void>;
+  onRestoreFleetingNote?: (
+    note: TrailStoredFleetingNote,
+  ) => Promise<void>;
 }
 
 export function TrailApp({
   data,
   onUpdateTaskStatus,
   onConvertFleetingNoteToTask,
+  onArchiveFleetingNote,
+  onDeleteFleetingNote,
+  onRestoreFleetingNote,
 }: TrailAppProps) {
   const [activePageId, setActivePageId] =
     useState<TrailPageId>("dashboard");
-
   return (
     <div className="trail-app">
       <header className="trail-app__header">
@@ -61,7 +71,6 @@ export function TrailApp({
         </p>
         <h1 className="trail-app__title">Trail</h1>
       </header>
-
       <nav
         className="trail-app__navigation"
         aria-label="Trail pages"
@@ -86,7 +95,6 @@ export function TrailApp({
           </button>
         ))}
       </nav>
-
       <main className="trail-app__content">
         {activePageId === "dashboard" && (
           <DashboardPage data={data} />
@@ -105,18 +113,31 @@ export function TrailApp({
             onUpdateTaskStatus={onUpdateTaskStatus}
           />
         )}
-
         {activePageId === "fleeting-notes" && (
           <FleetingNotesPage
             notes={data.fleetingNotes}
+            archivedNotes={
+              data.archivedFleetingNotes ?? []
+            }
+            trashedNotes={
+              data.trashedFleetingNotes ?? []
+            }
             projects={data.projects}
             onConvertFleetingNoteToTask={
               onConvertFleetingNoteToTask
             }
+            onArchiveFleetingNote={
+              onArchiveFleetingNote
+            }
+            onDeleteFleetingNote={
+              onDeleteFleetingNote
+            }
+            onRestoreFleetingNote={
+              onRestoreFleetingNote
+            }
           />
         )}
       </main>
-
       {data.issues.length > 0 && (
         <section
           className="trail-app__issues"
@@ -142,7 +163,6 @@ export function TrailApp({
     </div>
   );
 }
-
 function DashboardPage({
   data,
 }: Pick<TrailAppProps, "data">) {
@@ -165,7 +185,6 @@ function DashboardPage({
     </>
   );
 }
-
 interface AreasPageProps {
   areas: TrailArea[];
   projects: TrailProject[];
@@ -187,7 +206,6 @@ function AreasPage({
             const areaProjects = projects.filter(
               (project) => project.areaId === area.id,
             );
-
             return (
               <li key={area.id}>
                 <strong>{area.name}</strong>
@@ -210,7 +228,6 @@ function AreasPage({
     </>
   );
 }
-
 interface ProjectPageProps {
   project?: TrailProject;
   onUpdateTaskStatus: (
@@ -227,7 +244,6 @@ function ProjectPage({
     useState<Set<string>>(() => new Set());
   const [mutationError, setMutationError] =
     useState<string>();
-
   if (!project) {
     return (
       <>
@@ -247,7 +263,6 @@ function ProjectPage({
       return next;
     });
     setMutationError(undefined);
-
     try {
       await onUpdateTaskStatus(task, targetStatus);
     } catch (error: unknown) {
@@ -270,7 +285,6 @@ function ProjectPage({
       <h2>Project</h2>
       <h3>{project.name}</h3>
       <p>{project.overview}</p>
-
       <h4>Tasks</h4>
       {mutationError !== undefined && (
         <p role="alert">
@@ -287,13 +301,11 @@ function ProjectPage({
               <p>
                 {task.title} ({task.status})
               </p>
-
               <TaskStatusButton
                 task={task}
                 isPending={pendingTaskIds.has(task.id)}
                 onUpdateTaskStatus={updateTaskStatus}
               />
-
               {task.subtasks.length > 0 && (
                 <>
                   <h5>Subtasks</h5>
@@ -313,7 +325,6 @@ function ProjectPage({
                   </ul>
                 </>
               )}
-
               {task.notes.length > 0 && (
                 <>
                   <h5>Task notes</h5>
@@ -332,7 +343,6 @@ function ProjectPage({
           ))}
         </ul>
       )}
-
       <h4>Notes</h4>
       {project.notes.length === 0 ? (
         <p>No project notes found.</p>
@@ -354,7 +364,6 @@ interface TaskStatusButtonProps {
   isPending: boolean;
   onUpdateTaskStatus: TrailAppProps["onUpdateTaskStatus"];
 }
-
 function TaskStatusButton({
   task,
   isPending,
@@ -369,7 +378,6 @@ function TaskStatusButton({
   } else {
     return null;
   }
-
   return (
     <button
       type="button"
@@ -388,42 +396,65 @@ function TaskStatusButton({
 
 interface FleetingNotesPageProps {
   notes: TrailVaultReadResult["fleetingNotes"];
+  archivedNotes: TrailStoredFleetingNote[];
+  trashedNotes: TrailStoredFleetingNote[];
   projects: TrailProject[];
   onConvertFleetingNoteToTask:
     TrailAppProps["onConvertFleetingNoteToTask"];
+  onArchiveFleetingNote:
+    TrailAppProps["onArchiveFleetingNote"];
+  onDeleteFleetingNote:
+    TrailAppProps["onDeleteFleetingNote"];
+  onRestoreFleetingNote:
+    TrailAppProps["onRestoreFleetingNote"];
 }
+
+type FleetingNoteAction =
+  | "convert"
+  | "archive"
+  | "delete"
+  | "restore";
 
 function FleetingNotesPage({
   notes,
+  archivedNotes,
+  trashedNotes,
   projects,
   onConvertFleetingNoteToTask,
+  onArchiveFleetingNote,
+  onDeleteFleetingNote,
+  onRestoreFleetingNote,
 }: FleetingNotesPageProps) {
   const [selectedProjectIds, setSelectedProjectIds] =
     useState<Map<string, string>>(() => new Map());
-  const [pendingNoteIds, setPendingNoteIds] =
-    useState<Set<string>>(() => new Set());
+  const [pendingActions, setPendingActions] =
+    useState<Map<string, FleetingNoteAction>>(
+      () => new Map(),
+    );
   const [blockedNoteIds, setBlockedNoteIds] =
     useState<Set<string>>(() => new Set());
-  const [conversionErrors, setConversionErrors] =
+  const [actionErrors, setActionErrors] =
     useState<Map<string, string>>(() => new Map());
 
-  const convertNote = async (
-    note: TrailFleetingNote,
-    project: TrailProject,
+  const runNoteAction = async (
+    noteId: string,
+    rowKey: string,
+    action: FleetingNoteAction,
+    execute: () => Promise<void>,
   ): Promise<void> => {
-    setPendingNoteIds((current) => {
-      const next = new Set(current);
-      next.add(note.id);
+    setPendingActions((current) => {
+      const next = new Map(current);
+      next.set(rowKey, action);
       return next;
     });
-    setConversionErrors((current) => {
+    setActionErrors((current) => {
       const next = new Map(current);
-      next.delete(note.id);
+      next.delete(rowKey);
       return next;
     });
 
     try {
-      await onConvertFleetingNoteToTask(note, project);
+      await execute();
     } catch (error: unknown) {
       if (
         error instanceof TrailCrossFileMutationError
@@ -431,153 +462,456 @@ function FleetingNotesPage({
       ) {
         setBlockedNoteIds((current) => {
           const next = new Set(current);
-          next.add(note.id);
+          next.add(noteId);
           return next;
         });
       }
 
-      setConversionErrors((current) => {
+      setActionErrors((current) => {
         const next = new Map(current);
         next.set(
-          note.id,
-          formatFleetingNoteConversionError(error),
+          rowKey,
+          formatFleetingNoteActionError(action, error),
         );
         return next;
       });
     } finally {
-      setPendingNoteIds((current) => {
-        const next = new Set(current);
-        next.delete(note.id);
+      setPendingActions((current) => {
+        const next = new Map(current);
+        next.delete(rowKey);
         return next;
       });
     }
   };
 
+  const sortedNotes = sortFleetingNotesByCreated(notes);
+  const sortedArchivedNotes = sortFleetingNotesByCreated(
+    archivedNotes,
+  );
+  const sortedTrashedNotes = sortFleetingNotesByCreated(
+    trashedNotes,
+  );
+
   return (
-    <>
-      <h2>Fleeting Notes</h2>
+    <section
+      className="trail-fleeting-notes"
+      aria-labelledby="trail-fleeting-notes-title"
+    >
+      <h2 id="trail-fleeting-notes-title">
+        Fleeting Notes
+      </h2>
 
-      {notes.length === 0 ? (
-        <p>No Fleeting Notes found.</p>
-      ) : (
-        <ul aria-label="Fleeting Notes">
-          {notes.map((note) => {
-            const selectedProjectId =
-              selectedProjectIds.get(note.id)
-              ?? projects[0]?.id
-              ?? "";
-            const selectedProject = projects.find(
-              (project) => project.id === selectedProjectId,
-            );
-            const isPending = pendingNoteIds.has(note.id);
-            const isBlocked = blockedNoteIds.has(note.id);
-            const conversionError =
-              conversionErrors.get(note.id);
-
-            return (
-              <li key={note.id}>
-                <strong>{note.text}</strong>
-                <p>Created: {note.created}</p>
-                {note.cleanupDue !== undefined && (
-                  <p>Cleanup due: {note.cleanupDue}</p>
-                )}
-
-                {projects.length === 0 ? (
-                  <p>No target Projects available.</p>
-                ) : (
-                  <label>
-                    Target Project
-                    <select
-                      aria-label={
-                        `Target Project for ${note.text}`
-                      }
-                      value={selectedProjectId}
-                      disabled={isPending || isBlocked}
-                      onChange={(event) => {
-                        setSelectedProjectIds((current) => {
-                          const next = new Map(current);
-                          next.set(
-                            note.id,
-                            event.currentTarget.value,
-                          );
-                          return next;
-                        });
-                      }}
-                    >
-                      {projects.map((project) => (
-                        <option
-                          key={project.id}
-                          value={project.id}
-                        >
-                          {project.areaName} / {project.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-
-                <button
-                  type="button"
-                  aria-label={`Convert ${note.text} to Task`}
-                  disabled={
-                    selectedProject === undefined
-                    || isPending
-                    || isBlocked
-                  }
-                  onClick={() => {
-                    if (selectedProject !== undefined) {
-                      void convertNote(note, selectedProject);
-                    }
-                  }}
+      <section
+        className="trail-fleeting-notes__section"
+        aria-label="Active Fleeting Notes"
+      >
+        <div className="trail-fleeting-notes__section-header">
+          <h3>Active</h3>
+          <span className="trail-fleeting-notes__count">
+            {formatCount(sortedNotes.length, "Note")}
+          </span>
+        </div>
+        {sortedNotes.length === 0 ? (
+          <p className="trail-fleeting-notes__empty">
+            No Fleeting Notes found.
+          </p>
+        ) : (
+          <ul
+            className="trail-fleeting-notes__list"
+            aria-label="Fleeting Notes"
+          >
+            {sortedNotes.map((note) => {
+              const rowKey = `active:${note.id}`;
+              const selectedProjectId =
+                selectedProjectIds.get(note.id)
+                ?? projects[0]?.id
+                ?? "";
+              const selectedProject = projects.find(
+                (project) => project.id === selectedProjectId,
+              );
+              const pendingAction =
+                pendingActions.get(rowKey);
+              const isPending = pendingAction !== undefined;
+              const isBlocked = blockedNoteIds.has(note.id);
+              const actionError = actionErrors.get(rowKey);
+              return (
+                <li
+                  key={note.id}
+                  className="trail-fleeting-note-card"
                 >
-                  {fleetingNoteConversionButtonLabel(
-                    isPending,
-                    isBlocked,
-                  )}
-                </button>
+                  <div className="trail-fleeting-note-card__header">
+                    <strong className="trail-fleeting-note-card__title">
+                      {note.text}
+                    </strong>
+                    <div className="trail-fleeting-note-card__meta">
+                      <span>Created: {note.created}</span>
+                      {note.cleanupDue !== undefined && (
+                        <span>
+                          Cleanup due: {note.cleanupDue}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-                {conversionError !== undefined && (
-                  <p role="alert">{conversionError}</p>
+                  <div className="trail-fleeting-note-card__controls">
+                    {projects.length === 0 ? (
+                      <p className="trail-fleeting-notes__empty">
+                        No target Projects available.
+                      </p>
+                    ) : (
+                      <label className="trail-fleeting-note-card__target">
+                        <span>Target Project</span>
+                        <select
+                          aria-label={
+                            `Target Project for ${note.text}`
+                          }
+                          value={selectedProjectId}
+                          disabled={isPending || isBlocked}
+                          onChange={(
+                            event: ChangeEvent<HTMLSelectElement>,
+                          ) => {
+                            setSelectedProjectIds((current) => {
+                              const next = new Map(current);
+                              next.set(
+                                note.id,
+                                event.currentTarget.value,
+                              );
+                              return next;
+                            });
+                          }}
+                        >
+                          {projects.map((project) => (
+                            <option
+                              key={project.id}
+                              value={project.id}
+                            >
+                              {project.areaName} / {project.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+
+                    <div className="trail-fleeting-note-card__actions">
+                      <button
+                        type="button"
+                        aria-label={`Convert ${note.text} to Task`}
+                        disabled={
+                          selectedProject === undefined
+                          || isPending
+                          || isBlocked
+                        }
+                        onClick={() => {
+                          if (selectedProject !== undefined) {
+                            void runNoteAction(
+                              note.id,
+                              rowKey,
+                              "convert",
+                              () => onConvertFleetingNoteToTask(
+                                note,
+                                selectedProject,
+                              ),
+                            );
+                          }
+                        }}
+                      >
+                        {fleetingNoteActionButtonLabel(
+                          "convert",
+                          pendingAction,
+                          isBlocked,
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Archive ${note.text}`}
+                        disabled={
+                          onArchiveFleetingNote === undefined
+                          || isPending
+                          || isBlocked
+                        }
+                        onClick={() => {
+                          if (onArchiveFleetingNote !== undefined) {
+                            void runNoteAction(
+                              note.id,
+                              rowKey,
+                              "archive",
+                              () => onArchiveFleetingNote(note),
+                            );
+                          }
+                        }}
+                      >
+                        {fleetingNoteActionButtonLabel(
+                          "archive",
+                          pendingAction,
+                          isBlocked,
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Delete ${note.text}`}
+                        disabled={
+                          onDeleteFleetingNote === undefined
+                          || isPending
+                          || isBlocked
+                        }
+                        onClick={() => {
+                          if (onDeleteFleetingNote !== undefined) {
+                            void runNoteAction(
+                              note.id,
+                              rowKey,
+                              "delete",
+                              () => onDeleteFleetingNote(note),
+                            );
+                          }
+                        }}
+                      >
+                        {fleetingNoteActionButtonLabel(
+                          "delete",
+                          pendingAction,
+                          isBlocked,
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {actionError !== undefined && (
+                    <p
+                      className="trail-fleeting-note-card__error"
+                      role="alert"
+                    >
+                      {actionError}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <StoredFleetingNotesSection
+        title="Archived"
+        emptyMessage="No archived Fleeting Notes."
+        notes={sortedArchivedNotes}
+        pendingActions={pendingActions}
+        blockedNoteIds={blockedNoteIds}
+        actionErrors={actionErrors}
+        onRestoreFleetingNote={onRestoreFleetingNote}
+        onRunAction={runNoteAction}
+      />
+      <StoredFleetingNotesSection
+        title="Trash"
+        emptyMessage="No deleted Fleeting Notes."
+        notes={sortedTrashedNotes}
+        pendingActions={pendingActions}
+        blockedNoteIds={blockedNoteIds}
+        actionErrors={actionErrors}
+        onRestoreFleetingNote={onRestoreFleetingNote}
+        onRunAction={runNoteAction}
+      />
+    </section>
+  );
+}
+
+interface StoredFleetingNotesSectionProps {
+  title: string;
+  emptyMessage: string;
+  notes: TrailStoredFleetingNote[];
+  pendingActions: Map<string, FleetingNoteAction>;
+  blockedNoteIds: Set<string>;
+  actionErrors: Map<string, string>;
+  onRestoreFleetingNote:
+    TrailAppProps["onRestoreFleetingNote"];
+  onRunAction: (
+    noteId: string,
+    rowKey: string,
+    action: FleetingNoteAction,
+    execute: () => Promise<void>,
+  ) => Promise<void>;
+}
+
+function StoredFleetingNotesSection({
+  title,
+  emptyMessage,
+  notes,
+  pendingActions,
+  blockedNoteIds,
+  actionErrors,
+  onRestoreFleetingNote,
+  onRunAction,
+}: StoredFleetingNotesSectionProps) {
+  return (
+    <section
+      className="trail-fleeting-notes__section"
+      aria-label={`${title} Fleeting Notes`}
+    >
+      <div className="trail-fleeting-notes__section-header">
+        <h3>{title}</h3>
+        <span className="trail-fleeting-notes__count">
+          {formatCount(notes.length, "Note")}
+        </span>
+      </div>
+      {notes.length === 0 ? (
+        <p className="trail-fleeting-notes__empty">
+          {emptyMessage}
+        </p>
+      ) : (
+        <ul className="trail-fleeting-notes__list">
+          {notes.map((note) => {
+            const rowKey = `${note.storage}:${note.id}`;
+            const pendingAction =
+              pendingActions.get(rowKey);
+            const isPending = pendingAction !== undefined;
+            const isBlocked = blockedNoteIds.has(note.id);
+            const actionError = actionErrors.get(rowKey);
+            return (
+              <li
+                key={rowKey}
+                className="trail-fleeting-note-card"
+              >
+                <div className="trail-fleeting-note-card__header">
+                  <strong className="trail-fleeting-note-card__title">
+                    {note.text}
+                  </strong>
+                  <div className="trail-fleeting-note-card__meta">
+                    <span>Created: {note.created}</span>
+                    <span>
+                      {note.storage === "archive"
+                        ? "Archived"
+                        : "Deleted"}: {note.storedAt}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="trail-fleeting-note-card__actions">
+                  <button
+                    type="button"
+                    aria-label={
+                      `Restore ${note.storage} ${note.text}`
+                    }
+                    disabled={
+                      onRestoreFleetingNote === undefined
+                      || isPending
+                      || isBlocked
+                    }
+                    onClick={() => {
+                      if (onRestoreFleetingNote !== undefined) {
+                        void onRunAction(
+                          note.id,
+                          rowKey,
+                          "restore",
+                          () => onRestoreFleetingNote(note),
+                        );
+                      }
+                    }}
+                  >
+                    {fleetingNoteActionButtonLabel(
+                      "restore",
+                      pendingAction,
+                      isBlocked,
+                    )}
+                  </button>
+                </div>
+
+                {actionError !== undefined && (
+                  <p
+                    className="trail-fleeting-note-card__error"
+                    role="alert"
+                  >
+                    {actionError}
+                  </p>
                 )}
               </li>
             );
           })}
         </ul>
       )}
-    </>
+    </section>
   );
 }
 
-
-function fleetingNoteConversionButtonLabel(
-  isPending: boolean,
-  isBlocked: boolean,
-): string {
-  if (isPending) {
-    return "Converting...";
-  }
-
-  return isBlocked
-    ? "Review required"
-    : "Convert to Task";
+interface CreatedFleetingNote {
+  id: string;
+  created: string;
 }
 
-function formatFleetingNoteConversionError(
+function sortFleetingNotesByCreated<
+  T extends CreatedFleetingNote,
+>(notes: readonly T[]): T[] {
+  return [...notes].sort((left, right) => {
+    const leftTime = Date.parse(left.created);
+    const rightTime = Date.parse(right.created);
+
+    if (
+      !Number.isNaN(leftTime)
+      && !Number.isNaN(rightTime)
+      && leftTime !== rightTime
+    ) {
+      return leftTime - rightTime;
+    }
+
+    const createdComparison = left.created.localeCompare(
+      right.created,
+    );
+    return createdComparison !== 0
+      ? createdComparison
+      : left.id.localeCompare(right.id);
+  });
+}
+
+function fleetingNoteActionButtonLabel(
+  action: FleetingNoteAction,
+  pendingAction: FleetingNoteAction | undefined,
+  isBlocked: boolean,
+): string {
+  if (isBlocked) {
+    return "Review required";
+  }
+
+  if (pendingAction === action) {
+    switch (action) {
+      case "convert":
+        return "Converting...";
+      case "archive":
+        return "Archiving...";
+      case "delete":
+        return "Deleting...";
+      case "restore":
+        return "Restoring...";
+    }
+  }
+
+  switch (action) {
+    case "convert":
+      return "Convert to Task";
+    case "archive":
+      return "Archive";
+    case "delete":
+      return "Delete";
+    case "restore":
+      return "Restore";
+  }
+}
+function formatFleetingNoteActionError(
+  action: FleetingNoteAction,
   error: unknown,
 ): string {
+  const label = action === "convert"
+    ? "Conversion"
+    : `${action[0].toUpperCase()}${action.slice(1)}`;
+
   if (error instanceof TrailCrossFileMutationError) {
     const guidance = error.outcome === "partial"
       ? " Manual review is required before retrying."
       : " The Fleeting Note remains available to retry.";
 
-    return `Conversion result: ${error.outcome}. ${error.message}${guidance}`;
+    return `${label} result: ${error.outcome}. ${error.message}${guidance}`;
   }
 
   const message = error instanceof Error
     ? error.message
-    : "Unknown Fleeting Note conversion error.";
-
-  return `Conversion failed: ${message}`;
+    : `Unknown Fleeting Note ${action} error.`;
+  return `${label} failed: ${message}`;
 }
 
 function formatCount(

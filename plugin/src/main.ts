@@ -3,13 +3,18 @@ import {
   parseYaml,
   Plugin,
 } from "obsidian";
-
+import {
+  restoreFleetingNoteInVault,
+  storeFleetingNoteInVault,
+} from "./domain/trail-fleeting-note-lifecycle-command";
+import {
+  createObsidianTrailFleetingNoteLifecycleSource,
+} from "./domain/trail-fleeting-note-lifecycle-service";
 import {
   convertFleetingNoteToTaskInVault,
 } from "./domain/trail-fleeting-to-task-command";
 import { TrailMutationQueue } from "./domain/trail-mutation-queue";
 import {
-  createObsidianTrailMutationSource,
   updateTaskStatusInVault,
 } from "./domain/trail-mutation-service";
 import { TrailRuntimeStore } from "./domain/trail-runtime-store";
@@ -22,16 +27,16 @@ import {
 import {
   TRAIL_VIEW_TYPE,
   TrailView,
+  type TrailFleetingNoteAction,
   type TrailFleetingNoteConverter,
+  type TrailStoredFleetingNoteRestorer,
   type TrailTaskStatusUpdater,
 } from "./trail-view";
-
 const TRAIL_TIME_ZONE_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 export default class TrailPlugin extends Plugin {
   private runtimeStore: TrailRuntimeStore | null = null;
   private mutationQueue: TrailMutationQueue | null = null;
-
   onload(): void {
     const parseFrontmatter =
       createTrailFrontmatterParser(
@@ -46,9 +51,10 @@ export default class TrailPlugin extends Plugin {
       () => readTrailVault(source),
     );
     const mutationSource =
-      createObsidianTrailMutationSource(this.app);
+      createObsidianTrailFleetingNoteLifecycleSource(
+        this.app,
+      );
     const mutationQueue = new TrailMutationQueue();
-
     const updateTaskStatus: TrailTaskStatusUpdater = async (
       task,
       targetStatus,
@@ -65,7 +71,6 @@ export default class TrailPlugin extends Plugin {
         }),
       );
     };
-
     const convertFleetingNoteToTask:
       TrailFleetingNoteConverter = async (
         note,
@@ -73,7 +78,6 @@ export default class TrailPlugin extends Plugin {
       ): Promise<void> => {
         const taskId = crypto.randomUUID();
         const taskCreatedAt = createTrailTimestamp(new Date());
-
         await mutationQueue.enqueue(() =>
           runtimeStore.runMutation(async () => {
             await convertFleetingNoteToTaskInVault(
@@ -89,7 +93,49 @@ export default class TrailPlugin extends Plugin {
           }),
         );
       };
-
+    const archiveFleetingNote: TrailFleetingNoteAction =
+      async (note): Promise<void> => {
+        await mutationQueue.enqueue(() =>
+          runtimeStore.runMutation(async () => {
+            await storeFleetingNoteInVault(
+              mutationSource,
+              {
+                expectedNote: note,
+                storage: "archive",
+                storedAt: createTrailTimestamp(new Date()),
+              },
+            );
+          }),
+        );
+      };
+    const deleteFleetingNote: TrailFleetingNoteAction =
+      async (note): Promise<void> => {
+        await mutationQueue.enqueue(() =>
+          runtimeStore.runMutation(async () => {
+            await storeFleetingNoteInVault(
+              mutationSource,
+              {
+                expectedNote: note,
+                storage: "trash",
+                storedAt: createTrailTimestamp(new Date()),
+              },
+            );
+          }),
+        );
+      };
+    const restoreFleetingNote:
+      TrailStoredFleetingNoteRestorer = async (
+        note,
+      ): Promise<void> => {
+        await mutationQueue.enqueue(() =>
+          runtimeStore.runMutation(async () => {
+            await restoreFleetingNoteInVault(
+              mutationSource,
+              { expectedNote: note },
+            );
+          }),
+        );
+      };
     this.runtimeStore = runtimeStore;
     this.mutationQueue = mutationQueue;
 
@@ -100,6 +146,9 @@ export default class TrailPlugin extends Plugin {
         runtimeStore,
         updateTaskStatus,
         convertFleetingNoteToTask,
+        archiveFleetingNote,
+        deleteFleetingNote,
+        restoreFleetingNote,
       ),
     );
 
@@ -110,7 +159,6 @@ export default class TrailPlugin extends Plugin {
 
       this.registerVaultReconciliation(runtimeStore);
     });
-
     this.addRibbonIcon("route", "Open trail", () => {
       void this.activateView();
     });
@@ -131,7 +179,6 @@ export default class TrailPlugin extends Plugin {
     this.runtimeStore?.dispose();
     this.runtimeStore = null;
   }
-
   private registerVaultReconciliation(
     runtimeStore: TrailRuntimeStore,
   ): void {
@@ -152,7 +199,6 @@ export default class TrailPlugin extends Plugin {
         scheduleForPath(file.path);
       }),
     );
-
     this.registerEvent(
       this.app.vault.on("delete", (file) => {
         scheduleForPath(file.path);
@@ -170,7 +216,6 @@ export default class TrailPlugin extends Plugin {
       }),
     );
   }
-
   private async activateView(): Promise<void> {
     const { workspace } = this.app;
     let leaf = workspace.getLeavesOfType(
@@ -194,6 +239,5 @@ function createTrailTimestamp(now: Date): string {
   const trailTime = new Date(
     now.getTime() + TRAIL_TIME_ZONE_OFFSET_MS,
   );
-
   return `${trailTime.toISOString().slice(0, 19)}+08:00`;
 }

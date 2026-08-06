@@ -28,7 +28,6 @@
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
-
 .trail-app__title {
   margin: 0;
 }
@@ -47,7 +46,6 @@
   color: var(--text-muted);
   cursor: pointer;
 }
-
 .trail-app__nav-button:hover,
 .trail-app__nav-button.is-active {
   color: var(--text-normal);
@@ -65,4 +63,116 @@
 .trail-app__content h2,
 .trail-app__content p {
   margin-top: 0;
+}
+
+.trail-fleeting-notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-6);
+}
+
+.trail-fleeting-notes > h2 {
+  margin-bottom: 0;
+}
+
+.trail-fleeting-notes__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-notes__section + .trail-fleeting-notes__section {
+  padding-top: var(--size-4-5);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.trail-fleeting-notes__section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-notes__section-header h3 {
+  margin: 0;
+}
+
+.trail-fleeting-notes__count,
+.trail-fleeting-notes__empty {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-fleeting-notes__empty {
+  margin: 0;
+}
+
+.trail-fleeting-notes__list {
+  display: grid;
+  gap: var(--size-4-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trail-fleeting-note-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  padding: var(--size-4-4);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+}
+
+.trail-fleeting-note-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+}
+
+.trail-fleeting-note-card__title {
+  line-height: var(--line-height-tight);
+}
+
+.trail-fleeting-note-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1) var(--size-4-4);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-fleeting-note-card__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__target {
+  display: flex;
+  flex: 1 1 14rem;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-fleeting-note-card__target select {
+  width: 100%;
+  min-width: 0;
+}
+
+.trail-fleeting-note-card__actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+
+.trail-fleeting-note-card__error {
+  margin: 0;
+  color: var(--text-error);
 }

@@ -28,7 +28,6 @@ export type TrailTaskStatus =
 
 export type TrailTaskPriority =
   (typeof TASK_PRIORITIES)[number];
-
 export interface TrailSourceRange {
   filePath: string;
   startOffset: number;
@@ -43,7 +42,6 @@ export interface TrailArea {
   description: string;
   filePath: string;
 }
-
 export interface TrailProject {
   id: string;
   areaId: string;
@@ -57,7 +55,6 @@ export interface TrailProject {
   notes: TrailProjectNote[];
   filePath: string;
 }
-
 export interface TrailTask {
   id: string;
   projectId: string;
@@ -81,7 +78,15 @@ export interface TrailFleetingNote {
   cleanupDue?: string;
   source: TrailSourceRange;
 }
+export type TrailFleetingNoteStorage =
+  | "archive"
+  | "trash";
 
+export interface TrailStoredFleetingNote
+  extends TrailFleetingNote {
+  storage: TrailFleetingNoteStorage;
+  storedAt: string;
+}
 export interface TrailSubtask {
   text: string;
   completed: boolean;

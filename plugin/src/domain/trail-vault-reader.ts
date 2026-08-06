@@ -3,9 +3,18 @@ import type { App, TFile } from "obsidian";
 import type {
   TrailArea,
   TrailFleetingNote,
+  TrailFleetingNoteStorage,
   TrailParseIssue,
   TrailProject,
+  TrailStoredFleetingNote,
 } from "./trail-model";
+import {
+  parseStoredFleetingNotes,
+  storedFleetingNotePath,
+  TRAIL_FLEETING_ARCHIVE_PATH,
+  TRAIL_FLEETING_NOTES_PATH,
+  TRAIL_FLEETING_TRASH_PATH,
+} from "./trail-fleeting-note-lifecycle";
 import { parseFleetingNotes } from "./trail-fleeting-note-parser";
 import {
   parseArea,
@@ -13,14 +22,14 @@ import {
 } from "./trail-parser";
 
 const TRAIL_AREAS_ROOT = "Trail/Areas";
-const TRAIL_FLEETING_NOTES_PATH = "Trail/Fleeting Notes.md";
+const TRAIL_ARCHIVE_ROOT = "Trail/Archive";
+const TRAIL_TRASH_ROOT = "Trail/Trash";
 const AREA_FILE_NAME = "Area.md";
 
 export interface TrailReadableFile {
   path: string;
   basename: string;
 }
-
 export type TrailFrontmatterParser = (
   markdown: string,
 ) => Record<string, unknown> | undefined;
@@ -35,11 +44,12 @@ export interface TrailVaultSource<
     markdown: string,
   ): Record<string, unknown> | undefined;
 }
-
 export interface TrailVaultReadResult {
   areas: TrailArea[];
   projects: TrailProject[];
   fleetingNotes: TrailFleetingNote[];
+  archivedFleetingNotes?: TrailStoredFleetingNote[];
+  trashedFleetingNotes?: TrailStoredFleetingNote[];
   issues: TrailParseIssue[];
 }
 
@@ -54,7 +64,6 @@ export function isTrailManagedMarkdownPath(
   filePath: string,
 ): boolean {
   const parts = filePath.split("/");
-
   return (
     parts.length === 4
     && parts[0] === "Trail"
@@ -70,11 +79,14 @@ export function isTrailDataEventPath(
   if (
     filePath === "Trail"
     || filePath === TRAIL_AREAS_ROOT
+    || filePath === TRAIL_ARCHIVE_ROOT
+    || filePath === TRAIL_TRASH_ROOT
     || filePath === TRAIL_FLEETING_NOTES_PATH
+    || filePath === TRAIL_FLEETING_ARCHIVE_PATH
+    || filePath === TRAIL_FLEETING_TRASH_PATH
   ) {
     return true;
   }
-
   const parts = filePath.split("/");
   if (
     parts.length === 3
@@ -87,7 +99,6 @@ export function isTrailDataEventPath(
 
   return isTrailManagedMarkdownPath(filePath);
 }
-
 export function createTrailFrontmatterParser(
   getFrontMatterInfo: (
     markdown: string,
@@ -113,7 +124,6 @@ export function createTrailFrontmatterParser(
     }
   };
 }
-
 export function createObsidianTrailSource(
   app: App,
   parseFrontmatter: TrailFrontmatterParser,
@@ -128,7 +138,6 @@ export function createObsidianTrailSource(
       parseFrontmatter(markdown),
   };
 }
-
 export async function readTrailVault<
   FileType extends TrailReadableFile,
 >(
@@ -138,12 +147,14 @@ export async function readTrailVault<
   const areas: TrailArea[] = [];
   const projects: TrailProject[] = [];
   const fleetingNotes: TrailFleetingNote[] = [];
+  const archivedFleetingNotes: TrailStoredFleetingNote[] = [];
+  const trashedFleetingNotes: TrailStoredFleetingNote[] = [];
   const markdownFiles = source.getMarkdownFiles();
   const areaFiles = groupAreaFiles(markdownFiles);
   const seenAreaIds = new Set<string>();
   const seenProjectIds = new Set<string>();
   const seenTaskIds = new Set<string>();
-
+  const seenFleetingNoteIds = new Set<string>();
   for (
     const [areaName, files]
     of [...areaFiles.entries()].sort(
@@ -162,7 +173,6 @@ export async function readTrailVault<
       });
       continue;
     }
-
     const areaMarkdown = await readMarkdown(
       source,
       files.areaFile,
@@ -189,7 +199,6 @@ export async function readTrailVault<
     if (!areaResult.value) {
       continue;
     }
-
     const area = areaResult.value;
     if (seenAreaIds.has(area.id)) {
       issues.push({
@@ -206,7 +215,6 @@ export async function readTrailVault<
 
     seenAreaIds.add(area.id);
     areas.push(area);
-
     for (
       const projectFile
       of [...files.projectFiles].sort(
@@ -223,7 +231,6 @@ export async function readTrailVault<
       if (projectMarkdown === undefined) {
         continue;
       }
-
       const projectResult = parseProject({
         area,
         projectName: projectFile.basename,
@@ -241,7 +248,6 @@ export async function readTrailVault<
       if (!projectResult.value) {
         continue;
       }
-
       const project = projectResult.value;
       if (seenProjectIds.has(project.id)) {
         issues.push({
@@ -255,7 +261,6 @@ export async function readTrailVault<
 
         continue;
       }
-
       seenProjectIds.add(project.id);
       const tasks = project.tasks.filter((task) => {
         if (seenTaskIds.has(task.id)) {
@@ -274,7 +279,6 @@ export async function readTrailVault<
         seenTaskIds.add(task.id);
         return true;
       });
-
       projects.push({
         ...project,
         tasks,
@@ -298,20 +302,109 @@ export async function readTrailVault<
         filePath: fleetingNotesFile.path,
         markdown: fleetingMarkdown,
       });
-
-      fleetingNotes.push(...fleetingResult.notes);
+      appendFleetingNotes(
+        fleetingResult.notes,
+        fleetingNotes,
+        seenFleetingNoteIds,
+        issues,
+      );
       issues.push(...fleetingResult.issues);
     }
   }
+
+  appendFleetingNotes(
+    await readStoredFleetingNotes(
+      source,
+      markdownFiles,
+      "archive",
+      issues,
+    ),
+    archivedFleetingNotes,
+    seenFleetingNoteIds,
+    issues,
+  );
+  appendFleetingNotes(
+    await readStoredFleetingNotes(
+      source,
+      markdownFiles,
+      "trash",
+      issues,
+    ),
+    trashedFleetingNotes,
+    seenFleetingNoteIds,
+    issues,
+  );
 
   return {
     areas,
     projects,
     fleetingNotes,
+    archivedFleetingNotes,
+    trashedFleetingNotes,
     issues,
   };
 }
+function appendFleetingNotes<
+  NoteType extends TrailFleetingNote,
+>(
+  notes: NoteType[],
+  target: NoteType[],
+  seenIds: Set<string>,
+  issues: TrailParseIssue[],
+): void {
+  for (const note of notes) {
+    if (seenIds.has(note.id)) {
+      issues.push({
+        scope: "fleeting",
+        code: "fleeting.id.duplicate",
+        message:
+          `Fleeting Note UUID "${note.id}" is present in more than one lifecycle file.`,
+        filePath: note.source.filePath,
+        objectId: note.id,
+      });
+    } else {
+      seenIds.add(note.id);
+    }
 
+    target.push(note);
+  }
+}
+
+async function readStoredFleetingNotes<
+  FileType extends TrailReadableFile,
+>(
+  source: TrailVaultSource<FileType>,
+  markdownFiles: FileType[],
+  storage: TrailFleetingNoteStorage,
+  issues: TrailParseIssue[],
+): Promise<TrailStoredFleetingNote[]> {
+  const filePath = storedFleetingNotePath(storage);
+  const file = markdownFiles.find(
+    (candidate) => candidate.path === filePath,
+  );
+
+  if (!file) {
+    return [];
+  }
+
+  const markdown = await readMarkdown(
+    source,
+    file,
+    issues,
+  );
+
+  if (markdown === undefined) {
+    return [];
+  }
+
+  const result = parseStoredFleetingNotes({
+    filePath,
+    markdown,
+    storage,
+  });
+  issues.push(...result.issues);
+  return result.notes;
+}
 async function readMarkdown<
   FileType extends TrailReadableFile,
 >(
@@ -325,7 +418,6 @@ async function readMarkdown<
     const message = error instanceof Error
       ? error.message
       : "Unknown read error.";
-
     issues.push({
       scope: "file",
       code: "file.read.failed",
@@ -351,7 +443,6 @@ function groupAreaFiles<
     if (!areaName) {
       continue;
     }
-
     const grouped = result.get(areaName) ?? {
       projectFiles: [],
     };
@@ -377,7 +468,6 @@ function getAreaName(
 
   return filePath.split("/")[2];
 }
-
 function toRecord(
   value: unknown,
 ): Record<string, unknown> | undefined {

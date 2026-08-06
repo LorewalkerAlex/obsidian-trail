@@ -5,6 +5,7 @@ import { ItemView, type WorkspaceLeaf } from "obsidian";
 import type {
   TrailFleetingNote,
   TrailProject,
+  TrailStoredFleetingNote,
   TrailTask,
   TrailTaskStatus,
 } from "./domain/trail-model";
@@ -12,7 +13,6 @@ import type { TrailRuntimeStore } from "./domain/trail-runtime-store";
 import { TrailApp } from "./trail-app";
 
 export const TRAIL_VIEW_TYPE = "trail-view";
-
 export type TrailTaskStatusUpdater = (
   task: TrailTask,
   targetStatus: TrailTaskStatus,
@@ -23,16 +23,29 @@ export type TrailFleetingNoteConverter = (
   project: TrailProject,
 ) => Promise<void>;
 
+export type TrailFleetingNoteAction = (
+  note: TrailFleetingNote,
+) => Promise<void>;
+
+export type TrailStoredFleetingNoteRestorer = (
+  note: TrailStoredFleetingNote,
+) => Promise<void>;
+
 export class TrailView extends ItemView {
   private root: Root | null = null;
   private unsubscribe: (() => void) | null = null;
-
   constructor(
     leaf: WorkspaceLeaf,
     private readonly runtimeStore: TrailRuntimeStore,
     private readonly updateTaskStatus: TrailTaskStatusUpdater,
     private readonly convertFleetingNoteToTask:
       TrailFleetingNoteConverter,
+    private readonly archiveFleetingNote:
+      TrailFleetingNoteAction,
+    private readonly deleteFleetingNote:
+      TrailFleetingNoteAction,
+    private readonly restoreFleetingNote:
+      TrailStoredFleetingNoteRestorer,
   ) {
     super(leaf);
   }
@@ -48,7 +61,6 @@ export class TrailView extends ItemView {
   getIcon(): string {
     return "route";
   }
-
   async onOpen(): Promise<void> {
     this.contentEl.empty();
     this.contentEl.addClass("trail-view");
@@ -69,7 +81,6 @@ export class TrailView extends ItemView {
   async onClose(): Promise<void> {
     this.unsubscribe?.();
     this.unsubscribe = null;
-
     this.root?.unmount();
     this.root = null;
 
@@ -90,6 +101,23 @@ export class TrailView extends ItemView {
     await this.convertFleetingNoteToTask(note, project);
   };
 
+  private readonly handleArchiveFleetingNote = async (
+    note: TrailFleetingNote,
+  ): Promise<void> => {
+    await this.archiveFleetingNote(note);
+  };
+
+  private readonly handleDeleteFleetingNote = async (
+    note: TrailFleetingNote,
+  ): Promise<void> => {
+    await this.deleteFleetingNote(note);
+  };
+
+  private readonly handleRestoreFleetingNote = async (
+    note: TrailStoredFleetingNote,
+  ): Promise<void> => {
+    await this.restoreFleetingNote(note);
+  };
   private readonly renderSnapshot = (): void => {
     const snapshot = this.runtimeStore.getSnapshot();
 
@@ -104,6 +132,15 @@ export class TrailView extends ItemView {
           onUpdateTaskStatus={this.handleUpdateTaskStatus}
           onConvertFleetingNoteToTask={
             this.handleConvertFleetingNoteToTask
+          }
+          onArchiveFleetingNote={
+            this.handleArchiveFleetingNote
+          }
+          onDeleteFleetingNote={
+            this.handleDeleteFleetingNote
+          }
+          onRestoreFleetingNote={
+            this.handleRestoreFleetingNote
           }
         />
       </StrictMode>,
