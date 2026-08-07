@@ -13,7 +13,6 @@ const TASK_ID = "fa3b3a46-f818-416a-9dd0-59aa168bc467";
 
 function createFile(path: string): TrailReadableFile {
   const fileName = path.split("/").pop();
-
   if (!fileName) {
     throw new Error(`Invalid test file path: ${path}`);
   }
@@ -37,7 +36,6 @@ function getFrontMatterInfo(markdown: string): {
     frontmatter: match?.[1] ?? "",
   };
 }
-
 function parseFixtureYaml(
   yaml: string,
 ): Record<string, unknown> {
@@ -54,7 +52,6 @@ function parseFixtureYaml(
     created: "2026-08-04",
   };
 }
-
 describe("Trail Vault reader frontmatter consistency", () => {
   it("parses frontmatter from the same Markdown snapshot", async () => {
     const areaPath = "Trail/Areas/Work/Area.md";
@@ -109,7 +106,6 @@ describe("Trail Vault reader frontmatter consistency", () => {
         return parseFrontmatter(markdown);
       },
     };
-
     const result = await readTrailVault(source);
 
     expect(result.issues).toEqual([]);
@@ -126,7 +122,26 @@ describe("Trail Vault reader frontmatter consistency", () => {
       projectMarkdown,
     );
   });
+  it("accepts one leading UTF-8 BOM before frontmatter", () => {
+    const parseFrontmatter = createTrailFrontmatterParser(
+      getFrontMatterInfo,
+      parseFixtureYaml,
+    );
+    const markdown = [
+      "\uFEFF---",
+      `id: "${PROJECT_ID}"`,
+      "created: 2026-08-04",
+      "status: active",
+      "---",
+      "",
+    ].join("\n");
 
+    expect(parseFrontmatter(markdown)).toEqual({
+      id: PROJECT_ID,
+      created: "2026-08-04",
+      status: "active",
+    });
+  });
   it("returns no frontmatter when YAML parsing fails", () => {
     const parseFrontmatter = createTrailFrontmatterParser(
       () => ({

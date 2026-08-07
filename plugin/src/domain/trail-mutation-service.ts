@@ -1,5 +1,4 @@
 import type { App, TFile } from "obsidian";
-
 import type {
   TrailFleetingNote,
   TrailTask,
@@ -19,9 +18,10 @@ import {
 } from "./trail-task-creation-writer";
 import {
   TrailTaskStatusUpdateError,
+  TrailTaskTitleUpdateError,
   updateTaskStatusMarkdown,
+  updateTaskTitleMarkdown,
 } from "./trail-task-writer";
-
 export interface TrailMutableFile {
   path: string;
 }
@@ -40,6 +40,11 @@ export interface TrailTaskStatusMutationInput {
   expectedTask: TrailTask;
   targetStatus: TrailTaskStatus;
   completedAt?: string;
+}
+
+export interface TrailTaskTitleMutationInput {
+  expectedTask: TrailTask;
+  title: string;
 }
 
 export interface TrailBacklogTaskMutationInput {
@@ -61,7 +66,6 @@ export type TrailMutationErrorCode =
   | "fleeting-file-not-found"
   | "vault-process-failed"
   | "write-verification-failed";
-
 export class TrailMutationError extends Error {
   constructor(
     readonly code: TrailMutationErrorCode,
@@ -84,7 +88,6 @@ export function createObsidianTrailMutationSource(
       app.vault.process(file, update),
   };
 }
-
 export async function updateTaskStatusInVault<
   FileType extends TrailMutableFile,
 >(
@@ -107,7 +110,6 @@ export async function updateTaskStatusInVault<
   }
 
   let writtenMarkdown: string;
-
   try {
     writtenMarkdown = await source.process(
       file,
@@ -129,6 +131,77 @@ export async function updateTaskStatusInVault<
       error,
     );
   }
+  const result = parseProjectTasks(
+    {
+      filePath: file.path,
+      markdown: writtenMarkdown,
+    },
+    expectedTask.projectId,
+  );
+  const updatedTask = result.tasks.find(
+    (task) => task.id === expectedTask.id,
+  );
+  if (
+    !updatedTask
+    || !matchesRequestedStatus(
+      updatedTask,
+      targetStatus,
+      completedAt,
+    )
+  ) {
+    throw writeVerificationError(
+      result.issues,
+      expectedTask.id,
+      `Trail could not confirm Task UUID "${expectedTask.id}" after writing.`,
+    );
+  }
+
+  return updatedTask;
+}
+
+export async function updateTaskTitleInVault<
+  FileType extends TrailMutableFile,
+>(
+  source: TrailMutationSource<FileType>,
+  {
+    expectedTask,
+    title,
+  }: TrailTaskTitleMutationInput,
+): Promise<TrailTask> {
+  const file = source.getFileByPath(
+    expectedTask.projectPath,
+  );
+
+  if (!file) {
+    throw new TrailMutationError(
+      "project-file-not-found",
+      `Project file was not found: ${expectedTask.projectPath}`,
+    );
+  }
+
+  const expectedTitle = title.trim();
+  let writtenMarkdown: string;
+
+  try {
+    writtenMarkdown = await source.process(
+      file,
+      (markdown) => updateTaskTitleMarkdown({
+        markdown,
+        expectedTask,
+        title,
+      }),
+    );
+  } catch (error: unknown) {
+    if (error instanceof TrailTaskTitleUpdateError) {
+      throw error;
+    }
+
+    throw new TrailMutationError(
+      "vault-process-failed",
+      `Trail could not update ${file.path}.`,
+      error,
+    );
+  }
 
   const result = parseProjectTasks(
     {
@@ -141,14 +214,7 @@ export async function updateTaskStatusInVault<
     (task) => task.id === expectedTask.id,
   );
 
-  if (
-    !updatedTask
-    || !matchesRequestedStatus(
-      updatedTask,
-      targetStatus,
-      completedAt,
-    )
-  ) {
+  if (!updatedTask || updatedTask.title !== expectedTitle) {
     throw writeVerificationError(
       result.issues,
       expectedTask.id,
@@ -179,7 +245,6 @@ export async function createBacklogTaskInVault<
   }
 
   let writtenMarkdown: string;
-
   try {
     writtenMarkdown = await source.process(
       file,
@@ -201,7 +266,6 @@ export async function createBacklogTaskInVault<
       error,
     );
   }
-
   const result = parseProjectTasks(
     {
       filePath: file.path,
@@ -216,7 +280,6 @@ export async function createBacklogTaskInVault<
     result.issues,
     task.id,
   );
-
   if (
     issue
     || !createdTask
@@ -231,7 +294,6 @@ export async function createBacklogTaskInVault<
 
   return createdTask;
 }
-
 export async function removeCreatedTaskInVault<
   FileType extends TrailMutableFile,
 >(
@@ -252,7 +314,6 @@ export async function removeCreatedTaskInVault<
   }
 
   let writtenMarkdown: string;
-
   try {
     writtenMarkdown = await source.process(
       file,
@@ -272,7 +333,6 @@ export async function removeCreatedTaskInVault<
       error,
     );
   }
-
   const result = parseProjectTasks(
     {
       filePath: file.path,
@@ -287,7 +347,6 @@ export async function removeCreatedTaskInVault<
   const remainingTask = result.tasks.find(
     (candidate) => candidate.id === expectedTask.id,
   );
-
   if (issue || remainingTask) {
     throw new TrailMutationError(
       "write-verification-failed",
@@ -296,7 +355,6 @@ export async function removeCreatedTaskInVault<
     );
   }
 }
-
 export async function removeFleetingNoteInVault<
   FileType extends TrailMutableFile,
 >(
@@ -317,7 +375,6 @@ export async function removeFleetingNoteInVault<
   }
 
   let writtenMarkdown: string;
-
   try {
     writtenMarkdown = await source.process(
       file,
@@ -337,7 +394,6 @@ export async function removeFleetingNoteInVault<
       error,
     );
   }
-
   const result = parseFleetingNotes({
     filePath: file.path,
     markdown: writtenMarkdown,
@@ -349,7 +405,6 @@ export async function removeFleetingNoteInVault<
   const remainingNote = result.notes.find(
     (candidate) => candidate.id === expectedNote.id,
   );
-
   if (issue || remainingNote) {
     throw new TrailMutationError(
       "write-verification-failed",
@@ -367,7 +422,6 @@ function matchesRequestedStatus(
   if (task.status !== targetStatus) {
     return false;
   }
-
   if (targetStatus === "completed") {
     return completedAt === undefined
       || task.completed === completedAt;
@@ -375,7 +429,6 @@ function matchesRequestedStatus(
 
   return task.completed === undefined;
 }
-
 function matchesBacklogTaskDraft(
   task: TrailTask,
   draft: TrailBacklogTaskDraft,
@@ -392,7 +445,6 @@ function matchesBacklogTaskDraft(
     && task.notes.length === 0
   );
 }
-
 function writeVerificationError(
   issues: ReturnType<typeof parseProjectTasks>["issues"],
   taskId: string,
@@ -404,7 +456,6 @@ function writeVerificationError(
       ?? fallbackMessage,
   );
 }
-
 function relevantIssue(
   issues: ReturnType<typeof parseProjectTasks>["issues"],
   taskId: string,
@@ -415,7 +466,6 @@ function relevantIssue(
       || candidate.objectId === taskId,
   );
 }
-
 function relevantFleetingIssue(
   issues: ReturnType<typeof parseFleetingNotes>["issues"],
   noteId: string,

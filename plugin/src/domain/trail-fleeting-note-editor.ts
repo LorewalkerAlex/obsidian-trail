@@ -1,3 +1,6 @@
+import {
+  applyGuardedMarkdownEdit,
+} from "./trail-guarded-markdown-edit";
 import type { TrailFleetingNote } from "./trail-model";
 import { parseFleetingNotes } from "./trail-fleeting-note-parser";
 
@@ -8,7 +11,6 @@ export type TrailFleetingNoteUpdateErrorCode =
   | "fleeting-note-not-found"
   | "fleeting-note-conflict"
   | "fleeting-text-invalid";
-
 export class TrailFleetingNoteUpdateError extends Error {
   constructor(
     readonly code: TrailFleetingNoteUpdateErrorCode,
@@ -24,22 +26,44 @@ export interface TrailFleetingNoteUpdateInput {
   expectedNote: TrailFleetingNote;
   text: string;
 }
-
 export function updateFleetingNoteMarkdown({
   markdown,
   expectedNote,
   text,
 }: TrailFleetingNoteUpdateInput): string {
   const nextText = normalizeFleetingNoteText(text);
-  const expectedFingerprint = expectedNote.source.fingerprint;
 
-  if (expectedFingerprint === undefined) {
-    throw new TrailFleetingNoteUpdateError(
+  return applyGuardedMarkdownEdit({
+    markdown,
+    expectedFingerprint: expectedNote.source.fingerprint,
+    missingFingerprintError: () => new TrailFleetingNoteUpdateError(
       "source-fingerprint-missing",
       "The Fleeting Note does not contain a source fingerprint.",
-    );
-  }
+    ),
+    locateLatest: (latestMarkdown) => locateFleetingNoteForUpdate(
+      latestMarkdown,
+      expectedNote,
+    ),
+    conflictError: () => new TrailFleetingNoteUpdateError(
+      "fleeting-note-conflict",
+      "The Fleeting Note changed after it was read.",
+    ),
+    buildEdit: (latestNote) => buildFleetingNoteTextEdit(
+      latestNote,
+      nextText,
+    ),
+    verify: (updatedMarkdown) => verifyFleetingNoteTextUpdate(
+      updatedMarkdown,
+      expectedNote,
+      nextText,
+    ),
+  });
+}
 
+function locateFleetingNoteForUpdate(
+  markdown: string,
+  expectedNote: TrailFleetingNote,
+): TrailFleetingNote {
   const result = parseFleetingNotes({
     filePath: expectedNote.source.filePath,
     markdown,
@@ -60,7 +84,6 @@ export function updateFleetingNoteMarkdown({
       issue.code === "fleeting.id.duplicate"
       && issue.objectId === expectedNote.id,
   );
-
   if (duplicateIssue) {
     throw new TrailFleetingNoteUpdateError(
       "fleeting-note-duplicate",
@@ -79,35 +102,48 @@ export function updateFleetingNoteMarkdown({
     );
   }
 
-  if (latestNote.source.fingerprint !== expectedFingerprint) {
-    throw new TrailFleetingNoteUpdateError(
-      "fleeting-note-conflict",
-      "The Fleeting Note changed after it was read.",
-    );
-  }
+  return latestNote;
+}
 
+function buildFleetingNoteTextEdit(
+  latestNote: TrailFleetingNote,
+  nextText: string,
+): {
+  startOffset: number;
+  endOffset: number;
+  replacement: string;
+} | undefined {
   if (latestNote.text === nextText) {
-    return markdown;
+    return undefined;
   }
 
-  const commentOffset = expectedFingerprint.indexOf("<!--");
+  const fingerprint = latestNote.source.fingerprint;
+  const commentOffset = fingerprint?.indexOf("<!--") ?? -1;
 
-  if (commentOffset < 0) {
+  if (commentOffset < 0 || fingerprint === undefined) {
     throw new TrailFleetingNoteUpdateError(
       "fleeting-note-conflict",
       "The Fleeting Note metadata comment could not be located.",
     );
   }
+  const replacement =
+    `- ${nextText} ${fingerprint.slice(commentOffset)}`;
 
-  const replacement = `- ${nextText} ${expectedFingerprint.slice(commentOffset)}`;
-  const updatedMarkdown = [
-    markdown.slice(0, latestNote.source.startOffset),
+  return {
+    startOffset: latestNote.source.startOffset,
+    endOffset: latestNote.source.endOffset,
     replacement,
-    markdown.slice(latestNote.source.endOffset),
-  ].join("");
+  };
+}
+
+function verifyFleetingNoteTextUpdate(
+  markdown: string,
+  expectedNote: TrailFleetingNote,
+  nextText: string,
+): void {
   const updatedResult = parseFleetingNotes({
     filePath: expectedNote.source.filePath,
-    markdown: updatedMarkdown,
+    markdown,
   });
   const updatedNote = updatedResult.notes.find(
     (note) => note.id === expectedNote.id,
@@ -117,7 +153,6 @@ export function updateFleetingNoteMarkdown({
       issue.scope === "file"
       || issue.objectId === expectedNote.id,
   );
-
   if (
     relevantIssue
     || !updatedNote
@@ -131,13 +166,10 @@ export function updateFleetingNoteMarkdown({
         ?? "The updated Fleeting Note could not be parsed.",
     );
   }
-
-  return updatedMarkdown;
 }
 
 export function normalizeFleetingNoteText(text: string): string {
   const normalized = text.trim();
-
   if (
     normalized === ""
     || /[\r\n]/.test(normalized)

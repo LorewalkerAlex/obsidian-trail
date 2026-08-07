@@ -12,7 +12,8 @@ import type {
 } from "./domain/trail-model";
 import type { TrailRuntimeStore } from "./domain/trail-runtime-store";
 import { TrailApp } from "./trail-app";
-
+import { TrailTaskModalProvider } from "./trail-task-modal-context";
+import { TrailTaskTitleModal } from "./trail-task-title-modal";
 export const TRAIL_VIEW_TYPE = "trail-view";
 export type TrailFleetingNoteCreator = (
   text: string,
@@ -28,12 +29,16 @@ export type TrailTaskStatusUpdater = (
   targetStatus: TrailTaskStatus,
 ) => Promise<void>;
 
+export type TrailTaskTitleUpdater = (
+  task: TrailTask,
+  title: string,
+) => Promise<void>;
+
 export type TrailFleetingNoteProjectConverter = (
   note: TrailFleetingNote,
   area: TrailArea,
   projectName: string,
 ) => Promise<void>;
-
 export type TrailFleetingNoteConverter = (
   note: TrailFleetingNote,
   project: TrailProject,
@@ -46,7 +51,6 @@ export type TrailFleetingNoteAction = (
 export type TrailStoredFleetingNoteRestorer = (
   note: TrailStoredFleetingNote,
 ) => Promise<void>;
-
 export class TrailView extends ItemView {
   private root: Root | null = null;
   private unsubscribe: (() => void) | null = null;
@@ -58,6 +62,7 @@ export class TrailView extends ItemView {
     private readonly editFleetingNote:
       TrailFleetingNoteEditor,
     private readonly updateTaskStatus: TrailTaskStatusUpdater,
+    private readonly updateTaskTitle: TrailTaskTitleUpdater,
     private readonly convertFleetingNoteToProject:
       TrailFleetingNoteProjectConverter,
     private readonly convertFleetingNoteToTask:
@@ -71,7 +76,6 @@ export class TrailView extends ItemView {
   ) {
     super(leaf);
   }
-
   getViewType(): string {
     return TRAIL_VIEW_TYPE;
   }
@@ -95,7 +99,6 @@ export class TrailView extends ItemView {
     this.unsubscribe = this.runtimeStore.subscribe(
       this.renderSnapshot,
     );
-
     this.renderSnapshot();
     await this.runtimeStore.initialize();
   }
@@ -114,7 +117,6 @@ export class TrailView extends ItemView {
   ): Promise<void> => {
     await this.createFleetingNote(text);
   };
-
   private readonly handleEditFleetingNote = async (
     note: TrailFleetingNote,
     text: string,
@@ -128,7 +130,19 @@ export class TrailView extends ItemView {
   ): Promise<void> => {
     await this.updateTaskStatus(task, targetStatus);
   };
-
+  private readonly handleUpdateTaskTitle = async (
+    task: TrailTask,
+    title: string,
+  ): Promise<void> => {
+    await this.updateTaskTitle(task, title);
+  };
+  private readonly handleOpenTask = (task: TrailTask): void => {
+    new TrailTaskTitleModal(
+      this.app,
+      task,
+      this.handleUpdateTaskTitle,
+    ).open();
+  };
   private readonly handleConvertFleetingNoteToProject = async (
     note: TrailFleetingNote,
     area: TrailArea,
@@ -147,7 +161,6 @@ export class TrailView extends ItemView {
   ): Promise<void> => {
     await this.convertFleetingNoteToTask(note, project);
   };
-
   private readonly handleArchiveFleetingNote = async (
     note: TrailFleetingNote,
   ): Promise<void> => {
@@ -159,7 +172,6 @@ export class TrailView extends ItemView {
   ): Promise<void> => {
     await this.deleteFleetingNote(note);
   };
-
   private readonly handleRestoreFleetingNote = async (
     note: TrailStoredFleetingNote,
   ): Promise<void> => {
@@ -171,34 +183,35 @@ export class TrailView extends ItemView {
     if (!snapshot.isInitialized) {
       return;
     }
-
     this.root?.render(
       <StrictMode>
-        <TrailApp
-          data={snapshot.data}
-          onCreateFleetingNote={
-            this.handleCreateFleetingNote
-          }
-          onEditFleetingNote={
-            this.handleEditFleetingNote
-          }
-          onUpdateTaskStatus={this.handleUpdateTaskStatus}
-          onConvertFleetingNoteToProject={
-            this.handleConvertFleetingNoteToProject
-          }
-          onConvertFleetingNoteToTask={
-            this.handleConvertFleetingNoteToTask
-          }
-          onArchiveFleetingNote={
-            this.handleArchiveFleetingNote
-          }
-          onDeleteFleetingNote={
-            this.handleDeleteFleetingNote
-          }
-          onRestoreFleetingNote={
-            this.handleRestoreFleetingNote
-          }
-        />
+        <TrailTaskModalProvider openTask={this.handleOpenTask}>
+          <TrailApp
+            data={snapshot.data}
+            onCreateFleetingNote={
+              this.handleCreateFleetingNote
+            }
+            onEditFleetingNote={
+              this.handleEditFleetingNote
+            }
+            onUpdateTaskStatus={this.handleUpdateTaskStatus}
+            onConvertFleetingNoteToProject={
+              this.handleConvertFleetingNoteToProject
+            }
+            onConvertFleetingNoteToTask={
+              this.handleConvertFleetingNoteToTask
+            }
+            onArchiveFleetingNote={
+              this.handleArchiveFleetingNote
+            }
+            onDeleteFleetingNote={
+              this.handleDeleteFleetingNote
+            }
+            onRestoreFleetingNote={
+              this.handleRestoreFleetingNote
+            }
+          />
+        </TrailTaskModalProvider>
       </StrictMode>,
     );
   };

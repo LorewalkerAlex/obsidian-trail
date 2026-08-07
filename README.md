@@ -4,7 +4,9 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail is currently in the proof-of-concept stage.
+Trail is currently in the proof-of-concept stage. The POC is evaluated by reusable technical capabilities rather than by completion of every first-version product feature. Concrete Task, Project, and Fleeting Note paths are representative probes that prove reading, guarded Markdown mutation, cross-file compensation, Runtime Store convergence, queueing, optimistic UI, draft handling, and Obsidian host integration.
+
+The POC capability matrix has now been aligned, and the repeated single-file guarded Markdown mutation path has been consolidated into a shared pure Markdown utility reused by both Task status writing and Active Fleeting Note editing. The next capability probe is a minimal Task-title Modal draft flow; after that, the capability matrix will be reviewed again before deciding whether to exit POC.
 
 The active POC branch is:
 

@@ -14,6 +14,7 @@ import {
   type TrailTaskPriority,
   type TrailTaskStatus,
 } from "./domain/trail-model";
+import { useTrailTaskModal } from "./trail-task-modal-context";
 
 const TASK_STATUS_LABELS: Record<TrailTaskStatus, string> = {
   backlog: "Backlog",
@@ -22,7 +23,6 @@ const TASK_STATUS_LABELS: Record<TrailTaskStatus, string> = {
   blocked: "Blocked",
   completed: "Completed",
 };
-
 const TASK_PRIORITY_ORDER: Record<TrailTaskPriority, number> = {
   urgent: 0,
   high: 1,
@@ -41,11 +41,11 @@ export interface TrailProjectWorkspaceProps {
     targetStatus: TrailTaskStatus,
   ) => Promise<void>;
 }
-
 export function TrailProjectWorkspace({
   project,
   onUpdateTaskStatus,
 }: TrailProjectWorkspaceProps) {
+  const openTaskModal = useTrailTaskModal();
   const [viewMode, setViewMode] =
     useState<TrailProjectViewMode>("board");
   const [pendingTaskIds, setPendingTaskIds] =
@@ -63,7 +63,6 @@ export function TrailProjectWorkspace({
     projectId,
     revision: 0,
   });
-
   if (projectInteractionRef.current.projectId !== projectId) {
     projectInteractionRef.current = {
       projectId,
@@ -83,7 +82,6 @@ export function TrailProjectWorkspace({
     if (!project) {
       return;
     }
-
     setOptimisticStatuses((current) => {
       let changed = false;
       const next = new Map(current);
@@ -102,7 +100,6 @@ export function TrailProjectWorkspace({
       return changed ? next : current;
     });
   }, [project]);
-
   const renderedTasks = useMemo(() => {
     if (!project) {
       return [];
@@ -122,7 +119,6 @@ export function TrailProjectWorkspace({
       </>
     );
   }
-
   const updateTaskStatus = async (
     task: TrailTask,
     targetStatus: TrailTaskStatus,
@@ -138,7 +134,6 @@ export function TrailProjectWorkspace({
     ) {
       return;
     }
-
     setOptimisticStatuses((current) => {
       const next = new Map(current);
       next.set(task.id, targetStatus);
@@ -154,7 +149,6 @@ export function TrailProjectWorkspace({
       next.delete(task.id);
       return next;
     });
-
     try {
       await onUpdateTaskStatus(task, targetStatus);
     } catch (error: unknown) {
@@ -185,7 +179,6 @@ export function TrailProjectWorkspace({
       }
     }
   };
-
   const dropTask = (
     event: DragEvent<HTMLElement>,
     targetStatus: TrailTaskStatus,
@@ -203,12 +196,10 @@ export function TrailProjectWorkspace({
 
     setDraggedTaskId(undefined);
     setDragOverStatus(undefined);
-
     if (task) {
       void updateTaskStatus(task, targetStatus);
     }
   };
-
   return (
     <section
       className="trail-project-workspace"
@@ -245,7 +236,6 @@ export function TrailProjectWorkspace({
           </button>
         </div>
       </header>
-
       {project.tasks.length === 0 ? (
         <p>No tasks found.</p>
       ) : viewMode === "board" ? (
@@ -260,7 +250,6 @@ export function TrailProjectWorkspace({
                 .map((item) => item.task),
             );
             const isDragOver = dragOverStatus === status;
-
             return (
               <section
                 key={status}
@@ -308,6 +297,7 @@ export function TrailProjectWorkspace({
                           status={status}
                           isPending={pendingTaskIds.has(task.id)}
                           error={taskErrors.get(task.id)}
+                          onOpenTask={openTaskModal}
                           onUpdateTaskStatus={updateTaskStatus}
                           onDragStart={(event) => {
                             event.dataTransfer.effectAllowed = "move";
@@ -348,13 +338,13 @@ export function TrailProjectWorkspace({
                 }
                 isPending={pendingTaskIds.has(task.id)}
                 error={taskErrors.get(task.id)}
+                onOpenTask={openTaskModal}
                 onUpdateTaskStatus={updateTaskStatus}
               />
             </li>
           ))}
         </ul>
       )}
-
       <section className="trail-project-workspace__notes">
         <h3>Project notes</h3>
         {project.notes.length === 0 ? (
@@ -372,12 +362,12 @@ export function TrailProjectWorkspace({
     </section>
   );
 }
-
 interface TrailTaskCardProps {
   task: TrailTask;
   status: TrailTaskStatus;
   isPending: boolean;
   error?: string;
+  onOpenTask?: (task: TrailTask) => void;
   onUpdateTaskStatus: (
     task: TrailTask,
     targetStatus: TrailTaskStatus,
@@ -385,12 +375,12 @@ interface TrailTaskCardProps {
   onDragStart?: (event: DragEvent<HTMLElement>) => void;
   onDragEnd?: () => void;
 }
-
 function TrailTaskCard({
   task,
   status,
   isPending,
   error,
+  onOpenTask,
   onUpdateTaskStatus,
   onDragStart,
   onDragEnd,
@@ -398,7 +388,6 @@ function TrailTaskCard({
   const completedSubtasks = task.subtasks.filter(
     (subtask) => subtask.completed,
   ).length;
-
   return (
     <article
       className={[
@@ -415,7 +404,20 @@ function TrailTaskCard({
       onDragEnd={onDragEnd}
     >
       <header className="trail-task-card__header">
-        <strong>{task.title}</strong>
+        {onOpenTask === undefined ? (
+          <strong>{task.title}</strong>
+        ) : (
+          <button
+            type="button"
+            aria-label={`Open ${task.title}`}
+            disabled={isPending}
+            draggable={false}
+            onDragStart={(event) => event.stopPropagation()}
+            onClick={() => onOpenTask(task)}
+          >
+            <strong>{task.title}</strong>
+          </button>
+        )}
         {isPending && (
           <span className="trail-task-card__pending">
             Updating...
@@ -467,7 +469,6 @@ function TrailTaskCard({
     </article>
   );
 }
-
 export function sortTrailTasks(
   tasks: readonly TrailTask[],
 ): TrailTask[] {
@@ -488,7 +489,6 @@ export function sortTrailTasks(
     if (dueComparison !== 0) {
       return dueComparison;
     }
-
     const createdComparison = left.created.localeCompare(
       right.created,
     );

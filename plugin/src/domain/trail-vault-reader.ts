@@ -1,5 +1,4 @@
 import type { App, TFile } from "obsidian";
-
 import type {
   TrailArea,
   TrailFleetingNote,
@@ -20,7 +19,6 @@ import {
   parseArea,
   parseProject,
 } from "./trail-parser";
-
 const TRAIL_AREAS_ROOT = "Trail/Areas";
 const TRAIL_ARCHIVE_ROOT = "Trail/Archive";
 const TRAIL_TRASH_ROOT = "Trail/Trash";
@@ -33,7 +31,6 @@ export interface TrailReadableFile {
 export type TrailFrontmatterParser = (
   markdown: string,
 ) => Record<string, unknown> | undefined;
-
 export interface TrailVaultSource<
   FileType extends TrailReadableFile,
 > {
@@ -52,7 +49,6 @@ export interface TrailVaultReadResult {
   trashedFleetingNotes?: TrailStoredFleetingNote[];
   issues: TrailParseIssue[];
 }
-
 interface AreaFiles<
   FileType extends TrailReadableFile,
 > {
@@ -72,7 +68,6 @@ export function isTrailManagedMarkdownPath(
     && parts[3]?.endsWith(".md") === true
   );
 }
-
 export function isTrailDataEventPath(
   filePath: string,
 ): boolean {
@@ -96,7 +91,6 @@ export function isTrailDataEventPath(
   ) {
     return true;
   }
-
   return isTrailManagedMarkdownPath(filePath);
 }
 export function createTrailFrontmatterParser(
@@ -109,12 +103,14 @@ export function createTrailFrontmatterParser(
   parseYaml: (yaml: string) => unknown,
 ): TrailFrontmatterParser {
   return (markdown) => {
-    const frontmatterInfo = getFrontMatterInfo(markdown);
+    const frontmatterMarkdown = markdown.startsWith("\uFEFF")
+      ? markdown.slice(1)
+      : markdown;
+    const frontmatterInfo = getFrontMatterInfo(frontmatterMarkdown);
 
     if (!frontmatterInfo.exists) {
       return undefined;
     }
-
     try {
       return toRecord(
         parseYaml(frontmatterInfo.frontmatter),
@@ -131,7 +127,6 @@ export function createObsidianTrailSource(
   return {
     getMarkdownFiles: () =>
       app.vault.getMarkdownFiles(),
-
     cachedRead: (file) =>
       app.vault.cachedRead(file),
     getFrontmatter: (_file, markdown) =>
@@ -178,7 +173,6 @@ export async function readTrailVault<
       files.areaFile,
       issues,
     );
-
     if (areaMarkdown === undefined) {
       continue;
     }
@@ -195,7 +189,6 @@ export async function readTrailVault<
     });
 
     issues.push(...areaResult.issues);
-
     if (!areaResult.value) {
       continue;
     }
@@ -212,7 +205,6 @@ export async function readTrailVault<
 
       continue;
     }
-
     seenAreaIds.add(area.id);
     areas.push(area);
     for (
@@ -227,7 +219,6 @@ export async function readTrailVault<
         projectFile,
         issues,
       );
-
       if (projectMarkdown === undefined) {
         continue;
       }
@@ -244,7 +235,6 @@ export async function readTrailVault<
       });
 
       issues.push(...projectResult.issues);
-
       if (!projectResult.value) {
         continue;
       }
@@ -258,7 +248,6 @@ export async function readTrailVault<
           filePath: project.filePath,
           objectId: project.id,
         });
-
         continue;
       }
       seenProjectIds.add(project.id);
@@ -275,7 +264,6 @@ export async function readTrailVault<
 
           return false;
         }
-
         seenTaskIds.add(task.id);
         return true;
       });
@@ -296,7 +284,6 @@ export async function readTrailVault<
       fleetingNotesFile,
       issues,
     );
-
     if (fleetingMarkdown !== undefined) {
       const fleetingResult = parseFleetingNotes({
         filePath: fleetingNotesFile.path,
@@ -311,7 +298,6 @@ export async function readTrailVault<
       issues.push(...fleetingResult.issues);
     }
   }
-
   appendFleetingNotes(
     await readStoredFleetingNotes(
       source,
@@ -334,7 +320,6 @@ export async function readTrailVault<
     seenFleetingNoteIds,
     issues,
   );
-
   return {
     areas,
     projects,
@@ -365,7 +350,6 @@ function appendFleetingNotes<
     } else {
       seenIds.add(note.id);
     }
-
     target.push(note);
   }
 }
@@ -386,7 +370,6 @@ async function readStoredFleetingNotes<
   if (!file) {
     return [];
   }
-
   const markdown = await readMarkdown(
     source,
     file,
@@ -396,7 +379,6 @@ async function readStoredFleetingNotes<
   if (markdown === undefined) {
     return [];
   }
-
   const result = parseStoredFleetingNotes({
     filePath,
     markdown,
@@ -424,7 +406,6 @@ async function readMarkdown<
       message: `Trail could not read this file: ${message}`,
       filePath: file.path,
     });
-
     return undefined;
   }
 }
@@ -446,7 +427,6 @@ function groupAreaFiles<
     const grouped = result.get(areaName) ?? {
       projectFiles: [],
     };
-
     if (file.path.endsWith(`/${AREA_FILE_NAME}`)) {
       grouped.areaFile = file;
     } else {
@@ -465,7 +445,6 @@ function getAreaName(
   if (!isTrailManagedMarkdownPath(filePath)) {
     return undefined;
   }
-
   return filePath.split("/")[2];
 }
 function toRecord(
