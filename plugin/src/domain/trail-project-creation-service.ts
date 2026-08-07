@@ -73,7 +73,7 @@ export function createObsidianTrailProjectCreationSource(
     create: (path, markdown) =>
       app.vault.create(path, markdown),
     read: (file) =>
-      app.vault.cachedRead(file),
+      app.vault.read(file),
     deleteFile: (file) =>
       app.fileManager.trashFile(file),
     getFrontmatter: (markdown) =>

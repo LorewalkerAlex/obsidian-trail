@@ -1,11 +1,11 @@
 # Trail Technical Design
 
-> 状态：Technical Design 当前基线<br>
+> 状态：POC Exit Candidate / Technical Design 当前基线<br>
 > 最后更新：2026-08-07<br>
 > 适用对象：个人使用<br>
 > 上游基线：`./product-domain-hld.md`<br>
-> 当前代码基线：`b22de4c41e15a333d4cd35d060d9dd11e557fb28` (`feat: add project workspace drag and drop`)<br>
-> 当前目标：以能力验证为单位收敛 POC。单文件 Guarded Markdown Edit 已从 Task Writer 与 Fleeting Note Editor 的重复机械路径中完成公共能力收敛；下一步用 Task Title Modal 验证阻断式 Modal + draft + save / cancel + conflict 的编辑链路，随后重新审视能力矩阵并讨论 POC 是否可以结束。
+> POC 架构审计基线：`9d4992e91dcab4e5183e71520d2495432a297109` (`feat: validate core poc mutation and modal capabilities`)<br>
+> 当前目标：POC 核心技术能力已经完成验证。当前只保留审计后确认的 correctness cleanup 与最终文档 / 完整检查；不再通过增加 Priority、Due、Label、Subtask、Task Note 等具体产品功能扩大 POC。完成最终检查与提交后进入正式 ADR / LLD / Implementation & Test Plan。
 
 ## 1. 文档边界
 
@@ -48,28 +48,36 @@ POC 完成判断以第 16 节能力矩阵和第 17 节通过标准为准，不�
 
 ### 1.2 当前 POC 事实状态
 
-截至 2026-08-07，代码基线 `b22de4c41e15a333d4cd35d060d9dd11e557fb28` 已完成并验证以下代表性路径：
+截至 2026-08-07，POC 架构审计基线 `9d4992e91dcab4e5183e71520d2495432a297109` 已完成并验证以下代表性路径：
 
 - Markdown Discovery、同一 Snapshot 的 Frontmatter / Body 读取、Area / Project / Task / Subtask / Task Note / Project Note / Fleeting Note 解析、UUID 身份和结构化错误隔离；
 - Task 状态 Writer 在最新 Markdown 中按 UUID 重新定位、校验完整 Task Block Fingerprint、最小替换标题行、规范化 checkbox / `completed` 并重新解析确认；
 - Active Fleeting Note 编辑在编辑开始时固定预期 Snapshot，只替换可见文本，保留元数据，并在外部修改后拒绝 stale Fingerprint；
+- 单文件 Guarded Markdown Edit 已从 Task Writer 与 Active Fleeting Note Editor 的重复机械路径中收敛为纯 Markdown 公共能力；
 - Task 创建、Project 创建、Fleeting Note 创建 / 删除 / 生命周期写入及其写后确认；
 - Fleeting Note → Task / Project、Archive、Delete to Trash、Restore 的跨文件编排、补偿和 `unchanged / compensated / partial` 结果；
 - Plugin-level Runtime Store、文件事件 Reconciliation、Mutation 刷新边界、通用全局串行 Mutation Queue 与失败隔离；
 - Project Board / List、五状态显示、原生跨栏拖拽、Task 局部 optimistic UI、Pending、失败回滚、完成时间写回和未完成 Subtask 完成约束；
 - Dashboard Quick Capture、Active Fleeting Note draft 编辑、外部变化冲突拒绝和失败后 draft 保留；
-- 正常数据规模下的全量读取策略与真实 Obsidian 自动收敛。
+- 原生 Obsidian Task Title Modal：底层交互阻断、Save / Cancel、遮罩 / Esc dirty-draft protection、保存失败保留 Modal 与 draft、外部 Task Block 修改触发 Fingerprint conflict，以及关闭后 Project / Board 上下文保持；
+- UTF-8 BOM 兼容：Frontmatter detection 接受文件开头一个 BOM，真实 BOM Project 与 BOM Area 均可读取，Area description 不混入 YAML，且 Trail 不因读取兼容而改写原文件；
+- 正常个人 Vault 规模下的全量读取策略、10k / 25k Task benchmark 与真实 Obsidian 自动收敛。
 
-提交前验证基线为 ESLint、27 个测试文件、179 / 179 tests、TypeScript typecheck、production build 与 `git diff --check` 通过；真实 Obsidian 已验证 Project 选择、Board / List、跨状态拖拽、乐观更新、失败回滚、Queue 延续以及前述 Fleeting Note 创建 / 编辑 / 转换 / 生命周期路径。
+审计基线提交前完整 `npm run check` 已通过 ESLint、32 个测试文件、198 / 198 tests、TypeScript typecheck 与 production build。真实 Obsidian 已验证 Project 选择、Board / List、跨状态拖拽、乐观更新、失败回滚、Queue 延续、Fleeting Note 创建 / 编辑 / 转换 / 生命周期、Task Title Modal，以及 BOM Project / Area 读取。
 
-单文件 Guarded Markdown Edit 收敛已经在当前工作区完成：新增 `trail-guarded-markdown-edit.ts`，由 Task 状态 Writer 与 Active Fleeting Note Editor 共同复用；公共层只处理 expected Fingerprint、调用领域定位回调、比较最新 Fingerprint、校验并替换明确源码范围，以及可选写后验证回调，不理解具体领域对象，也不直接调用 Obsidian Vault API。定向验证报告 5 个测试文件、46 / 46 tests 通过，目标文件 ESLint、TypeScript typecheck 与 `git diff --check` 通过。
+POC Exit 前的架构审计同时对照 Obsidian 官方 Plugin / Vault / Modal API、React 外部 Store / ref 使用建议，以及 Tasks、Dataview 等成熟插件的索引策略。审计没有发现需要推翻当前核心路线的问题；结论是保持轻量 Runtime Store、全局 Mutation Queue、Guarded Markdown Edit、领域 Parser / Adapter 与按需全量刷新，不在没有真实性能证据时复制成熟插件的增量索引、持久化缓存或 worker 基础设施。
 
-当前真正仍需验证或收敛的 POC 能力主要是：
+架构审计后的 correctness cleanup 已收敛为三项：
 
-1. **Draft-based Modal 编辑链路**：已有 Fleeting Note 内联编辑证明 draft + conflict，但尚未验证阻断式 Task Modal、底层交互隔离、dirty draft 关闭保护、保存失败保留 Modal / draft，以及关闭后 Workspace 上下文保持；
-2. **POC Exit Review**：Modal POC 完成后重新审视能力矩阵，区分仍然未知的技术能力与仅剩的产品功能覆盖，再决定是否结束 POC 并进入 ADR / LLD。
+1. Project Workspace 不再在 React render 阶段修改交互 revision ref，而在 lifecycle 中更新，继续保留旧 Project 异步结果不能污染新 Project 的行为；
+2. BOM 兼容补齐 Area body stripping，使 Frontmatter 与 description 共享同一兼容边界，同时不改变 Project Task source offset / Fingerprint 坐标体系；
+3. Project compensation 在决定是否删除刚创建且未变化的目标文件前，使用 `Vault.read()` 读取最新内容，而不是 `cachedRead()`。
 
-下列事项仍可能是第一版产品需要，但当前不再默认视为 POC 阻塞项：产品化 `partial` 人工恢复入口、Priority / Due / Label 全量编辑、Subtask 与 Task Note 完整 CRUD、Convert to Subtask、Archive / Trash 自动保留期清理和永久删除策略、受影响文件级增量 Reconciliation，以及完整 Search / Design System。
+这三项 cleanup 的定向回归已通过 5 个测试文件、31 / 31 tests、目标 ESLint 与 TypeScript typecheck；真实 BOM Area 在不 reload 插件的情况下通过 Vault 事件自动出现，description 只包含正文，读取前后文件仍保留 `EF BB BF`。
+
+Task metadata Schema 不在本轮 cleanup 中写死。正式实现必须由一个可配置、可解析的当前生效 Schema 决定 Parser / Validator / Writer 的允许字段、默认值、规范序列化与兼容策略；Writer 重写后必须符合当前生效 Schema，不能在各 Writer 中维护彼此独立的固定字段清单。
+
+基于第 16 节能力矩阵和第 17 节 Exit Review，当前已经没有必须通过新增 POC 功能才能回答的核心技术未知项。剩余工作主要属于正式领域规则、LLD、产品体验、发布工程和规模演进决策。
 
 ## 2. 已冻结的关键技术决策
 
@@ -138,7 +146,7 @@ Obsidian Vault / Markdown
 - 根据目录约定识别 Area；
 - 根据文件约定识别 Project、Area 描述文件和 Fleeting Notes 文件；
 - 排除 Archive 与 Trash，不纳入日常 Dashboard、Area 和 Project 统计；
-- 发现创建、修改、重命名和删除事件，并只触发受影响范围的重新解析。
+- 识别创建、修改、重命名和删除事件是否属于 Trail 管理范围，并通知 Runtime Store 刷新；当前 POC 刷新时仍全量重读 Trail 管理数据，不在 Discovery Layer 内维护增量索引。
 
 当前 POC 使用以下目录约定：
 
@@ -162,13 +170,15 @@ Obsidian Vault / Markdown
 
 职责：
 
-- 使用 Obsidian Vault API 的 `Vault.cachedRead()` 读取原始 Markdown；
-- 使用 `getFrontMatterInfo()` 从该次读取的正文中定位 Frontmatter；
+- 使用 Obsidian Vault API 的 `Vault.cachedRead()` 读取原始 Markdown Snapshot；
+- Frontmatter detection 只在传给 `getFrontMatterInfo()` 的视图中兼容文件开头一个 UTF-8 BOM / `U+FEFF`，不修改磁盘文件；
 - 使用 `parseYaml()` 解析同一 Markdown Snapshot 中的 Frontmatter；
+- Area body stripping 使用相同的文件开头 BOM 兼容规则，避免 YAML 混入 description；
+- Project / Task Parser、source range 与 Fingerprint 继续基于真实原始 Markdown，不因 BOM 兼容整体移动 offset；
 - 将同一份正文与 Frontmatter 一起交给 Trail Parser；
 - 不自行实现完整 Markdown 或 YAML 解析器。
 
-当前领域读取不再从 `MetadataCache.frontmatter` 取 Area / Project Frontmatter，避免 Mutation 刚写完正文但 MetadataCache 尚未收敛时产生短暂不一致。未来若需要 links、tags 或更复杂的 Markdown 结构，可以继续使用 MetadataCache，但同一次领域解析必须保持来源版本一致。
+当前领域读取不再从 `MetadataCache.frontmatter` 取 Area / Project Frontmatter，避免 Mutation 刚写完正文但 MetadataCache 尚未收敛时产生短暂不一致。`cachedRead()` 继续用于构建只读 Runtime Snapshot；当读取结果将直接决定后续破坏性操作时，例如 Project compensation 删除前的最新内容校验，Adapter 使用 `Vault.read()`。未来若需要 links、tags 或更复杂的 Markdown 结构，可以继续使用 MetadataCache，但同一次领域解析必须保持来源版本一致。
 
 ### 3.3 Trail Parser
 
@@ -224,7 +234,7 @@ Vitest
 React Testing Library
 ```
 
-`Modal`、Zustand、dnd-kit、date-fns 和时区辅助库仍是后续通用交互和完整状态操作阶段的候选方案。当前 Runtime Store 和通用全局 Mutation Queue 均使用纯 TypeScript 实现，尚未证明需要引入 Zustand。Project Board 当前只需要跨状态栏移动、不允许同栏排序，因此先使用浏览器原生 HTML5 Drag and Drop，并保留状态下拉框作为键盘与不支持拖拽环境的等价入口；没有安装 dnd-kit。若后续需要移动端、完整键盘拖拽、Drag Overlay、复杂碰撞检测或同栏排序，再重新评估 dnd-kit 或 Pragmatic Drag and Drop。
+Task Title POC 已验证使用 Obsidian 原生 `Modal` 承载 React draft editor，不需要自建 Overlay 框架。Zustand、dnd-kit、date-fns 和时区辅助库仍只在真实复杂度出现时评估；当前 Runtime Store 和通用全局 Mutation Queue 使用纯 TypeScript 已满足 POC。Project Board 当前只需要跨状态栏移动、不允许同栏排序，因此继续使用浏览器原生 HTML5 Drag and Drop，并保留状态下拉框作为键盘与不支持拖拽环境的等价入口；没有安装 dnd-kit。若正式范围包含移动端、完整键盘拖拽、Drag Overlay、复杂碰撞检测或同栏排序，再重新评估 dnd-kit 或 Pragmatic Drag and Drop。
 
 第一版不引入：
 
@@ -453,6 +463,15 @@ priority=medium
 created=<当前东八区秒级时间>
 labels=[]
 ```
+
+上述表格描述的是当前 POC 使用的 **active Task metadata schema**，不是要求正式实现把字段集合永久硬编码在每个 Parser / Writer 中。正式设计要求：
+
+- Task metadata schema 可配置，并在运行时解析为唯一的当前生效 Schema；
+- Parser、Validator、创建 Writer、更新 Writer 与迁移逻辑必须消费同一份生效 Schema；
+- Schema 决定允许字段、必填 / 可选、值域、默认值、规范字段顺序以及兼容 / 迁移策略；
+- Writer 对对象执行重写后，结果必须符合当前生效 Schema，而不是各 Writer 各自维护一份字段白名单；
+- 当前 Schema 不认识的字段如何处理，由 Schema 的兼容策略决定，不在单个 Writer 中临时选择“保留”或“删除”；
+- POC 当前硬编码字段只作为能力验证载体，Schema 配置来源、版本和迁移机制进入正式 LLD。
 
 ### 6.3 JSON 私有元数据语法
 
@@ -1001,7 +1020,7 @@ applyGuardedMarkdownEdit(...)
 
 新增 `trail-guarded-markdown-edit.test.ts` 覆盖：目标 offset 因前置文本变化后重新定位、stale Fingerprint 在 build edit 前拒绝、领域自定义 missing-fingerprint error、no-op 不触发 verify，以及非法 replacement range 拒绝。与 Task Writer、Fleeting Note Editor、Mutation Service 和 Fleeting Note create/edit service 的定向回归一起，本轮报告 5 个测试文件、46 / 46 tests 通过；目标文件 ESLint、TypeScript typecheck 与 `git diff --check` 通过。
 
-本次只是纯领域代码收敛，没有新增 Obsidian Host 行为，因此没有为这一内部重构单独增加新的真实 Obsidian 操作路径。下一次真实宿主级能力验证留给 Task Title Modal POC。
+Guarded Markdown Edit 本身是纯领域代码收敛，因此没有为这一内部重构单独增加新的真实 Obsidian 操作路径。随后完成的 Task Title Modal POC 已把该公共能力接入真实 Obsidian Modal、全局 Queue、Runtime Store Mutation 边界与写后收敛，证明这条公共路径能够支撑 draft-based host interaction。
 
 这次收敛证明未来 Task title、Project Overview、Task Note 等单文件区域编辑不需要重新复制 guarded edit 骨架；它们仍可能需要自己的 Parser、source range、序列化和领域验证，这些由正式设计按数据结构决定。
 
@@ -1230,37 +1249,36 @@ Notes
 More Actions
 ```
 
-但 POC 不以一次实现全部 Task 字段为通过条件。当前 Modal POC 只选择 **Task title** 作为代表性 draft 字段，用它验证此前尚未证明的宿主与交互能力：
+POC 没有一次实现全部 Task 字段，而只选择 **Task title** 作为代表性 draft 字段。该纵向路径已经完成：
 
 ```text
 Project Board / List
 → 点击 Task
-→ 打开阻断式 Task Modal
+→ 打开 Obsidian 原生 Modal
 → 固定 expected Task Snapshot
 → 在 Modal 内维护 title draft
 → Save
 → 进入全局 Queue 与 Runtime Store Mutation 边界
-→ 调用领域 Task Adapter + Guarded Markdown Mutation
-→ 写后重新解析确认
+→ 调用 Task title Adapter + Guarded Markdown Edit
+→ Vault.process() 写回并重新解析确认
 → Runtime Store 收敛
 → 关闭 Modal，原 Project 与 Board / List 上下文保持
 ```
 
-Modal POC 通过标准：
+自动化与真实 Obsidian 已验证：
 
-- 使用既定 Obsidian Modal 宿主能力，必要时在其内容区域挂载 React；
+- 使用 Obsidian 原生 `Modal` 作为宿主，并在内容区域挂载 React editor；
 - Modal 打开时底层 Trail 页面不可操作；
 - Task 身份继续使用 UUID，打开 Modal 时固定 expected Task Snapshot，Store 后续刷新不能静默替换该预期版本；
 - title draft 只存在于 Modal 本地状态，不写入 Runtime Store 的已确认对象；
 - Save 期间防止重复提交；
-- Save 成功后由 Runtime Store 最终 Snapshot 确认新标题，再关闭 Modal；
+- Save 成功后只修改 Task title，Task metadata 与 Task Note 保持不变，并由 Runtime Store Snapshot 收敛到新标题；
 - Save 失败或 stale Fingerprint 冲突时保留 Modal、draft 和错误，不覆盖最新 Markdown；
-- 没有 dirty draft 时允许 Esc 或遮罩关闭；存在 dirty draft 时不得静默丢弃，POC 可以采用最小确认交互；
-- Cancel / 关闭后恢复原 Project、Board / List 模式以及已有 Workspace 上下文；
-- 中文输入法 composition 不应因 Enter 误触发保存；
-- 只实现验证上述能力需要的最小视觉结构，不提前完成正式 Task Detail Design System。
+- 遮罩、Esc 与 Cancel 在存在 dirty draft 时不会静默丢弃内容，`Keep editing` 保留草稿，`Discard` 明确放弃；
+- 关闭后当前 Project 与 Board / List 上下文保持；
+- 外部修改同一 Task Block 后保存旧草稿，真实宿主显示 `The task changed after it was read.`，磁盘上的外部修改和旧标题均未被覆盖。
 
-Status、Priority、Due、Label、Subtask 与 Task Note 在这个 POC 中可以只读展示或暂不展示；它们是否进入正式 Modal 编辑属于后续 LLD / Implementation，而不是本轮 POC 的能力通过条件。
+因此 Draft-based Modal 和原生 Obsidian Modal 宿主能力已经满足 POC 通过标准。Status、Priority、Due、Label、Subtask 与 Task Note 是否进入正式 Modal 编辑属于后续 LLD / Implementation；只要没有引入新的数据结构或交互语义，不需要为这些字段继续重复 POC。
 
 ### 14.3 Fleeting Notes UI
 
@@ -1469,84 +1487,135 @@ POC 以“技术能力是否已经被真实路径证明”为主维度。具体 
 状态定义：
 
 - **已验证**：自动化测试与必要的真实 Obsidian 路径已经证明该能力；
-- **部分验证**：核心机制已成立，但仍有一个与正式设计直接相关的新宿主 / 交互 / 通用化问题未证明；
-- **待验证**：尚缺决定正式架构所需的关键证据。
+- **部分验证 / 设计输入**：可行性已经成立，剩余问题主要是领域定义、正式架构取舍或产品范围，不要求继续扩展 POC；
+- **待验证**：仍缺决定正式架构所需的关键证据。
 
-| 能力 | 状态 | 当前代表性证据 | 剩余 POC 问题 |
+| 能力 | 状态 | 当前代表性证据 | POC Exit 判断 |
 |---|---|---|---|
-| Vault Discovery 与 Snapshot 读取 | 已验证 | Trail 管理范围发现；`cachedRead()`；同一 Snapshot Frontmatter / Body | 无当前阻塞项 |
-| 领域解析与稳定身份 | 已验证 | Area / Project / Task / Fleeting Note；UUID；重复 UUID；对象 / 文件错误隔离 | 更复杂富文本解析按正式需求增加 |
-| Source Range 与 Fingerprint Guard | 已验证 | Task Block、Fleeting Note record；offset 变化后 UUID 重定位；外部修改拒绝 | 无当前阻塞项 |
-| 单文件最小区域修改 | 已验证 | `applyGuardedMarkdownEdit()` 被 Task 状态 Writer 与 Active Fleeting Note Editor 共同复用；UUID 重新定位由领域层负责；公共 Fingerprint Guard + range replacement；46 / 46 定向回归 | 新对象继续提供自己的 Parser、source range、序列化和领域验证，不重复 guarded edit 骨架 |
-| 单文件创建 / 插入 / 删除 | 已验证 | Quick Capture；Task 创建 / 撤销；Fleeting Note 精确删除 | 新对象类型继续通过领域 Adapter 复用 |
-| 写后重新解析与领域确认 | 已验证 | Task 状态、Task / Project 创建、Fleeting Note 创建 / 编辑 / 生命周期 | 无当前阻塞项 |
-| 跨文件 Mutation 与补偿 | 已验证 | Fleeting Note → Task / Project；Archive / Delete / Restore；`unchanged / compensated / partial` | `partial` 产品化恢复 UI 不属于基础能力阻塞项 |
-| 全局串行 Mutation Queue | 已验证 | 不同返回类型 Command 串行；单命令失败后继续；插件卸载拒绝未开始命令 | 无当前阻塞项 |
-| Runtime Store Mutation 边界 | 已验证 | Mutation 期间抑制中间刷新；成功 / 失败后统一读取最终磁盘状态 | 无当前阻塞项 |
-| 文件事件 Reconciliation | 已验证 | create / modify / delete / rename；范围过滤；外部修改与自身写回收敛 | 增量 Reconciliation 仅在真实性能需要时再设计 |
-| Immediate / Optimistic UI Mutation | 已验证 | Task 跨状态拖拽与 select；局部 Pending；成功无回跳；失败局部回滚 | 其他字段不需要逐项重复验证 |
-| Draft-based Editing | 部分验证 | Active Fleeting Note 固定 expected Snapshot、Save / Cancel、冲突保留 draft | 尚缺阻断式 Modal 宿主、dirty close protection 与 Workspace context 保持 |
-| Task Modal 宿主与上下文 | 待验证 | Product / HLD 已确定 Modal 方向 | 用 Task title 完成一次最小真实 Modal 纵向验证 |
+| Vault Discovery 与 Snapshot 读取 | 已验证 | Trail 管理范围发现；同一 Markdown Snapshot Frontmatter / Body；UTF-8 BOM Project / Area 实机 | 不阻塞 |
+| 领域解析与稳定身份 | 已验证 | Area / Project / Task / Fleeting Note；UUID；重复 UUID；对象 / 文件错误隔离 | 更复杂富文本语义进入正式设计 |
+| Source Range 与 Fingerprint Guard | 已验证 | Task Block、Fleeting Note record；offset 变化后 UUID 重定位；真实外部修改拒绝 | 不阻塞 |
+| 单文件最小区域修改 | 已验证 | `applyGuardedMarkdownEdit()` 被 Task 状态 Writer 与 Active Fleeting Note Editor 共同复用；Task Title Modal 再次消费同一路径 | 不阻塞 |
+| 单文件创建 / 插入 / 删除 | 已验证 | Quick Capture；Task 创建 / 撤销；Fleeting Note 精确删除 | 不阻塞 |
+| 写后重新解析与领域确认 | 已验证 | Task 状态 / 标题、Task / Project 创建、Fleeting Note 创建 / 编辑 / 生命周期 | 不阻塞 |
+| 跨文件 Mutation 与补偿 | 已验证 | Fleeting Note → Task / Project；Archive / Delete / Restore；`unchanged / compensated / partial` | 进程直接崩溃的恢复策略留给正式设计 |
+| 全局串行 Mutation Queue | 已验证 | 不同返回类型 Command 串行；单命令失败后继续；插件卸载拒绝未开始命令 | 不阻塞 |
+| Runtime Store Mutation 边界 | 已验证 | Mutation 期间抑制中间刷新；成功 / 失败后统一读取最终磁盘状态 | 不阻塞 |
+| 文件事件 Reconciliation | 已验证 | create / modify / delete / rename；范围过滤；新 Area / Project 与外部修改自动收敛 | 增量 Reconciliation 仅在真实性能需要时设计 |
+| Immediate / Optimistic UI Mutation | 已验证 | Task 跨状态拖拽与 select；局部 Pending；成功无回跳；失败局部回滚 | 不阻塞 |
+| Draft-based Editing | 已验证 | Active Fleeting Note + Task Title Modal；固定 expected Snapshot；Save / Cancel；dirty close；冲突保留 draft | 不阻塞 |
+| Obsidian Modal 宿主与 Workspace context | 已验证 | 原生 Modal 阻断底层；遮罩 / Esc / Cancel；保存失败保留；关闭后 Project / Board 保持 | 不阻塞 |
 | 错误与冲突语义 | 已验证 | 对象 / 文件错误、Fingerprint conflict、跨文件结构化失败、Queue continuation | 产品文案和恢复入口后续细化 |
-| 正常数据规模与全量刷新 | 已验证 | 10k / 25k Task benchmark；真实 Obsidian 10k Task 自动收敛 | 当前没有引入增量解析的证据 |
-| Obsidian 生命周期接入 | 已验证 | ItemView 单实例、插件 reload、Vault 事件、`Vault.process()`、FileManager | Modal 宿主仍需单独完成一次真实验证 |
+| UTF-8 BOM 输入兼容 | 已验证 | BOM Project / BOM Area；Frontmatter 与 Area body；读取不改写 BOM | 不阻塞 |
+| 正常数据规模与全量刷新 | 已验证 | 10k / 25k Task benchmark；真实 Obsidian 大数据自动收敛 | 当前没有证据要求增量索引 |
+| Obsidian 生命周期接入 | 已验证 | ItemView 单实例、plugin reload、Vault events、`Vault.process()`、`Vault.read()`、FileManager、原生 Modal | 不阻塞 |
+| 复杂 Task Note / Subtask 写回语义 | 部分验证 / 设计输入 | 底层 guarded range edit、Parser、Fingerprint 能力成立 | 边界、嵌套和保真规则属于正式领域设计 |
+| 可配置 Task metadata Schema | 部分验证 / 设计输入 | 当前固定 POC Schema 已完成 parse / validate / write 能力验证 | 正式实现统一 Schema resolver；不在 POC 为其造假配置层 |
+| 进程级跨文件恢复 | 部分验证 / 设计输入 | 运行中失败可 compensation；`partial` 可显式暴露 | crash journal / 人工恢复是正式可靠性取舍 |
 
-### 16.1 当前 POC 收敛顺序
+当前矩阵没有“待验证”的 POC 核心能力。黄色项都已经从“可不可行”转为“正式设计选择什么语义或复杂度”。
+
+### 16.1 POC 实际收敛路径
 
 ```text
-第一次文档校准                     已完成
-→ 单文件 Guarded Markdown Edit 收敛  已完成
-→ 根据真实代码结果第二次更新文档     当前完成
-→ Task Title Modal POC               下一步
-→ 重新审视能力矩阵
-→ 讨论 POC Exit
+Markdown / Obsidian 读链路
+→ Runtime Store + Vault event reconciliation
+→ 单文件 Task mutation
+→ 全局 Mutation Queue + mutation boundary
+→ 跨文件 mutation + compensation
+→ Fleeting Note lifecycle / Quick Capture / draft editing
+→ 大 Vault benchmark
+→ Project Workspace + optimistic drag
+→ Guarded Markdown Edit 公共能力收敛
+→ Task Title 原生 Modal + draft / conflict
+→ UTF-8 BOM 兼容
+→ POC Exit 架构审计 + correctness cleanup
 ```
 
-单文件收敛已经证明 Task 与 Fleeting Note 可以共享 guarded region edit 的机械能力。如果只是新增 Task Priority、Due、Label、Project Overview 或其他同类字段，而没有引入新的技术假设，应把它们留到正式设计 / LLD / Implementation，而不是继续扩大 POC。
+前面部分产品路径实现得比最小 POC 更多，但这些路径已经提供了多领域证据，帮助识别并收敛真正通用的能力。POC Exit 后不再继续用“把第一版功能做完”作为技术验证目标。
 
-## 17. POC 通过与退出标准
+## 17. POC Exit Review
 
-POC 可以进入结束讨论，需要满足：
+### 17.1 Exit 标准结果
+
+POC 退出标准已经满足：
 
 - Markdown 作为唯一事实来源的读取、解析、稳定身份和错误隔离路径已经真实可用；
 - 单文件修改能够在最新文本上重新定位、Guard stale Fingerprint、只修改目标区域、原子保存并写后重新解析确认；
-- 上述单文件机械能力已经从至少两个真实领域场景中收敛出稳定公共边界，而不是继续复制实现；
+- 单文件机械能力已经从至少两个真实领域场景收敛为公共 Guarded Markdown Edit，并由 Task Title Modal 再次接入真实宿主链路；
 - 创建、删除和代表性跨文件 Mutation 能明确处理成功、未改变、补偿成功和部分失败；
 - Plugin-level Queue 与 Runtime Store Mutation 边界能够保证连续命令、失败隔离和最终磁盘收敛；
 - 外部文件事件与自身写回都能让 UI 回到真实 Markdown 状态；
-- Immediate / optimistic 交互至少有一个真实路径通过；
-- Draft-based Modal 交互至少有一个真实路径通过，包括 Save / Cancel、dirty draft、写入失败、Fingerprint conflict 和关闭后上下文保持；
-- 正常个人 Vault 数据规模下，没有证据要求提前引入并行业务数据库、增量 Parser 或复杂缓存架构；
-- 剩余未实现事项经过能力矩阵复核后，主要属于已验证能力上的产品功能扩展，而不是仍未知的架构风险。
+- Immediate / optimistic 与 Draft-based Modal 两类交互模式都至少有一个真实纵向路径通过；
+- 正常个人 Vault 数据规模下，没有证据要求提前引入并行业务数据库、持久化索引、worker 或复杂缓存架构；
+- POC Exit 架构审计没有发现需要推翻当前核心路线的问题；
+- 剩余未实现事项主要属于已验证能力上的领域规则、产品功能和正式工程设计，而不是仍未知的可行性风险。
 
-POC **不要求** 在退出前逐项完成 Task Priority、Due、Label、Subtask、Task Note、Project 生命周期、Search、完整 Trash 产品体验或最终 Design System。若其中某项在后续讨论中暴露新的技术假设，再按需要补做定向 POC。
+因此 Trail 当前满足 **POC Exit** 技术条件。最终退出提交仍必须通过项目完整 `npm run check`、`git diff --check` 和工作区检查；这属于退出提交的质量门槛，不是新的 POC 能力实验。
 
-## 18. 后续实现细节
+POC **不要求** 在退出前逐项完成 Task Priority、Due、Label、Subtask、Task Note、Project 全生命周期、Search、完整 Trash 产品体验或最终 Design System。若未来其中某项暴露新的结构、并发、宿主或性能假设，再做独立定向实验，而不是重新打开整个 POC。
 
-以下事项不阻塞 POC，不再作为当前重要设计讨论：
+### 17.2 Exit 前架构审计结论
 
-- Archive 和 Trash 的最终名称；
-- 回收站默认保留天数；
-- Trash 使用独立文件还是结构化日志；
-- Fleeting Note Archive 的最终文件布局；
-- JSON Schema 未来首次发生不兼容变更时是否加入 `schema_version`；
-- Fingerprint 的具体 Hash 算法；
-- 受影响文件级增量 Reconciliation、性能阈值和更精确的自身事件去重；
-- Search 排序与索引结构；
-- 最终组件库版本、视觉样式和动画；
-- 移动端不在当前产品范围；
-- 完整 Undo 历史。
+POC Exit 前对当前实现与 Obsidian 官方 API / plugin guidance、React 建议，以及成熟 Obsidian 插件的实现方向进行了比较。审计结论：
+
+**应保留，不属于过度设计：**
+
+- Global Mutation Queue：解决领域 Command 串行，不与单文件 `Vault.process()` 的原子 read-modify-write 重复；
+- Runtime Store mutation boundary：解决自身文件事件与最终 Snapshot 收敛，不与 Queue 重复；
+- Cross-file compensation：为多个独立 Vault 操作提供最小 Saga 语义，没有引入 transaction log / event sourcing；
+- Guarded Markdown Edit：公共层只做 Fingerprint 与明确 range replacement，领域 Parser / Adapter 继续负责语义，抽象尺度合适；
+- 窄 Trail Markdown Parser：当前管理格式明确，没有证据需要引入完整 Markdown AST；
+- Obsidian 原生 `Modal`：复用宿主能力，没有自建平行 Overlay framework；
+- HTML5 Drag and Drop：满足当前 Windows Desktop、跨状态而非同栏排序的 POC 范围。
+
+**已经在 correctness cleanup 中处理：**
+
+- React Project Workspace 不在 render 中更新交互 revision ref；
+- BOM 兼容覆盖 Frontmatter 与 Area body；
+- Project compensation 在删除判断前使用 `Vault.read()` 获取最新内容。
+
+**确认存在，但不应在 POC 最后一轮重构：**
+
+- `main.ts` / `TrailView` 中 Queue → Runtime Store → Domain Command callback wiring 重复；正式设计可收敛为 Application Actions / Use-case facade；
+- `TrailView` 当前手工订阅 Runtime Store 并重新 `root.render()`；正式 React 集成可评估 `useSyncExternalStore()` 与 Provider，让 ItemView 更薄；
+- `trail-app.tsx`、Project Workspace 等 POC 集成组件偏大；在产品 UI / LLD 确定后按职责拆分；
+- 多个 source / service interface 有测试价值，但正式存储边界可以统一成更清楚的 Vault gateway；
+- UUID、日期时间和字段 validation 存在重复；等可配置 Schema 与正式领域 primitive 明确后再统一；
+- 当前 build 直接部署到 `.obsidian/plugins/trail/` 适合 POC；正式 release pipeline 应分离 build artifact 与本地 Vault deployment；
+- `manifest.json` 的移动端声明必须与正式支持范围一致；当前只完成 Windows Desktop POC，不应把移动端兼容视为已验证。
+
+Tasks / Dataview 等成熟插件使用 changed-file indexing、central cache、persistent index 或 worker，是它们在更大功能 / 数据规模下演进出的方案。Trail 当前 benchmark 与真实测试没有提供复制这些基础设施的证据，因此正式设计应保留演进路径，而不是在 POC Exit 时提前引入。
+
+## 18. 正式设计 / LLD 输入
+
+以下事项不阻塞 POC Exit，但进入下一阶段时需要显式决策：
+
+- **可配置 Task metadata Schema**：Schema 是运行时可解析的配置，不由各 Parser / Writer 写死。Parser、Validator、Creator、Updater 和 migration 必须共享同一生效 Schema；任何重写结果都必须符合该 Schema；
+- Task Note / Subtask 的多行、嵌套、保真和精确编辑边界；
+- 跨文件 Command 遇到 Obsidian / 系统进程级中断时，是接受可人工修复中间状态，还是引入 operation journal / recovery record；
+- Application Actions / Use-case 层是否负责统一 Queue、Runtime mutation boundary、ID / time dependency 与 domain command wiring；
+- React 与 Runtime Store 是否改为 Provider + `useSyncExternalStore()`；
+- 全量 Reconciliation 的真实性能阈值，以及达到阈值后是否演进为 changed-file incremental index；
+- POC Vault-root / build-to-`.obsidian` 结构如何迁移到正式 source、release artifact 与开发部署流程；
+- Desktop / Mobile 正式支持范围及 `manifest.json` 声明；
+- Archive / Trash 的最终名称、保留期、物理布局与永久删除策略；
+- Search、最终 Design System、Accessibility、键盘交互和移动端交互；
+- Schema 第一次不兼容变更时的 version / migration 机制；
+- Fingerprint Hash 算法、完整 Undo 历史以及更高级恢复能力。
+
+这些项目应在正式 Product / HLD → Technical Design / ADR → LLD / Implementation & Test Plan 中根据真实产品范围决策，不应为了“让 POC 看起来更完整”提前实现。
 
 ## 19. 下一步
 
 ```text
-已完成：第一次文档校准
-→ 已完成：单文件 Guarded Markdown Edit 公共能力收敛与定向回归
-→ 当前完成：第二次文档校准，记录真实 API、边界、复用场景和测试结果
-→ 下一步：Task Title Modal POC，验证阻断式 Modal 宿主、draft、Save / Cancel、dirty close protection、Fingerprint conflict、失败保留与 Workspace context
-→ Modal 验证完成后重新审视第 16 节能力矩阵
-→ 与用户讨论是否仍存在真正未知且会影响正式架构的能力
-→ 若无新的关键未知：结束 POC，进入 ADR / LLD / Implementation & Test Plan
+当前：POC Exit Candidate
+→ 应用并验证审计后的最小 correctness cleanup
+→ 完成 POC Exit 最终文档校准
+→ 运行一次完整 npm run check + git diff / status 检查
+→ commit / push POC Exit 基线
+→ 结束 POC
+→ 进入正式 ADR / LLD / Implementation & Test Plan
 ```
 
-这一顺序刻意把“能力验证”和“产品功能完成度”分开。后续只有当某个具体功能带来新的结构、并发、宿主或性能问题时，才继续以该功能作为新的 POC 载体。
+POC Exit 后，新的开发切片应由正式设计确定的用户价值和领域边界驱动。只有当正式设计遇到尚未被当前能力矩阵覆盖的关键技术未知项时，再建立一个独立、最小的定向 Spike / POC，而不是继续扩展当前 POC 分支的功能清单。

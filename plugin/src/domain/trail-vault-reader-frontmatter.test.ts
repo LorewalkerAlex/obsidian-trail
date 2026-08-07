@@ -142,6 +142,38 @@ describe("Trail Vault reader frontmatter consistency", () => {
       status: "active",
     });
   });
+  it("strips one leading BOM from the parsed Area body", async () => {
+    const areaPath = "Trail/Areas/Work/Area.md";
+    const areaMarkdown = [
+      "\uFEFF---",
+      `id: "${AREA_ID}"`,
+      "created: 2026-08-04",
+      "---",
+      "",
+      "Area description.",
+      "",
+    ].join("\n");
+    const parseFrontmatter = createTrailFrontmatterParser(
+      getFrontMatterInfo,
+      parseFixtureYaml,
+    );
+    const source: TrailVaultSource<TrailReadableFile> = {
+      getMarkdownFiles: () => [createFile(areaPath)],
+      cachedRead: () => Promise.resolve(areaMarkdown),
+      getFrontmatter: (_file, markdown) =>
+        parseFrontmatter(markdown),
+    };
+
+    const result = await readTrailVault(source);
+
+    expect(result.issues).toEqual([]);
+    expect(result.areas).toEqual([
+      expect.objectContaining({
+        id: AREA_ID,
+        description: "Area description.",
+      }),
+    ]);
+  });
   it("returns no frontmatter when YAML parsing fails", () => {
     const parseFrontmatter = createTrailFrontmatterParser(
       () => ({

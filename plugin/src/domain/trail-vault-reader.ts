@@ -103,9 +103,7 @@ export function createTrailFrontmatterParser(
   parseYaml: (yaml: string) => unknown,
 ): TrailFrontmatterParser {
   return (markdown) => {
-    const frontmatterMarkdown = markdown.startsWith("\uFEFF")
-      ? markdown.slice(1)
-      : markdown;
+    const frontmatterMarkdown = stripLeadingBom(markdown);
     const frontmatterInfo = getFrontMatterInfo(frontmatterMarkdown);
 
     if (!frontmatterInfo.exists) {
@@ -180,7 +178,7 @@ export async function readTrailVault<
     const areaResult = parseArea({
       areaName,
       filePath: files.areaFile.path,
-      markdown: areaMarkdown,
+      markdown: stripLeadingBom(areaMarkdown),
       frontmatter:
         source.getFrontmatter(
           files.areaFile,
@@ -447,6 +445,12 @@ function getAreaName(
   }
   return filePath.split("/")[2];
 }
+function stripLeadingBom(markdown: string): string {
+  return markdown.startsWith("\uFEFF")
+    ? markdown.slice(1)
+    : markdown;
+}
+
 function toRecord(
   value: unknown,
 ): Record<string, unknown> | undefined {

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -63,12 +64,15 @@ export function TrailProjectWorkspace({
     projectId,
     revision: 0,
   });
-  if (projectInteractionRef.current.projectId !== projectId) {
-    projectInteractionRef.current = {
-      projectId,
-      revision: projectInteractionRef.current.revision + 1,
-    };
-  }
+
+  useLayoutEffect(() => {
+    if (projectInteractionRef.current.projectId !== projectId) {
+      projectInteractionRef.current = {
+        projectId,
+        revision: projectInteractionRef.current.revision + 1,
+      };
+    }
+  }, [projectId]);
 
   useEffect(() => {
     setPendingTaskIds(new Set());
