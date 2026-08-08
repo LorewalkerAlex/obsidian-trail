@@ -1,22 +1,22 @@
-# Trail Personal Linear Baseline
+# Trail Personal Product Design
 
-> 状态：当前 Product Design 基线（Stage 1）<br>
+> 状态：当前 Product Design 基线（Stage 1 Linear baseline + Stage 2 Trail-specific adaptations）<br>
 > 最后更新：2026-08-08<br>
 > 适用对象：个人使用<br>
 > 参考基线：Linear 的成熟产品原语与交互模型<br>
 > 仓库参考点：`poc/plugin-shell` POC Exit commit `7a564ff9fada3d0f5af09052c24f1fe51e0ec143`<br>
-> 下一阶段：在本基线之上加入 Trail 独有需求，形成 Trail Product Design
+> 下一阶段：Domain / Data Model Design；在统一 Runtime Domain Contract 之下比较 Markdown 持久化方案
 
 ## 1. 文档定位与权威性
 
 本文记录 Trail 在完成 Linear baseline review 后确认的个人版产品原语、语义边界和裁剪决定。它不是 Linear 功能清单，也不是 Trail 的 Technical Design。
 
-在第二阶段完成新的 Trail Product Design / Domain HLD 校准之前：
+Stage 2 Trail-specific review 已完成，本文现在同时包含 Linear baseline 与已经确认的 Trail 偏移/约束：
 
 - 本文是当前产品原语、交互模型和规划语义的最高优先级 Product Design 基线；
-- `docs/product-domain-hld.md` 保留为 POC-era 产品与领域设计记录，其中已经被本文明确替代的 Area / Task / Subtask / 页面结构等结论不再作为当前产品决策依据；
+- `docs/product-domain-hld.md` 仍保留为 POC-era 产品与领域设计记录，其中已经被本文明确替代的 Area / Task / Subtask / Fleeting Note / 页面结构等结论不再作为当前产品决策依据；
 - `docs/technical-design.md` 继续保留 POC 已验证的技术事实与实现证据；产品模型发生变化时，不应把旧 POC schema 误当成新的产品约束；
-- 第二阶段将以本文为输入，逐项加入 Obsidian / Markdown、Dashboard、Quick Capture / Fleeting Notes 等 Trail 特有需求，再重写或校准正式 Product / Domain HLD。
+- 下一阶段进入 Domain / Data Model Design：先定义统一 Runtime Domain Contract，再比较 Markdown 物理表示、Parser / Serializer / Mutation 边界与性能/冲突特性。
 
 本文只保存当前结论与必要 rationale，不保存完整讨论过程。
 
@@ -32,6 +32,8 @@
 8. **快速操作必须配套低成本恢复。** Selection、drag、bulk action、shortcut 等高速度交互应有即时反馈和 Undo / Recovery。
 9. **数据模型与展示模型分离。** Entity 拥有完整属性；具体 Board / List / Card 只展示当前 View 需要的信息。
 10. **保留扩展位，但不提前实现未来复杂度。** Inbox、Integrations、Agent 等可保留概念边界，首期没有真实价值时不实现。
+11. **Domain 语义先于物理 Markdown 表示。** Trail UI 与业务查询只消费统一 Runtime Domain Model；一文件一对象、同文件 block、checkbox、frontmatter、tag、link、HTML marker 等只影响解析、写回、冲突粒度和效率，不改变上层语义。
+12. **优先复用 Obsidian / Markdown 原生能力。** 物理层能无歧义承载 Trail 语义时不重复造格式；相同底层格式可以由 Obsidian 与 Trail 以不同规则解释和使用。
 
 ## 3. Decision Status
 
@@ -64,7 +66,7 @@ Initiative 表达由多个阶段性 Project 共同推进的长期目标或长期
 
 - 关注长期 Goal，而不是具体执行；
 - 可以关联多个 Project；
-- 可以拥有 Status、Priority、Target Date、Labels、Description、Resources；
+- 可以拥有 Status、Priority、Target Date、Labels、Description，并聚合 Related Documents；
 - Progress 由下层 Project 派生；
 - 不把大量 Issue 直接平铺为 Initiative 的执行内容。
 
@@ -79,7 +81,7 @@ Project 表达一个明确、可完成的 Outcome / Deliverable，而不是长�
 - 有明确结果；
 - 可以长期持续，但应存在完成条件；
 - 可以属于一个 Initiative；
-- 可以拥有 Milestone、Issue、Overview、Status、Priority、Target Date、Labels、Resources；
+- 可以拥有 Milestone、Issue、Overview、Status、Priority、Target Date、Labels，并聚合 Related Documents；
 - 一个 Issue 至多归属一个 Project。
 
 “工作 / 健康 / 学习 / 兴趣”等不会完成的长期领域不作为 Project。
@@ -174,6 +176,8 @@ Issue Label Group: Type
 
 长期不会完成的“Area / Responsibility”类概念优先表达为 Project Label Group，而不是新增层级实体。
 
+Label 的 Domain 语义不要求 Trail 自创新的物理 metadata 格式。后续 Data Design 可以优先复用 Obsidian tag / property 等已有表示；同一个底层 token 在 Obsidian 中仍可作为通用 Tag，而 Trail 只在受管 Entity / context 中按 Label、Label Group、适用 Entity 类型和互斥约束解释它。最终 serialization 形式在 Domain Contract 稳定后再决定。
+
 ## 6. Issue 执行与计划语义
 
 ### 6.1 Status — Adopt
@@ -222,7 +226,7 @@ Cycle 是近期 planning timebox，表达“在哪个周期承诺推进这些 Is
 - Cycle 结束后未完成 Issue 可以 rollover；
 - 第一阶段不使用 Estimate 做 Cycle capacity 限制或自动负载判断。
 
-Cycle cadence 的具体长度留到 Trail 第二阶段或详细产品设计确认。
+Cycle cadence 的具体长度不在当前 Product Design 中冻结，留给后续配置 / 详细交互设计确认。
 
 ### 6.5 Active — Adopt
 
@@ -260,25 +264,25 @@ Estimate 保留并默认可用，表达 Issue 的相对工作量 / 复杂度。
 
 ### 7.1 Triage — Adapt
 
-保留 Linear 的 processing inbox 思想：Capture 与 Commitment 之间存在明确 Processing Boundary。
+保留 Linear 的 processing boundary 思想，但按个人工作/知识捕获场景扩展语义。
 
-Triage 回答：**新进入系统的工作应该怎么处理？**
+Triage 承载所有**当前尚不足以成为正式 Issue / Project，但仍值得继续保留和加工的内容**。Quick Capture 只是低成本写入 Triage 的入口，不再单独建立 Fleeting Note Domain Entity。
 
-典型动作：
+核心规则：
 
-- Accept；
-- Decline；
-- Snooze；
-- 后续可扩展转换或分类行为。
+- Triage item 可以跨多轮持续 refine，不要求第一次处理就离开 Triage；
+- 每条 Triage item 自动具有 `review_at` / review deadline，语义是“最迟何时必须重新处理”，不是 Issue Due Date；
+- review deadline 到期不自动删除，但必须进入显著 attention / overdue 状态；
+- 不能无操作地无限延期；延长 `review_at` 必须进入一次显式 Review，并发生有意义的处理；
+- 合法处理包括：编辑/强化内容后重新安排下一次 Review、转换为 Issue、转换为 Project、沉淀/链接为有价值的普通 Markdown 内容，或 Discard；
+- 系统只要求“显式处理 + 必要的数据变化”，不试图用 AI 或规则判断用户这次编辑是否“足够有价值”。
 
-Triage 与 Backlog 的区别：
+Triage 与 Backlog 的区别保持不变：
 
-- Triage：甚至还没决定是否值得正式追踪；
-- Backlog：已经决定值得追踪，只是尚未承诺近期执行。
+- Triage：尚未成熟到值得作为正式工作追踪；
+- Backlog：已经确认值得追踪，只是尚未承诺近期执行。
 
-Triage Snooze 只表示“什么时候重新决定”，不等于 Due 或未来 Cycle。
-
-Triage 暂不与 Trail 既有 Fleeting Note 概念强行合并；这属于第二阶段 Trail-specific mapping。
+Triage 的 Review / Snooze 只表示“什么时候再次处理这条未成熟内容”，与 Due、Cycle、Reminder 分离。
 
 ### 7.2 Personal Focus / My Issues — Adapt
 
@@ -382,7 +386,7 @@ Project Overview 是 Project 上下文和高层状态中心，与 Issue 执行�
 - Initiative；
 - Dates；
 - Project Labels；
-- Resources / Documents；
+- Related Documents / Resources；
 - Milestones；
 - Progress；
 - Derived Health。
@@ -435,7 +439,7 @@ Health 必须尽可能解释“为什么”，而不是只显示不可解释的�
 
 不实现独立 Project Update 实体或周报式人工维护机制。
 
-需要历史时依赖 Activity / History；需要状态摘要时优先由 Analytics / Derived Health 自动生成。
+需要历史时依赖有明确分析价值的持久化历史事实；需要状态摘要时优先由 Analytics / Derived Health 自动生成。
 
 ### 9.6 Timeline — Adapt / design later
 
@@ -544,43 +548,69 @@ Reminder 表达“什么时候重新提醒我注意这件 Issue”。
 
 ### 11.5 Documents / Resources — Adapt
 
-保留 Entity 关联文档和资源的产品原语，但不复制 Linear 自建 Document 系统。
+不复制 Linear 独立的 Documents 数据/编辑系统。Obsidian Vault 中的普通 Markdown 文档继续作为普通文档存在，并使用 Obsidian 原生编辑器查看和编辑。
 
-Trail 后续优先复用 Obsidian 原生 Markdown / File / Link 能力；具体链接模型进入第二阶段与 Technical Design。
+Trail 实体只需要轻量文本输入与结构化 Action；复杂内容（长文、表格、图片、研究笔记、设计文档等）应放在独立 Markdown 文档中。
 
-### 11.6 Activity / History — Adopt
+最常见的关联方式是普通文档主动写入指向 Trail 实体的 `[[wiki link]]`，例如文档中引用 `[[Project A]]`：
 
-Activity / History 是系统自动生成的事实变化记录，不要求用户手工写 Update。
+- Obsidian 继续把它作为普通 link / backlink 关系；
+- Trail 基于 Obsidian 的 resolved-link / backlink 信息，在 Project / Initiative / Issue 等 Entity 页面自动聚合 Related Documents；
+- 用户从 Trail 点击后直接跳转到该普通 Markdown 文档，并交由 Obsidian 原生 editor 处理；
+- 当前不新增独立 Resource Domain Entity，也不要求用户同时维护另一份 Resource relation。
 
-它将为以下能力提供事实基础：
+如果未来自动聚合产生明显噪声，再评估 Pin / Curate 等轻量增强；首期不提前增加双重关系维护。
 
-- 状态停留时间；
-- Project 实际耗时；
-- Cycle rollover；
-- Target Date 变化；
-- Progress / Health；
-- Analytics / history review。
+### 11.6 Historical Facts — Adapt; full Activity Log rejected
+
+正式产品当前不建设完整 Activity Log，也不记录每一次普通编辑、拖动或属性修改。
+
+需要长期分析价值的历史事实由 Domain Action 在业务动作发生时确定性写入，例如：
+
+- 首次进入 Started 时记录 `started_at`；
+- 进入 Completed 时记录 `completed_at`；
+- 必要时记录 `canceled_at`；
+- 对明确需要分析的 Cycle participation / rollover、Triage review / refine 等记录对应事实。
+
+`started_at → completed_at` 表示 **elapsed duration / 历时**，不能称为实际耗时或工作时长；用户可能并行处理多个任务、暂停任务，或处理 Trail 未记录的工作。
+
+历史分析在需要时从这些持久化事实计算，不预先持久化 duration、均值、趋势等派生结果。只有未来出现明确产品问题时，才增加新的历史事实或更细的 transition/event 记录。
 
 ### 11.7 Analytics / Insights — Adopt
 
-Analytics 是只读派生层，消费 Issue / Project / Cycle / History 等事实数据。
+Analytics 是只读派生层：
+
+- **现状分析**直接消费插件内存中的 Runtime Domain Model / Store；
+- **历史分析**消费 Domain Action 已持久化的必要历史事实，并在查询/分析时计算结果；
+- Analytics 不反过来要求用户维护额外统计字段，也不把派生结果当作 authoritative domain state。
 
 候选内容包括：
 
-- Project duration distribution；
+- Project elapsed-duration distribution；
 - Cycle completion trend；
 - Issue completion by priority；
 - Estimate distribution；
 - Rollover frequency；
-- Time in status；
+- 在有足够事实时计算的 lifecycle / status duration；
 - Projects completed by Area / Project Label；
 - Derived Health evidence。
 
-Analytics 不应反过来要求用户维护额外业务事实。
+### 11.8 Dashboard — Adopt as normal page composition
 
-### 11.8 Dashboard — Adopt concept, Trail-specific design later
+Dashboard 只是一个首页 / 默认 View composition，不拥有专用业务数据、专用业务逻辑或专用 Widget 体系。
 
-Dashboard 采用可组合统计与注意力信息的思想，但属于 Trail 独有产品体验，具体 Widget / Layout / Quick Capture 等进入第二阶段设计。
+它与 Project、Initiative、My Issues、Current Cycle、Custom View 等页面共享同一套：
+
+- Runtime Domain Data；
+- Query / Filter；
+- Action Model；
+- Page Shell / Layout；
+- 可组合 Modules / Widgets；
+- Entity Components。
+
+Dashboard 的差异仅在于选择展示哪些内容、如何编排和强调。Dashboard 中可用的 Module / Widget 原则上也可复用于其他页面；其他页面的可组合模块也可以进入 Dashboard。
+
+不新增 Morning Review / Evening Review / Daily Review 等专用页面或 Domain Entity。个人日常节奏优先通过 Linear-style 常用页面与 Custom Views 组合表达。
 
 ### 11.9 Explicit Automation Rules — Adopt selectively
 
@@ -620,19 +650,20 @@ AI / Agent 不作为当前核心 Product Model 驱动力。
 | Issue Relations | Defer |
 | Estimate capacity planning | Reject；Estimate 只用于统计/观察 |
 | My Issues | Adapt 为 curated personal focus |
-| Triage | Adapt 为个人 intake processing |
+| Triage | Adapt 为可持续 refine、带强制 review deadline 的个人 intake / incubation |
 | Inbox | Defer，但正式概念保留 |
 | Project Health manual updates | Reject；改为 Derived Health |
 | Project Updates | Reject |
+| Full product Activity Log | Reject；只持久化有分析价值的 Action-side historical facts |
 | Timeline | Adapt；零额外维护原则 |
-| Documents | Adapt；复用 Obsidian 文档能力 |
+| Documents | Adapt；普通 Markdown + Obsidian links/backlinks 自动形成 Related Documents |
 | Collaboration notifications / subscriptions | Reject / future Inbox extension |
 | General automation builder | Defer |
 | Agent workflows | Defer |
 
 ## 13. Deferred Design Inputs
 
-以下内容已经确认值得进入后续正式设计，但当前不改变 Stage 1 Product Baseline。
+以下内容已经确认值得进入后续 UI / Interaction / Technical Design；它们不改变已经收口的 Product Domain 语义。
 
 ### 13.1 UI Design System Reference
 
@@ -684,19 +715,52 @@ AI / Agent 不作为当前核心 Product Model 驱动力。
 
 **Status:** Input to Interaction Design。
 
-## 14. 第二阶段入口
+### 13.4 Obsidian Pane Adaptive Layout
 
-Stage 1 到此只回答：**如果从成熟 Linear 模型出发，个人版工作管理系统的 baseline 应该是什么。**
+**Use in:** UI / Interaction Design。
 
-第二阶段不重新发明这些基础原语，而是在本文基础上逐项加入 Trail 特有约束与需求，重点包括：
+**Distilled principles:**
 
-- Obsidian / Markdown 原生集成；
-- Trail 自己拥有的结构化 Project / Board / List UI 与 Obsidian 原生 MarkdownView 的边界；
-- Dashboard 的模块化 / Widget 体系；
-- Quick Capture / Fleeting Notes 与 Triage 的最终关系；
-- Trail 导航与系统 View / Favorites / Initiative / Project 的整合；
-- 窄 Obsidian pane 的 responsive / adaptive interaction；
-- UI primitive / component library 选择；
-- Product baseline 到正式 Domain Model / Application Actions / Technical Design 的映射。
+- Trail 运行在可任意分栏的 Obsidian Workspace 中，响应式判断优先基于实际 pane / container width，而不是只看应用窗口宽度；
+- 不为窄 pane 复制另一套业务页面；同一 View / Module 根据可用空间采用 Expanded / Compact / Minimal presentation；
+- 优先使用 progressive disclosure、density change、layout switching 与必要的局部滚动；
+- Board 在过窄容器中不强行压缩所有列，可切换/降级到更适合当前宽度的 presentation；
+- 该约束只影响 presentation，不改变 Runtime Domain Model、Query、Action 或页面业务语义。
 
-第二阶段完成后，应同步校准 `docs/product-domain-hld.md`，并明确哪些 POC-era schema 继续保留、哪些只是已经完成使命的验证载体。
+**Status:** Input to UI / Interaction Design。
+
+### 13.5 Development Diagnostic Activity Log
+
+**Use in:** Development / real Obsidian regression testing。
+
+**Distilled principles:**
+
+- 开发/测试阶段允许通过显式开发开关启用临时 Diagnostic Activity Log；
+- 日志用于记录用户操作、Domain Action、关键 Runtime State diff、Mutation / Vault write / Reparse / Reconcile / rollback 结果和错误，帮助还原真实实操过程；
+- 优先记录结构化 ID、状态和关键 diff，不无必要 dump 完整 Markdown 或敏感内容；
+- 该日志不是正式 Product History / Activity Domain，不作为 Analytics 数据源，也不改变 authoritative business state；
+- 生产默认关闭，开发与实机测试完成后关闭或移除持久日志输出。
+
+**Status:** Development / Testing facility only。
+
+## 14. Stage 2 收口与下一阶段
+
+Stage 1 已确认成熟 Linear 原语在个人版中的 Adopt / Adapt / Defer / Reject；Stage 2 已完成 Trail-specific review。当前不再为了“Trail 特有”而新增概念，已有 View / Filter / Group / Layout / Action 能表达的需求优先继续复用这些 primitives。
+
+Stage 2 形成的主要结论：
+
+1. **Obsidian / Markdown 是 Trail 的持久化宿主，不是另一套并行文档系统。** Trail 不复制 Linear 独立 Documents 系统；复杂内容继续作为普通 Markdown，通过 Obsidian links/backlinks 与 Trail Entity 形成上下文关系。
+2. **Runtime Domain Model 与物理持久化格式解耦。** 插件把受管 Markdown 解析/规范化为统一 Runtime Domain Model / Store；Board、List、Project、Initiative、My Issues、Custom View、Dashboard 等 UI 只消费运行时数据。不同持久化方案只影响 Parser / Writer、mutation 粒度、冲突范围、I/O、可寻址性、Git diff / recovery 等数据层特性。
+3. **优先复用 Obsidian / Markdown 原生物理表达。** Tag、frontmatter、link、block、checkbox、HTML marker 等都只是候选 serialization mechanisms；相同底层格式可以由 Obsidian 与 Trail 按不同语义解释，不因 Domain 语义不同就必然重复造 metadata。
+4. **Triage 扩展为个人内容孵化机制。** Quick Capture 直接进入 Triage；未成熟内容可以跨多轮 refine，但受强制 review deadline 约束，最终转为 Issue / Project / 有价值内容或 Discard。
+5. **不建设正式完整 Activity Log。** 只由有分析价值的 Domain Action 持久化必要历史事实；当前状态分析直接读 Runtime Store，历史分析按需从历史事实计算。开发/测试阶段的 Diagnostic Activity Log 与正式产品历史严格分离。
+6. **Dashboard 和个人 Review 不形成新的业务子系统。** Dashboard 只是共享 Page / Query / Module / Action 能力组成的首页；日常 review 节奏通过常用页面和 Custom Views 表达。
+7. **Obsidian pane 宽度只形成 presentation constraint。** 同一业务 View / Module 做 container-adaptive presentation，不复制业务逻辑或 Domain Model。
+
+下一阶段正式进入 **Domain / Data Model Design**。建议顺序：
+
+1. 定义 Canonical Runtime Domain Model：Initiative、Project、Milestone、Issue / Sub-issue、Cycle、Triage、Label / Label Group、View 及其关系和生命周期；
+2. 明确 Value Object、稳定 ID、历史事实、Action side effects 与不变量；
+3. 定义 Runtime Entity 与 source locator / persistence identity 的边界；
+4. 在 Domain Contract 已稳定后，再比较 Markdown 物理表示候选与 Parser / Serializer / Mutation 方案；
+5. 随 Domain/Data Model 设计同步校准 `docs/product-domain-hld.md` 与后续 `docs/technical-design.md`，明确哪些 POC-era schema 继续保留、哪些只是验证载体。
