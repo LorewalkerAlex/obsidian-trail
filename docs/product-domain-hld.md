@@ -1,10 +1,10 @@
 # Trail 产品与高层设计
 
-> 状态：当前设计基线<br>
-> 最后更新：2026-08-05<br>
+> 状态：POC-era Product / Domain HLD；保留为 POC 设计与技术验证上下文<br>
+> 最后更新：2026-08-08（仅校准文档权威性说明；正文仍主要反映 POC-era 产品模型）<br>
 > 适用对象：个人使用<br>
-> 当前阶段：Product Brief、Domain Model 与 High-Level Design 已完成，正在通过真实 Obsidian Vault 逐步验证 Minimum Demo / POC<br>
-> 本文用途：替代此前过时的设计文档，作为后续 Technical Design、POC、LLD 和实施计划的共同基线
+> 当前 Product Design 权威基线：`./product-design-baseline.md`<br>
+> 本文用途：保留 POC 阶段的 Product Brief、Domain Model 与 High-Level Design，以及已经完成技术验证的设计上下文。若本文与 `product-design-baseline.md` 在 Area / Initiative / Project / Issue / Sub-issue、Cycle、View、Triage 等产品语义上冲突，以新的 Product Design baseline 为准；正文将在第二阶段 Trail-specific Product Design 完成后统一校准。
 
 ## 1. 产品定位
 

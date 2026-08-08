@@ -175,5 +175,6 @@ npm run check
 
 ## Design documents
 
-- `docs/product-domain-hld.md`
-- `docs/technical-design.md`
+- `docs/product-design-baseline.md` — current Product Design authority; records the accepted personal Linear baseline and deferred design inputs before Trail-specific Stage 2 design.
+- `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as design and validation context; superseded by the current Product Design baseline where product semantics conflict.
+- `docs/technical-design.md` — POC technical baseline and verified architecture evidence; to be recalibrated after the Trail-specific product model is finalized.
