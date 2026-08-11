@@ -1,11 +1,11 @@
 # Trail Logical Data Model
 
-> 状态：Logical Data Model 已收口
+> 状态：Logical Data Model 已收口，并已按 Markdown Physical Model 决策完成时间契约校准
 > 最后更新：2026-08-11
 > 上游 Product Design：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
-> 交付基线：`poc/plugin-shell @ ec43eae70b828c7f9888fd71b7d80847ba14624e`
-> 下一阶段：Markdown Physical Model
+> 下游 Physical Model：`docs/markdown-physical-model.md`
+> 下一阶段：Technical Design
 
 ## 1. 文档定位
 
@@ -17,7 +17,7 @@
 - Core Records 的 logical fields、references、nullability 和 cross-record invariants；
 - stable identity 与 canonical relationship direction；
 - minimal historical facts；
-- temporal logical contract；
+- unified Timestamp logical contract；
 - Query Contract；
 - Action / Mutation logical contract；
 - configuration replacement 与 reference integrity。
@@ -28,14 +28,17 @@
 - frontmatter / body block / property / tag / wikilink 的具体编码；
 - UUID 实际格式；
 - JSON / YAML / Markdown / Obsidian plugin data 的最终载体；
+- Timestamp 的具体物理编码；
 - TypeScript interface / class 细节；
 - parser / writer / mutation queue / optimistic UI / reconciliation 实现。
+
+这些物理与实现决策分别由 `docs/markdown-physical-model.md` 和后续 Technical Design 承担。
 
 ## 2. Persistence Roles
 
 Trail 的持久化状态分为三类 authoritative state；Runtime / Derived 为可重建状态。
 
-```text
+~~~text
 Persistent State
 
 A. Domain Data
@@ -52,7 +55,7 @@ B. System / Domain Configuration
 ├─ Labels
 ├─ LabelGroup registrations
 ├─ Cycle default end rule
-├─ timezone
+├─ timezone / temporal presentation policies
 └─ other singleton behavior defaults
 
 C. User Workspace State
@@ -63,12 +66,13 @@ C. User Workspace State
 Runtime / Derived
 ├─ reverse / bidirectional indexes
 ├─ current-cycle lookup
+├─ label usage counts
 ├─ progress / health / attention
 ├─ actual activity timelines
 ├─ due-soon / overdue / reminders
 ├─ query result caches
 └─ other rebuildable materialized views
-```
+~~~
 
 ### 2.1 Domain Data 的判定
 
@@ -85,7 +89,8 @@ Configuration 描述 Trail 当前如何定义、约束或默认执行行为。�
 - 可以把一个 StatusDefinition rename；
 - 可以删除 / 替换 Label；
 - 可以改变 default Status；
-- 可以改变未来 Cycle 创建时的 default end rule。
+- 可以改变未来 Cycle 创建时的 default end rule；
+- 可以改变 timezone 或时间展示策略。
 
 配置可以整体或局部替换，但替换完成后的 Configuration + Domain Data + User Workspace State 必须满足 reference integrity。
 
@@ -139,29 +144,29 @@ V1 Workspace 是隐式 singleton boundary：
 
 普通结构关系使用 child → parent：
 
-```text
+~~~text
 Project.initiativeId?
 Milestone.projectId
 Issue.projectId?
 Issue.milestoneId?
-```
+~~~
 
 因此不同时保存：
 
-```text
+~~~text
 Initiative.projectIds
 Project.milestoneIds
 Project.issueIds
 Milestone.issueIds
-```
+~~~
 
 ### 4.1 Cycle Membership Exception
 
 Cycle membership 是有意的例外：
 
-```text
+~~~text
 Cycle.issueIds
-```
+~~~
 
 它保存在 Cycle 侧，因为 Closed Cycle 需要保留最终 membership 作为最小历史事实。
 
@@ -169,11 +174,11 @@ Issue 不保存单一 `cycleId`，否则 Issue 进入新 Cycle 时会覆盖旧 C
 
 Runtime 可以同时建立：
 
-```text
+~~~text
 issuesByCycleId
 cyclesByIssueId
 currentCycleId
-```
+~~~
 
 这些都必须可从 authoritative state 重建。
 
@@ -197,7 +202,7 @@ Core Entities 只共享真正共同的 `id`。不建立 bloated `BaseEntity` / `
 
 ### 6.1 InitiativeRecord
 
-```text
+~~~text
 InitiativeRecord {
     id: InitiativeId
 
@@ -205,10 +210,10 @@ InitiativeRecord {
     description?: Text
 
     priority?: Priority
-    due?: TemporalValue
+    due?: Timestamp
     labelIds: Set<LabelId>
 }
-```
+~~~
 
 约束：
 
@@ -219,7 +224,7 @@ InitiativeRecord {
 
 ### 6.2 ProjectRecord
 
-```text
+~~~text
 ProjectRecord {
     id: ProjectId
 
@@ -230,10 +235,10 @@ ProjectRecord {
     initiativeId?: InitiativeId
 
     priority?: Priority
-    due?: TemporalValue
+    due?: Timestamp
     labelIds: Set<LabelId>
 }
-```
+~~~
 
 约束：
 
@@ -247,7 +252,7 @@ Project Status 是用户 lifecycle judgment，不等于 actual work activity tim
 
 ### 6.3 MilestoneRecord
 
-```text
+~~~text
 MilestoneRecord {
     id: MilestoneId
 
@@ -255,9 +260,9 @@ MilestoneRecord {
     description?: Text
 
     projectId: ProjectId
-    due?: TemporalValue
+    due?: Timestamp
 }
-```
+~~~
 
 约束：
 
@@ -269,7 +274,7 @@ MilestoneRecord {
 
 ### 6.4 IssueRecord
 
-```text
+~~~text
 IssueRecord {
     id: IssueId
 
@@ -284,23 +289,23 @@ IssueRecord {
 
     priority?: Priority
     estimate?: Estimate
-    due?: TemporalValue
+    due?: Timestamp
     labelIds: Set<LabelId>
 
     firstStartedAt?: Timestamp
     terminalAt?: Timestamp
 }
-```
+~~~
 
 #### Context / Status
 
-```text
+~~~text
 context = Triage
 → statusDefinitionId = null
 
 context = Workflow
 → statusDefinitionId required
-```
+~~~
 
 Accept 是 context + status 的 composite mutation；不能提交 `Workflow + null status` 的中间非法状态。
 
@@ -338,17 +343,17 @@ Accept 是 context + status 的 composite mutation；不能提交 `Workflow + nu
 
 ### 6.5 CycleRecord
 
-```text
+~~~text
 CycleRecord {
     id: CycleId
 
     startedAt: Timestamp
-    plannedEnd: TemporalValue   // precision = day
+    plannedEnd: Timestamp
     endedAt?: Timestamp
 
     issueIds: Set<IssueId>
 }
-```
+~~~
 
 语义：
 
@@ -356,18 +361,18 @@ CycleRecord {
 - `endedAt != null` → Closed / Historical Cycle；
 - Workspace invariant：最多一个 `endedAt = null` 的 Cycle；
 - `startedAt / endedAt` 是实际 lifecycle boundary facts；
-- `plannedEnd` 是该 Cycle 创建时最终确认的计划结束日期，不是 global default rule；
+- `plannedEnd` 是该 Cycle 创建时最终确认的具体计划结束时间点，不是 global default rule；
 - Open Cycle 的 issueIds 是当前 planning focus，可增删；
 - Closed Cycle 的 issueIds 是 final membership，正常 planning mutation 不再改变；
 - destructive referential-integrity operation（例如 Delete Issue）可以清理 dead reference，但这不是重新编辑历史 planning membership。
 
 ## 7. System / Domain Configuration
 
-System / Domain Configuration 是 singleton configuration domain，可以物理存放在 Obsidian plugin settings、独立 config 文件或其他适合的唯一配置载体中；Physical Model 再决定具体方案。
+System / Domain Configuration 是 singleton configuration domain。其具体物理载体由 Physical Model 决定。
 
 ### 7.1 StatusDefinitionRecord
 
-```text
+~~~text
 StatusDefinitionRecord {
     id: StatusDefinitionId
     name: NonEmptyText
@@ -375,13 +380,13 @@ StatusDefinitionRecord {
     entityType: Project | Issue
     category: StatusCategory
 }
-```
+~~~
 
 固定 `StatusCategory`：
 
-```text
+~~~text
 Backlog | Unstarted | Started | Completed | Canceled
-```
+~~~
 
 规则：
 
@@ -392,7 +397,7 @@ Backlog | Unstarted | Started | Completed | Canceled
 
 ### 7.2 Workflow Defaults
 
-```text
+~~~text
 WorkflowDefaults {
     issue: {
         Backlog: StatusDefinitionId
@@ -410,7 +415,7 @@ WorkflowDefaults {
         Canceled: StatusDefinitionId
     }
 }
-```
+~~~
 
 每个 Entity Type / Category 至少有一个 StatusDefinition，并指定恰好一个 default。
 
@@ -418,7 +423,7 @@ Default 用于 category-level shortcut：Complete、Cancel、Start、Move to Bac
 
 ### 7.3 LabelGroupRecord
 
-```text
+~~~text
 LabelGroupRecord {
     id: LabelGroupId
     name: NonEmptyText
@@ -426,35 +431,37 @@ LabelGroupRecord {
     selectionMode: Single | Multiple
     registeredEntityTypes: Set<EntityType>
 }
-```
+~~~
 
 当前允许注册：
 
-```text
+~~~text
 Initiative | Project | Issue
-```
+~~~
 
 架构允许未来扩展其他 Entity Type，但 V1 Milestone 不使用 Trail Labels。
 
 ### 7.4 LabelRecord
 
-```text
+~~~text
 LabelRecord {
     id: LabelId
     name: NonEmptyText
     groupId: LabelGroupId
 }
-```
+~~~
 
 Label 不重复保存 registeredEntityTypes / selectionMode / groupName。
 
+Label usage count 不是 Configuration 或 Domain fact。Runtime 在初始化时从 authoritative `labelIds` 重建，并在运行期根据已提交 mutation 增量维护。
+
 ### 7.5 Cycle Configuration
 
-```text
+~~~text
 CycleConfig {
     defaultEndRule: EndOfNextWeek
 }
-```
+~~~
 
 `EndOfNextWeek`：
 
@@ -463,92 +470,104 @@ CycleConfig {
 - Monday start 时，从该 Monday 到 next-week Sunday 共 14 个 calendar days；
 - mid-week start 仍落到 next-week Sunday，不是固定 `start + 14 days`。
 
-该规则只计算创建 UI 的 suggested end。用户确认 / 修改后，具体 timestamp+day precision 保存到 `CycleRecord.plannedEnd`。
+该规则只计算创建 UI 的 suggested end。用户确认 / 修改后，上层 temporal policy 把选择结果解析成具体 `Timestamp` 保存到 `CycleRecord.plannedEnd`。
 
 修改 `defaultEndRule` 不回写已存在 Cycle。
 
 ### 7.6 Temporal / Timezone Configuration
 
-```text
+~~~text
 TemporalConfig {
-    displayTimezone = Asia/Shanghai
-    ...future temporal presentation / notification policies
+    timezone
+    ...presentation / calendar / notification policies
 }
-```
+~~~
 
-默认 calendar interpretation / display timezone 为东八区，使用 `Asia/Shanghai` 语义表达。
+Timezone、日期 / 时间显示格式、date-only 输入如何转换成具体 timestamp 等属于 Configuration / Application policy，不复制到每个 Entity record。
 
 Reminder / notification policy 可以存在于 configuration，但不因此向 Entity 增加 Reminder field。
 
-## 8. Temporal Logical Contract
+## 8. Timestamp Logical Contract
 
-### 8.1 Unified Timestamp Foundation
+### 8.1 Single Logical Time Value
 
-底层 temporal value 统一使用标准 timestamp 作为时间基准，不为 date-only / datetime 分裂两套底层存储模型。
+Trail 的持久化时间字段统一使用单一逻辑值：
 
-当用户输入精度需要保留时，逻辑值为：
+~~~text
+Timestamp
+~~~
 
-```text
-TemporalValue {
-    timestamp: Timestamp
-    precision: day | hour | minute | second
-}
-```
+不再定义 `TemporalValue { timestamp, precision }`，也不为 date-only / datetime 分裂两套 canonical 存储模型。
 
-具体 timestamp 的物理编码（epoch / ISO string / offset representation）留给 Physical Model。
+所有以下字段使用同一个 Timestamp foundation：
 
-### 8.2 Precision
+- Initiative / Project / Milestone / Issue `due`；
+- Issue `firstStartedAt`；
+- Issue `terminalAt`；
+- Cycle `startedAt`；
+- Cycle `plannedEnd`；
+- Cycle `endedAt`。
 
-Precision 保存用户或字段原本的 temporal granularity，避免把“只选某一天”和“明确选择当天 00:00”混成同一意图。
+### 8.2 Input Granularity Is Not Canonical Data
 
-实际 lifecycle facts，例如 `firstStartedAt / terminalAt / Cycle.startedAt / endedAt`，字段语义本身已经是 real instant，可以直接使用 Timestamp；UI 可按场景显示到秒、分、时、日。
+Trail 不把“用户只选了日期”与“用户显式选择了某个具体时刻”的输入 granularity 作为独立 canonical fact 保存。
 
-`Due` 和 `Cycle.plannedEnd` 使用 TemporalValue，以保留用户选择的粒度；当前 `plannedEnd.precision = day`。
+如果 UI 提供 date-only picker，Application / temporal policy 必须在 mutation 提交前根据当前配置把该输入解析成一个具体 Timestamp。
 
-### 8.3 Timezone
+改变未来的输入转换规则、timezone 或展示格式不批量改写已经持久化的 Timestamp。
 
-真实 Timestamp 表示 absolute time；展示和 calendar calculation 通过统一 timezone resolver 处理。
+### 8.3 Timezone / Presentation
 
-默认 timezone：`Asia/Shanghai`。
+Timestamp 表示已经确认的时间事实；timezone、calendar calculation、格式化和相对时间展示由统一 temporal policy 处理。
 
-Day/hour 等 calendar-granularity value 必须按 Trail configured timezone 解释，不能因浏览器 / OS 临时时区变化而意外漂移到前一天或后一天。
+例如：
+
+- `yyyy-MM-dd` / `yyyy/MM/dd` / localized date；
+- `HH:mm`；
+- `Tomorrow` / `2 days overdue`；
+- Due-specific attention presentation。
+
+这些 presentation 变化不修改 Timestamp 本身。
 
 ### 8.4 Derived Temporal Values
 
 不持久化：
 
-- duration
-- overdue
-- dueSoon
-- actual Project / Initiative / Milestone timeline
-- reminder / nextReminderAt / shouldNotify
+- duration；
+- overdue；
+- dueSoon；
+- actual Project / Initiative / Milestone timeline；
+- reminder / nextReminderAt / shouldNotify。
 
-这些都由 timestamps + precision + timezone + configuration + now 计算。
+这些都由 timestamps + configuration + now 计算。
+
+Timestamp 的具体物理编码由 `docs/markdown-physical-model.md` 决定。
 
 ## 9. Due / Snooze / Reminder Data Contract
 
 ### 9.1 Due
 
-Due 是 Entity 当前 user-authored temporal fact。逻辑层只保存一个 `due`；产品上下文决定 presentation / action semantics。
+Due 是 Entity 当前 user-authored temporal fact。逻辑层只保存一个 `due: Timestamp`；产品上下文决定 presentation / action semantics。
 
 ### 9.2 Snooze
 
 不保存：
 
-```text
+~~~text
 snoozedUntil
 isSnoozed
 snoozeState
-```
+~~~
 
 Snooze / Defer 是 `SetDue` / `MoveDue` 的产品 shortcut。
 
 例如：
 
-```text
+~~~text
 Snooze to Monday
-→ Issue.due = Monday
-```
+→ temporal policy resolves Monday to Timestamp
+→ Issue.due = resolved Timestamp
+~~~
 
 Triage 的排序、弱化、隐藏 / reveal、重新进入 attention 都由 Query + presentation + now 对同一 due 进行解释。
 
@@ -556,17 +575,17 @@ Triage 的排序、弱化、隐藏 / reveal、重新进入 attention 都由 Quer
 
 不保存：
 
-```text
+~~~text
 reminderAt
 ReminderEntity
 ReminderHistory
-```
+~~~
 
 Reminder / notification 由：
 
-```text
+~~~text
 Temporal fact + reminder policy + now
-```
+~~~
 
 动态计算。
 
@@ -578,7 +597,7 @@ Temporal fact + reminder policy + now
 
 Custom View 是 saved query + presentation：
 
-```text
+~~~text
 CustomViewConfig {
     id: CustomViewId
     name: NonEmptyText
@@ -586,7 +605,7 @@ CustomViewConfig {
     query: QuerySpec
     presentation: PresentationSpec
 }
-```
+~~~
 
 Custom View 可以频繁创建、修改、删除；旧版本没有默认历史保留要求。
 
@@ -596,7 +615,7 @@ Custom View 可以频繁创建、修改、删除；旧版本没有默认历史�
 
 Favorites 类似 bookmark / pin：
 
-```text
+~~~text
 FavoritesState {
     entries: OrderedList<FavoriteReference>
 }
@@ -605,11 +624,13 @@ FavoriteReference {
     targetType
     targetId
 }
-```
+~~~
 
 FavoriteReference 是 polymorphic reference，因此需要 targetType + targetId。
 
 Favorite 不是 Entity 的 `favorite=true` 字段；目标 Entity / Custom View 不需要知道自己是否被收藏。
+
+Favorites 的 ordered-list 语义是 authoritative User Workspace State；用户重新排序后保存新的 list order。
 
 ### 10.3 Dashboard / Page Composition
 
@@ -625,36 +646,36 @@ Dashboard composition 属于 User Workspace State，而不是 Dashboard 私有�
 
 所有页面 / View 优先通过同一 Runtime Query 能力工作：
 
-```text
+~~~text
 QuerySpec {
     entityType
     where?
     sort?
     group?
 }
-```
+~~~
 
 `scope` 不单独成为另一套 Domain 概念；Project / Cycle / Triage scope 都可以表达为 query condition。
 
 例：
 
-```text
+~~~text
 Project page
 entityType = Issue
 where projectId = CurrentProject
-```
+~~~
 
-```text
+~~~text
 Current Cycle
 entityType = Issue
 where belongsToCycle = CurrentCycle
-```
+~~~
 
-```text
+~~~text
 Triage
 entityType = Issue
 where context = Triage
-```
+~~~
 
 ### 11.1 Query Inputs
 
@@ -662,24 +683,24 @@ Query 可以消费：
 
 1. Canonical Domain Facts，例如 projectId / milestoneId / priority / due / labels / estimate / context；
 2. Configuration-resolved semantics，例如 statusCategory；
-3. Runtime Derived Values，例如 overdue / dueSoon / attention / progress / actual activity range；
+3. Runtime Derived Values，例如 overdue / dueSoon / attention / progress / actual activity range / label usage count；
 4. Runtime Context，例如 Now / Today / CurrentCycle / CurrentProject。
 
 ### 11.2 Dynamic Temporal Predicates
 
-Saved query 应保存动态逻辑，不把“未来 7 天” materialize 成创建 View 当天的固定日期。
+Saved query 应保存动态逻辑，不把“未来 7 天” materialize 成创建 View 当天的固定时间值。
 
 例如：
 
-```text
+~~~text
 due within next 7 days
 due today
 overdue
 this week
 next week
-```
+~~~
 
-每次执行根据 now + timezone 重新计算。
+每次执行根据 now + timezone / temporal policy 重新计算。
 
 ### 11.3 Boolean / Field Predicates
 
@@ -699,19 +720,21 @@ Sort / Group 属于 read/query model，不是 Domain facts。
 
 例如：
 
-```text
+~~~text
 Triage:
 where context = Triage
 sort due ascending, priority descending
-```
+~~~
 
 Snooze 改 Due 后，Query result 自动重新排序，不需要额外 `snoozePosition`。
+
+Label picker 的 fuzzy relevance 与 label usage count 排序同样属于 Runtime read/presentation behavior，不进入 LabelRecord。
 
 ## 12. Action / Mutation Logical Model
 
 Trail 不使用 Event Sourcing。Action / Mutation 自身不作为 Product Data 持久化。
 
-```text
+~~~text
 Action
 = user intent
 
@@ -720,7 +743,7 @@ Mutation Plan
 
 Committed State
 = mutation 完成后的合法 authoritative graph
-```
+~~~
 
 ### 12.1 Global Mutation Contract
 
@@ -729,7 +752,7 @@ Committed State
 1. 读取 latest committed state；
 2. 解析 Action intent；
 3. 计算完整 Mutation Plan；
-4. 验证 mutation 后整个 graph 满足 Field Contract / reference integrity；
+4. 验证 mutation 后受影响 authoritative graph 满足 Field Contract / reference integrity；
 5. 作为一个 logical atomic unit 提交；
 6. Runtime indexes / queries 观察新 committed state。
 
@@ -741,22 +764,22 @@ Optimistic UI、Mutation Queue、file locking、write compensation、reparse / v
 
 普通字段入口：
 
-```text
+~~~text
 SetTitle
 SetDescription
 SetPriority
 SetEstimate
 SetDue
 SetLabels
-```
+~~~
 
-Snooze / Pick Due / Move Due +1 day 都可以映射到 `SetDue`。
+Snooze / Pick Due / Move Due +1 day 都可以映射到 `SetDue`；Application 在提交前负责把 UI 输入解析成 Timestamp。
 
 ### 12.3 Status Mutation
 
-```text
+~~~text
 ChangeIssueStatus(issueId, targetStatusDefinitionId)
-```
+~~~
 
 Domain 层根据 old / target StatusCategory 维护 lifecycle facts：
 
@@ -778,10 +801,10 @@ Category-level `Complete / Cancel / Start / Move to Backlog` 先解析对应 def
 
 Accept 是 composite mutation：
 
-```text
+~~~text
 context: Triage → Workflow
 statusDefinitionId: null → configured target normal Status
-```
+~~~
 
 UI 可以提供 `Accept & Add to Current Cycle` convenience action，把 Accept 与 Cycle membership 修改组合成一个 atomic logical operation。
 
@@ -855,9 +878,9 @@ Project / Milestone / Initiative 不保存可以从 Issue facts 聚合出的 act
 
 ### 15.1 Start
 
-```text
+~~~text
 actualStart = min(relevant Issue.firstStartedAt)
-```
+~~~
 
 ### 15.2 Actual Work End
 
@@ -875,21 +898,28 @@ Project 用户点击 Complete 的时刻不作为 actual work end。
 
 Canonical persistence 保持单向 normalized；Runtime Store 可以为性能建立任意可重建 index / cache，例如：
 
-```text
+~~~text
 issuesByProjectId
 issuesByMilestoneId
 projectsByInitiativeId
 labelsByEntityId
 entitiesByLabelId
+labelUsageCount
 issuesByCycleId
 cyclesByIssueId
 currentCycleId
 statusDefinitionsByCategory
 labelGroupsByEntityType
 derived progress / activity caches
-```
+~~~
 
 这些 index 可以增量维护，但必须支持从 authoritative state 全量重建。
+
+`labelUsageCount` 的排序用途：
+
+- 无搜索词时，常用 Label 可以按 usage count 优先展示；
+- 有 fuzzy search 时，匹配相关度优先，usage count 作为次级排序；
+- usage count 不进入 `data.json`，也不进入 LabelRecord。
 
 ## 17. 明确不进入 V1 Logical Data Model
 
@@ -906,14 +936,17 @@ derived progress / activity caches
 - complete Activity / Event Log；
 - CycleParticipationHistory / CycleSnapshot Entity；
 - generic createdAt / updatedAt / deletedAt / version；
+- temporal precision / input-granularity field；
 - runtime sourcePath / sourceRange / fingerprint；
 - physical Markdown container / schema decisions。
 
 ## 18. Closeout
 
-Logical Data Model 已收口。当前 authoritative chain：
+Logical Data Model 已收口。2026-08-11 的 Physical Model 设计只对一个已经明确被后续决策替代的 logical contract 做了校准：所有 persisted temporal fields 统一为 `Timestamp`，不再保存 `TemporalValue.precision`。
 
-```text
+当前 authoritative chain：
+
+~~~text
 Product Design
 → Canonical Domain
 → Logical Data Model
@@ -921,8 +954,6 @@ Product Design
 → Technical Design
 → Implementation Plan
 → Formal Implementation
-```
+~~~
 
-下一阶段的任务是 **Markdown Physical Model**：决定上述 Domain Data、System Configuration 和 User Workspace State 分别由什么持久化载体承载，以及在 Vault / Markdown / plugin settings 中如何序列化、寻址、更新与恢复。
-
-Physical Model 不得因为某种 Markdown 表达更方便，就重新引入被上层明确删除的 Domain 概念或重复 authoritative truth。
+具体 Vault / Markdown / plugin `data.json` 的载体、路径、字段 carrier、Unix timestamp encoding、validation / migration policy 由 `docs/markdown-physical-model.md` 定义。Physical Model 不得因为某种 Markdown 表达更方便，就重新引入被上层明确删除的 Domain 概念或重复 authoritative truth。

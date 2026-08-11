@@ -4,19 +4,21 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit, Product Design, Canonical Domain Design, and Logical Data Model stages on the active `poc/plugin-shell` branch.
+Trail has completed its POC exit, Product Design, Canonical Domain Design, Logical Data Model, and Markdown Physical Model stages on the active `poc/plugin-shell` branch.
 
 The current design authority chain is:
 
-```text
+~~~text
 docs/product-design-baseline.md
     ↓
 docs/canonical-domain-model.md
     ↓
 docs/logical-data-model.md
-```
+    ↓
+docs/markdown-physical-model.md
+~~~
 
-The next design stage is **Markdown Physical Model**: mapping the frozen logical Domain Data, System / Domain Configuration, and User Workspace State into concrete Vault / Markdown / plugin persistence structures. The Physical Model must not let POC-era Markdown schemas redefine the formal Product / Domain model.
+The next design stage is **Technical Design**: turning the frozen Product / Domain / Logical / Physical contracts into Parser, Runtime Store, Query, Mutation, validation, migration, reconciliation, and Obsidian integration architecture. POC-era implementation remains technical evidence only and must not redefine the formal schema.
 
 The POC remains valuable as technical evidence. It verified reusable capabilities including Markdown discovery and parsing, stable identity, guarded single-file mutation, representative cross-file mutation and compensation, Runtime Store convergence, a global Mutation Queue, optimistic UI, draft editing, native Obsidian Modal integration, host file-event reconciliation, and UTF-8 BOM tolerance at the read boundary.
 
@@ -24,24 +26,24 @@ The final POC exit architecture concluded that the core approach is viable and t
 
 Active branch:
 
-```text
+~~~text
 poc/plugin-shell
-```
+~~~
 
-Canonical Domain closeout baseline before the current Logical Data Model closeout:
+Canonical Domain closeout baseline before the current Logical / Physical design closeout:
 
-```text
+~~~text
 ec43eae70b828c7f9888fd71b7d80847ba14624e
-```
+~~~
 
 ## Git worktrees
 
 Each development machine uses two Git worktrees:
 
-```text
+~~~text
 obsidian-trail/          main branch for review, merge, and release
 obsidian-trail-active/   active short-lived development branch
-```
+~~~
 
 Development work should be performed in `obsidian-trail-active/`.
 
@@ -49,7 +51,7 @@ Development work should be performed in `obsidian-trail-active/`.
 
 During the POC, the Git repository root is also used as the Obsidian Vault root.
 
-```text
+~~~text
 obsidian-trail-active/
 |-- .obsidian/
 |   |-- community-plugins.json
@@ -59,76 +61,76 @@ obsidian-trail-active/
 |   `-- src/              Trail plugin source code
 |-- Trail/                Checked-in POC Markdown fixtures
 `-- docs/                 Product and technical design documents
-```
+~~~
 
-This layout is POC evidence, not the formal Markdown Physical Model. It may change after the next design stage.
+This repository layout is POC evidence, not the formal production persistence layout. The formal Domain Markdown layout is defined by `docs/markdown-physical-model.md`.
 
 ## Development environment
 
 Required versions:
 
-```text
+~~~text
 Node.js 24.19.0
 npm 11.17.0
-```
+~~~
 
 Node.js is managed with nvm-windows on the current development machines.
 
 Confirm the active versions:
 
-```powershell
+~~~powershell
 nvm current
 node --version
 npm --version
-```
+~~~
 
 Expected output:
 
-```text
+~~~text
 v24.19.0
 v24.19.0
 11.17.0
-```
+~~~
 
 ## Initial setup
 
 After cloning the repository or switching to a new worktree, activate the required Node.js version:
 
-```powershell
+~~~powershell
 nvm use 24.19.0
-```
+~~~
 
 Install the exact project dependencies with:
 
-```powershell
+~~~powershell
 npm ci
-```
+~~~
 
 ## Plugin development workflow
 
 Trail source code is developed under:
 
-```text
+~~~text
 plugin/
-```
+~~~
 
 The build process places generated plugin files under:
 
-```text
+~~~text
 .obsidian/plugins/trail/
-```
+~~~
 
 The generated plugin contains:
 
-```text
+~~~text
 main.js
 manifest.json
 styles.css
-```
+~~~
 
 Available commands:
 
-```powershell
+~~~powershell
 npm run dev
 npm run lint
 npm run test
@@ -138,7 +140,7 @@ npm run typecheck
 npm run build
 npm run bench:vault
 npm run check
-```
+~~~
 
 - `npm run dev` watches source and static files and updates `.obsidian/plugins/trail/`.
 - `npm run lint` checks source against ESLint and Obsidian plugin rules.
@@ -169,14 +171,15 @@ The POC currently demonstrates Project Board / List behavior, optimistic Task st
 
 GitHub Actions uses the Node.js version from `.nvmrc`, installs dependencies with `npm ci`, and runs:
 
-```powershell
+~~~powershell
 npm run check
-```
+~~~
 
 ## Design documents
 
-- `docs/product-design-baseline.md` — current Product Design source of truth.
+- `docs/product-design-baseline.md` — Product Design source of truth.
 - `docs/canonical-domain-model.md` — canonical Domain objects, semantics, lifecycle, relationships, field contracts, and derivation boundaries.
-- `docs/logical-data-model.md` — current logical records, persistence roles, stable references, temporal contract, Query Contract, and Mutation Contract; this is the immediate input to the Markdown Physical Model stage.
+- `docs/logical-data-model.md` — logical records, persistence roles, stable references, timestamp contract, Query Contract, and Mutation Contract.
+- `docs/markdown-physical-model.md` — authoritative Vault / Markdown / `data.json` persistence layout, serialization rules, validation boundaries, and migration policy.
 - `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as historical design and validation context; superseded where it conflicts with current canonical docs.
-- `docs/technical-design.md` — POC technical baseline and verified architecture evidence; it will be recalibrated after the formal Physical / Technical Design stages.
+- `docs/technical-design.md` — POC technical baseline and verified architecture evidence; the next Technical Design stage will recalibrate implementation architecture against the formal Product / Domain / Logical / Physical contracts.
