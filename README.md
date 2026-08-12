@@ -4,9 +4,9 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit, Product Design, Canonical Domain Design, Logical Data Model, and Markdown Physical Model stages on the active `poc/plugin-shell` branch. A first formal Technical Design baseline has now been established and is the current design focus.
+Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, and Technical Design stages. The V1 Implementation Plan is now established, and formal implementation begins with the Formal Intake stage.
 
-The current design authority chain is:
+The current design and implementation chain is:
 
 ~~~text
 docs/product-design-baseline.md
@@ -18,40 +18,37 @@ docs/logical-data-model.md
 docs/markdown-physical-model.md
     ↓
 docs/technical-design-baseline.md
+    ↓
+docs/implementation-plan.md
 ~~~
 
-The current design stage is **Technical Design**: refining the first formal baseline for Parser, Runtime Store, optimistic state, Mutation planning/execution, reconciliation, page data selection, frontend rendering, validation, migration, and Obsidian integration. POC-era implementation remains technical evidence only and must not redefine the formal schema.
+The current implementation focus is **Formal Intake**: establish the first formal end-to-end path from workspace initialization and Quick Capture to a persisted Triage Issue and Triage List. POC-era implementation remains technical evidence only and must not redefine the formal schema or implementation architecture.
 
 The POC remains valuable as technical evidence. It verified reusable capabilities including Markdown discovery and parsing, stable identity, guarded single-file mutation, representative cross-file mutation and compensation, Runtime Store convergence, a global Mutation Queue, optimistic UI, draft editing, native Obsidian Modal integration, host file-event reconciliation, and UTF-8 BOM tolerance at the read boundary.
 
-The final POC exit architecture concluded that the core approach is viable and that larger structural decisions belong in formal design rather than continued POC expansion.
+The final POC exit architecture concluded that the core approach is viable. Formal implementation may reuse those verified techniques where they remain the best fit, but each implementation choice must be evaluated against the current formal architecture rather than inherited from the POC by default.
 
 Active branch:
 
 ~~~text
-poc/plugin-shell
+main
 ~~~
 
-Canonical Domain closeout baseline before the current Logical / Physical design closeout:
+Current formal implementation baseline before the first implementation slice:
 
 ~~~text
-ec43eae70b828c7f9888fd71b7d80847ba14624e
+feb7fc0e573595eafc85594759da3bab64f2d40d
 ~~~
 
 ## Git worktrees
 
-Each development machine uses two Git worktrees:
+Development work is performed in the `obsidian-trail-active/` worktree on `main`.
 
-~~~text
-obsidian-trail/          main branch for review, merge, and release
-obsidian-trail-active/   active short-lived development branch
-~~~
+The presence or branch state of any sibling worktree is a local machine arrangement, not a project workflow requirement. Project commands and handoffs should remain environment-independent and assume they are run from the active repository root.
 
-Development work should be performed in `obsidian-trail-active/`.
+## Repository layout
 
-## POC repository layout
-
-During the POC, the Git repository root is also used as the Obsidian Vault root.
+The repository root is currently also used as the development Obsidian Vault.
 
 ~~~text
 obsidian-trail-active/
@@ -61,11 +58,11 @@ obsidian-trail-active/
 |       `-- trail/        Generated files loaded by Obsidian
 |-- plugin/
 |   `-- src/              Trail plugin source code
-|-- Trail/                Checked-in POC Markdown fixtures
-`-- docs/                 Product and technical design documents
+|-- Trail/                Current checked-in Vault fixtures
+`-- docs/                 Product, design, and implementation documents
 ~~~
 
-This repository layout is POC evidence, not the formal production persistence layout. The formal Domain Markdown layout is defined by `docs/markdown-physical-model.md`.
+The current `Trail/` fixtures still reflect POC-era persistence and are not the formal production persistence model. The Formal Intake cutover will replace the active development fixture/runtime path with the structure defined by `docs/markdown-physical-model.md`; no POC schema migration compatibility is required.
 
 ## Development environment
 
@@ -158,7 +155,7 @@ During one implementation slice, run focused tests plus directly affected regres
 
 ## Testing in Obsidian
 
-The current plugin implementation remains the POC validation shell. When performing real Obsidian regression testing:
+The current plugin implementation remains the POC validation shell until the Formal Intake cutover replaces the runtime path. When performing real Obsidian regression testing:
 
 1. Open the repository root as an Obsidian Vault.
 2. Build or keep `npm run dev` active.
@@ -167,7 +164,7 @@ The current plugin implementation remains the POC validation shell. When perform
 5. Reload the plugin after rebuilding when Obsidian still has an older bundle loaded.
 6. Use a written test protocol covering repository / Obsidian starting state, exact fixture data, default values, any Developer Console hook, expected UI / disk end state, cleanup, and whether Obsidian should remain open.
 
-The POC currently demonstrates Project Board / List behavior, optimistic Task status changes, Task-title Modal editing, Fleeting Note lifecycle / conversion paths, Quick Capture, Runtime Store reconciliation, guarded writes, and cross-file compensation. These are technical probes, not formal Product / Data schema commitments.
+The POC currently demonstrates Project Board / List behavior, optimistic Task status changes, Task-title Modal editing, Fleeting Note lifecycle / conversion paths, Quick Capture, Runtime Store reconciliation, guarded writes, and cross-file compensation. These are technical probes, not formal Product / Data schema commitments. Formal implementation must revalidate the techniques it chooses to carry forward.
 
 ## Continuous integration
 
@@ -183,6 +180,7 @@ npm run check
 - `docs/canonical-domain-model.md` — canonical Domain objects, semantics, lifecycle, relationships, field contracts, and derivation boundaries.
 - `docs/logical-data-model.md` — logical records, persistence roles, stable references, timestamp contract, Query Contract, and Mutation Contract.
 - `docs/markdown-physical-model.md` — authoritative Vault / Markdown / `data.json` persistence layout, serialization rules, validation boundaries, and migration policy.
-- `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as historical design and validation context; superseded where it conflicts with current canonical docs.
 - `docs/technical-design-baseline.md` — formal Technical Design baseline for Runtime, optimistic state, mutation planning/execution, reconciliation, page selectors, frontend architecture, performance, and reusable UI infrastructure.
+- `docs/implementation-plan.md` — V1 implementation roadmap, current near-term focus, and implementation checkpoints.
+- `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as historical design and validation context; superseded where it conflicts with current canonical docs.
 - `docs/technical-design.md` — POC technical baseline and verified architecture evidence only; superseded where it conflicts with the formal design chain.
