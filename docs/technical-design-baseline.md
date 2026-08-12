@@ -28,6 +28,21 @@
 6. **Markdown-first persistence**：Markdown / `data.json` 是 authoritative persistence，Runtime 可重建。
 7. **Modularity without framework inflation**：只抽真正重复的 Runtime / UI primitives，不先造万能 DSL 或页面框架。
 
+### 2.1 Implementation Selection Policy
+
+正式实现对通用技术能力采用 **reuse before build**：
+
+```text
+Obsidian / host / browser native capability
+→ mature focused library
+→ thin Trail adapter
+→ custom implementation only when justified
+```
+
+Trail 自己负责 Domain semantics、Physical Schema、validation、mutation planning 与 application orchestration。对 Runtime state、Markdown syntax parsing、accessible UI primitives、drag/drop、virtualization、command menu 等通用能力，默认先评估成熟方案；只有现有方案明显过重、与 Obsidian 宿主不适配、无法满足已冻结 contract，或自研实现显著更简单可靠时，才自行实现。
+
+候选库仍按实际 Slice 引入：不因为 roadmap 未来可能需要就提前安装依赖；一旦当前 Slice 需要对应能力，应先说明成熟方案是否适用，而不是默认重新造轮子。
+
 ## 3. Scale Assumptions
 
 面向约十年个人使用，而不是 Linear 企业规模。
@@ -622,7 +637,7 @@ Close & Plan Next 时，当前 Cycle 中所有 unfinished / non-terminal Issues 
 - local ephemeral state 留在交互组件，不写 Runtime 每帧状态；
 - 用 Profiler / benchmark 驱动 memoization，不 blanket `memo/useMemo/useCallback`。
 
-当前领先候选（尚未加入 package，implementation slice 前再次核对）：
+当前优先评估的成熟方案（尚未加入 package，implementation slice 前再次核对）：
 
 - Runtime-to-React：Zustand vanilla + selectors；
 - accessible headless primitives：Radix Primitives；

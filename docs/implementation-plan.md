@@ -59,6 +59,15 @@ Workspace initialization
 
 Triage Accept 后置到 Workflow 已经可见、可操作之后，使 Intake → Workflow 成为完整用户路径，而不是只完成一次跨容器持久化操作。
 
+### 3.2 Formal Cutover
+
+Formal Intake 同时完成 implementation authority cutover：
+
+- `plugin/src/`、根目录 `Trail/` 与正式 `styles.css` 只承载 Formal Implementation；
+- POC implementation、tests、fixtures 与样式退出 active build / runtime / test path，保留到明确的 POC archive 或 Git history 作为技术证据；
+- 不长期维护 Formal / POC 双实现，也不要求 Formal schema 兼容 POC persistence；
+- POC 中验证过的技术能力可以重新采用，但必须按当前 Formal architecture 实现，而不是继续扩展旧 POC 业务结构。
+
 ## 4. 实施原则
 
 - **纵向用户价值优先**：Slice 应从用户操作穿过正式 Domain、Runtime、Persistence 和 UI，而不是按 Parser / Store / UI 分层独立开发。
