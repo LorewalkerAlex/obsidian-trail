@@ -4,7 +4,7 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, and Technical Design stages. The V1 Implementation Plan is established, and formal implementation begins with the Formal Intake stage.
+Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, and Technical Design stages. The V1 Implementation Plan is established, and formal implementation is now in the Formal Intake stage.
 
 The current design and implementation chain is:
 
@@ -24,7 +24,7 @@ docs/implementation-plan.md
 
 Project progress, the current Slice, and implementation checkpoints are maintained in `docs/implementation-plan.md`. Closed design documents record their own contracts and authority boundaries rather than duplicating project progress.
 
-The current implementation focus is **Formal Intake**: establish the first formal end-to-end path from workspace initialization and Quick Capture to a persisted Triage Issue and Triage List. POC-era implementation remains technical evidence only and must not redefine the formal schema or implementation architecture.
+The current implementation focus is **Formal Intake / Formal Triage Intake**. Gate A is complete: the exact POC baseline has been preserved under `archive/poc/`; Zustand and `mdast-util-from-markdown` have passed focused implementation validation; and the Formal configuration, workspace classification/bootstrap foundation, and Obsidian host boundary are implemented and covered by focused tests. The active runtime is still the POC validation shell until Gate B builds the Formal Triage vertical path and performs the final active-path cutover.
 
 The POC remains valuable as technical evidence. It verified reusable capabilities including Markdown discovery and parsing, stable identity, guarded single-file mutation, representative cross-file mutation and compensation, Runtime Store convergence, a global Mutation Queue, optimistic UI, draft editing, native Obsidian Modal integration, host file-event reconciliation, and UTF-8 BOM tolerance at the read boundary.
 
@@ -52,13 +52,15 @@ obsidian-trail-active/
 |   |-- community-plugins.json
 |   `-- plugins/
 |       `-- trail/        Generated files loaded by Obsidian
+|-- archive/
+|   `-- poc/              Exact POC implementation / fixture / style baseline
 |-- plugin/
-|   `-- src/              Trail plugin source code
+|   `-- src/              Current active Trail plugin source code
 |-- Trail/                Current checked-in Vault fixtures
 `-- docs/                 Product, design, and implementation documents
 ~~~
 
-The current `Trail/` fixtures still reflect POC-era persistence and are not the formal production persistence model. The Formal Intake cutover will move POC implementation, tests, fixtures, and styles under `archive/poc/`, remove them from active build / runtime / test paths, and replace the active development fixture/runtime path with the structure defined by `docs/markdown-physical-model.md`. No POC schema migration compatibility is required.
+The active `Trail/` fixtures still reflect POC-era persistence and are not the formal production persistence model. Gate A has already preserved the original POC fixture and implementation baseline under `archive/poc/`. Gate B of the Formal Triage Intake slice will replace the active development fixture/runtime path with the structure defined by `docs/markdown-physical-model.md`, while keeping archived POC files outside active build / runtime / lint / test paths. No POC schema migration compatibility is required.
 
 ## Development environment
 
@@ -151,7 +153,7 @@ During one implementation slice, run focused tests plus directly affected regres
 
 ## Testing in Obsidian
 
-The current plugin implementation remains the POC validation shell until the Formal Intake cutover replaces the runtime path. When performing real Obsidian regression testing:
+The current plugin implementation remains the POC validation shell until Gate B of Formal Triage Intake replaces the active runtime path. When performing real Obsidian regression testing:
 
 1. Open the repository root as an Obsidian Vault.
 2. Build or keep `npm run dev` active.

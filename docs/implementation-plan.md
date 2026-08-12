@@ -1,7 +1,7 @@
 # Trail V1 Implementation Plan
 
 > 状态：当前 Implementation Plan baseline
-> 最后更新：2026-08-12
+> 最后更新：2026-08-13
 > 上游 Product：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
@@ -57,6 +57,12 @@ Workspace initialization
 | Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链可复用 | 待开始 |
 | Workflow Entry | 建立 Project / Workflow Issue 的最小可用执行闭环 | 待开始 |
 
+Formal Triage Intake 当前只记录稳定实施边界，不拆成逐任务 backlog：
+
+- [x] **Gate A — Formal foundation**：固化 `bd7a693...` POC baseline archive；完成 Zustand / Markdown parser focused validation；建立 Formal Configuration、Workspace safety classification/bootstrap 与 Obsidian host boundary。
+- [ ] **Gate B — Formal Triage vertical path**：实现正式 Triage parser/model/runtime、Quick Capture optimistic persistence/reconciliation，并完成 active POC → Formal cutover。
+- [ ] **Slice checkpoint**：按真实 Obsidian protocol 完成端到端验证，校准受影响文档，运行最终 `npm run check`，commit / push 并远端回查。
+
 `Workflow Entry` 的具体边界在前两个 Slice 完成后根据实际实现规模重新评估，不提前固定 Board、DnD、Peek、Priority 或 Milestone 是否属于同一 Slice。
 
 Triage Accept 后置到 Workflow 已经可见、可操作之后，使 Intake → Workflow 成为完整用户路径，而不是只完成一次跨容器持久化操作。
@@ -69,6 +75,8 @@ Formal Intake 同时完成 implementation authority cutover：
 - POC implementation、tests、fixtures 与样式统一移入 `archive/poc/`，并退出 active build / runtime / lint / test path；POC 设计与技术证据文档继续按各自既定位置保留；
 - 不长期维护 Formal / POC 双实现，也不要求 Formal schema 兼容 POC persistence；
 - POC 中验证过的技术能力可以重新采用，但必须按当前 Formal architecture 实现，而不是继续扩展旧 POC 业务结构。
+
+Gate A 已先从 Git object 中固化 `bd7a693...` 的 POC implementation / fixture / style 原始 baseline 到 `archive/poc/`，并将 archive 排除出 active lint / test path。active `plugin/src/`、`Trail/` 与 `styles.css` 的最终 Formal replacement 仍属于 Gate B；在 Gate B 完成前，当前运行 shell 仍是 POC。
 
 ## 4. 实施原则
 
@@ -90,7 +98,7 @@ Formal Intake 同时完成 implementation authority cutover：
 | Markdown Physical Model | 已完成 | Formal persistence model 已收口 |
 | Technical Design | 已完成 | Formal implementation architecture baseline 已收口 |
 | Implementation Plan | 已形成 | V1 总路线与 Formal Intake 近期计划建立 |
-| Formal Intake | 当前 | 第一条正式纵向链路待实现 |
+| Formal Intake | 当前 | Gate A Formal foundation 已完成；Gate B Triage vertical path 待开始 |
 | Formal Workflow | 待开始 | — |
 | V1 Exit | 待开始 | — |
 

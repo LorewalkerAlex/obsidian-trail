@@ -7,6 +7,7 @@ export default defineConfig(
     "node_modules/**",
     "coverage/**",
     ".obsidian/**",
+    "archive/**",
     "esbuild.config.mjs",
     "package.json",
     "package-lock.json",

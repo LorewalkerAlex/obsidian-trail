@@ -1,0 +1,530 @@
+.trail-view {
+  height: 100%;
+  padding: 0;
+}
+
+.trail-view__root,
+.trail-app {
+  min-height: 100%;
+}
+
+.trail-app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-6);
+  padding: var(--size-4-6);
+  color: var(--text-normal);
+  background: var(--background-primary);
+}
+
+.trail-app__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+}
+
+.trail-app__eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.trail-app__title {
+  margin: 0;
+}
+
+.trail-app__navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+
+.trail-app__nav-button {
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.trail-app__nav-button:hover,
+.trail-app__nav-button.is-active {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.trail-app__content {
+  flex: 1;
+  padding: var(--size-4-5);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+}
+
+.trail-app__content h2,
+.trail-app__content p {
+  margin-top: 0;
+}
+
+.trail-fleeting-notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-6);
+}
+
+.trail-fleeting-notes > h2 {
+  margin-bottom: 0;
+}
+
+.trail-fleeting-notes__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-notes__section + .trail-fleeting-notes__section {
+  padding-top: var(--size-4-5);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.trail-fleeting-notes__section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-notes__section-header h3 {
+  margin: 0;
+}
+
+.trail-fleeting-notes__count,
+.trail-fleeting-notes__empty {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-fleeting-notes__empty {
+  margin: 0;
+}
+
+.trail-fleeting-notes__list {
+  display: grid;
+  gap: var(--size-4-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trail-fleeting-note-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  padding: var(--size-4-4);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+}
+
+.trail-fleeting-note-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+}
+
+.trail-fleeting-note-card__title {
+  line-height: var(--line-height-tight);
+}
+
+.trail-fleeting-note-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1) var(--size-4-4);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-fleeting-note-card__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__conversion-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 18rem), 1fr)
+  );
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__conversion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+}
+
+.trail-fleeting-note-card__conversion-title {
+  font-size: var(--font-ui-small);
+}
+
+.trail-fleeting-note-card__conversion-fields {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 10rem), 1fr)
+  );
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__conversion > button {
+  align-self: flex-start;
+}
+
+.trail-fleeting-note-card__target {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-fleeting-note-card__target input,
+.trail-fleeting-note-card__target select {
+  width: 100%;
+  min-width: 0;
+}
+
+.trail-fleeting-note-card__actions,
+.trail-fleeting-note-card__lifecycle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+
+.trail-fleeting-note-card__lifecycle-actions {
+  justify-content: flex-end;
+}
+
+.trail-fleeting-note-card__error {
+  margin: 0;
+  color: var(--text-error);
+}
+
+.trail-quick-capture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  margin-top: var(--size-4-5);
+  padding-top: var(--size-4-5);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.trail-quick-capture h3 {
+  margin: 0;
+}
+
+.trail-quick-capture__form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--size-4-3);
+}
+
+.trail-quick-capture__field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-quick-capture__field input {
+  width: 100%;
+}
+
+.trail-quick-capture__error {
+  margin: 0;
+  color: var(--text-error);
+}
+
+.trail-fleeting-note-card__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--size-4-3);
+}
+
+.trail-fleeting-note-card__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+@media (max-width: 36rem) {
+  .trail-quick-capture__form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .trail-fleeting-note-card__header-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.trail-areas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+}
+
+.trail-areas__list,
+.trail-area-card__projects {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trail-areas__list {
+  display: grid;
+  gap: var(--size-4-4);
+}
+
+.trail-area-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-4);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+}
+
+.trail-area-card > p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.trail-area-card__projects {
+  display: grid;
+  gap: var(--size-4-2);
+}
+
+.trail-area-card__projects button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-3);
+  width: 100%;
+  text-align: left;
+}
+
+.trail-area-card__projects button span:last-child {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-project-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-5);
+  min-width: 0;
+}
+
+.trail-project-workspace__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--size-4-4);
+}
+
+.trail-project-workspace__header h2,
+.trail-project-workspace__header p {
+  margin-bottom: var(--size-4-2);
+}
+
+.trail-project-workspace__area {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-project-workspace__view-toggle {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--size-4-1);
+}
+
+.trail-project-workspace__view-toggle button.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.trail-project-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(15rem, 1fr));
+  gap: var(--size-4-3);
+  overflow-x: auto;
+  padding-bottom: var(--size-4-2);
+}
+
+.trail-project-board__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  min-height: 12rem;
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.trail-project-board__column.is-drag-over {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+}
+
+.trail-project-board__column-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+
+.trail-project-board__column-header h3 {
+  margin: 0;
+  font-size: var(--font-ui-medium);
+}
+
+.trail-project-board__column-header span,
+.trail-project-board__empty {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-project-board__empty {
+  margin: auto 0;
+  text-align: center;
+}
+
+.trail-project-board__tasks,
+.trail-project-list {
+  display: grid;
+  gap: var(--size-4-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trail-project-list {
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 20rem), 1fr)
+  );
+}
+
+.trail-task-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+}
+
+.trail-task-card.is-draggable {
+  cursor: grab;
+}
+
+.trail-task-card.is-draggable:active {
+  cursor: grabbing;
+}
+
+.trail-task-card.is-pending {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+.trail-task-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+
+.trail-task-card__pending {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-task-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1) var(--size-4-3);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-task-card__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1);
+}
+
+.trail-task-card__labels span {
+  padding: 0 var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-task-card__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-task-card__status select {
+  min-width: 7rem;
+}
+
+.trail-task-card__error {
+  margin: 0;
+  color: var(--text-error);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-project-workspace__notes {
+  padding-top: var(--size-4-4);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.trail-project-workspace__notes h3 {
+  margin-top: 0;
+}
+
+@media (max-width: 48rem) {
+  .trail-project-workspace__header {
+    flex-direction: column;
+  }
+
+  .trail-project-workspace__view-toggle {
+    width: 100%;
+  }
+
+  .trail-project-workspace__view-toggle button {
+    flex: 1;
+  }
+}
