@@ -13,9 +13,11 @@
 
 本文记录 Trail V1 从正式设计进入正式实现后的总体路线、当前近期计划和阶段 checkpoint。
 
+本文是项目实现进度的单一权威来源：当前阶段、近期 Slice 和 Implementation Checkpoints 只在本文维护。README 只做入口摘要；已经收口的 Product / Domain / Logical / Physical / Technical Design 文档只记录各自的 contract 与 authority boundary，不重复维护项目进度。
+
 本文不是逐任务 backlog，也不提前冻结全部未来 Session。距离当前越近的实现范围越具体；中远期只保留稳定的能力顺序和用户价值边界，并根据已经完成的正式实现继续展开。
 
-正式实现以 Product / Canonical Domain / Logical / Physical / Technical Design 为约束。POC 只作为技术证据：已经验证的方法可以继续采用，但正式实现仍需结合当前架构重新判断是否保留、重构或替换。
+正式实现以 Product / Canonical Domain / Logical / Physical / Technical Design 为约束。POC 只作为技术证据：已经验证的方法可以继续采用，但正式实现仍需结合当前架构与 Implementation Selection Policy 重新判断是否保留、重构或替换。
 
 ## 2. V1 Implementation Roadmap
 
@@ -45,7 +47,7 @@ Workspace initialization
 → reload / external change 后正确恢复
 ```
 
-这一阶段同时完成正式运行路径对 POC validation shell 的接管。POC 中已经验证的 Parser、guarded mutation、Mutation Queue、optimistic UI、Vault event reconciliation 等能力继续作为实现候选和技术证据，但不继承 POC-era Area / Task / Fleeting Note schema，也不建立 POC → Formal migration compatibility。
+这一阶段同时完成正式运行路径对 POC validation shell 的接管。POC 中已经验证的 Parser、guarded mutation、Mutation Queue、optimistic UI、Vault event reconciliation 等能力继续作为技术证据，但正式实现按当前架构和 reuse-before-build policy 重新选择实现方案；不继承 POC-era Area / Task / Fleeting Note schema，也不建立 POC → Formal migration compatibility。
 
 ### 3.1 近期计划
 
@@ -64,7 +66,7 @@ Triage Accept 后置到 Workflow 已经可见、可操作之后，使 Intake →
 Formal Intake 同时完成 implementation authority cutover：
 
 - `plugin/src/`、根目录 `Trail/` 与正式 `styles.css` 只承载 Formal Implementation；
-- POC implementation、tests、fixtures 与样式退出 active build / runtime / test path，保留到明确的 POC archive 或 Git history 作为技术证据；
+- POC implementation、tests、fixtures 与样式统一移入 `archive/poc/`，并退出 active build / runtime / lint / test path；POC 设计与技术证据文档继续按各自既定位置保留；
 - 不长期维护 Formal / POC 双实现，也不要求 Formal schema 兼容 POC persistence；
 - POC 中验证过的技术能力可以重新采用，但必须按当前 Formal architecture 实现，而不是继续扩展旧 POC 业务结构。
 
@@ -72,7 +74,7 @@ Formal Intake 同时完成 implementation authority cutover：
 
 - **纵向用户价值优先**：Slice 应从用户操作穿过正式 Domain、Runtime、Persistence 和 UI，而不是按 Parser / Store / UI 分层独立开发。
 - **Formal Design 权威**：实现不能由现有 POC schema 或代码结构反向定义正式模型。
-- **POC evidence first**：已验证技术优先作为候选，但正式实现需要重新比较与当前架构的适配度。
+- **POC evidence, not inheritance**：POC 证明过的技术是证据而不是默认实现优先级；通用能力仍按 `Obsidian / host / browser → mature focused library → thin Trail adapter → justified custom implementation` 的顺序评估。
 - **近期具体、远期粗粒度**：只展开即将实施的 Slice；远期 roadmap 保留调整空间。
 - **正式验证重新建立**：POC 测试不能替代 Formal tests；每条正式路径都需要自动化验证与必要的真实 Obsidian 回归。
 - **Checkpoint 后再推进**：一个 Slice 只有在实现、验证、文档校准、commit / push 和远端回查完成后才视为完成。

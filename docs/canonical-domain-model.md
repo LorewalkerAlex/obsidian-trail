@@ -5,7 +5,6 @@
 > 适用对象：个人使用
 > 上游 Product Design：`docs/product-design-baseline.md`
 > Canonical Domain 基线 commit：`ec43eae70b828c7f9888fd71b7d80847ba14624e`
-> 当前阶段：Markdown Physical Model 已收口；Technical Design baseline 第一轮已形成
 
 ## 1. 文档定位
 
@@ -20,18 +19,11 @@
 
 Markdown 文件、目录、frontmatter、block、source range、fingerprint、parser、writer、runtime cache 等继续位于 Canonical Domain 外。
 
-## 2. Design Progress
+## 2. Progress Authority
 
-| 阶段 | 状态 | 说明 |
-|---|---|---|
-| POC 技术验证 | ✅ 完成 | 技术证据保留，不继续扩张 POC |
-| Product Design | ✅ 完成 | `product-design-baseline.md` |
-| Canonical Domain | ✅ 完成 | 本文 |
-| Logical Data Model | ✅ 完成 | `logical-data-model.md` |
-| Markdown Physical Model | ✅ 完成 | `markdown-physical-model.md` |
-| Technical Design | 🟡 进行中 | `technical-design-baseline.md` 已形成第一轮正式 baseline |
-| Implementation Plan | ⬜ 后续 | 纵向用户价值切片 |
-| Formal Implementation | ⬜ 后续 | 正式开发与验证 |
+Canonical Domain 已收口。本文只维护 Domain Contract，不维护整个项目的当前阶段、近期 Slice 或 implementation checkpoint。
+
+项目实现进度统一由 `docs/implementation-plan.md` 维护；Logical、Physical 与 Technical Design 分别在各自 canonical 文档中承担下游职责。这样 Domain 文档不会因为实现阶段推进而反复产生与 Domain 无关的状态修改。
 
 ## 3. Canonical Object Classification
 
@@ -408,8 +400,8 @@ Trail 当前不建设完整 Activity / Event Log。Home Activity Heatmap 等可�
 - Undo storage / Trash / Git restore mechanism；
 - full diagnostic log representation。
 
-## 17. 当前阶段
+## 17. Closeout
 
-Canonical Domain 继续保持已收口状态。本轮只校准已经产生明确产品价值的新事实与行为：Workflow Issue `createdAt`、Triage Due contract、Accept 新 identity、StatusDefinition ordering，以及 Heatmap 的 derived-only 边界。
+Canonical Domain 保持已收口状态。本轮校准记录已经产生明确产品价值的新事实与行为：Workflow Issue `createdAt`、Triage Due contract、Accept 新 identity、StatusDefinition ordering，以及 Heatmap 的 derived-only 边界。
 
-Markdown Physical Model 已收口；正式 Technical Design 由 `docs/technical-design-baseline.md` 承担。`docs/technical-design.md` 继续只作为 POC 技术证据。
+下游 Logical / Physical / Technical contracts 分别由 `docs/logical-data-model.md`、`docs/markdown-physical-model.md` 与 `docs/technical-design-baseline.md` 承担；`docs/technical-design.md` 只作为 POC 技术证据。项目当前实现阶段与 checkpoint 统一查看 `docs/implementation-plan.md`。

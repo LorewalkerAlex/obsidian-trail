@@ -4,7 +4,7 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, and Technical Design stages. The V1 Implementation Plan is now established, and formal implementation begins with the Formal Intake stage.
+Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, and Technical Design stages. The V1 Implementation Plan is established, and formal implementation begins with the Formal Intake stage.
 
 The current design and implementation chain is:
 
@@ -22,22 +22,18 @@ docs/technical-design-baseline.md
 docs/implementation-plan.md
 ~~~
 
+Project progress, the current Slice, and implementation checkpoints are maintained in `docs/implementation-plan.md`. Closed design documents record their own contracts and authority boundaries rather than duplicating project progress.
+
 The current implementation focus is **Formal Intake**: establish the first formal end-to-end path from workspace initialization and Quick Capture to a persisted Triage Issue and Triage List. POC-era implementation remains technical evidence only and must not redefine the formal schema or implementation architecture.
 
 The POC remains valuable as technical evidence. It verified reusable capabilities including Markdown discovery and parsing, stable identity, guarded single-file mutation, representative cross-file mutation and compensation, Runtime Store convergence, a global Mutation Queue, optimistic UI, draft editing, native Obsidian Modal integration, host file-event reconciliation, and UTF-8 BOM tolerance at the read boundary.
 
-The final POC exit architecture concluded that the core approach is viable. Formal implementation may reuse those verified techniques where they remain the best fit, but each implementation choice must be evaluated against the current formal architecture rather than inherited from the POC by default.
+Formal implementation follows the **reuse before build** policy in `docs/technical-design-baseline.md`: Obsidian / host / browser capabilities and mature focused libraries are evaluated before custom infrastructure. POC evidence can inform a choice but does not receive default priority over a better formal implementation.
 
 Active branch:
 
 ~~~text
 main
-~~~
-
-Current formal implementation baseline before the first implementation slice:
-
-~~~text
-feb7fc0e573595eafc85594759da3bab64f2d40d
 ~~~
 
 ## Git worktrees
@@ -62,7 +58,7 @@ obsidian-trail-active/
 `-- docs/                 Product, design, and implementation documents
 ~~~
 
-The current `Trail/` fixtures still reflect POC-era persistence and are not the formal production persistence model. The Formal Intake cutover will replace the active development fixture/runtime path with the structure defined by `docs/markdown-physical-model.md`; no POC schema migration compatibility is required.
+The current `Trail/` fixtures still reflect POC-era persistence and are not the formal production persistence model. The Formal Intake cutover will move POC implementation, tests, fixtures, and styles under `archive/poc/`, remove them from active build / runtime / test paths, and replace the active development fixture/runtime path with the structure defined by `docs/markdown-physical-model.md`. No POC schema migration compatibility is required.
 
 ## Development environment
 
@@ -181,6 +177,6 @@ npm run check
 - `docs/logical-data-model.md` — logical records, persistence roles, stable references, timestamp contract, Query Contract, and Mutation Contract.
 - `docs/markdown-physical-model.md` — authoritative Vault / Markdown / `data.json` persistence layout, serialization rules, validation boundaries, and migration policy.
 - `docs/technical-design-baseline.md` — formal Technical Design baseline for Runtime, optimistic state, mutation planning/execution, reconciliation, page selectors, frontend architecture, performance, and reusable UI infrastructure.
-- `docs/implementation-plan.md` — V1 implementation roadmap, current near-term focus, and implementation checkpoints.
+- `docs/implementation-plan.md` — V1 implementation roadmap, current near-term focus, and implementation checkpoints; this is the single source of truth for project implementation progress.
 - `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as historical design and validation context; superseded where it conflicts with current canonical docs.
 - `docs/technical-design.md` — POC technical baseline and verified architecture evidence only; superseded where it conflicts with the formal design chain.

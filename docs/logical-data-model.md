@@ -5,7 +5,6 @@
 > 上游 Product Design：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 下游 Physical Model：`docs/markdown-physical-model.md`
-> 下一阶段：Technical Design baseline 已形成，继续收口 implementation architecture
 
 ## 1. 文档定位
 
@@ -32,7 +31,7 @@
 - TypeScript interface / class 细节；
 - parser / writer / mutation queue / optimistic UI / reconciliation 实现。
 
-这些物理与实现决策分别由 `docs/markdown-physical-model.md` 和后续 Technical Design 承担。
+这些物理与实现决策分别由 `docs/markdown-physical-model.md` 和 `docs/technical-design-baseline.md` 承担。项目当前实现阶段与 checkpoint 只由 `docs/implementation-plan.md` 维护。
 
 ## 2. Persistence Roles
 
@@ -771,7 +770,7 @@ Committed State
 
 不能把非法中间状态作为 committed state 暴露。
 
-Optimistic UI、Mutation Queue、file locking、write compensation、reparse / verify 属于后续 Technical Design。
+Optimistic UI、Mutation Queue、file locking、write compensation、reparse / verify 的正式实现 contract 由 `docs/technical-design-baseline.md` 定义。
 
 ### 12.2 Simple Field Mutation
 
@@ -976,7 +975,7 @@ derived progress / activity caches
 
 ## 18. Closeout
 
-Logical Data Model 保持已收口。本轮只根据后续 Product / Technical Design 的明确需求校准：
+Logical Data Model 保持已收口。最近一次校准吸收了后续 Product / Technical Design 已明确的需求：
 
 - Workflow Issue `createdAt`；
 - Triage Due required + default +7 days；
@@ -984,7 +983,7 @@ Logical Data Model 保持已收口。本轮只根据后续 Product / Technical D
 - StatusDefinition category-level ordering；
 - Read selection / Filter 不要求 V1 Generic DSL。
 
-当前 authoritative chain：
+正式 authority chain：
 
 ~~~text
 Product Design
@@ -996,4 +995,4 @@ Product Design
 → Formal Implementation
 ~~~
 
-具体 runtime / optimistic / physical transaction / frontend architecture 由 `docs/technical-design-baseline.md` 定义。
+具体 runtime / optimistic / physical transaction / frontend architecture 由 `docs/technical-design-baseline.md` 定义；项目当前实现阶段与 checkpoint 统一查看 `docs/implementation-plan.md`。

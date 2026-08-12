@@ -6,7 +6,6 @@
 > 参考基线：Linear 的成熟产品原语与交互模型
 > POC 技术退出基线：`7a564ff9fada3d0f5af09052c24f1fe51e0ec143`
 > Canonical Domain 基线：`ec43eae70b828c7f9888fd71b7d80847ba14624e`
-> 当前阶段：Markdown Physical Model 已收口；Technical Design baseline 第一轮已形成
 
 ## 1. 文档定位与权威性
 
@@ -18,6 +17,7 @@
 - `docs/canonical-domain-model.md` 把本文产品语义转换为实现无关的 Domain Contract。
 - `docs/logical-data-model.md` 把当前 Product / Domain Contract 转成 logical records、references、constraints、configuration、query 与 mutation contract；它不决定 Markdown 物理表示。
 - `docs/technical-design-baseline.md` 记录正式 Technical Design；`docs/technical-design.md` 只保留 POC 技术证据。POC schema 不反向约束正式 Product / Domain / Logical / Physical Model。
+- 项目当前阶段、近期 Slice 与 Implementation Checkpoints 只由 `docs/implementation-plan.md` 维护；本文不重复维护项目进度。
 - Handoff 只用于跨 Session 交接，不替代上述 canonical 文档。
 - 本文只保存当前结论、必要 rationale 和 superseded decisions，不保存完整讨论过程。
 
@@ -482,26 +482,26 @@ Weekly Note 是 Home 上的轻量 Markdown utility，不是 Domain Entity，也�
 - `Accept = context mutation` → 删除；Accept 创建新 Workflow Issue，target 成功后才删除 source Triage Issue。
 - Advanced Filter / arbitrary AND/OR/NOT 作为 V1 必备能力 → 删除；View/Filter 按成熟页面和真实需求渐进扩展。
 
-## 18. 当前阶段
+## 18. Authority Boundary
 
-Product Design、Canonical Domain、Logical Data Model 与 Markdown Physical Model 已形成正式基线。Technical Design 已建立第一轮正式 baseline，并继续在实现前细化。
+本文已经收口 Product Design，并持续作为产品语义 source of truth。它不维护当前实现阶段、近期 Slice 或 checkpoint；这些进度信息统一由 `docs/implementation-plan.md` 维护。
 
-当前 authoritative design chain：
+正式 authority chain：
 
 ```text
-product-design-baseline.md
+docs/product-design-baseline.md
     ↓
-canonical-domain-model.md
+docs/canonical-domain-model.md
     ↓
-logical-data-model.md
+docs/logical-data-model.md
     ↓
-markdown-physical-model.md
+docs/markdown-physical-model.md
     ↓
-technical-design-baseline.md
+docs/technical-design-baseline.md
     ↓
-Implementation Plan
+docs/implementation-plan.md
     ↓
 Formal Implementation
 ```
 
-`docs/technical-design.md` 继续作为 POC 技术证据，不再承担正式 Technical Design 权威性。后续 Technical Design 必须保留本文已经确认的产品行为，不为了实现方便重新引入万能 Query DSL、TriageItem、Snooze field、Activity Log 或其他已删除复杂度。
+`docs/technical-design.md` 继续作为 POC 技术证据，不承担正式 Technical Design 权威性。正式 Technical Design 与 implementation 必须保留本文已经确认的产品行为，不为了实现方便重新引入万能 Query DSL、TriageItem、Snooze field、Activity Log 或其他已删除复杂度。

@@ -5,7 +5,6 @@
 > 上游 Product Design：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
-> 下一阶段：Technical Design baseline 第一轮已形成，继续实现前收口
 
 ## 1. 文档定位
 
@@ -891,7 +890,7 @@ Conceptual shape：
 }
 ~~~
 
-具体 temporal settings 可以在 Technical / Settings Design 中继续收敛，但它们不复制进每个 Domain record。
+具体 temporal settings 在对应 Settings / implementation slice 中按当前 Technical Design boundary 继续收敛，但它们不复制进每个 Domain record。
 
 ### 16.5 User Workspace State
 
@@ -922,7 +921,7 @@ Machine-specific、session-local、可重建 UI state 不因为 `workspaceState`
 
 例如临时 selection、open modal draft、ephemeral hover / pending state、runtime query cache 等不持久化为 User Workspace State。
 
-正式 Technical Design 再决定极少数真正需要跨 reload 但不应同步的 device-local UI state carrier。
+极少数真正需要跨 reload 但不应同步的 device-local UI state carrier，由对应 implementation slice 在当前 Technical Design boundary 内决定。
 
 ## 17. Physical Schema Registry
 
@@ -1166,7 +1165,7 @@ Migration：
 - 是显式一次性升级，不是长期 dual parser；
 - 不在普通 plugin startup 中悄悄批量改几百个 Markdown files；
 - 失败时必须能够明确知道是否未变、已恢复或部分完成；
-- 具体 backup、transaction、resume、diagnostics 机制进入 Technical Design。
+- 具体 backup、transaction、resume、diagnostics 机制在真实 migration slice 中按 `docs/technical-design-baseline.md` 的 recovery / mutation boundary 具体化。
 
 ## 27. Obsidian-native Links and Related Notes
 
@@ -1183,9 +1182,9 @@ Trail UI 的 “link Note to Project” convenience 可以按用户 intent 同�
 
 V1 不承诺普通 Note 对 embedded Issue / Milestone 的稳定 native inbound block-link target，因此不为了该场景新增 `relatedDocumentIds` 或强制 block anchors。
 
-## 28. POC Evidence Reused by Formal Design
+## 28. POC Evidence Available to Formal Implementation
 
-当前 POC 已经验证的技术能力可以作为 Technical Design 输入：
+POC Exit 已验证的技术能力继续作为 Formal Implementation 的技术证据，而不是 implementation authority：
 
 - managed Markdown discovery；
 - snapshot parsing；
@@ -1203,19 +1202,9 @@ V1 不承诺普通 Note 对 embedded Issue / Milestone 的稳定 native inbound 
 
 这些能力证明正式路线可行，但 POC 的 Area / Task / Subtask / Fleeting Note physical schema、`trail` metadata namespace、旧目录等不自动进入正式 Physical Model。
 
-## 29. Technical Design Handoff
+## 29. Implementation Boundary
 
-Physical Model 关闭后，正式 Technical Design 必须以当前 authority chain 为输入：
-
-~~~text
-Product Design
-→ Canonical Domain
-→ Logical Data Model
-→ Markdown Physical Model
-→ Technical Design Baseline
-~~~
-
-`docs/technical-design-baseline.md` 已回答第一轮 runtime / optimistic / mutation / page / frontend architecture；后续 implementation 前继续细化以下内容：
+Markdown Physical Model 已关闭；`docs/technical-design-baseline.md` 已定义正式 Runtime / optimistic / mutation / page / frontend architecture。以下仍属于 implementation-slice level decisions，而不是继续开放 Technical Design：
 
 1. Physical Schema Registry 的 TypeScript representation 与 shared Parser / Serializer / Validator API；
 2. 如何利用 Obsidian MetadataCache heading positions 加速结构索引，同时用 latest Markdown snapshot + stable ID + guard 保护 authoritative write；
@@ -1226,7 +1215,9 @@ Product Design
 7. explicit migration 的 execution / recovery contract；
 8. diagnostics / observability 如何服务真实 Obsidian 回归但不进入 Product History。
 
-Technical Design 不重新讨论已经冻结的 Domain fields、目录分类、Markdown grammar 或 `data.json` persistence boundary，除非真实实现证据证明当前 Physical Model 不可行。
+这些决定必须在当前 Product / Domain / Logical / Physical / Technical contracts 内完成；只有真实实现证据证明 contract 本身不成立时，才回到相应设计文档修订。
+
+项目当前阶段、近期 Slice 与 checkpoint 统一查看 `docs/implementation-plan.md`。
 
 ## 30. Closeout
 
