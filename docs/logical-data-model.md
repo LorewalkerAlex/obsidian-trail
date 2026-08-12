@@ -61,7 +61,7 @@ B. System / Domain Configuration
 C. User Workspace State
 ├─ Custom Views
 ├─ Favorites
-└─ Dashboard / page composition
+└─ Home / page composition
 
 Runtime / Derived
 ├─ reverse / bidirectional indexes
@@ -70,7 +70,7 @@ Runtime / Derived
 ├─ progress / health / attention
 ├─ actual activity timelines
 ├─ due-soon / overdue / reminders
-├─ query result caches
+├─ selector / result caches
 └─ other rebuildable materialized views
 ~~~
 
@@ -96,7 +96,7 @@ Configuration 描述 Trail 当前如何定义、约束或默认执行行为。�
 
 ### 2.3 User Workspace State 的判定
 
-Custom View / Favorite / Dashboard composition 更像 Saved Search、Bookmark、Pinned navigation 和 Workspace layout。
+Custom View / Favorite / Home composition 更像 Saved Search、Bookmark、Pinned navigation 和 Workspace layout。
 
 它们由用户频繁创建、修改、删除，不是 Trail 的系统行为规则，也不是有业务历史连续性的 Core Domain Data。
 
@@ -126,7 +126,7 @@ ID 在 Workspace 内唯一。Title、name、Markdown path、container location �
 
 ### 3.3 User Workspace State IDs
 
-Custom View 需要 stable ID，以支持 rename 后仍被 Favorite / Dashboard module 等稳定引用。
+Custom View 需要 stable ID，以支持 rename 后仍被 Favorite / Home module 等稳定引用。
 
 Favorites 列表项本身不要求独立 ID。
 
@@ -610,21 +610,23 @@ Reminder / notification 由 temporal fact + reminder policy + now 动态计算�
 
 ### 10.1 CustomViewConfig
 
-Custom View 是 saved query + presentation：
+Custom View 是 saved selection + presentation，不是一个可编程 Query：
 
 ~~~text
 CustomViewConfig {
     id: CustomViewId
     name: NonEmptyText
 
-    query: QuerySpec
+    selection: SavedViewSelectionSpec
     presentation: PresentationSpec
 }
 ~~~
 
+`SavedViewSelectionSpec` 只保存当前产品已支持的 scope / filters / sort / group 组合；它不是 arbitrary AST / DSL，也不要求系统页面共享同一通用 QuerySpec。
+
 Custom View 可以频繁创建、修改、删除；旧版本没有默认历史保留要求。
 
-具体 PresentationSpec 的 Board / List / Table / Calendar 等 schema 留给 UI / Interaction / Technical Design；Logical Model 只冻结 query 与 presentation 分离。
+具体 PresentationSpec 的 Board / List / Table / Calendar 等 schema 留给 UI / Interaction / Technical Design；Logical Model 只冻结 selection configuration 与 presentation 分离。
 
 ### 10.2 FavoritesState
 
@@ -647,63 +649,58 @@ Favorite 不是 Entity 的 `favorite=true` 字段；目标 Entity / Custom View 
 
 Favorites 的 ordered-list 语义是 authoritative User Workspace State；用户重新排序后保存新的 list order。
 
-### 10.3 Dashboard / Page Composition
+### 10.3 Home / Page Composition
 
-Dashboard composition 属于 User Workspace State，而不是 Dashboard 私有业务数据。
+Home composition 属于 User Workspace State，而不是 Home 私有业务数据。
 
 其具体 ModuleConfig / layout schema 后置到 Interaction / UI architecture；Logical Model 只冻结：
 
 - composition 可以持久化；
 - Module / Widget 尽量与其他页面共享；
-- Dashboard 不拥有专用 Domain Data / Query engine。
+- Home 不拥有专用 Domain Data / Query engine。
 
-## 11. Runtime Query Contract
+## 11. Runtime Read / Selection Contract
 
-所有页面 / View 优先通过同一 Runtime Query 能力工作：
+V1 不要求一个统一的 generic Query Engine。系统页面直接使用 page-specific selectors；只有真正重复的筛选、排序和分组能力才抽成 small shared helpers。
 
 ~~~text
-QuerySpec {
+Effective Runtime
+→ page-specific selector
+→ optional shared filter / sort / group helpers
+→ Entity IDs / grouped IDs
+→ presentation
+~~~
+
+Custom View 是例外的持久化 read configuration：它保存有限的 `SavedViewSelectionSpec`，用于恢复用户已经调好的 scope / filters / sort / group，而不是把系统页面或用户界面变成数据库查询语言。
+
+概念形态：
+
+~~~text
+SavedViewSelectionSpec {
     entityType
-    where?
+    scope?
+    filters?
     sort?
     group?
 }
 ~~~
 
-`scope` 不单独成为另一套 Domain 概念；Project / Cycle / Triage scope 都可以表达为 query condition。
+这里的 `scope` / `filters` 只是 read-model configuration，不创建新的 Domain relation 或独立 Query Domain。
 
-例：
+### 11.1 Selection Inputs
 
-~~~text
-Project page
-entityType = Issue
-where projectId = CurrentProject
-~~~
-
-~~~text
-Current Cycle
-entityType = Issue
-where belongsToCycle = CurrentCycle
-~~~
-
-~~~text
-Triage
-entityType = Issue
-where context = Triage
-~~~
-
-### 11.1 Query Inputs
-
-Query 可以消费：
+Selector / filter helper 可以消费：
 
 1. Canonical Domain Facts，例如 projectId / milestoneId / priority / due / labels / estimate / context；
 2. Configuration-resolved semantics，例如 statusCategory；
 3. Runtime Derived Values，例如 overdue / dueSoon / attention / progress / actual activity range / label usage count；
 4. Runtime Context，例如 Now / Today / CurrentCycle / CurrentProject。
 
-### 11.2 Dynamic Temporal Predicates
+系统页面不需要先把这些输入翻译成一个通用 QuerySpec 才能读取 Runtime。
 
-Saved query 应保存动态逻辑，不把“未来 7 天” materialize 成创建 View 当天的固定时间值。
+### 11.2 Dynamic Temporal Filters
+
+Saved View 若保存相对时间条件，应保存动态逻辑，不把“未来 7 天” materialize 成创建 View 当天的固定时间值。
 
 例如：
 
@@ -719,15 +716,13 @@ next week
 
 ### 11.3 V1 Filter Capability
 
-`QuerySpec` / selector configuration 是内部 structured data，不是用户编写的 Query Language。
-
 V1 不要求 arbitrary boolean AST / DSL，也不把 AND / OR / NOT expression tree 当成基础产品能力。Filter helpers 只覆盖当前页面 / Saved View 已确认的真实需求，例如 Status、Project、Priority、Area、Label、Due、Cycle 等；以后按实际使用增量扩展。
 
-同一底层结构可以保留未来扩展空间，但不能为了潜在灵活性提前暴露数据库式查询界面。
+底层数据结构可以保留未来扩展空间，但不能为了潜在灵活性提前暴露数据库式查询界面、通用 operator algebra 或 cost-based planner。
 
 ### 11.4 Sort / Group
 
-Sort / Group 属于 read/query model，不是 Domain facts。
+Sort / Group 属于 read model，不是 Domain facts。
 
 已确认默认行为：
 
@@ -859,7 +854,7 @@ Remove Issue：只移除 membership，不修改 Status。
 
 Close Cycle：设置 `endedAt = now`；Closed Cycle issueIds 变成 final membership。
 
-Create Next Cycle 是独立 user action；Close 后用户可以取消创建，留下没有 Current Cycle 的合法状态。
+Create Next Cycle 是独立 user action。Close 后若存在 unfinished / non-terminal Issues，这些 Issues **全部默认 selected** 作为新 Cycle membership 候选，不区分 Started / Unstarted；用户可以取消任意候选后确认创建，也可以取消整个 flow 并留下没有 Current Cycle 的合法状态。
 
 ### 12.7 Project Complete / Reopen
 
@@ -878,7 +873,7 @@ Reference Integrity 跨越 Domain Data、System Configuration 和 User Workspace
 例如删除 Label 时，必须处理：
 
 - Domain Data 的 labelIds；
-- Custom View 中引用该 labelId 的 predicates；
+- Custom View selection config 中引用该 labelId 的 filters；
 - 其他持久化 workspace references。
 
 删除 required StatusDefinition 时，必须先提供合法 replacement，并同时修复 workflow defaults 与所有引用 Entity。
@@ -987,7 +982,7 @@ Logical Data Model 保持已收口。本轮只根据后续 Product / Technical D
 - Triage Due required + default +7 days；
 - Accept = new Workflow identity then delete source；
 - StatusDefinition category-level ordering；
-- Query/Filter 不要求 V1 Generic DSL。
+- Read selection / Filter 不要求 V1 Generic DSL。
 
 当前 authoritative chain：
 

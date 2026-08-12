@@ -1,12 +1,12 @@
 # Trail Technical Design
 
-> 状态：POC Exit Candidate / Technical Design 当前基线<br>
-> 最后更新：2026-08-07<br>
+> 状态：POC-era Technical Design evidence；已被 `./technical-design-baseline.md` 取代，不是当前正式 Technical Design 基线<br>
+> 最后更新：2026-08-12（仅校准权威性说明；正文仍反映 POC-era schema / architecture）<br>
 > 适用对象：个人使用<br>
-> 上游基线：`./product-domain-hld.md`<br>
+> 当前正式 Technical Design：`./technical-design-baseline.md`<br>
+> 当前正式 Product Design：`./product-design-baseline.md`<br>
 > POC 架构审计基线：`9d4992e91dcab4e5183e71520d2495432a297109` (`feat: validate core poc mutation and modal capabilities`)<br>
-> 当前目标：POC 核心技术能力已经完成验证。当前只保留审计后确认的 correctness cleanup 与最终文档 / 完整检查；不再通过增加 Priority、Due、Label、Subtask、Task Note 等具体产品功能扩大 POC。完成最终检查与提交后进入正式 ADR / LLD / Implementation & Test Plan。
-
+> 本文用途：保留 POC 阶段已经验证的技术证据。若正文中的 Area / Task / Subtask / Fleeting Note、目录、字段或产品行为与当前正式设计冲突，以 `product-design-baseline.md → canonical-domain-model.md → logical-data-model.md → markdown-physical-model.md → technical-design-baseline.md` 为准。
 ## 1. 文档边界
 
 本文负责回答：

@@ -606,9 +606,11 @@ Status columns
 
 Add / Remove Cycle membership 使用显式 Action，不使用 drag。
 
+Close & Plan Next 时，当前 Cycle 中所有 unfinished / non-terminal Issues 都作为 **默认勾选** 的候选项进入创建流程，不区分 Started / Unstarted。用户可以取消任意项；只有确认创建后才写入新 Cycle membership，取消整个 flow 则保持没有 Current Cycle。
+
 ## 16. Frontend State / React Rendering
 
-当前仓库依赖 React / ReactDOM。正式实现目标是：Query 可以较粗，但 render 要细。
+当前仓库依赖 React / ReactDOM。正式实现目标是：selection / selector 可以较粗，但 render 要细。
 
 原则：
 
@@ -884,7 +886,7 @@ Expect PlanResult / Effects / invariants
 
 Representative corpus：
 
-- Dashboard/Home
+- Home
 - normal Project ~50 Issues
 - heavy Project ~1,000 Issues
 - Current Cycle multi-Project board

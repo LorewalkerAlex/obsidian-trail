@@ -31,7 +31,7 @@
 6. **View 先参考 Linear 成熟模式，再按真实需求做 Trail delta。** Filter / Group / Saved View 只在具体页面需要时增加；不为了“通用能力完整”先造 Query DSL 或万能 View Builder。
 7. **派生优于人工维护。** Progress、Health、Attention、Analytics、Timeline、Project Progress Summary 等尽量从 authoritative facts 与必要历史事实推导。
 8. **快速操作必须配套低成本恢复。** Selection、drag、bulk action、shortcut 等高速度交互应有即时反馈和 Undo / Recovery。
-9. **数据模型与展示模型分离。** Entity 拥有完整 canonical facts；Board / List / Card / Dashboard 只展示当前 View / Module 需要的信息。
+9. **数据模型与展示模型分离。** Entity 拥有完整 canonical facts；Board / List / Card / Home modules 只展示当前页面 / Module 需要的信息。
 10. **Domain 语义先于物理 Markdown 表示。** 文件、block、frontmatter、tag、link、HTML marker 等只影响 persistence / parser / mutation，不改变上层 Domain。
 11. **优先复用 Obsidian / Markdown 原生能力。** Trail 不建设第二套完整文档编辑系统。
 12. **页面共享 Runtime / Action / UI primitives，但保留自己的产品职责。** 系统页面不必伪装成 Custom View；真正重复的数据选择、布局和组件能力再抽取复用。
@@ -74,7 +74,7 @@ Workspace 统一拥有或约束：
 - Label / LabelGroup definitions 与 registration；
 - Cycle 默认结束规则；
 - timezone 与其他共享插件设置；
-- Custom Views、Favorites、Dashboard composition 等用户 Workspace State。
+- Custom Views、Favorites、Home composition 等用户 Workspace State。
 
 单例全局规则更接近插件 / Workspace configuration，不要求用 Markdown 业务记录表达。
 
@@ -229,7 +229,8 @@ Cycle 是用户显式开启和关闭的个人 planning timebox，与 Issue Statu
 - Workflow Issue 可以在 Open Cycle 生命周期中随时加入或移出；membership 不自动改变 Issue Status。
 - Triage Issue 不能进入 Current Cycle；只有新建成功的 Workflow Issue 才能加入。
 - 关闭 Cycle 时记录实际 ended time；Closed Cycle 保留最终 membership。
-- 若关闭时仍有 non-terminal Issues，随后打开显式 Create Next Cycle flow 并预填这些 Issues；用户可以调整或取消。取消后合法地进入无 Current Cycle 状态。
+- 若关闭时仍有 non-terminal Issues，随后打开显式 Create Next Cycle flow；**所有 unfinished / non-terminal Issues 默认勾选进入新 Cycle**，不区分 Started / Unstarted。
+- 用户可以在确认创建前取消任意候选项；只有确认后才创建新 Cycle membership。用户也可以取消整个 flow，并合法地进入无 Current Cycle 状态。
 
 ### 7.1 Current Cycle View
 
@@ -432,9 +433,9 @@ Weekly Note
 
 Focus 优先回答“现在最值得注意什么”；Current Cycle / Projects 只显示摘要与跳转，不复制完整工作区。
 
-底层组件仍保持模块化和可复用，但 V1 不做自由 Dashboard Builder、Widget Marketplace 或复杂 resize/reorder 系统。以后只有真实使用证明需要时，才增加隐藏 / 重排等有限 DIY。
+底层组件仍保持模块化和可复用，但 V1 不做自由 Widget Builder、Widget Marketplace 或复杂 resize/reorder 系统。以后只有真实使用证明需要时，才增加隐藏 / 重排等有限 DIY。
 
-Dashboard / Home composition 仍属于 User Workspace State 的可扩展边界，但固定 V1 layout 不要求一开始就保存完整 builder state。
+Home composition 仍属于 User Workspace State 的可扩展边界，但固定 V1 layout 不要求一开始就保存完整 builder state。
 
 ### 15.1 Weekly Note Utility
 
@@ -472,7 +473,7 @@ Weekly Note 是 Home 上的轻量 Markdown utility，不是 Domain Entity，也�
 - Archive / Deleted 作为通用 Domain lifecycle → 删除。
 - 人工 Project Health / 人工周报 → derived Health / Progress Summary。
 - 独立 Documents / Resource Domain → Obsidian Markdown + native links/backlinks。
-- Dashboard 私有数据 / 私有 Widget system → 共享 Query / Action / Modules。
+- Home 私有数据 / 私有 Widget system → 共享 Runtime / Action / UI Modules。
 - Target Date / Planned Start Date 重复计划字段 → 删除。
 - Label 自身维护 applicability → Entity Type 注册 LabelGroup。
 - Reminder / Snooze 各自拥有独立 temporal field → 删除；Reminder 派生，Snooze 是 Set Due action。

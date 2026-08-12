@@ -28,7 +28,7 @@
 - MetadataCache / Markdown parser 的最终实现组合；
 - Runtime Store / Query engine / Mutation Queue 的具体代码结构；
 - optimistic UI、reconciliation、file locking、compensation 的正式 Technical Design；
-- Dashboard / Board / List 的视觉实现。
+- Home / Board / List 的视觉实现。
 
 POC-era Markdown schema 只作为技术证据，不具有正式 Physical Model 权威性。
 
@@ -38,11 +38,16 @@ Trail 持久化职责分为四层：
 
 ~~~text
 Vault
-├─ Trail Domain Markdown
-│  ├─ Initiatives
-│  ├─ Projects
-│  └─ Collections
-│     └─ Weekly Update.md (lightweight utility, not Domain Data)
+├─ Trail-managed Markdown
+│  ├─ Domain Markdown
+│  │  ├─ Initiatives
+│  │  ├─ Projects
+│  │  └─ Collections
+│  │     ├─ Triage.md
+│  │     ├─ Projectless Issues.md
+│  │     └─ Cycles.md
+│  └─ Lightweight Utility
+│     └─ Collections/Weekly Update.md
 │
 └─ ordinary Obsidian Markdown
    └─ resources / notes / research / knowledge
@@ -58,7 +63,7 @@ Runtime only
 ├─ indexes
 ├─ derived state
 ├─ label usage counts
-├─ query caches
+├─ selector / result caches
 └─ diagnostics / session-local state
 ~~~
 
@@ -258,7 +263,7 @@ Embedded record 使用 H2 后固定位置的一条单行 HTML comment：
 
 ~~~markdown
 ## 实现 Parser
-<!-- data {"id":"issue-id","context":"workflow","statusDefinitionId":"status-id"} -->
+<!-- data {"id":"issue-id","context":"workflow","statusDefinitionId":"status-id","createdAt":1786464000000} -->
 ~~~
 
 只使用 `data` marker，不使用 `trail:issue` / `trail:milestone` 等重复 namespace。
@@ -682,13 +687,13 @@ Optional metadata field 没有值时直接省略，不写 `null`。
 例如：
 
 ~~~json
-{"id":"issue-a","context":"workflow","statusDefinitionId":"status-a","projectId":"project-a"}
+{"id":"issue-a","context":"workflow","statusDefinitionId":"status-a","projectId":"project-a","createdAt":1786464000000}
 ~~~
 
 不写：
 
 ~~~json
-{"id":"issue-a","context":"workflow","statusDefinitionId":"status-a","projectId":"project-a","milestoneId":null,"priority":null,"due":null}
+{"id":"issue-a","context":"workflow","statusDefinitionId":"status-a","projectId":"project-a","createdAt":1786464000000,"milestoneId":null,"priority":null,"due":null}
 ~~~
 
 Logical Set 使用 JSON array 作为 carrier，例如：
@@ -897,7 +902,7 @@ Conceptual shape：
   "workspaceState": {
     "customViews": [],
     "favorites": [],
-    "dashboard": {}
+    "home": {}
   }
 }
 ~~~
@@ -906,7 +911,7 @@ Conceptual shape：
 
 不要因为某个 collection 使用 JSON array 就自动赋予 ordering 语义。每个 collection 单独定义：
 
-- Favorites / Dashboard layout 等产品明确有顺序 → array position authoritative；
+- Favorites / Home layout 等产品明确有顺序 → array position authoritative；
 - Set-backed references → array 只是 carrier，不拥有 business order；
 - Status definitions：同一 Category 内 `definitions` array order 已是 authoritative；
 - Label / Custom View definitions：当前仍无 business order，若未来需要再显式加入。
@@ -1102,7 +1107,7 @@ Pure-format divergence 不等于 Domain corruption。
 例如合法 metadata fields 只是 JSON property order 不同：
 
 ~~~json
-{"priority":"high","id":"issue-a","context":"workflow"}
+{"priority":"high","createdAt":1786464000000,"id":"issue-a","statusDefinitionId":"status-a","context":"workflow"}
 ~~~
 
 Parser 可以接受。

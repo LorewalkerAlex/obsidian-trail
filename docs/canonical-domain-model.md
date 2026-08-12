@@ -92,7 +92,7 @@ Accept 是一个 create-target-before-delete-source 的 application use case：�
 
 ### 3.6 User Workspace State
 
-CustomView、Favorites、Dashboard composition 等是持久化 User Workspace State。
+CustomView、Favorites、Home composition 等是持久化 User Workspace State。
 
 它们表达用户如何组织、查询和导航 Trail，类似 Saved Search / Bookmark / Workspace layout；它们不是 Core Domain Data，也不是系统行为定义。
 
@@ -347,8 +347,8 @@ Canonical semantics：
 
 - actual ended time 被记录；
 - Closed Cycle membership 固化为最终 membership；
-- 若有 non-terminal Issues，进入显式 Create Next Cycle flow，并把这些 Issues 作为可编辑候选；
-- 用户可以调整或取消；取消后进入无 Current Cycle 的合法状态；
+- 若有 non-terminal Issues，进入显式 Create Next Cycle flow；所有 unfinished / non-terminal Issues 默认处于 selected 状态，不区分 Started / Unstarted；
+- 用户可以取消任意候选项后再确认创建，也可以取消整个 flow；取消整个 flow 后进入无 Current Cycle 的合法状态；
 - Completed / Canceled Issues 不进入下一 Cycle 的 unfinished candidates。
 
 ## 13. Canonical / Historical / Derived State Principle
@@ -393,7 +393,7 @@ Trail 当前不建设完整 Activity / Event Log。Home Activity Heatmap 等可�
 - Reminder = temporal facts + policy + now 的 derived notification；
 - Due Soon / Overdue / Attention = runtime derived；
 - Project / Milestone / Initiative Progress / Timeline = Issue facts 聚合；
-- Current Cycle / Triage / My Issues / Dashboard sections = query / presentation；
+- Home Focus / Projects / Current Cycle / Triage / Custom View = selector / presentation；
 - Duplicate Detection = create-time soft guardrail；
 - Activity Heatmap = current canonical facts 的 derived visualization。
 
