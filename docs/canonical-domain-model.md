@@ -1,11 +1,11 @@
 # Trail Canonical Domain Model
 
 > 状态：Canonical Domain 已收口
-> 最后更新：2026-08-11
+> 最后更新：2026-08-12
 > 适用对象：个人使用
 > 上游 Product Design：`docs/product-design-baseline.md`
 > Canonical Domain 基线 commit：`ec43eae70b828c7f9888fd71b7d80847ba14624e`
-> 当前阶段：Logical Data Model 已收口；下一阶段进入 Markdown Physical Model
+> 当前阶段：Markdown Physical Model 已收口；Technical Design baseline 第一轮已形成
 
 ## 1. 文档定位
 
@@ -16,7 +16,7 @@
 1. `docs/product-design-baseline.md`：产品语义 source of truth。
 2. 本文：把产品语义收敛为 Domain objects、relations、field semantics、lifecycle 和 invariants。
 3. `docs/logical-data-model.md`：把本文转换为 logical records、references、constraints、configuration、query 与 mutation contract。
-4. `docs/technical-design.md` 与 POC 代码：只提供技术证据，不反向定义正式 Domain。
+4. `docs/technical-design-baseline.md`：正式 Technical Design；`docs/technical-design.md` 与 POC 代码只提供技术证据，不反向定义正式 Domain。
 
 Markdown 文件、目录、frontmatter、block、source range、fingerprint、parser、writer、runtime cache 等继续位于 Canonical Domain 外。
 
@@ -28,8 +28,8 @@ Markdown 文件、目录、frontmatter、block、source range、fingerprint、pa
 | Product Design | ✅ 完成 | `product-design-baseline.md` |
 | Canonical Domain | ✅ 完成 | 本文 |
 | Logical Data Model | ✅ 完成 | `logical-data-model.md` |
-| Markdown Physical Model | ⬜ 下一阶段 | 决定 Vault / Markdown / plugin persistence 的实际承载 |
-| Technical Design | ⬜ 后续 | Parser、Store、Mutation、Reconciliation、Query、UI integration |
+| Markdown Physical Model | ✅ 完成 | `markdown-physical-model.md` |
+| Technical Design | 🟡 进行中 | `technical-design-baseline.md` 已形成第一轮正式 baseline |
 | Implementation Plan | ⬜ 后续 | 纵向用户价值切片 |
 | Formal Implementation | ⬜ 后续 | 正式开发与验证 |
 
@@ -81,11 +81,14 @@ Domain Value 不因为被多个 Entity 使用就自动提升为独立 Entity。
 
 Triage 是 Issue 正常 workflow 之前的 intake context：
 
-- 直接承载 Issue；
+- 直接承载 `Issue(context = Triage)`；
 - 不创建 TriageItem；
 - 不是普通 Project；
 - 不是第六个 StatusCategory；
-- Accept 后进入正常 workflow，并不通过普通 Status 修改返回 Triage。
+- 与 Workflow 复用 Issue 类型，但字段 requiredness / product semantics 可根据 context 不同；
+- Triage Issue 本身不会通过普通 Status 修改“变成” Workflow Issue。
+
+Accept 是一个 create-target-before-delete-source 的 application use case：从 Triage Issue 的适用内容预填并创建一个 **新的** Workflow Issue（new identity），target 成功持久化后才删除 source Triage Issue。
 
 ### 3.6 User Workspace State
 
@@ -198,11 +201,30 @@ Canonical semantics：
 - optional Milestone，且必须位于当前 Project scope；
 - optional Priority；
 - optional Estimate；
-- optional Due；
+- context-conditioned Due；
 - applicable Labels；
+- Workflow creation fact `createdAt`；
 - minimal lifecycle historical facts：first started time、current terminal entry time。
 
-### 8.1 Estimate Invariant
+### 8.1 Context-conditioned Field Contract
+
+Triage Issue：
+
+- `statusDefinitionId` absent；
+- `due` required；
+- `createdAt` absent；
+- Due 表达下一次希望重新处理 capture 的时间；Quick Capture 默认由 Application temporal policy 生成 `+7 days`。
+
+Workflow Issue：
+
+- `statusDefinitionId` required；
+- `createdAt` required 且 immutable；
+- `due` optional；
+- V1 正常创建进入 Backlog，`createdAt` 记录该 workflow creation / initial Backlog 时间。
+
+Backlog 默认排序使用 `Priority → createdAt`；Started / Active 默认排序使用 `Priority → firstStartedAt`。排序属于 presentation/read model，但 `createdAt` 因此具有明确产品价值并成为 canonical fact。
+
+### 8.2 Estimate Invariant
 
 Estimate 是有限、离散、相对的 ordinal work-size value，不是 duration。
 
@@ -210,7 +232,7 @@ Estimate 是有限、离散、相对的 ordinal work-size value，不是 duratio
 - Issue 处于 Completed Category 时必须非空；
 - Completed 期间不能清空，但可以改为另一个合法值。
 
-### 8.2 Issue Lifecycle Historical Facts
+### 8.3 Issue Lifecycle Historical Facts
 
 `firstStartedAt` 表示第一次进入 Started Category 的时刻：
 
@@ -226,6 +248,19 @@ Estimate 是有限、离散、相对的 ordinal work-size value，不是 duratio
 - Completed ↔ Canceled 这种 terminal Category 变化应更新为新的当前 terminal entry time；
 - 不保留完整 terminal / reopen history。
 
+### 8.4 Accept Is Create-Then-Delete, Not Context Mutation
+
+Accept 不保留 source identity：
+
+```text
+Issue A (Triage)
+→ Create Issue B (Workflow, new ID, own createdAt)
+→ persist + validate B
+→ delete A
+```
+
+Applicable source fields可以作为 target create 的初始值，但 Triage Due 不自动成为 Workflow Due。target create 未成功时 source 必须保持原样。
+
 ## 9. Status Definition Contract
 
 系统固定 `StatusCategory`：
@@ -239,6 +274,8 @@ Estimate 是有限、离散、相对的 ordinal work-size value，不是 duratio
 Issue 与 Project 各自拥有自己的 StatusDefinition 集合；具体 Definition 具有 stable identity、display name、entity type 和固定 Category 语义。
 
 Category 内可以配置多个二级 Status，例如 Started 下的 In Progress / Waiting / Review。
+
+Status ordering 是 Workspace Configuration 的一部分：Category 使用固定系统顺序；同一 Category 内的 StatusDefinition 使用用户配置顺序。该顺序可供 Board columns / pickers 等 presentation 使用，不进入 Entity record。
 
 每个 Category 配置一个 default Status，用于 category-level shortcut；Default 是未来 mutation 的选择规则，不重解释已有 Entity。
 
@@ -262,25 +299,26 @@ Label 自身不维护 applicability。新 Label 加入 Group 后，自动可供�
 
 ## 11. Due / Temporal Capability Contract
 
-Due 是 Entity 当前用户设定的时间目标 / 关注时间点。它是 canonical fact；不同产品上下文可以赋予不同 presentation 和 derived behavior。
+Due 是 Entity 当前用户设定的时间目标 / 关注时间点。它是 canonical fact；不同 context 可以赋予不同 presentation 和 derived behavior。
 
-- Initiative / Project / Milestone / Issue 都可以拥有 optional Due。
+- Initiative / Project / Milestone / Workflow Issue：Due optional。
+- Triage Issue：Due required。
+- Workflow Due 表达希望 / 计划完成工作的时间点。
+- Triage Due 表达下一次希望重新处理 capture 的时间点，并作为 Triage 的主要排序轴。
 - Due Soon、Overdue、Attention、Reminder 等根据 Due + configuration + current time 派生，不重复持久化。
 - 时间经过本身不直接修改 Core Entity lifecycle。
 
-### 11.1 Snooze
+### 11.1 Triage Defer
 
-Snooze 不是独立 Domain Field 或 State。
+Triage 中“暂时不想处理”只修改同一个 Issue Due，例如 `+7 days`。
 
-在 Triage 中，Snooze / Defer 是修改 Issue Due 的 Action。Triage 的隐藏、弱化、排序、重新提升 attention 等都由 Due 与 query/presentation 计算。
-
-因此 Canonical Issue 不包含 snoozedUntil / isSnoozed。
+因此 Canonical Issue 不包含 `attentionAt`、`reviewAt`、`snoozedUntil`、`isSnoozed` 或独立 Snooze state。
 
 ### 11.2 Reminder
 
 Reminder 不是独立 Domain Field / Entity。它是基于现有 temporal facts、configuration 与 now 计算出来的 notification / attention capability。
 
-需要随手提醒时，使用普通 project-less Issue + Due，并可结合 Label / Custom View 组织，不额外创造 Reminder Data。
+需要随手提醒时，使用普通 project-less Workflow Issue + Due，并可结合 Label / Custom View 组织，不额外创造 Reminder Data。
 
 ## 12. Cycle Domain Contract
 
@@ -291,7 +329,7 @@ Canonical semantics：
 - 任一时刻最多一个 Open / Current Cycle；允许没有 Current Cycle；
 - 不提前创建 Planned / Next Cycle；
 - Issue 可以在 Open Cycle 中随时加入或移出；membership 不强制改变 Issue Status；
-- Triage Issue 不能进入 Current Cycle；Accept 进入 Workflow 后才可加入；
+- Triage Issue 不能进入 Current Cycle；Accept 创建成功的新 Workflow Issue 才可加入，source Triage Issue 永远不加入；
 - Cycle 自己记录实际 started time、创建时确认的 planned end、实际 ended time；
 - Closed Cycle 保留最终 Issue membership；不建立独立 Cycle snapshot / participation history Entity。
 
@@ -322,7 +360,7 @@ Canonical semantics：
 3. **Derived State**：能从 canonical facts + configuration + current time 得到的结果不保存第二份 authoritative truth。
 4. **Diagnostics ≠ Product History**：开发 / 测试日志可以详细记录 action、mutation、write、reparse、reconcile、rollback、error，但不进入正式 Product History。
 
-Trail 当前不建设完整 Activity / Event Log。
+Trail 当前不建设完整 Activity / Event Log。Home Activity Heatmap 等可组合 `createdAt`、`firstStartedAt`、`terminalAt` 等当前 canonical facts 做派生可视化，但不要求不可变审计历史，也不因此新增 Event/Activity Entity。
 
 ## 14. Field Contract / Mutation Integrity
 
@@ -351,12 +389,13 @@ Trail 当前不建设完整 Activity / Event Log。
 
 当前明确实例：
 
-- Snooze = Set Due Action；
+- Triage Defer = Move / Set Due Action；
 - Reminder = temporal facts + policy + now 的 derived notification；
 - Due Soon / Overdue / Attention = runtime derived；
 - Project / Milestone / Initiative Progress / Timeline = Issue facts 聚合；
 - Current Cycle / Triage / My Issues / Dashboard sections = query / presentation；
-- Duplicate Detection = create-time soft guardrail。
+- Duplicate Detection = create-time soft guardrail；
+- Activity Heatmap = current canonical facts 的 derived visualization。
 
 ## 16. 明确不进入 Canonical Domain 的内容
 
@@ -371,6 +410,6 @@ Trail 当前不建设完整 Activity / Event Log。
 
 ## 17. 当前阶段
 
-Canonical Domain 继续保持已收口状态。本轮 Logical Data Model 只精确化其 persistence roles、logical records、references、temporal representation、query 与 mutation contract，没有重新打开核心 Product semantics。
+Canonical Domain 继续保持已收口状态。本轮只校准已经产生明确产品价值的新事实与行为：Workflow Issue `createdAt`、Triage Due contract、Accept 新 identity、StatusDefinition ordering，以及 Heatmap 的 derived-only 边界。
 
-下一阶段进入 **Markdown Physical Model**。物理结构必须承载本 Domain Contract，而不能因为文件组织方便重新创造 Area、Sub-issue、TriageItem、Reminder、Snooze field 或其他已经删除的 Domain 概念。
+Markdown Physical Model 已收口；正式 Technical Design 由 `docs/technical-design-baseline.md` 承担。`docs/technical-design.md` 继续只作为 POC 技术证据。

@@ -4,7 +4,7 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit, Product Design, Canonical Domain Design, Logical Data Model, and Markdown Physical Model stages on the active `poc/plugin-shell` branch.
+Trail has completed its POC exit, Product Design, Canonical Domain Design, Logical Data Model, and Markdown Physical Model stages on the active `poc/plugin-shell` branch. A first formal Technical Design baseline has now been established and is the current design focus.
 
 The current design authority chain is:
 
@@ -16,9 +16,11 @@ docs/canonical-domain-model.md
 docs/logical-data-model.md
     ↓
 docs/markdown-physical-model.md
+    ↓
+docs/technical-design-baseline.md
 ~~~
 
-The next design stage is **Technical Design**: turning the frozen Product / Domain / Logical / Physical contracts into Parser, Runtime Store, Query, Mutation, validation, migration, reconciliation, and Obsidian integration architecture. POC-era implementation remains technical evidence only and must not redefine the formal schema.
+The current design stage is **Technical Design**: refining the first formal baseline for Parser, Runtime Store, optimistic state, Mutation planning/execution, reconciliation, page data selection, frontend rendering, validation, migration, and Obsidian integration. POC-era implementation remains technical evidence only and must not redefine the formal schema.
 
 The POC remains valuable as technical evidence. It verified reusable capabilities including Markdown discovery and parsing, stable identity, guarded single-file mutation, representative cross-file mutation and compensation, Runtime Store convergence, a global Mutation Queue, optimistic UI, draft editing, native Obsidian Modal integration, host file-event reconciliation, and UTF-8 BOM tolerance at the read boundary.
 
@@ -182,4 +184,5 @@ npm run check
 - `docs/logical-data-model.md` — logical records, persistence roles, stable references, timestamp contract, Query Contract, and Mutation Contract.
 - `docs/markdown-physical-model.md` — authoritative Vault / Markdown / `data.json` persistence layout, serialization rules, validation boundaries, and migration policy.
 - `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as historical design and validation context; superseded where it conflicts with current canonical docs.
-- `docs/technical-design.md` — POC technical baseline and verified architecture evidence; the next Technical Design stage will recalibrate implementation architecture against the formal Product / Domain / Logical / Physical contracts.
+- `docs/technical-design-baseline.md` — formal Technical Design baseline for Runtime, optimistic state, mutation planning/execution, reconciliation, page selectors, frontend architecture, performance, and reusable UI infrastructure.
+- `docs/technical-design.md` — POC technical baseline and verified architecture evidence only; superseded where it conflicts with the formal design chain.

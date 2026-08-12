@@ -1,11 +1,11 @@
 # Trail Markdown Physical Model
 
 > 状态：Markdown Physical Model 已收口
-> 最后更新：2026-08-11
+> 最后更新：2026-08-12
 > 上游 Product Design：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
-> 下一阶段：Technical Design
+> 下一阶段：Technical Design baseline 第一轮已形成，继续实现前收口
 
 ## 1. 文档定位
 
@@ -42,6 +42,7 @@ Vault
 │  ├─ Initiatives
 │  ├─ Projects
 │  └─ Collections
+│     └─ Weekly Update.md (lightweight utility, not Domain Data)
 │
 └─ ordinary Obsidian Markdown
    └─ resources / notes / research / knowledge
@@ -76,7 +77,8 @@ Trail/
 └─ Collections/
    ├─ Triage.md
    ├─ Projectless Issues.md
-   └─ Cycles.md
+   ├─ Cycles.md
+   └─ Weekly Update.md   # lightweight utility; lazy-created, not Domain Data
 ~~~
 
 目录表达 **storage type**，不表达 mutable Domain relationship。
@@ -91,7 +93,7 @@ Projects/Completed/...
 
 Project 修改 Initiative membership 或 Status 时，normal mutation 不因此移动目录。
 
-Trail Parser 先以 managed scope 限定候选，再验证 file kind、结构、identity 与 records。`Trail/Initiatives/`、`Trail/Projects/`、`Trail/Collections/` 内出现不符合当前 schema 的 Markdown，应报告 persistence validation issue，而不是静默当普通 Note 忽略。
+Trail Domain Parser 先以 managed scope 限定候选，再验证 file kind、结构、identity 与 records。`Weekly Update.md` 是固定路径 lightweight utility，由 WeeklyNoteFileService 管理并从 Domain scan 中显式排除；除该类已注册 utility 外，`Trail/Initiatives/`、`Trail/Projects/`、`Trail/Collections/` 内出现不符合当前 schema 的 Markdown，应报告 persistence validation issue，而不是静默当普通 Note 忽略。
 
 普通用户知识文档不要求进入 Trail managed scope。它们继续作为普通 Obsidian Markdown，通过 native wikilinks 与 Trail file-backed Entity 发生导航关联。
 
@@ -165,6 +167,8 @@ Collections/Cycles.md
 ~~~
 
 它们不是 Core Entity，不允许把 filename 当成可自由 rename 的 Entity title。
+
+`Collections/Weekly Update.md` 也是固定路径，但它是 lightweight utility file，不是 Domain container，不要求 `kind` frontmatter，也不进入 Domain Physical Schema Registry。
 
 ## 5. File-backed Entity Frontmatter
 
@@ -339,7 +343,7 @@ id: "project-id"
 # Issues
 
 ## 验证 Parser
-<!-- data {"id":"issue-a","context":"workflow","statusDefinitionId":"status-todo","projectId":"project-id"} -->
+<!-- data {"id":"issue-a","context":"workflow","statusDefinitionId":"status-todo","projectId":"project-id","createdAt":1786464000000} -->
 
 Issue description。
 
@@ -378,6 +382,7 @@ Issue records 位于 `# Issues` 下：
 - `id` 保存在 metadata；
 - `projectId` 仍显式保存；
 - `milestoneId` optional；
+- Workflow Issue 保存 immutable `createdAt`；
 - 新 Issue append 到 Issue region 末尾；
 - physical order 没有 business sorting 语义。
 
@@ -401,13 +406,19 @@ Trail 不自动：
 - 因为物理位置而把 `projectId` 改回 A；
 - 因为 `projectId` 是 B 而偷偷把 record 搬到 B。
 
-Normal `MoveIssueToProject` 必须作为一个 logical mutation 同时：
+Normal `MoveIssueToProject` 是 identity-preserving logical move，同时修改 relation 与 placement。Physical executor 使用 data-loss-averse 顺序：
 
-1. 修改 `projectId`；
-2. clear / replace invalid `milestoneId`；
-3. 从 source container 移除 record；
-4. 写入 target container；
-5. 验证最终 graph + placement 合法。
+1. 读取并验证 source / destination latest snapshot；
+2. 计算完整 source' / destination'；
+3. **先把同一 stable ID 的 record 写入 destination**；
+4. re-read / verify destination 成功；
+5. 再从 source 删除旧 record；
+6. re-read / verify source；
+7. 最终重新 parse / validate 两边并 reconcile Runtime。
+
+选择 destination-first 是为了让极端失败优先退化成可检测 duplicate，而不是 silent data loss。destination 成功但 source delete 失败时，Technical Design 负责 compensation；若 compensation 也失败，则以磁盘事实为准报告 partial / duplicate Data Issue，不猜测。
+
+Move 时还必须 clear / replace invalid `milestoneId`。
 
 Milestone 即使物理位于 Project file 中，也继续保存 required `projectId`。明确 reference 比仅依赖 placement 更适合完整性校验和未来迁移。
 
@@ -432,10 +443,22 @@ description...
 
 Triage Issue：
 
-- `statusDefinitionId` physically optional / normally absent；
-- `projectId` / `milestoneId` absent；
+- `statusDefinitionId` normally absent；
+- Domain 要求 `due` 存在；
+- `createdAt` absent；
 - 不允许进入 Open Cycle；
-- Accept 后按选择移动到 Project file 或 Projectless Issues container，并在同一 mutation 进入 Workflow context。
+- Quick Capture writer 在 create plan 中先通过 temporal policy 把默认 `+7 days` 解析成具体 epoch-ms Due。
+
+Accept **不是**把该 record 搬到 Project / Projectless container：
+
+```text
+source Issue A (triage)
+→ create new Workflow Issue B with new ID
+→ write + verify B in destination container
+→ delete A from Triage.md
+```
+
+Triage Due 不自动复制为 Workflow Due。target creation 失败时 source 保持原样。
 
 ## 11. Projectless Workflow Issues Container
 
@@ -457,7 +480,7 @@ kind: projectless-issues
 # Issues
 
 ## Renew passport
-<!-- data {"id":"issue-a","context":"workflow","statusDefinitionId":"status-todo","due":1786464000000} -->
+<!-- data {"id":"issue-a","context":"workflow","statusDefinitionId":"status-todo","createdAt":1786464000000,"due":1786464000000} -->
 ~~~
 
 Triage 与 Projectless Workflow Issues 不合并，因为它们具有不同 Domain context / workflow semantics。
@@ -492,6 +515,32 @@ H2 只是从 record temporal fact 派生的 human-readable physical label：
 Cycle record 创建时 append；Close 只更新同一 record 的 `endedAt`，不移动到 history section。
 
 Workspace 最多一个 Open Cycle 由 validation 保证。
+
+
+## 12.5 Weekly Note Utility
+
+`Collections/Weekly Update.md` 是固定路径 lightweight utility，不是 Domain Data，也不进入 Runtime Domain Store / Domain Physical Schema Registry。文件可以在第一次使用 Weekly Note 时显式创建。
+
+V1 grammar：
+
+~~~markdown
+# Current
+
+本周值得汇报的内容……
+
+# Archive
+
+## 2026-08-12
+
+上一期内容……
+~~~
+
+只有两个 write use cases：
+
+1. **Edit / Save**：在最新 snapshot 上只替换 `# Current` body。
+2. **Archive**：在同一个最新 snapshot 上把 Current 内容追加到 `# Archive` 下的新日期 H2，然后清空 Current。
+
+两者都复用 guarded single-file mutation / lightweight editor / Modal / error handling。Weekly Note 不创建 stable Domain ID、Status、Due、runtime index、query 或自动 Issue/Cycle linkage；V1 不做自动 Archive。
 
 ## 13. Field Carriers and Canonical Metadata Order
 
@@ -579,8 +628,9 @@ due
 | milestoneId | metadata | no | same-project Milestone ID |
 | priority | metadata | no | enum |
 | estimate | metadata | no | Completed Domain state requires value |
-| due | metadata | no | Unix epoch milliseconds |
+| due | metadata | no | Domain requires for Triage; Unix epoch milliseconds |
 | labelIds | metadata | no | ID array; missing → empty Set |
+| createdAt | metadata | no | Domain requires for Workflow; immutable Unix epoch milliseconds |
 | firstStartedAt | metadata | no | Unix epoch milliseconds |
 | terminalAt | metadata | no | Unix epoch milliseconds |
 
@@ -596,9 +646,12 @@ priority
 estimate
 due
 labelIds
+createdAt
 firstStartedAt
 terminalAt
 ~~~
+
+Conditional Domain invariants仍由 Domain / Logical validation 处理：Triage requires Due and omits createdAt/status；Workflow requires status + createdAt and Due optional。
 
 ### 13.5 Cycle
 
@@ -768,6 +821,8 @@ Stable ID 本身保持 opaque，不使用 `status-1` / `status-started` 这类�
 
 Logical Model 仍把 StatusDefinition 看作独立 stable-reference definitions；Physical Model 只是利用固定 context 压缩重复字段。
 
+`definitions` array order 是同一 Entity Type / StatusCategory 内的 authoritative display order；外层固定 StatusCategory 顺序由系统定义，不依赖 JSON object property order。
+
 ### 16.3 Labels
 
 LabelGroup 与 Label 是用户可变 relation，不把 `groupId` 隐藏在不可变 hierarchy 中：
@@ -853,7 +908,8 @@ Conceptual shape：
 
 - Favorites / Dashboard layout 等产品明确有顺序 → array position authoritative；
 - Set-backed references → array 只是 carrier，不拥有 business order；
-- Status / Label / Custom View definitions 若未来增加用户排序能力，再显式把 ordering 纳入其 contract。
+- Status definitions：同一 Category 内 `definitions` array order 已是 authoritative；
+- Label / Custom View definitions：当前仍无 business order，若未来需要再显式加入。
 
 ### 16.6 Device / Session-local UI State
 
@@ -1072,7 +1128,8 @@ Trail/
 └─ Collections/
    ├─ Triage.md
    ├─ Projectless Issues.md
-   └─ Cycles.md
+   ├─ Cycles.md
+   └─ Weekly Update.md   # lightweight utility; lazy-created, not Domain Data
 ~~~
 
 但如果已经存在的 Trail Workspace 后来缺少 required singleton container，例如 `Collections/Triage.md` 被删除：
@@ -1082,6 +1139,8 @@ Trail/
 - 提供明确恢复 / recreate action。
 
 缺失可能来自误删、同步冲突或外部移动，自动补空文件会隐藏真实问题。
+
+`Weekly Update.md` 不是 Domain bootstrap prerequisite；第一次使用该 utility 时可以显式初始化。它的缺失不阻塞 Domain Runtime。
 
 ## 26. Migration Policy
 
@@ -1141,17 +1200,17 @@ V1 不承诺普通 Note 对 embedded Issue / Milestone 的稳定 native inbound 
 
 ## 29. Technical Design Handoff
 
-Physical Model 关闭后，Technical Design 必须以当前 authority chain 为输入：
+Physical Model 关闭后，正式 Technical Design 必须以当前 authority chain 为输入：
 
 ~~~text
 Product Design
 → Canonical Domain
 → Logical Data Model
 → Markdown Physical Model
-→ Technical Design
+→ Technical Design Baseline
 ~~~
 
-Technical Design 下一步需要具体回答：
+`docs/technical-design-baseline.md` 已回答第一轮 runtime / optimistic / mutation / page / frontend architecture；后续 implementation 前继续细化以下内容：
 
 1. Physical Schema Registry 的 TypeScript representation 与 shared Parser / Serializer / Validator API；
 2. 如何利用 Obsidian MetadataCache heading positions 加速结构索引，同时用 latest Markdown snapshot + stable ID + guard 保护 authoritative write；
@@ -1166,7 +1225,7 @@ Technical Design 不重新讨论已经冻结的 Domain fields、目录分类、M
 
 ## 30. Closeout
 
-Trail Markdown Physical Model 已收口。
+Trail Markdown Physical Model 已收口，并已按后续明确 Product 行为校准 Workflow `createdAt`、Triage Due / Accept、Status ordering 与 Weekly Note utility boundary。
 
 最终核心选择：
 

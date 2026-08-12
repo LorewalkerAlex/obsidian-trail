@@ -1,11 +1,11 @@
 # Trail Logical Data Model
 
 > 状态：Logical Data Model 已收口，并已按 Markdown Physical Model 决策完成时间契约校准
-> 最后更新：2026-08-11
+> 最后更新：2026-08-12
 > 上游 Product Design：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 下游 Physical Model：`docs/markdown-physical-model.md`
-> 下一阶段：Technical Design
+> 下一阶段：Technical Design baseline 已形成，继续收口 implementation architecture
 
 ## 1. 文档定位
 
@@ -189,14 +189,15 @@ Core Entities 只共享真正共同的 `id`。不建立 bloated `BaseEntity` / `
 除非出现明确产品价值，V1 不自动增加：
 
 - type
-- createdAt
 - updatedAt
 - deletedAt
 - version
 - sourcePath
 - fingerprint
 
-其中 version / fingerprint 属于后续 persistence / concurrency implementation；Deleted 不是 normal lifecycle；created / updated timestamps 只有出现真实 query / product requirement 后再加入。
+其中 version / fingerprint 属于 persistence / concurrency implementation；Deleted 不是 normal lifecycle。
+
+`Issue.createdAt` 是明确例外：它用于 Workflow Issue 的 creation / initial Backlog 时间事实，并支撑 Backlog 默认排序，因此只加入 Issue，不推广为所有 Entity 的通用 timestamp。
 
 ## 6. Domain Data Records
 
@@ -292,22 +293,29 @@ IssueRecord {
     due?: Timestamp
     labelIds: Set<LabelId>
 
+    createdAt?: Timestamp
     firstStartedAt?: Timestamp
     terminalAt?: Timestamp
 }
 ~~~
 
-#### Context / Status
+#### Context-conditioned fields
 
 ~~~text
 context = Triage
 → statusDefinitionId = null
+→ due required
+→ createdAt = null
 
 context = Workflow
 → statusDefinitionId required
+→ createdAt required + immutable
+→ due optional
 ~~~
 
-Accept 是 context + status 的 composite mutation；不能提交 `Workflow + null status` 的中间非法状态。
+V1 normal Workflow creation enters Backlog；`createdAt` records that workflow creation / initial Backlog time.
+
+Triage Quick Capture resolves a default Due of `+7 days` through Application temporal policy before creating the record；V1 不需要额外 `TriageConfig` / `attentionAt` field。
 
 #### Project / Milestone
 
@@ -325,11 +333,20 @@ Accept 是 context + status 的 composite mutation；不能提交 `Workflow + nu
 
 当前 Issue 可以使用所有注册给 Issue Entity Type 的 LabelGroups；Single / Multiple 规则在最终 record graph 上必须成立。
 
+#### createdAt
+
+- Workflow Issue 创建时写入；
+- immutable；
+- 不因 Status 变化、Project move、Cycle membership 或 reopen 改写；
+- Backlog 默认排序可以使用 `Priority → createdAt`；
+- Triage Issue 不使用该字段。
+
 #### firstStartedAt
 
 - 第一次从非 Started 进入 Started Category 时设置；
 - 一旦设置不因 reopen 重置；
-- Started Category 内部 StatusDefinition 变化不修改。
+- Started Category 内部 StatusDefinition 变化不修改；
+- Started / Active 默认排序可以使用 `Priority → firstStartedAt`。
 
 #### terminalAt
 
@@ -393,33 +410,33 @@ Backlog | Unstarted | Started | Completed | Canceled
 - Project / Issue 各自使用自己的 concrete definitions；
 - rename 只修改 display name；
 - Entity record 只引用 ID，不复制 name / category；
-- Category 语义变化不是普通 rename，必须作为会影响引用 Entity invariants 的 configuration mutation 处理。
+- Category 语义变化不是普通 rename，必须作为会影响引用 Entity invariants 的 configuration mutation 处理；
+- definitions 的用户配置顺序不进入单个 DefinitionRecord，而由 category-level ordered configuration 保存。
 
-### 7.2 Workflow Defaults
+### 7.2 Workflow Defaults 与 Status Ordering
+
+每个 Entity Type / Category 同时保存 default 与 ordered definitions：
 
 ~~~text
-WorkflowDefaults {
-    issue: {
-        Backlog: StatusDefinitionId
-        Unstarted: StatusDefinitionId
-        Started: StatusDefinitionId
-        Completed: StatusDefinitionId
-        Canceled: StatusDefinitionId
-    }
+StatusCategoryConfig {
+    defaultId: StatusDefinitionId
+    definitionIds: OrderedList<StatusDefinitionId>
+}
 
-    project: {
-        Backlog: StatusDefinitionId
-        Unstarted: StatusDefinitionId
-        Started: StatusDefinitionId
-        Completed: StatusDefinitionId
-        Canceled: StatusDefinitionId
-    }
+WorkflowStatusConfig {
+    issue: Map<StatusCategory, StatusCategoryConfig>
+    project: Map<StatusCategory, StatusCategoryConfig>
 }
 ~~~
 
-每个 Entity Type / Category 至少有一个 StatusDefinition，并指定恰好一个 default。
+规则：
 
-Default 用于 category-level shortcut：Complete、Cancel、Start、Move to Backlog 等。修改 default 只影响未来 mutation；已有 Entity 的 `statusDefinitionId` 不被批量重解释。
+- 每个 Entity Type / Category 至少一个 StatusDefinition；
+- `defaultId` 必须是对应 `definitionIds` 的成员；
+- fixed StatusCategory 使用系统顺序；
+- `definitionIds` 的顺序是同一 Category 内的 authoritative display / Board-column order；
+- 修改 order 不批量修改任何 Entity；
+- 修改 default 只影响未来 category-level shortcut；已有 Entity 的 `statusDefinitionId` 不被重解释。
 
 ### 7.3 LabelGroupRecord
 
@@ -502,6 +519,7 @@ Timestamp
 所有以下字段使用同一个 Timestamp foundation：
 
 - Initiative / Project / Milestone / Issue `due`；
+- Workflow Issue `createdAt`；
 - Issue `firstStartedAt`；
 - Issue `terminalAt`；
 - Cycle `startedAt`；
@@ -543,33 +561,36 @@ Timestamp 表示已经确认的时间事实；timezone、calendar calculation、
 
 Timestamp 的具体物理编码由 `docs/markdown-physical-model.md` 决定。
 
-## 9. Due / Snooze / Reminder Data Contract
+## 9. Due / Defer / Reminder Data Contract
 
 ### 9.1 Due
 
-Due 是 Entity 当前 user-authored temporal fact。逻辑层只保存一个 `due: Timestamp`；产品上下文决定 presentation / action semantics。
+Due 是 Entity 当前 user-authored temporal fact。逻辑层只保存一个 `due: Timestamp`；产品 context 决定 presentation / action semantics。
 
-### 9.2 Snooze
+- Initiative / Project / Milestone / Workflow Issue：optional。
+- Triage Issue：required。
+- Workflow Due：计划 / 希望完成时间。
+- Triage Due：下一次希望重新处理 capture 的时间，并作为 Triage 主要排序轴。
+
+Quick Capture V1 默认：
+
+~~~text
+resolvedDue = temporalPolicy(now + 7 calendar days)
+~~~
+
+### 9.2 Triage Defer
 
 不保存：
 
 ~~~text
+attentionAt
+reviewAt
 snoozedUntil
 isSnoozed
 snoozeState
 ~~~
 
-Snooze / Defer 是 `SetDue` / `MoveDue` 的产品 shortcut。
-
-例如：
-
-~~~text
-Snooze to Monday
-→ temporal policy resolves Monday to Timestamp
-→ Issue.due = resolved Timestamp
-~~~
-
-Triage 的排序、弱化、隐藏 / reveal、重新进入 attention 都由 Query + presentation + now 对同一 due 进行解释。
+暂时不想处理就是 `SetDue` / `MoveDue`。Triage selector 根据同一 Due 排序；Issue 仍可搜索、打开和编辑。
 
 ### 9.3 Reminder
 
@@ -581,15 +602,9 @@ ReminderEntity
 ReminderHistory
 ~~~
 
-Reminder / notification 由：
+Reminder / notification 由 temporal fact + reminder policy + now 动态计算。
 
-~~~text
-Temporal fact + reminder policy + now
-~~~
-
-动态计算。
-
-独立随手提醒通过普通 project-less Issue + Due（可再加 Label / Custom View）表达，不创建特殊 Reminder Domain。
+独立随手提醒通过普通 project-less Workflow Issue + Due（可再加 Label / Custom View）表达，不创建特殊 Reminder Domain。
 
 ## 10. User Workspace State
 
@@ -702,33 +717,36 @@ next week
 
 每次执行根据 now + timezone / temporal policy 重新计算。
 
-### 11.3 Boolean / Field Predicates
+### 11.3 V1 Filter Capability
 
-Logical capability 至少支持：
+`QuerySpec` / selector configuration 是内部 structured data，不是用户编写的 Query Language。
 
-- AND / OR / NOT；
-- equals / not equals / in；
-- exists / missing；
-- before / after / range；
-- suitable text / set predicates。
+V1 不要求 arbitrary boolean AST / DSL，也不把 AND / OR / NOT expression tree 当成基础产品能力。Filter helpers 只覆盖当前页面 / Saved View 已确认的真实需求，例如 Status、Project、Priority、Area、Label、Due、Cycle 等；以后按实际使用增量扩展。
 
-具体 AST / DSL / TypeScript representation 后置。
+同一底层结构可以保留未来扩展空间，但不能为了潜在灵活性提前暴露数据库式查询界面。
 
 ### 11.4 Sort / Group
 
 Sort / Group 属于 read/query model，不是 Domain facts。
 
-例如：
+已确认默认行为：
 
 ~~~text
 Triage:
-where context = Triage
-sort due ascending, priority descending
+sort due ascending
+
+Backlog Workflow Issues:
+sort priority, then createdAt
+
+Started / Active Workflow Issues:
+sort priority, then firstStartedAt
 ~~~
 
-Snooze 改 Due 后，Query result 自动重新排序，不需要额外 `snoozePosition`。
+未确认区域不为了“统一”提前规定默认顺序；最终仍使用 stable identity tie-breaker 保证 deterministic。
 
-Label picker 的 fuzzy relevance 与 label usage count 排序同样属于 Runtime read/presentation behavior，不进入 LabelRecord。
+Group 只开放少量 curated business dimensions。普通 Label 默认只作为 filter facet；Area 等明确 promoted Single LabelGroup 才可成为 grouping dimension。
+
+Label picker 的 fuzzy relevance 与 label usage count 排序仍属于 Runtime read/presentation behavior，不进入 LabelRecord。
 
 ## 12. Action / Mutation Logical Model
 
@@ -773,7 +791,9 @@ SetDue
 SetLabels
 ~~~
 
-Snooze / Pick Due / Move Due +1 day 都可以映射到 `SetDue`；Application 在提交前负责把 UI 输入解析成 Timestamp。
+Pick Due / Move Due +1 day / Triage Defer 都可以映射到 `SetDue`；Application 在提交前负责把 UI 输入解析成 Timestamp。
+
+`CreateTriageIssue` 在创建前生成 stable ID，并通过 temporal policy 提供 required default Due（V1 +7 days）。
 
 ### 12.3 Status Mutation
 
@@ -799,14 +819,32 @@ Category-level `Complete / Cancel / Start / Move to Backlog` 先解析对应 def
 
 ### 12.5 Accept Triage
 
-Accept 是 composite mutation：
+Accept **不是** context + status patch，也不保留 source identity。
 
 ~~~text
-context: Triage → Workflow
-statusDefinitionId: null → configured target normal Status
+AcceptTriageIssue(sourceIssueId)
+
+source Issue A (Triage)
+→ Create Issue B (Workflow, new ID)
+→ persist + validate B
+→ delete A
 ~~~
 
-UI 可以提供 `Accept & Add to Current Cycle` convenience action，把 Accept 与 Cycle membership 修改组合成一个 atomic logical operation。
+Target create：
+
+- `context = Workflow`；
+- valid normal `statusDefinitionId`（V1 normal create enters Backlog）；
+- `createdAt = effectiveAt`；
+- source title / description / applicable enrichment 可以作为 create 初始值；
+- source Triage `due` 不自动映射为 target Workflow `due`。
+
+可靠性：
+
+- target create 未成功 → source 不变；
+- source delete 只能发生在 target 已持久化并通过验证后；
+- Accept 与 identity-preserving `MoveIssueToProject` 是不同 use case。
+
+`Accept & Add to Current Cycle` 若作为 convenience action，也只能在新 Workflow Issue 创建成功后把 **new ID** 加入 Cycle。
 
 ### 12.6 Cycle Mutations
 
@@ -859,18 +897,19 @@ Configuration 没有 Core Domain Data 那样的业务历史连续性，但替换
 
 1. Workspace 最多一个 Open Cycle。
 2. Triage Issue 不得成为 Current / Open Cycle member。
-3. Workflow Issue 必须有有效 Issue StatusDefinition；Triage Issue 不使用 normal StatusDefinition。
-4. Issue.projectId = null → milestoneId = null。
-5. Issue.milestoneId != null → Milestone.projectId = Issue.projectId。
-6. Completed Issue 必须有 Estimate。
-7. Project.statusDefinitionId 必须引用 Project StatusDefinition。
-8. Issue.statusDefinitionId 必须引用 Issue StatusDefinition。
-9. Completed Project 不能直接接受新的 non-terminal Issue；需要先 Reopen。
-10. Complete Project 时当前不能存在 non-terminal child Issue。
-11. Label selection 必须满足 registeredEntityTypes 与 Single / Multiple contract。
-12. Closed Cycle 的正常 planning membership 不再编辑；仅允许 referential-integrity cleanup 类 destructive repair。
-13. default Status reference 必须与 entityType / category 匹配。
-14. Configuration / Custom View / Favorite 等不能保留 dangling stable references。
+3. Triage Issue：`statusDefinitionId = null`、`due required`、`createdAt = null`。
+4. Workflow Issue：valid Issue StatusDefinition + `createdAt required`；Workflow Due optional。
+5. Issue.projectId = null → milestoneId = null。
+6. Issue.milestoneId != null → Milestone.projectId = Issue.projectId。
+7. Completed Issue 必须有 Estimate。
+8. Project.statusDefinitionId 必须引用 Project StatusDefinition。
+9. Issue.statusDefinitionId 必须引用 Issue StatusDefinition。
+10. Completed Project 不能直接接受新的 non-terminal Issue；需要先 Reopen。
+11. Complete Project 时当前不能存在 non-terminal child Issue。
+12. Label selection 必须满足 registeredEntityTypes 与 Single / Multiple contract。
+13. Closed Cycle 的正常 planning membership 不再编辑；仅允许 referential-integrity cleanup 类 destructive repair。
+14. default Status reference 必须与 entityType / category 匹配，并属于对应 ordered definitionIds。
+15. Configuration / Custom View / Favorite 等不能保留 dangling stable references。
 
 ## 15. Derived Activity Timeline
 
@@ -935,14 +974,20 @@ derived progress / activity caches
 - manual Progress / Health；
 - complete Activity / Event Log；
 - CycleParticipationHistory / CycleSnapshot Entity；
-- generic createdAt / updatedAt / deletedAt / version；
+- generic createdAt / updatedAt / deletedAt / version on all entities；`Issue.createdAt` 是明确产品例外；
 - temporal precision / input-granularity field；
 - runtime sourcePath / sourceRange / fingerprint；
 - physical Markdown container / schema decisions。
 
 ## 18. Closeout
 
-Logical Data Model 已收口。2026-08-11 的 Physical Model 设计只对一个已经明确被后续决策替代的 logical contract 做了校准：所有 persisted temporal fields 统一为 `Timestamp`，不再保存 `TemporalValue.precision`。
+Logical Data Model 保持已收口。本轮只根据后续 Product / Technical Design 的明确需求校准：
+
+- Workflow Issue `createdAt`；
+- Triage Due required + default +7 days；
+- Accept = new Workflow identity then delete source；
+- StatusDefinition category-level ordering；
+- Query/Filter 不要求 V1 Generic DSL。
 
 当前 authoritative chain：
 
@@ -951,9 +996,9 @@ Product Design
 → Canonical Domain
 → Logical Data Model
 → Markdown Physical Model
-→ Technical Design
+→ Technical Design Baseline
 → Implementation Plan
 → Formal Implementation
 ~~~
 
-具体 Vault / Markdown / plugin `data.json` 的载体、路径、字段 carrier、Unix timestamp encoding、validation / migration policy 由 `docs/markdown-physical-model.md` 定义。Physical Model 不得因为某种 Markdown 表达更方便，就重新引入被上层明确删除的 Domain 概念或重复 authoritative truth。
+具体 runtime / optimistic / physical transaction / frontend architecture 由 `docs/technical-design-baseline.md` 定义。
