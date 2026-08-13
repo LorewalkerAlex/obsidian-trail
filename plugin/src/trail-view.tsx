@@ -57,10 +57,19 @@ export class TrailView extends ItemView {
       <StrictMode>
         <TrailApp
           onCapture={(title) => this.application.capture(title)}
+          onCreateProject={(title) => this.application.createProject(title)}
+          onCreateWorkflowIssue={(projectId, title) =>
+            this.application.createWorkflowIssue(projectId, title)}
           onDefer={(issue) => this.application.deferTriageIssue(issue)}
           onDelete={(issue) => this.application.deleteTriageIssue(issue)}
           onEdit={(issue, title, dueLocalValue) =>
             this.application.editTriageIssue(issue, title, dueLocalValue)}
+          onWorkflowStatusChange={(issue, targetStatusDefinitionId, estimate) =>
+            this.application.changeWorkflowIssueStatus(
+              issue,
+              targetStatusDefinitionId,
+              estimate,
+            )}
           runtimeStore={this.runtimeStore}
         />
       </StrictMode>,

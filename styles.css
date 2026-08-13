@@ -1,6 +1,7 @@
 .trail-view {
   height: 100%;
   padding: 0;
+  container-type: inline-size;
 }
 
 .trail-view__root,
@@ -377,5 +378,180 @@
 
   .trail-issue-editor {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Workflow Entry keeps presentation intentionally functional; the formal visual
+   system remains a later slice. */
+.trail-page-nav {
+  display: flex;
+  gap: var(--size-4-1);
+  margin: 0 0 var(--size-4-4);
+  padding: var(--size-2-1);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  width: fit-content;
+}
+
+.trail-page-nav button,
+.trail-project-list button {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.trail-page-nav button.is-active,
+.trail-project-list button.is-active {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.trail-projects {
+  display: grid;
+  gap: var(--size-4-4);
+}
+
+.trail-project-create,
+.trail-project-workspace {
+  display: grid;
+  gap: var(--size-4-3);
+}
+
+.trail-projects-layout {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.32fr) minmax(0, 1fr);
+  gap: var(--size-4-4);
+  min-width: 0;
+}
+
+.trail-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+  align-self: start;
+  min-width: 0;
+}
+
+.trail-project-list button {
+  width: 100%;
+  padding: var(--size-4-2);
+  border-radius: var(--radius-s);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-project-workspace {
+  min-width: 0;
+  padding: var(--size-4-4);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+}
+
+.trail-project-workspace__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+
+.trail-project-workspace__header h2,
+.trail-project-workspace__header p {
+  margin: 0;
+}
+
+.trail-project-workspace__header span {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.trail-pending-chip {
+  padding: var(--size-2-1) var(--size-4-2);
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-workflow-issue-list {
+  display: grid;
+  gap: var(--size-4-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trail-workflow-issue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(9rem, 0.35fr);
+  gap: var(--size-4-2);
+  align-items: center;
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+}
+
+.trail-workflow-issue-row__main {
+  display: grid;
+  gap: var(--size-2-1);
+  min-width: 0;
+}
+
+.trail-workflow-issue-row__main strong {
+  overflow-wrap: anywhere;
+}
+
+.trail-workflow-issue-row__main span {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-status-picker,
+.trail-status-picker select {
+  width: 100%;
+  min-width: 0;
+}
+
+.trail-estimate-gate {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--size-4-2);
+  padding-top: var(--size-4-2);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.trail-estimate-gate label {
+  display: grid;
+  gap: var(--size-2-1);
+}
+
+.trail-estimate-gate label > span {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-empty-state--compact {
+  min-height: 0;
+  padding: var(--size-4-3);
+}
+
+@container (max-width: 620px) {
+  .trail-projects-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trail-project-list {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .trail-project-list button {
+    width: auto;
+    min-width: 8rem;
+  }
+
+  .trail-workflow-issue-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

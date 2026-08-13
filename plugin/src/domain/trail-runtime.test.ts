@@ -8,6 +8,7 @@ import {
   selectEffectiveTriageIssueById,
   selectEffectiveTriageIssueIds,
   selectIsTriageIssuePending,
+  selectSourceIssuesForPath,
   setTrailRuntimeAvailability,
 } from "./trail-runtime";
 import type { TrailTriageContribution } from "./trail-triage-markdown";
@@ -76,6 +77,22 @@ describe("Formal Runtime Triage projection", () => {
       timezone: "Asia/Shanghai",
     });
     expect(store.getState().committed.revision).toBe(1);
+  });
+
+  it("reuses one empty source-issue snapshot for missing paths", () => {
+    const store = createTrailRuntimeStore();
+
+    const first = selectSourceIssuesForPath(
+      store.getState(),
+      "Trail/Collections/Triage.md",
+    );
+
+    expect(first).toEqual([]);
+    expect(selectSourceIssuesForPath(
+      store.getState(),
+      "Trail/Collections/Triage.md",
+    )).toBe(first);
+    expect(selectSourceIssuesForPath(store.getState(), undefined)).toBe(first);
   });
 
   it("normalizes committed state, sorts by Due, and preserves unchanged objects", () => {

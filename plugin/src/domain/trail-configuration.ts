@@ -486,3 +486,48 @@ export function validateTrailPluginData(
     value: value as unknown as TrailPluginData,
   };
 }
+
+export interface ResolvedStatusDefinition {
+  readonly category: StatusCategory;
+  readonly id: string;
+  readonly name: string;
+}
+
+/** Resolves one stable StatusDefinition ID back to its fixed semantic category. */
+export function resolveStatusDefinition(
+  configuration: EntityStatusConfiguration,
+  statusDefinitionId: string,
+): ResolvedStatusDefinition | undefined {
+  for (const category of STATUS_CATEGORIES) {
+    const definition = configuration[category].definitions.find(
+      (candidate) => candidate.id === statusDefinitionId,
+    );
+    if (definition !== undefined) {
+      return {
+        category,
+        id: definition.id,
+        name: definition.name,
+      };
+    }
+  }
+  return undefined;
+}
+
+/** Returns the configured default definition for a fixed StatusCategory. */
+export function resolveDefaultStatusDefinition(
+  configuration: EntityStatusConfiguration,
+  category: StatusCategory,
+): ResolvedStatusDefinition {
+  const categoryConfiguration = configuration[category];
+  const definition = categoryConfiguration.definitions.find(
+    (candidate) => candidate.id === categoryConfiguration.defaultId,
+  );
+  if (definition === undefined) {
+    throw new Error(`Missing default StatusDefinition for category: ${category}`);
+  }
+  return {
+    category,
+    id: definition.id,
+    name: definition.name,
+  };
+}

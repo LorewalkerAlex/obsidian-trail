@@ -7,7 +7,10 @@ import {
   TRAIL_TOP_LEVEL_DIRECTORIES,
 } from "./trail-physical-schema";
 import { TrailApplication } from "./trail-application";
-import { createTrailRuntimeStore } from "./trail-runtime";
+import {
+  createTrailRuntimeStore,
+  setSourceIssuesForPath,
+} from "./trail-runtime";
 import type {
   PluginDataProbe,
   WorkspaceBootstrapGateway,
@@ -22,9 +25,23 @@ import {
   type TrailTriageParseResult,
 } from "./trail-triage-markdown";
 import type { TrailTriagePersistence } from "./trail-triage-persistence";
+import {
+  parseProjectMarkdown,
+  serializeProjectMarkdown,
+} from "./trail-project-markdown";
+import type { TrailWorkflowPersistence } from "./trail-workflow-persistence";
 
 function parseYaml(yaml: string): unknown {
-  return { kind: yaml.trim().split(":")[1]?.trim() };
+  const value: Record<string, unknown> = {};
+  for (const line of yaml.split(/\r?\n/)) {
+    const separator = line.indexOf(":");
+    if (separator < 0) continue;
+    const key = line.slice(0, separator).trim();
+    const raw = line.slice(separator + 1).trim();
+    if (raw === "") continue;
+    value[key] = key === "id" ? JSON.parse(raw) : raw;
+  }
+  return value;
 }
 
 function emptyTriageResult() {
@@ -103,6 +120,46 @@ function createPersistence(): TrailTriagePersistence {
   };
 }
 
+function createWorkflowPersistence(): TrailWorkflowPersistence {
+  return {
+    appendIssue: async () => {
+      throw new Error("Workflow append is unused");
+    },
+    createProject: async () => {
+      throw new Error("Workflow Project create is unused");
+    },
+    readAll: async () => ({ projectResults: [], structuralIssues: [] }),
+    readSource: async () => {
+      throw new Error("Workflow source read is unused");
+    },
+    updateIssue: async () => {
+      throw new Error("Workflow update is unused");
+    },
+  };
+}
+
+function createProjectWritingWorkflowPersistence(): TrailWorkflowPersistence {
+  return {
+    appendIssue: async () => {
+      throw new Error("Workflow append is unused");
+    },
+    async createProject(project) {
+      return parseProjectMarkdown({
+        filePath: "Trail/Projects/0001 Workflow survives.md",
+        markdown: serializeProjectMarkdown(project),
+        parseYaml,
+      });
+    },
+    readAll: async () => ({ projectResults: [], structuralIssues: [] }),
+    readSource: async () => {
+      throw new Error("Workflow source read is unused");
+    },
+    updateIssue: async () => {
+      throw new Error("Workflow update is unused");
+    },
+  };
+}
+
 class MutableTriagePersistence implements TrailTriagePersistence {
   public markdown = TRAIL_BOOTSTRAP_FILES[0].content;
   public readonly deleteCalls: string[] = [];
@@ -171,9 +228,10 @@ describe("Formal Trail application startup", () => {
       createId: () => "unused",
       mutationQueue: new TrailMutationQueue(),
       now: () => 1_786_464_000_000,
-      persistence: createPersistence(),
+      triagePersistence: createPersistence(),
       resolveHostTimezone: () => "UTC",
       runtimeStore,
+      workflowPersistence: createWorkflowPersistence(),
       workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
     });
 
@@ -193,7 +251,7 @@ describe("Formal Trail application startup", () => {
       createId: () => "unused",
       mutationQueue: new TrailMutationQueue(),
       now: () => 0,
-      persistence: {
+      triagePersistence: {
         appendIssue: async () => emptyTriageResult(),
         deleteIssue: async () => emptyTriageResult(),
         readLatest: async () => {
@@ -204,6 +262,7 @@ describe("Formal Trail application startup", () => {
       },
       resolveHostTimezone: () => "UTC",
       runtimeStore,
+      workflowPersistence: createWorkflowPersistence(),
       workspace: createWorkspaceGateway({
         markdown: {
           existingPaths: [],
@@ -237,9 +296,10 @@ describe("Formal Trail application startup", () => {
       createId: () => `id-${id += 1}`,
       mutationQueue: new TrailMutationQueue(),
       now: () => 1_786_464_000_000,
-      persistence: createPersistence(),
+      triagePersistence: createPersistence(),
       resolveHostTimezone: () => "Asia/Singapore",
       runtimeStore,
+      workflowPersistence: createWorkflowPersistence(),
       workspace,
     });
 
@@ -263,25 +323,20 @@ describe("Formal Trail application startup", () => {
       createId: () => `command-${id += 1}`,
       mutationQueue: new TrailMutationQueue(),
       now: () => 1_786_464_000_000,
-      persistence: createPersistence(),
+      triagePersistence: createPersistence(),
       resolveHostTimezone: () => "UTC",
       runtimeStore,
+      workflowPersistence: createWorkflowPersistence(),
       workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
     });
 
     await application.initialize();
-    runtimeStore.setState((state) => ({
-      ...state,
-      committed: {
-        ...state.committed,
-        sourceIssues: [{
-          code: "test-invalid",
-          filePath: "Trail/Collections/Triage.md",
-          message: "invalid fixture",
-          scope: "file",
-        }],
-      },
-    }));
+    setSourceIssuesForPath(runtimeStore, "Trail/Collections/Triage.md", [{
+      code: "test-invalid",
+      filePath: "Trail/Collections/Triage.md",
+      message: "invalid fixture",
+      scope: "file",
+    }]);
 
     expect(() => application.capture("Blocked capture")).toThrowError(
       "Quick Capture is paused until Triage.md is valid again",
@@ -308,9 +363,10 @@ describe("Formal Trail application startup", () => {
       createId: () => "command-edit",
       mutationQueue: new TrailMutationQueue(),
       now: () => due,
-      persistence,
+      triagePersistence: persistence,
       resolveHostTimezone: () => "UTC",
       runtimeStore,
+      workflowPersistence: createWorkflowPersistence(),
       workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
     });
     await application.initialize();
@@ -349,9 +405,10 @@ describe("Formal Trail application startup", () => {
       createId: () => ids.shift() ?? "unexpected",
       mutationQueue: new TrailMutationQueue(),
       now: () => Date.UTC(2026, 7, 13, 0),
-      persistence,
+      triagePersistence: persistence,
       resolveHostTimezone: () => "UTC",
       runtimeStore,
+      workflowPersistence: createWorkflowPersistence(),
       workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
     });
     await application.initialize();
@@ -367,6 +424,44 @@ describe("Formal Trail application startup", () => {
       runtimeStore.getState().committed.triageIssuesById["issue-a"],
     ).completion;
     expect(persistence.updateCalls[1].due).toBe(Date.UTC(2026, 7, 21, 2, 30));
+  });
+
+  it("isolates a missing Triage singleton without blocking valid Workflow actions", async () => {
+    let statusId = 0;
+    const pluginData = createDefaultTrailPluginData({
+      createId: () => `status-${statusId += 1}`,
+      timezone: "UTC",
+    });
+    const ids = ["command-project", "project-a"];
+    const runtimeStore = createTrailRuntimeStore();
+    const application = new TrailApplication({
+      createId: () => ids.shift() ?? "unexpected",
+      mutationQueue: new TrailMutationQueue(),
+      now: () => 1_786_464_000_000,
+      triagePersistence: createPersistence(),
+      resolveHostTimezone: () => "UTC",
+      runtimeStore,
+      workflowPersistence: createProjectWritingWorkflowPersistence(),
+      workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
+    });
+    await application.initialize();
+
+    application.markRequiredTriageUnavailable("Triage fixture removed");
+
+    expect(runtimeStore.getState().availability.kind).toBe("ready");
+    expect(runtimeStore.getState().committed.sourceIssues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "triage.required-source.unavailable",
+          filePath: "Trail/Collections/Triage.md",
+        }),
+      ]),
+    );
+
+    const receipt = application.createProject("Workflow survives");
+    await receipt.completion;
+
+    expect(runtimeStore.getState().committed.projectIds).toEqual(["project-a"]);
   });
 
   it("routes delete through Triage management and blocks management on Data Issues", async () => {
@@ -388,9 +483,10 @@ describe("Formal Trail application startup", () => {
       createId: () => "command-delete",
       mutationQueue: new TrailMutationQueue(),
       now: () => 10,
-      persistence,
+      triagePersistence: persistence,
       resolveHostTimezone: () => "UTC",
       runtimeStore,
+      workflowPersistence: createWorkflowPersistence(),
       workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
     });
     await application.initialize();
@@ -400,18 +496,12 @@ describe("Formal Trail application startup", () => {
     ).completion;
     expect(persistence.deleteCalls).toEqual(["issue-a"]);
 
-    runtimeStore.setState((state) => ({
-      ...state,
-      committed: {
-        ...state.committed,
-        sourceIssues: [{
-          code: "test-invalid",
-          filePath: "Trail/Collections/Triage.md",
-          message: "invalid fixture",
-          scope: "file",
-        }],
-      },
-    }));
+    setSourceIssuesForPath(runtimeStore, "Trail/Collections/Triage.md", [{
+      code: "test-invalid",
+      filePath: "Trail/Collections/Triage.md",
+      message: "invalid fixture",
+      scope: "file",
+    }]);
     expect(() => application.deleteTriageIssue({
       context: "triage",
       due: 30,

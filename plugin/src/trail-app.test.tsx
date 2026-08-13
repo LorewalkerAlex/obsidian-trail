@@ -1,20 +1,37 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { createDefaultTrailPluginData } from "./domain/trail-configuration";
 import {
   addPendingPlan,
   createTrailRuntimeStore,
+  reconcileProjectContribution,
   reconcileTriageContribution,
   removePendingPlan,
+  setSourceIssuesForPath,
   setTrailRuntimeAvailability,
+  setTrailRuntimeConfiguration,
 } from "./domain/trail-runtime";
-import type { TrailTriageIssue } from "./domain/trail-issue";
+import type {
+  TrailTriageIssue,
+  TrailWorkflowIssue,
+} from "./domain/trail-issue";
+import type { TrailProject } from "./domain/trail-project";
 import type { TriageCaptureReceipt } from "./domain/trail-triage-intake";
 import type { TriageManagementReceipt } from "./domain/trail-triage-management";
+import {
+  WorkflowNeedsInputError,
+  type WorkflowEntryReceipt,
+} from "./domain/trail-workflow-entry";
 import { TrailApp } from "./trail-app";
 
 function readyStore() {
   const store = createTrailRuntimeStore();
+  let id = 0;
+  setTrailRuntimeConfiguration(store, createDefaultTrailPluginData({
+    createId: () => `status-${id += 1}`,
+    timezone: "UTC",
+  }).configuration);
   setTrailRuntimeAvailability(store, {
     kind: "ready",
     timezone: "UTC",
@@ -32,10 +49,16 @@ function unusedManagementProps() {
   const unused = (): TriageManagementReceipt => {
     throw new Error("management action is unused");
   };
+  const unusedWorkflow = (): WorkflowEntryReceipt => {
+    throw new Error("workflow action is unused");
+  };
   return {
+    onCreateProject: unusedWorkflow,
+    onCreateWorkflowIssue: unusedWorkflow,
     onDefer: unused,
     onDelete: unused,
     onEdit: unused,
+    onWorkflowStatusChange: unusedWorkflow,
   };
 }
 
@@ -189,18 +212,12 @@ describe("Formal Trail Triage UI", () => {
         },
       },
     });
-    store.setState((state) => ({
-      ...state,
-      committed: {
-        ...state.committed,
-        sourceIssues: [{
-          code: "invalid-due",
-          filePath: "Trail/Collections/Triage.md",
-          message: "due is missing",
-          scope: "record",
-        }],
-      },
-    }));
+    setSourceIssuesForPath(store, "Trail/Collections/Triage.md", [{
+      code: "invalid-due",
+      filePath: "Trail/Collections/Triage.md",
+      message: "due is missing",
+      scope: "record",
+    }]);
 
     render(
       <TrailApp
@@ -355,4 +372,164 @@ describe("Formal Trail Triage UI", () => {
     expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
   });
 
+});
+
+describe("Formal Trail Workflow Entry UI", () => {
+  function seedWorkflowProject(
+    store: ReturnType<typeof readyStore>,
+  ): {
+    readonly issue: TrailWorkflowIssue;
+    readonly project: TrailProject;
+  } {
+    const configuration = store.getState().committed.configuration;
+    if (configuration === null) throw new Error("missing configuration");
+    const project: TrailProject = {
+      id: "project-a",
+      labelIds: [],
+      statusDefinitionId: configuration.statuses.project.unstarted.defaultId,
+      title: "Workflow Project",
+    };
+    const issue: TrailWorkflowIssue = {
+      context: "workflow",
+      createdAt: 100,
+      id: "workflow-issue-a",
+      labelIds: [],
+      projectId: project.id,
+      statusDefinitionId: configuration.statuses.issue.backlog.defaultId,
+      title: "Implement flow",
+    };
+    reconcileProjectContribution(store, {
+      filePath: "Trail/Projects/0001 Workflow Project.md",
+      issuesById: { [issue.id]: issue },
+      project,
+      sourceByIssueId: {
+        [issue.id]: {
+          endOffset: 20,
+          filePath: "Trail/Projects/0001 Workflow Project.md",
+          markerEndOffset: 12,
+          markerStartOffset: 8,
+          startOffset: 4,
+        },
+      },
+    });
+    return { issue, project };
+  }
+
+  it("opens Projects and submits a new Project through the Workflow action", () => {
+    const store = readyStore();
+    const onCreateProject = vi.fn((_title: string): WorkflowEntryReceipt => ({
+      completion: Promise.resolve(),
+      entityId: "project-new",
+    }));
+
+    render(
+      <TrailApp
+        {...unusedManagementProps()}
+        onCapture={() => {
+          throw new Error("unused");
+        }}
+        onCreateProject={onCreateProject}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Projects" }));
+    const input = screen.getByPlaceholderText("Create an outcome-focused Project");
+    fireEvent.change(input, { target: { value: "Ship Workflow Entry" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
+
+    expect(onCreateProject).toHaveBeenCalledWith("Ship Workflow Entry");
+    expect(input).toHaveValue("");
+  });
+
+  it("creates a Workflow Issue inside the selected Project", () => {
+    const store = readyStore();
+    seedWorkflowProject(store);
+    const onCreateWorkflowIssue = vi.fn((
+      _projectId: string,
+      _title: string,
+    ): WorkflowEntryReceipt => ({
+      completion: Promise.resolve(),
+      entityId: "workflow-issue-new",
+    }));
+
+    render(
+      <TrailApp
+        {...unusedManagementProps()}
+        onCapture={() => {
+          throw new Error("unused");
+        }}
+        onCreateWorkflowIssue={onCreateWorkflowIssue}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Projects" }));
+    const input = screen.getByPlaceholderText("Add a Workflow Issue");
+    fireEvent.change(input, { target: { value: "Verify lifecycle" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add Issue" }));
+
+    expect(onCreateWorkflowIssue).toHaveBeenCalledWith(
+      "project-a",
+      "Verify lifecycle",
+    );
+    expect(input).toHaveValue("");
+  });
+
+  it("uses the Planner NeedsInput result to request Estimate before Completed", () => {
+    const store = readyStore();
+    const { issue } = seedWorkflowProject(store);
+    const configuration = store.getState().committed.configuration;
+    if (configuration === null) throw new Error("missing configuration");
+    const completedId = configuration.statuses.issue.completed.defaultId;
+    const onWorkflowStatusChange = vi.fn((
+      expectedIssue: TrailWorkflowIssue,
+      targetStatusDefinitionId: string,
+      estimate?: number,
+    ): WorkflowEntryReceipt => {
+      if (targetStatusDefinitionId === completedId && estimate === undefined) {
+        throw new WorkflowNeedsInputError(
+          "estimate",
+          "Estimate is required before completing this Workflow Issue",
+        );
+      }
+      return {
+        completion: Promise.resolve(),
+        entityId: expectedIssue.id,
+      };
+    });
+
+    render(
+      <TrailApp
+        {...unusedManagementProps()}
+        onCapture={() => {
+          throw new Error("unused");
+        }}
+        onWorkflowStatusChange={onWorkflowStatusChange}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Projects" }));
+    fireEvent.change(screen.getByLabelText(`Status for ${issue.title}`), {
+      target: { value: completedId },
+    });
+
+    expect(screen.getByText("Estimate required to complete")).toBeInTheDocument();
+    const estimate = screen.getByRole("spinbutton");
+    fireEvent.change(estimate, { target: { value: "3" } });
+    fireEvent.click(screen.getByRole("button", { name: "Complete" }));
+
+    expect(onWorkflowStatusChange).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ id: issue.id }),
+      completedId,
+    );
+    expect(onWorkflowStatusChange).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ id: issue.id }),
+      completedId,
+      3,
+    );
+  });
 });

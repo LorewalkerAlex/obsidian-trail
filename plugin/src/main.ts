@@ -12,9 +12,15 @@ import {
 import { TrailApplication } from "./domain/trail-application";
 import { createFormalMarkdownValidator } from "./domain/trail-managed-markdown";
 import { TrailMutationQueue } from "./domain/trail-mutation-queue";
-import { TRAIL_TRIAGE_PATH } from "./domain/trail-physical-schema";
+import {
+  isTrailProjectMarkdownPath,
+  TRAIL_PROJECTS_PATH,
+  TRAIL_PROJECTS_PREFIX,
+  TRAIL_TRIAGE_PATH,
+} from "./domain/trail-physical-schema";
 import { createTrailRuntimeStore } from "./domain/trail-runtime";
 import { createObsidianTriagePersistenceGateway } from "./domain/trail-triage-persistence-obsidian";
+import { createObsidianWorkflowPersistence } from "./domain/trail-workflow-persistence-obsidian";
 import {
   createObsidianWorkspaceBootstrapGateway,
   type ObsidianWorkspaceFileKinds,
@@ -78,14 +84,21 @@ export default class TrailPlugin extends Plugin {
       fileKinds,
       diagnostics,
     );
+    const workflowPersistence = createObsidianWorkflowPersistence(
+      this.app,
+      parseYamlDocument,
+      fileKinds,
+      diagnostics,
+    );
     const application = new TrailApplication({
       createId: () => crypto.randomUUID(),
       diagnostics,
       mutationQueue,
       now: () => Date.now(),
-      persistence: triagePersistence,
       resolveHostTimezone,
       runtimeStore,
+      triagePersistence,
+      workflowPersistence,
       workspace: workspaceGateway,
     });
 
@@ -193,8 +206,8 @@ export default class TrailPlugin extends Plugin {
       if (!classification.canLoad || this.application !== application) {
         return;
       }
-      this.registerTriageEvents(application);
-      this.diagnostics.record("host.triage-events.registered");
+      this.registerFormalEvents(application);
+      this.diagnostics.record("host.formal-events.registered");
     } catch (error: unknown) {
       this.diagnostics.record("plugin.initialization.failed", {
         data: { errorName: errorName(error) },
@@ -204,7 +217,7 @@ export default class TrailPlugin extends Plugin {
     }
   }
 
-  private registerTriageEvents(application: TrailApplication): void {
+  private registerFormalEvents(application: TrailApplication): void {
     this.registerEvent(
       this.app.vault.on("modify", (file: TAbstractFile) => {
         if (file.path === TRAIL_TRIAGE_PATH) {
@@ -261,6 +274,138 @@ export default class TrailPlugin extends Plugin {
         }
       }),
     );
+
+    this.registerEvent(
+      this.app.vault.on("create", (file: TAbstractFile) => {
+        if (isTrailProjectMarkdownPath(file.path)) {
+          this.refreshWorkflowSource(application, file.path, "vault.create");
+          return;
+        }
+        if (this.isWithinProjects(file.path)) {
+          this.refreshWorkflow(application, "vault.create-structure");
+        }
+      }),
+    );
+
+    this.registerEvent(
+      this.app.vault.on("modify", (file: TAbstractFile) => {
+        if (isTrailProjectMarkdownPath(file.path)) {
+          this.refreshWorkflowSource(application, file.path, "vault.modify");
+        }
+      }),
+    );
+
+    this.registerEvent(
+      this.app.vault.on("delete", (file: TAbstractFile) => {
+        if (file.path === TRAIL_PROJECTS_PATH) {
+          const correlationId = this.diagnostics.createCorrelationId(
+            "vault.delete-projects-root",
+          );
+          application.markWorkflowRootUnavailable(
+            `Required Formal Projects directory was removed: ${TRAIL_PROJECTS_PATH}. Restore it and reload Trail; it will not be silently recreated.`,
+            correlationId,
+          );
+          return;
+        }
+        if (isTrailProjectMarkdownPath(file.path)) {
+          const correlationId = this.diagnostics.createCorrelationId(
+            "vault.delete-project",
+          );
+          this.diagnostics.record("host.vault.delete", {
+            correlationId,
+            data: { path: file.path },
+            level: "warn",
+          });
+          void application.removeWorkflowSource(file.path, correlationId).catch(
+            (error: unknown) => this.recordWorkflowReconcileFailure(
+              correlationId,
+              error,
+              "delete",
+            ),
+          );
+          return;
+        }
+        if (this.isWithinProjects(file.path)) {
+          this.refreshWorkflow(application, "vault.delete-structure");
+        }
+      }),
+    );
+
+    this.registerEvent(
+      this.app.vault.on("rename", (file: TAbstractFile, oldPath: string) => {
+        if (oldPath === TRAIL_PROJECTS_PATH && file.path !== TRAIL_PROJECTS_PATH) {
+          const correlationId = this.diagnostics.createCorrelationId(
+            "vault.rename-projects-root",
+          );
+          application.markWorkflowRootUnavailable(
+            `Required Formal Projects directory moved away from ${TRAIL_PROJECTS_PATH}. Restore it before changing Workflow data.`,
+            correlationId,
+          );
+          return;
+        }
+        if (
+          file.path === TRAIL_PROJECTS_PATH
+          || this.isWithinProjects(oldPath)
+          || this.isWithinProjects(file.path)
+        ) {
+          this.refreshWorkflow(application, "vault.rename-projects");
+        }
+      }),
+    );
+  }
+
+  private isWithinProjects(path: string): boolean {
+    return path === TRAIL_PROJECTS_PATH || path.startsWith(TRAIL_PROJECTS_PREFIX);
+  }
+
+  private refreshWorkflowSource(
+    application: TrailApplication,
+    filePath: string,
+    event: string,
+  ): void {
+    const correlationId = this.diagnostics.createCorrelationId(event);
+    this.diagnostics.record("host.vault.workflow-source-change", {
+      correlationId,
+      data: { event, path: filePath },
+    });
+    void application.refreshWorkflowSource(filePath, correlationId).catch(
+      (error: unknown) => this.recordWorkflowReconcileFailure(
+        correlationId,
+        error,
+        event,
+      ),
+    );
+  }
+
+  private refreshWorkflow(
+    application: TrailApplication,
+    event: string,
+  ): void {
+    const correlationId = this.diagnostics.createCorrelationId(event);
+    this.diagnostics.record("host.vault.workflow-structure-change", {
+      correlationId,
+      data: { event },
+    });
+    void application.refreshWorkflow(correlationId).catch(
+      (error: unknown) => this.recordWorkflowReconcileFailure(
+        correlationId,
+        error,
+        event,
+      ),
+    );
+  }
+
+  private recordWorkflowReconcileFailure(
+    correlationId: string,
+    error: unknown,
+    event: string,
+  ): void {
+    this.diagnostics.record("host.vault.workflow-reconcile-failed", {
+      correlationId,
+      data: { errorName: errorName(error), event },
+      level: "error",
+    });
+    console.error("Trail Workflow reconciliation failed", error);
   }
 
   private async activateView(trigger: "command" | "ribbon"): Promise<void> {

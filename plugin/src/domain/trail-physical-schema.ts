@@ -75,3 +75,14 @@ export const TRAIL_BOOTSTRAP_FILES: readonly BootstrapMarkdownFile[] = [
     content: TRAIL_CYCLES_EMPTY_MARKDOWN,
   },
 ] as const;
+
+export const TRAIL_PROJECTS_PATH = "Trail/Projects" as const;
+export const TRAIL_PROJECTS_PREFIX = `${TRAIL_PROJECTS_PATH}/` as const;
+
+export function isTrailProjectMarkdownPath(path: string): boolean {
+  return (
+    path.startsWith(TRAIL_PROJECTS_PREFIX)
+    && path.endsWith(".md")
+    && !path.slice(TRAIL_PROJECTS_PREFIX.length).includes("/")
+  );
+}
