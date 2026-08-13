@@ -4,6 +4,9 @@ import {
   normalizeTrailTitle,
   type TrailTriageIssue,
 } from "./trail-issue";
+import type { CreateTriageIssuePlan } from "./trail-triage-plan";
+
+export type { CreateTriageIssuePlan } from "./trail-triage-plan";
 
 export interface QuickCaptureInput {
   readonly title: string;
@@ -15,12 +18,6 @@ export interface CreateTriageIssueCommand {
   readonly issueId: string;
   readonly resolvedDue: number;
   readonly title: string;
-}
-
-export interface CreateTriageIssuePlan {
-  readonly commandId: string;
-  readonly issue: TrailTriageIssue;
-  readonly kind: "create-triage-issue";
 }
 
 export type CreateTriageIssuePlanResult =
@@ -86,7 +83,7 @@ export function normalizeQuickCaptureCommand(
 
 /**
  * Plans one legal Triage creation against Effective/Planning state. The current
- * slice only needs stable-ID uniqueness; later Issue mutations add more effects.
+ * create path only needs stable-ID uniqueness; management mutations use their own planner.
  */
 export function planCreateTriageIssue(
   existingIssueIds: ReadonlySet<string>,

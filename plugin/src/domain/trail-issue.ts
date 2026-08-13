@@ -60,3 +60,32 @@ export function isValidTrailTitle(value: string): boolean {
     && !normalized.includes("\r")
   );
 }
+
+export function sameTrailStringArray(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  return (
+    left.length === right.length
+    && left.every((value, index) => value === right[index])
+  );
+}
+
+/** Compares the canonical facts carried by a Formal Triage Issue. */
+export function sameTrailTriageIssue(
+  left: TrailTriageIssue,
+  right: TrailTriageIssue,
+): boolean {
+  return (
+    left.id === right.id
+    && left.context === right.context
+    && left.title === right.title
+    && left.description === right.description
+    && left.due === right.due
+    && left.priority === right.priority
+    && left.estimate === right.estimate
+    && left.projectId === right.projectId
+    && left.milestoneId === right.milestoneId
+    && sameTrailStringArray(left.labelIds, right.labelIds)
+  );
+}

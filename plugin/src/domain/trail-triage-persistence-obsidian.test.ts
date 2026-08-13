@@ -114,4 +114,86 @@ describe("Obsidian Formal Triage persistence adapter", () => {
 
     expect(fixture.getMarkdown()).toBe(invalid);
   });
+
+  it("updates one Issue against the latest Vault.process snapshot", async () => {
+    const fixture = createFixture(TRAIL_TRIAGE_EMPTY_MARKDOWN);
+    const gateway = createObsidianTriagePersistenceGateway(
+      fixture.app,
+      parseYaml,
+      fileKinds,
+    );
+    const created = await gateway.appendIssue({
+      context: "triage",
+      description: "Body stays.",
+      due: 20,
+      id: "managed",
+      labelIds: [],
+      title: "Managed",
+    });
+    const expectedIssue = created.contribution.issuesById.managed;
+
+    const result = await gateway.updateIssue(
+      expectedIssue,
+      { ...expectedIssue, due: 30, title: "Managed edited" },
+    );
+
+    expect(fixture.processInputs[fixture.processInputs.length - 1]).toContain("## Managed");
+    expect(result.contribution.issuesById.managed).toMatchObject({
+      due: 30,
+      title: "Managed edited",
+    });
+    expect(fixture.getMarkdown()).toContain("Body stays.");
+  });
+
+  it("deletes one guarded Issue and rereads the authoritative result", async () => {
+    const fixture = createFixture(TRAIL_TRIAGE_EMPTY_MARKDOWN);
+    const gateway = createObsidianTriagePersistenceGateway(
+      fixture.app,
+      parseYaml,
+      fileKinds,
+    );
+    const created = await gateway.appendIssue({
+      context: "triage",
+      due: 20,
+      id: "managed",
+      labelIds: [],
+      title: "Managed",
+    });
+
+    const result = await gateway.deleteIssue(
+      created.contribution.issuesById.managed,
+    );
+
+    expect(result.contribution.issuesById.managed).toBeUndefined();
+    expect(fixture.getMarkdown()).not.toContain("## Managed");
+  });
+
+  it("refuses a stale management write instead of overwriting an external edit", async () => {
+    const fixture = createFixture(TRAIL_TRIAGE_EMPTY_MARKDOWN);
+    const gateway = createObsidianTriagePersistenceGateway(
+      fixture.app,
+      parseYaml,
+      fileKinds,
+    );
+    const created = await gateway.appendIssue({
+      context: "triage",
+      due: 20,
+      id: "managed",
+      labelIds: [],
+      title: "Managed",
+    });
+    const expectedIssue = created.contribution.issuesById.managed;
+    fixture.setMarkdown(fixture.getMarkdown().replace(
+      "## Managed",
+      "## External edit",
+    ));
+
+    await expect(gateway.updateIssue(
+      expectedIssue,
+      { ...expectedIssue, due: 30 },
+    )).rejects.toMatchObject({ code: "conflict" });
+
+    expect(fixture.getMarkdown()).toContain("## External edit");
+  });
+
 });

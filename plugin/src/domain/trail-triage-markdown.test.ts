@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import { TRAIL_TRIAGE_EMPTY_MARKDOWN } from "./trail-physical-schema";
 import {
   appendTriageIssueToMarkdown,
+  deleteTriageIssueFromMarkdown,
   parseTriageMarkdown,
   serializeTriageIssue,
+  updateTriageIssueInMarkdown,
   TriageMarkdownMutationError,
   type TrailYamlParser,
 } from "./trail-triage-markdown";
@@ -309,4 +311,138 @@ describe("Formal Triage Markdown", () => {
       parseYaml,
     })).toThrow(TriageMarkdownMutationError);
   });
+
+  it("updates heading and metadata while preserving the existing body bytes", () => {
+    const body = [
+      "Body keeps  two spaces.  ",
+      "",
+      "### Notes",
+      "- [[Link]]",
+    ].join("\n");
+    const original = [
+      TRAIL_TRIAGE_EMPTY_MARKDOWN.trimEnd(),
+      "",
+      issueBlock("Original", {
+        id: "issue-a",
+        context: "triage",
+        due: DUE,
+      }, body),
+      "",
+    ].join("\n");
+    const expectedIssue = parse(original).contribution.issuesById["issue-a"];
+    const nextIssue = {
+      ...expectedIssue,
+      due: DUE + 60_000,
+      title: "Edited title",
+    };
+
+    const next = updateTriageIssueInMarkdown({
+      expectedIssue,
+      filePath: FILE_PATH,
+      issue: nextIssue,
+      markdown: original,
+      parseYaml,
+    });
+    const result = parse(next);
+
+    expect(result.issues).toEqual([]);
+    expect(result.contribution.issuesById["issue-a"]).toEqual(nextIssue);
+    expect(next).toContain("## Edited title");
+    expect(next).toContain(`due":${DUE + 60_000}`);
+    expect(next).toContain(body);
+    expect(next.slice(next.indexOf(body), next.indexOf(body) + body.length)).toBe(body);
+  });
+
+  it("refuses an in-place update when the latest source no longer matches the planned issue", () => {
+    const original = appendTriageIssueToMarkdown({
+      filePath: FILE_PATH,
+      issue: {
+        context: "triage",
+        due: DUE,
+        id: "issue-a",
+        labelIds: [],
+        title: "Original",
+      },
+      markdown: TRAIL_TRIAGE_EMPTY_MARKDOWN,
+      parseYaml,
+    });
+    const expectedIssue = parse(original).contribution.issuesById["issue-a"];
+    const externallyChanged = original.replace("## Original", "## External edit");
+
+    expect(() => updateTriageIssueInMarkdown({
+      expectedIssue,
+      filePath: FILE_PATH,
+      issue: { ...expectedIssue, title: "Local edit" },
+      markdown: externallyChanged,
+      parseYaml,
+    })).toThrow("Triage Issue changed before mutation");
+  });
+
+  it("deletes exactly the guarded target record while preserving its sibling", () => {
+    const first = appendTriageIssueToMarkdown({
+      filePath: FILE_PATH,
+      issue: {
+        context: "triage",
+        description: "Keep this body only with A.",
+        due: DUE,
+        id: "issue-a",
+        labelIds: [],
+        title: "A",
+      },
+      markdown: TRAIL_TRIAGE_EMPTY_MARKDOWN,
+      parseYaml,
+    });
+    const original = appendTriageIssueToMarkdown({
+      filePath: FILE_PATH,
+      issue: {
+        context: "triage",
+        description: "Sibling body.",
+        due: DUE + 1,
+        id: "issue-b",
+        labelIds: [],
+        title: "B",
+      },
+      markdown: first,
+      parseYaml,
+    });
+    const expectedIssue = parse(original).contribution.issuesById["issue-a"];
+
+    const next = deleteTriageIssueFromMarkdown({
+      expectedIssue,
+      filePath: FILE_PATH,
+      markdown: original,
+      parseYaml,
+    });
+    const result = parse(next);
+
+    expect(result.issues).toEqual([]);
+    expect(result.contribution.issuesById["issue-a"]).toBeUndefined();
+    expect(result.contribution.issuesById["issue-b"]?.description).toBe("Sibling body.");
+    expect(next).not.toContain("Keep this body only with A.");
+    expect(next).toContain("Sibling body.");
+  });
+
+  it("refuses delete when the target disappeared from the latest valid source", () => {
+    const original = appendTriageIssueToMarkdown({
+      filePath: FILE_PATH,
+      issue: {
+        context: "triage",
+        due: DUE,
+        id: "issue-a",
+        labelIds: [],
+        title: "A",
+      },
+      markdown: TRAIL_TRIAGE_EMPTY_MARKDOWN,
+      parseYaml,
+    });
+    const expectedIssue = parse(original).contribution.issuesById["issue-a"];
+
+    expect(() => deleteTriageIssueFromMarkdown({
+      expectedIssue,
+      filePath: FILE_PATH,
+      markdown: TRAIL_TRIAGE_EMPTY_MARKDOWN,
+      parseYaml,
+    })).toThrow("Triage Issue is missing");
+  });
+
 });

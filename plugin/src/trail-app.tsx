@@ -1,6 +1,7 @@
 import {
   useState,
   type ChangeEvent,
+  type FormEvent,
   type SyntheticEvent,
 } from "react";
 import { useStore } from "zustand";
@@ -13,10 +14,19 @@ import {
   selectIsTriageIssuePending,
   type TrailRuntimeStore,
 } from "./domain/trail-runtime";
+import { formatLocalDateTimeInTimeZone } from "./domain/trail-temporal";
 import type { TriageCaptureReceipt } from "./domain/trail-triage-intake";
+import type { TriageManagementReceipt } from "./domain/trail-triage-management";
 
 export interface TrailAppProps {
   readonly onCapture: (title: string) => TriageCaptureReceipt;
+  readonly onDefer: (expectedIssue: TrailTriageIssue) => TriageManagementReceipt;
+  readonly onDelete: (expectedIssue: TrailTriageIssue) => TriageManagementReceipt;
+  readonly onEdit: (
+    expectedIssue: TrailTriageIssue,
+    title: string,
+    dueLocalValue: string,
+  ) => TriageManagementReceipt;
   readonly runtimeStore: TrailRuntimeStore;
 }
 
@@ -34,6 +44,9 @@ function formatDue(due: number, timezone: string): string {
 
 export function TrailApp({
   onCapture,
+  onDefer,
+  onDelete,
+  onEdit,
   runtimeStore,
 }: TrailAppProps) {
   const availability = useStore(
@@ -79,6 +92,9 @@ export function TrailApp({
       {availability.kind === "ready" ? (
         <TriagePage
           onCapture={onCapture}
+          onDefer={onDefer}
+          onDelete={onDelete}
+          onEdit={onEdit}
           runtimeStore={runtimeStore}
           timezone={availability.timezone}
         />
@@ -112,12 +128,18 @@ function StatusPanel({
 
 interface TriagePageProps {
   readonly onCapture: TrailAppProps["onCapture"];
+  readonly onDefer: TrailAppProps["onDefer"];
+  readonly onDelete: TrailAppProps["onDelete"];
+  readonly onEdit: TrailAppProps["onEdit"];
   readonly runtimeStore: TrailRuntimeStore;
   readonly timezone: string;
 }
 
 function TriagePage({
   onCapture,
+  onDefer,
+  onDelete,
+  onEdit,
   runtimeStore,
   timezone,
 }: TriagePageProps) {
@@ -131,6 +153,7 @@ function TriagePage({
   );
   const [draft, setDraft] = useState("");
   const [captureError, setCaptureError] = useState<string>();
+  const [managementError, setManagementError] = useState<string>();
   const sourceIsValid = sourceIssues.length === 0;
 
   const submitCapture = (
@@ -151,6 +174,22 @@ function TriagePage({
       });
     } catch (error: unknown) {
       setCaptureError(errorMessage(error));
+    }
+  };
+
+  const runManagementAction = (
+    action: () => TriageManagementReceipt,
+  ): boolean => {
+    try {
+      const receipt = action();
+      setManagementError(undefined);
+      void receipt.completion.catch((error: unknown) => {
+        setManagementError(errorMessage(error));
+      });
+      return true;
+    } catch (error: unknown) {
+      setManagementError(errorMessage(error));
+      return false;
     }
   };
 
@@ -198,8 +237,8 @@ function TriagePage({
           <div>
             <strong>Triage.md has a data issue.</strong>
             <p>
-              Trail is showing the last known good state and has paused Quick Capture
-              until the Markdown becomes valid again.
+              Trail is showing the last known good state and has paused Triage
+              actions until the Markdown becomes valid again.
             </p>
           </div>
           <ul>
@@ -210,6 +249,12 @@ function TriagePage({
             ))}
           </ul>
         </section>
+      ) : null}
+
+      {managementError !== undefined ? (
+        <p className="trail-inline-error trail-management-error" role="alert">
+          {managementError}
+        </p>
       ) : null}
 
       <section className="trail-triage-list" aria-labelledby="trail-list-title">
@@ -234,7 +279,12 @@ function TriagePage({
               <TriageIssueRow
                 issueId={issueId}
                 key={issueId}
+                onDefer={(issue) => runManagementAction(() => onDefer(issue))}
+                onDelete={(issue) => runManagementAction(() => onDelete(issue))}
+                onEdit={(issue, title, dueLocalValue) =>
+                  runManagementAction(() => onEdit(issue, title, dueLocalValue))}
                 runtimeStore={runtimeStore}
+                sourceIsValid={sourceIsValid}
                 timezone={timezone}
               />
             ))}
@@ -247,13 +297,25 @@ function TriagePage({
 
 interface TriageIssueRowProps {
   readonly issueId: string;
+  readonly onDefer: (issue: TrailTriageIssue) => boolean;
+  readonly onDelete: (issue: TrailTriageIssue) => boolean;
+  readonly onEdit: (
+    issue: TrailTriageIssue,
+    title: string,
+    dueLocalValue: string,
+  ) => boolean;
   readonly runtimeStore: TrailRuntimeStore;
+  readonly sourceIsValid: boolean;
   readonly timezone: string;
 }
 
 function TriageIssueRow({
   issueId,
+  onDefer,
+  onDelete,
+  onEdit,
   runtimeStore,
+  sourceIsValid,
   timezone,
 }: TriageIssueRowProps) {
   const issue = useStore(
@@ -264,23 +326,146 @@ function TriageIssueRow({
     runtimeStore,
     (state) => selectIsTriageIssuePending(state, issueId),
   );
+  const [editBaseline, setEditBaseline] = useState<TrailTriageIssue>();
+  const [titleDraft, setTitleDraft] = useState("");
+  const [dueDraft, setDueDraft] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (issue === undefined) {
     return null;
   }
+
+  const actionsDisabled = isPending || !sourceIsValid;
+  const beginEdit = (): void => {
+    setConfirmDelete(false);
+    setEditBaseline(issue);
+    setTitleDraft(issue.title);
+    setDueDraft(formatLocalDateTimeInTimeZone(issue.due, timezone));
+  };
+  const cancelEdit = (): void => {
+    setEditBaseline(undefined);
+  };
+  const submitEdit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    if (
+      editBaseline === undefined
+      || actionsDisabled
+      || titleDraft.trim() === ""
+      || dueDraft === ""
+    ) {
+      return;
+    }
+    if (onEdit(editBaseline, titleDraft, dueDraft)) {
+      setEditBaseline(undefined);
+    }
+  };
 
   return (
     <li
       className={isPending ? "trail-issue-row is-pending" : "trail-issue-row"}
       data-pending={isPending ? "true" : undefined}
     >
-      <div className="trail-issue-row__body">
-        <strong className="trail-issue-row__title">{issue.title}</strong>
-        {issue.description !== undefined ? (
-          <p className="trail-issue-row__description">{issue.description}</p>
-        ) : null}
-      </div>
-      <IssueDue issue={issue} timezone={timezone} />
+      {editBaseline !== undefined ? (
+        <form className="trail-issue-editor" onSubmit={submitEdit}>
+          <label className="trail-issue-editor__field">
+            <span>Title</span>
+            <input
+              autoComplete="off"
+              disabled={actionsDisabled}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setTitleDraft(event.target.value);
+              }}
+              value={titleDraft}
+            />
+          </label>
+          <label className="trail-issue-editor__field">
+            <span>{`Due (${timezone})`}</span>
+            <input
+              disabled={actionsDisabled}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setDueDraft(event.target.value);
+              }}
+              type="datetime-local"
+              value={dueDraft}
+            />
+          </label>
+          <div className="trail-issue-editor__actions">
+            <button
+              className="mod-cta"
+              disabled={
+                actionsDisabled
+                || titleDraft.trim() === ""
+                || dueDraft === ""
+              }
+              type="submit"
+            >
+              Save
+            </button>
+            <button disabled={isPending} onClick={cancelEdit} type="button">
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <div className="trail-issue-row__body">
+            <strong className="trail-issue-row__title">{issue.title}</strong>
+            {issue.description !== undefined ? (
+              <p className="trail-issue-row__description">{issue.description}</p>
+            ) : null}
+          </div>
+          <div className="trail-issue-row__meta">
+            <IssueDue issue={issue} timezone={timezone} />
+            <div className="trail-issue-row__actions">
+              <button disabled={actionsDisabled} onClick={beginEdit} type="button">
+                Edit
+              </button>
+              <button
+                disabled={actionsDisabled}
+                onClick={() => {
+                  setConfirmDelete(false);
+                  onDefer(issue);
+                }}
+                title="Move this Triage Due seven calendar days later"
+                type="button"
+              >
+                Defer 7 days
+              </button>
+              {confirmDelete ? (
+                <span className="trail-delete-confirmation">
+                  <button
+                    className="mod-warning"
+                    disabled={actionsDisabled}
+                    onClick={() => {
+                      if (onDelete(issue)) {
+                        setConfirmDelete(false);
+                      }
+                    }}
+                    type="button"
+                  >
+                    Confirm delete
+                  </button>
+                  <button
+                    disabled={isPending}
+                    onClick={() => setConfirmDelete(false)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  disabled={actionsDisabled}
+                  onClick={() => setConfirmDelete(true)}
+                  type="button"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </li>
   );
 }

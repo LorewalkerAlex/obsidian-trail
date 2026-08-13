@@ -5,6 +5,7 @@ import {
   isTrailPriority,
   isValidTrailTitle,
   normalizeTrailTitle,
+  sameTrailTriageIssue,
   type TrailRecordSourceRange,
   type TrailTriageIssue,
 } from "./trail-issue";
@@ -47,8 +48,10 @@ export interface ParseTriageMarkdownInput {
 }
 
 export type TriageMarkdownMutationErrorCode =
+  | "conflict"
   | "duplicate-id"
   | "source-invalid"
+  | "target-missing"
   | "verification-failed";
 
 export class TriageMarkdownMutationError extends Error {
@@ -689,6 +692,124 @@ export function appendTriageIssueToMarkdown(
     throw new TriageMarkdownMutationError(
       "verification-failed",
       "Generated Triage Markdown failed verification",
+    );
+  }
+
+  return next;
+}
+
+
+interface TriageIssueMutationInput extends ParseTriageMarkdownInput {
+  readonly expectedIssue: TrailTriageIssue;
+}
+
+function requireCurrentTriageRecord(
+  input: TriageIssueMutationInput,
+): {
+  readonly issue: TrailTriageIssue;
+  readonly source: TrailRecordSourceRange;
+} {
+  const current = parseTriageMarkdown(input);
+  if (current.issues.length > 0) {
+    throw new TriageMarkdownMutationError(
+      "source-invalid",
+      "Refused to mutate an invalid Triage source",
+    );
+  }
+
+  const issue = current.contribution.issuesById[input.expectedIssue.id];
+  const source = current.contribution.sourceByIssueId[input.expectedIssue.id];
+  if (issue === undefined || source === undefined) {
+    throw new TriageMarkdownMutationError(
+      "target-missing",
+      `Triage Issue is missing: ${input.expectedIssue.id}`,
+    );
+  }
+  if (!sameTrailTriageIssue(issue, input.expectedIssue)) {
+    throw new TriageMarkdownMutationError(
+      "conflict",
+      `Triage Issue changed before mutation: ${input.expectedIssue.id}`,
+    );
+  }
+
+  return { issue, source };
+}
+
+/**
+ * Replaces only the record heading and metadata marker on the latest valid
+ * snapshot. The Markdown body stays byte-for-byte untouched.
+ */
+export function updateTriageIssueInMarkdown(
+  input: TriageIssueMutationInput & { readonly issue: TrailTriageIssue },
+): string {
+  if (input.issue.id !== input.expectedIssue.id) {
+    throw new TriageMarkdownMutationError(
+      "verification-failed",
+      "Triage Issue update cannot change stable identity",
+    );
+  }
+
+  // Reuse serializer validation without using its body-normalizing output.
+  serializeTriageIssue(input.issue);
+  const current = requireCurrentTriageRecord(input);
+  const headingLine = readLine(input.markdown, current.source.startOffset);
+  const nextMarker = `<!-- data ${JSON.stringify(canonicalMetadata(input.issue))} -->`;
+
+  // Apply the later marker replacement first so the earlier heading offsets remain
+  // valid even when metadata length changes.
+  let next = [
+    input.markdown.slice(0, current.source.markerStartOffset),
+    nextMarker,
+    input.markdown.slice(current.source.markerEndOffset),
+  ].join("");
+  next = [
+    next.slice(0, current.source.startOffset),
+    `## ${normalizeTrailTitle(input.issue.title)}`,
+    next.slice(headingLine.endOffset),
+  ].join("");
+
+  const verified = parseTriageMarkdown({
+    filePath: input.filePath,
+    markdown: next,
+    parseYaml: input.parseYaml,
+  });
+  const verifiedIssue = verified.contribution.issuesById[input.issue.id];
+  if (
+    verified.issues.length > 0
+    || verifiedIssue === undefined
+    || !sameTrailTriageIssue(verifiedIssue, input.issue)
+  ) {
+    throw new TriageMarkdownMutationError(
+      "verification-failed",
+      "Generated Triage Issue update failed verification",
+    );
+  }
+
+  return next;
+}
+
+/** Removes exactly one guarded record from the latest valid Triage snapshot. */
+export function deleteTriageIssueFromMarkdown(
+  input: TriageIssueMutationInput,
+): string {
+  const current = requireCurrentTriageRecord(input);
+  const next = [
+    input.markdown.slice(0, current.source.startOffset),
+    input.markdown.slice(current.source.endOffset),
+  ].join("");
+  const verified = parseTriageMarkdown({
+    filePath: input.filePath,
+    markdown: next,
+    parseYaml: input.parseYaml,
+  });
+
+  if (
+    verified.issues.length > 0
+    || verified.contribution.issuesById[input.expectedIssue.id] !== undefined
+  ) {
+    throw new TriageMarkdownMutationError(
+      "verification-failed",
+      "Generated Triage Issue deletion failed verification",
     );
   }
 

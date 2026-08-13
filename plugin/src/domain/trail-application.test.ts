@@ -13,8 +13,15 @@ import type {
   WorkspaceBootstrapGateway,
   WorkspaceProbe,
 } from "./trail-workspace";
-import type { TrailTriagePersistenceGateway } from "./trail-triage-intake";
-import { parseTriageMarkdown } from "./trail-triage-markdown";
+import type { TrailTriageIssue } from "./trail-issue";
+import {
+  appendTriageIssueToMarkdown,
+  deleteTriageIssueFromMarkdown,
+  parseTriageMarkdown,
+  updateTriageIssueInMarkdown,
+  type TrailTriageParseResult,
+} from "./trail-triage-markdown";
+import type { TrailTriagePersistence } from "./trail-triage-persistence";
 
 function parseYaml(yaml: string): unknown {
   return { kind: yaml.trim().split(":")[1]?.trim() };
@@ -87,11 +94,69 @@ function createWorkspaceGateway(initialProbe: WorkspaceProbe): WorkspaceBootstra
   };
 }
 
-function createPersistence(): TrailTriagePersistenceGateway {
+function createPersistence(): TrailTriagePersistence {
   return {
     appendIssue: async () => emptyTriageResult(),
+    deleteIssue: async () => emptyTriageResult(),
     readLatest: async () => emptyTriageResult(),
+    updateIssue: async () => emptyTriageResult(),
   };
+}
+
+class MutableTriagePersistence implements TrailTriagePersistence {
+  public markdown = TRAIL_BOOTSTRAP_FILES[0].content;
+  public readonly deleteCalls: string[] = [];
+  public readonly updateCalls: TrailTriageIssue[] = [];
+
+  public seed(issue: TrailTriageIssue): void {
+    this.markdown = appendTriageIssueToMarkdown({
+      filePath: "Trail/Collections/Triage.md",
+      issue,
+      markdown: this.markdown,
+      parseYaml,
+    });
+  }
+
+  public async appendIssue(issue: TrailTriageIssue): Promise<TrailTriageParseResult> {
+    this.seed(issue);
+    return this.readLatest();
+  }
+
+  public async deleteIssue(
+    expectedIssue: TrailTriageIssue,
+  ): Promise<TrailTriageParseResult> {
+    this.deleteCalls.push(expectedIssue.id);
+    this.markdown = deleteTriageIssueFromMarkdown({
+      expectedIssue,
+      filePath: "Trail/Collections/Triage.md",
+      markdown: this.markdown,
+      parseYaml,
+    });
+    return this.readLatest();
+  }
+
+  public async readLatest(): Promise<TrailTriageParseResult> {
+    return parseTriageMarkdown({
+      filePath: "Trail/Collections/Triage.md",
+      markdown: this.markdown,
+      parseYaml,
+    });
+  }
+
+  public async updateIssue(
+    expectedIssue: TrailTriageIssue,
+    issue: TrailTriageIssue,
+  ): Promise<TrailTriageParseResult> {
+    this.updateCalls.push(issue);
+    this.markdown = updateTriageIssueInMarkdown({
+      expectedIssue,
+      filePath: "Trail/Collections/Triage.md",
+      issue,
+      markdown: this.markdown,
+      parseYaml,
+    });
+    return this.readLatest();
+  }
 }
 
 describe("Formal Trail application startup", () => {
@@ -130,10 +195,12 @@ describe("Formal Trail application startup", () => {
       now: () => 0,
       persistence: {
         appendIssue: async () => emptyTriageResult(),
+        deleteIssue: async () => emptyTriageResult(),
         readLatest: async () => {
           reads += 1;
           return emptyTriageResult();
         },
+        updateIssue: async () => emptyTriageResult(),
       },
       resolveHostTimezone: () => "UTC",
       runtimeStore,
@@ -220,4 +287,138 @@ describe("Formal Trail application startup", () => {
       "Quick Capture is paused until Triage.md is valid again",
     );
   });
+
+  it("preserves the exact existing Due when editing only the title", async () => {
+    let id = 0;
+    const pluginData = createDefaultTrailPluginData({
+      createId: () => `status-${id += 1}`,
+      timezone: "Asia/Shanghai",
+    });
+    const due = Date.UTC(2026, 7, 13, 2, 30, 45, 900);
+    const persistence = new MutableTriagePersistence();
+    persistence.seed({
+      context: "triage",
+      due,
+      id: "issue-a",
+      labelIds: [],
+      title: "Original",
+    });
+    const runtimeStore = createTrailRuntimeStore();
+    const application = new TrailApplication({
+      createId: () => "command-edit",
+      mutationQueue: new TrailMutationQueue(),
+      now: () => due,
+      persistence,
+      resolveHostTimezone: () => "UTC",
+      runtimeStore,
+      workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
+    });
+    await application.initialize();
+
+    const receipt = application.editTriageIssue(
+      runtimeStore.getState().committed.triageIssuesById["issue-a"],
+      "Edited",
+      "2026-08-13T10:30",
+    );
+    await receipt.completion;
+
+    expect(persistence.updateCalls).toHaveLength(1);
+    expect(persistence.updateCalls[0]).toMatchObject({
+      due,
+      title: "Edited",
+    });
+  });
+
+  it("resolves changed Due input and Defer through the configured timezone", async () => {
+    let id = 0;
+    const pluginData = createDefaultTrailPluginData({
+      createId: () => `status-${id += 1}`,
+      timezone: "Asia/Shanghai",
+    });
+    const persistence = new MutableTriagePersistence();
+    persistence.seed({
+      context: "triage",
+      due: Date.UTC(2026, 7, 13, 2, 30, 45, 900),
+      id: "issue-a",
+      labelIds: [],
+      title: "Original",
+    });
+    const runtimeStore = createTrailRuntimeStore();
+    const ids = ["command-edit", "command-defer"];
+    const application = new TrailApplication({
+      createId: () => ids.shift() ?? "unexpected",
+      mutationQueue: new TrailMutationQueue(),
+      now: () => Date.UTC(2026, 7, 13, 0),
+      persistence,
+      resolveHostTimezone: () => "UTC",
+      runtimeStore,
+      workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
+    });
+    await application.initialize();
+
+    await application.editTriageIssue(
+      runtimeStore.getState().committed.triageIssuesById["issue-a"],
+      "Original",
+      "2026-08-14T10:30",
+    ).completion;
+    expect(persistence.updateCalls[0].due).toBe(Date.UTC(2026, 7, 14, 2, 30));
+
+    await application.deferTriageIssue(
+      runtimeStore.getState().committed.triageIssuesById["issue-a"],
+    ).completion;
+    expect(persistence.updateCalls[1].due).toBe(Date.UTC(2026, 7, 21, 2, 30));
+  });
+
+  it("routes delete through Triage management and blocks management on Data Issues", async () => {
+    let id = 0;
+    const pluginData = createDefaultTrailPluginData({
+      createId: () => `status-${id += 1}`,
+      timezone: "UTC",
+    });
+    const persistence = new MutableTriagePersistence();
+    persistence.seed({
+      context: "triage",
+      due: 20,
+      id: "issue-a",
+      labelIds: [],
+      title: "Delete me",
+    });
+    const runtimeStore = createTrailRuntimeStore();
+    const application = new TrailApplication({
+      createId: () => "command-delete",
+      mutationQueue: new TrailMutationQueue(),
+      now: () => 10,
+      persistence,
+      resolveHostTimezone: () => "UTC",
+      runtimeStore,
+      workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
+    });
+    await application.initialize();
+
+    await application.deleteTriageIssue(
+      runtimeStore.getState().committed.triageIssuesById["issue-a"],
+    ).completion;
+    expect(persistence.deleteCalls).toEqual(["issue-a"]);
+
+    runtimeStore.setState((state) => ({
+      ...state,
+      committed: {
+        ...state.committed,
+        sourceIssues: [{
+          code: "test-invalid",
+          filePath: "Trail/Collections/Triage.md",
+          message: "invalid fixture",
+          scope: "file",
+        }],
+      },
+    }));
+    expect(() => application.deleteTriageIssue({
+      context: "triage",
+      due: 30,
+      id: "missing",
+      labelIds: [],
+      title: "Missing",
+    })).toThrow("Triage actions are paused until Triage.md is valid again");
+  });
+
 });

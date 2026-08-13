@@ -161,4 +161,76 @@ describe("Formal Runtime Triage projection", () => {
       "second",
     ]);
   });
+
+  it("projects pending updates centrally and reorders by the optimistic Due", () => {
+    const store = createTrailRuntimeStore();
+    reconcileTriageContribution(store, contribution([
+      { due: 10, id: "a", title: "A" },
+      { due: 20, id: "b", title: "B" },
+    ]));
+    const expectedIssue = store.getState().committed.triageIssuesById.b;
+
+    addPendingPlan(store, {
+      commandId: "edit-b",
+      expectedIssue,
+      issue: {
+        ...expectedIssue,
+        due: 5,
+        title: "B edited",
+      },
+      kind: "update-triage-issue",
+    });
+
+    expect(selectEffectiveTriageIssueIds(store.getState())).toEqual(["b", "a"]);
+    expect(selectEffectiveTriageIssueById(store.getState(), "b")?.title).toBe(
+      "B edited",
+    );
+    expect(selectIsTriageIssuePending(store.getState(), "b")).toBe(true);
+    expect(store.getState().committed.triageIssuesById.b.title).toBe("B");
+  });
+
+  it("projects pending deletes centrally and restores the row when the plan is removed", () => {
+    const store = createTrailRuntimeStore();
+    reconcileTriageContribution(store, contribution([
+      { due: 10, id: "a", title: "A" },
+    ]));
+    const expectedIssue = store.getState().committed.triageIssuesById.a;
+
+    addPendingPlan(store, {
+      commandId: "delete-a",
+      expectedIssue,
+      issueId: "a",
+      kind: "delete-triage-issue",
+    });
+
+    expect(selectEffectiveTriageIssueIds(store.getState())).toEqual([]);
+    expect(selectEffectiveTriageIssueById(store.getState(), "a")).toBeUndefined();
+    expect(selectIsTriageIssuePending(store.getState(), "a")).toBe(true);
+
+    removePendingPlan(store, "delete-a");
+
+    expect(selectEffectiveTriageIssueIds(store.getState())).toEqual(["a"]);
+    expect(selectEffectiveTriageIssueById(store.getState(), "a")?.title).toBe("A");
+  });
+
+  it("returns entity and field-level reconcile differences without field values", () => {
+    const store = createTrailRuntimeStore();
+    reconcileTriageContribution(store, contribution([
+      { due: 10, id: "a", title: "A" },
+      { due: 20, id: "b", title: "B" },
+    ]));
+
+    const result = reconcileTriageContribution(store, contribution([
+      { due: 11, id: "a", title: "A edited" },
+      { due: 30, id: "c", title: "C" },
+    ]));
+
+    expect(result.diff).toEqual({
+      addedIds: ["c"],
+      changedFieldsById: { a: ["due", "title"] },
+      changedIds: ["a"],
+      removedIds: ["b"],
+    });
+  });
+
 });

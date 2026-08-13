@@ -22,16 +22,10 @@ import {
 import type {
   TrailTriageContribution,
   TrailTriageParseIssue,
-  TrailTriageParseResult,
 } from "./trail-triage-markdown";
+import type { TrailTriagePersistenceGateway } from "./trail-triage-persistence";
 
-export interface TrailTriagePersistenceGateway {
-  readonly appendIssue: (
-    issue: TrailTriageIssue,
-    correlationId?: string,
-  ) => Promise<TrailTriageParseResult>;
-  readonly readLatest: () => Promise<TrailTriageParseResult>;
-}
+export type { TrailTriagePersistenceGateway } from "./trail-triage-persistence";
 
 export interface TriageCaptureReceipt {
   readonly completion: Promise<void>;
@@ -73,92 +67,6 @@ function issueCodes(
   issues: readonly TrailTriageParseIssue[],
 ): readonly string[] {
   return issues.map((issue) => issue.code);
-}
-
-
-type TriageDiagnosticField =
-  | "context"
-  | "description"
-  | "due"
-  | "estimate"
-  | "labelIds"
-  | "milestoneId"
-  | "priority"
-  | "projectId"
-  | "title";
-
-interface TriageReconcileDiff {
-  readonly addedIds: readonly string[];
-  readonly changedFieldsById: Readonly<Record<
-    string,
-    readonly TriageDiagnosticField[]
-  >>;
-  readonly changedIds: readonly string[];
-  readonly removedIds: readonly string[];
-}
-
-function sameStringArray(
-  left: readonly string[],
-  right: readonly string[],
-): boolean {
-  return (
-    left.length === right.length
-    && left.every((value, index) => value === right[index])
-  );
-}
-
-function changedTriageFields(
-  previous: TrailTriageIssue,
-  next: TrailTriageIssue,
-): readonly TriageDiagnosticField[] {
-  const changed: TriageDiagnosticField[] = [];
-
-  if (previous.context !== next.context) changed.push("context");
-  if (previous.description !== next.description) changed.push("description");
-  if (previous.due !== next.due) changed.push("due");
-  if (previous.estimate !== next.estimate) changed.push("estimate");
-  if (!sameStringArray(previous.labelIds, next.labelIds)) changed.push("labelIds");
-  if (previous.milestoneId !== next.milestoneId) changed.push("milestoneId");
-  if (previous.priority !== next.priority) changed.push("priority");
-  if (previous.projectId !== next.projectId) changed.push("projectId");
-  if (previous.title !== next.title) changed.push("title");
-
-  return changed;
-}
-
-/**
- * Produces privacy-preserving reconcile diagnostics: entity identity and changed
- * field names are useful for debugging, while field values and Markdown remain
- * outside the trace.
- */
-function buildTriageReconcileDiff(
-  previous: Readonly<Record<string, TrailTriageIssue>>,
-  next: Readonly<Record<string, TrailTriageIssue>>,
-): TriageReconcileDiff {
-  const previousIds = new Set(Object.keys(previous));
-  const nextIds = new Set(Object.keys(next));
-  const addedIds = [...nextIds].filter((id) => !previousIds.has(id)).sort();
-  const removedIds = [...previousIds].filter((id) => !nextIds.has(id)).sort();
-  const changedFieldsById: Record<string, readonly TriageDiagnosticField[]> = {};
-
-  for (const id of [...nextIds].filter((value) => previousIds.has(value)).sort()) {
-    const previousIssue = previous[id];
-    const nextIssue = next[id];
-    if (previousIssue === undefined || nextIssue === undefined) {
-      continue;
-    }
-    const changedFields = changedTriageFields(previousIssue, nextIssue);
-    if (changedFields.length > 0) {
-      changedFieldsById[id] = changedFields;
-    }
-  }
-
-  return {
-    addedIds,
-    changedFieldsById,
-    changedIds: Object.keys(changedFieldsById).sort(),
-    removedIds,
-  };
 }
 
 /**
@@ -413,21 +321,18 @@ export class TrailTriageIntakeService {
     reason: string,
     correlationId?: string,
   ): void {
-    const previous = this.runtimeStore.getState().committed.triageIssuesById;
-    const diff = buildTriageReconcileDiff(previous, contribution.issuesById);
-    reconcileTriageContribution(this.runtimeStore, contribution);
-    const committed = this.runtimeStore.getState().committed;
+    const result = reconcileTriageContribution(this.runtimeStore, contribution);
 
     this.diagnostics.record("runtime.triage.reconciled", {
       correlationId,
       data: {
-        addedIds: diff.addedIds,
-        changedFieldsById: diff.changedFieldsById,
-        changedIds: diff.changedIds,
-        committedRevision: committed.revision,
+        addedIds: result.diff.addedIds,
+        changedFieldsById: result.diff.changedFieldsById,
+        changedIds: result.diff.changedIds,
+        committedRevision: result.revision,
         reason,
-        removedIds: diff.removedIds,
-        triageCount: committed.triageIssueIds.length,
+        removedIds: result.diff.removedIds,
+        triageCount: result.triageCount,
       },
     });
   }

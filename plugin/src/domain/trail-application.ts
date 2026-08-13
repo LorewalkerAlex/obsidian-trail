@@ -4,22 +4,31 @@ import {
 } from "../diagnostics/trail-diagnostics";
 import { TrailMutationQueue } from "./trail-mutation-queue";
 import { TRAIL_TRIAGE_PATH } from "./trail-physical-schema";
+import type { TrailTriageIssue } from "./trail-issue";
+import {
+  setTrailRuntimeAvailability,
+  type TrailRuntimeStore,
+} from "./trail-runtime";
+import {
+  addCalendarDaysInTimeZone,
+  formatLocalDateTimeInTimeZone,
+  parseLocalDateTimeInTimeZone,
+} from "./trail-temporal";
+import {
+  TrailTriageIntakeService,
+  type TriageCaptureReceipt,
+} from "./trail-triage-intake";
+import {
+  TrailTriageManagementService,
+  type TriageManagementReceipt,
+} from "./trail-triage-management";
+import type { TrailTriagePersistence } from "./trail-triage-persistence";
 import {
   classifyWorkspace,
   executeFreshWorkspaceBootstrap,
   type WorkspaceBootstrapGateway,
   type WorkspaceClassification,
 } from "./trail-workspace";
-import {
-  setTrailRuntimeAvailability,
-  type TrailRuntimeStore,
-} from "./trail-runtime";
-import { addCalendarDaysInTimeZone } from "./trail-temporal";
-import {
-  TrailTriageIntakeService,
-  type TriageCaptureReceipt,
-  type TrailTriagePersistenceGateway,
-} from "./trail-triage-intake";
 
 export type TrailApplicationErrorCode =
   | "not-ready"
@@ -40,7 +49,7 @@ export interface TrailApplicationDependencies {
   readonly diagnostics?: TrailDiagnostics;
   readonly mutationQueue: TrailMutationQueue;
   readonly now: () => number;
-  readonly persistence: TrailTriagePersistenceGateway;
+  readonly persistence: TrailTriagePersistence;
   readonly resolveHostTimezone: () => string;
   readonly runtimeStore: TrailRuntimeStore;
   readonly workspace: WorkspaceBootstrapGateway;
@@ -56,13 +65,20 @@ function errorName(error: unknown): string {
   return error instanceof Error ? error.name : "UnknownError";
 }
 
+interface ReadyTriageManagement {
+  readonly management: TrailTriageManagementService;
+  readonly timezone: string;
+}
+
 /**
  * Composition-independent Formal application layer. It owns startup/bootstrap,
- * creates the Triage Intake service only after Configuration is trustworthy, and
- * exposes UI-facing capture/refresh actions without leaking Obsidian host APIs.
+ * temporal input policy, and UI-facing Triage actions without leaking Obsidian
+ * host APIs into React or Domain planners.
  */
 export class TrailApplication {
   private intake: TrailTriageIntakeService | null = null;
+  private management: TrailTriageManagementService | null = null;
+  private timezone: string | null = null;
   private readonly diagnostics: TrailDiagnostics;
 
   public constructor(
@@ -110,7 +126,7 @@ export class TrailApplication {
       }
 
       if (!classification.canLoad || classification.pluginData.kind !== "valid") {
-        this.intake = null;
+        this.clearTriageServices();
         const message = blockerMessage(classification);
         setTrailRuntimeAvailability(runtimeStore, {
           kind: "blocked",
@@ -140,12 +156,21 @@ export class TrailApplication {
         },
         this.diagnostics,
       );
+      const management = new TrailTriageManagementService(
+        runtimeStore,
+        mutationQueue,
+        persistence,
+        { createId, now },
+        this.diagnostics,
+      );
 
       this.diagnostics.record("triage.initialize.started", {
         correlationId: operationId,
       });
       await intake.initialize(operationId);
       this.intake = intake;
+      this.management = management;
+      this.timezone = timezone;
       setTrailRuntimeAvailability(runtimeStore, {
         kind: "ready",
         timezone,
@@ -160,7 +185,7 @@ export class TrailApplication {
       });
       return classification;
     } catch (error: unknown) {
-      this.intake = null;
+      this.clearTriageServices();
       setTrailRuntimeAvailability(runtimeStore, {
         kind: "error",
         message: error instanceof Error
@@ -195,21 +220,55 @@ export class TrailApplication {
         "Trail is not ready for Quick Capture",
       );
     }
-    if (state.committed.sourceIssues.length > 0) {
-      this.diagnostics.record("application.capture.rejected", {
-        data: {
-          reason: "triage-invalid",
-          sourceIssueCount: state.committed.sourceIssues.length,
-        },
-        level: "warn",
-      });
-      throw new TrailApplicationError(
-        "triage-invalid",
-        "Quick Capture is paused until Triage.md is valid again",
-      );
-    }
-
+    this.assertTriageSourceValid(
+      "application.capture.rejected",
+      "Quick Capture is paused until Triage.md is valid again",
+    );
     return this.intake.capture({ title });
+  }
+
+  public editTriageIssue(
+    expectedIssue: TrailTriageIssue,
+    title: string,
+    dueLocalValue: string,
+  ): TriageManagementReceipt {
+    const ready = this.requireTriageManagement(expectedIssue.id, "edit");
+    const currentDueLocal = formatLocalDateTimeInTimeZone(
+      expectedIssue.due,
+      ready.timezone,
+    );
+    const due = dueLocalValue === currentDueLocal
+      ? expectedIssue.due
+      : parseLocalDateTimeInTimeZone(dueLocalValue, ready.timezone);
+    this.diagnostics.record("application.triage.edit.requested", {
+      data: {
+        dueChanged: due !== expectedIssue.due,
+        issueId: expectedIssue.id,
+        titleLength: title.length,
+      },
+    });
+    return ready.management.edit({ due, expectedIssue, title });
+  }
+
+  public deferTriageIssue(expectedIssue: TrailTriageIssue): TriageManagementReceipt {
+    const ready = this.requireTriageManagement(expectedIssue.id, "defer");
+    const due = addCalendarDaysInTimeZone(
+      expectedIssue.due,
+      ready.timezone,
+      7,
+    );
+    this.diagnostics.record("application.triage.defer.requested", {
+      data: { issueId: expectedIssue.id },
+    });
+    return ready.management.defer({ due, expectedIssue });
+  }
+
+  public deleteTriageIssue(expectedIssue: TrailTriageIssue): TriageManagementReceipt {
+    const ready = this.requireTriageManagement(expectedIssue.id, "delete");
+    this.diagnostics.record("application.triage.delete.requested", {
+      data: { issueId: expectedIssue.id },
+    });
+    return ready.management.delete(expectedIssue);
   }
 
   public async refreshTriage(correlationId?: string): Promise<boolean> {
@@ -240,7 +299,7 @@ export class TrailApplication {
     message: string,
     correlationId?: string,
   ): void {
-    this.intake = null;
+    this.clearTriageServices();
     setTrailRuntimeAvailability(this.dependencies.runtimeStore, {
       kind: "blocked",
       message,
@@ -254,8 +313,55 @@ export class TrailApplication {
 
   public dispose(): void {
     this.diagnostics.record("application.disposed");
-    this.intake = null;
+    this.clearTriageServices();
     this.dependencies.mutationQueue.dispose();
+  }
+
+  private assertTriageSourceValid(
+    diagnosticEvent: string,
+    message = "Triage actions are paused until Triage.md is valid again",
+  ): void {
+    const state = this.dependencies.runtimeStore.getState();
+    if (state.committed.sourceIssues.length === 0) {
+      return;
+    }
+    this.diagnostics.record(diagnosticEvent, {
+      data: {
+        reason: "triage-invalid",
+        sourceIssueCount: state.committed.sourceIssues.length,
+      },
+      level: "warn",
+    });
+    throw new TrailApplicationError("triage-invalid", message);
+  }
+
+  private requireTriageManagement(
+    issueId: string,
+    action: "defer" | "delete" | "edit",
+  ): ReadyTriageManagement {
+    const state = this.dependencies.runtimeStore.getState();
+    if (
+      state.availability.kind !== "ready"
+      || this.management === null
+      || this.timezone === null
+    ) {
+      this.diagnostics.record(`application.triage.${action}.rejected`, {
+        data: { issueId, reason: "not-ready" },
+        level: "warn",
+      });
+      throw new TrailApplicationError(
+        "not-ready",
+        "Trail is not ready for Triage management",
+      );
+    }
+    this.assertTriageSourceValid(`application.triage.${action}.rejected`);
+    return { management: this.management, timezone: this.timezone };
+  }
+
+  private clearTriageServices(): void {
+    this.intake = null;
+    this.management = null;
+    this.timezone = null;
   }
 
   private recordClassification(

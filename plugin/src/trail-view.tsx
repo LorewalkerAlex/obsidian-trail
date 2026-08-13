@@ -57,6 +57,10 @@ export class TrailView extends ItemView {
       <StrictMode>
         <TrailApp
           onCapture={(title) => this.application.capture(title)}
+          onDefer={(issue) => this.application.deferTriageIssue(issue)}
+          onDelete={(issue) => this.application.deleteTriageIssue(issue)}
+          onEdit={(issue, title, dueLocalValue) =>
+            this.application.editTriageIssue(issue, title, dueLocalValue)}
           runtimeStore={this.runtimeStore}
         />
       </StrictMode>,
