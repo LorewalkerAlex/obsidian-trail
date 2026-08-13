@@ -2,92 +2,41 @@ import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 
-import type {
-  TrailArea,
-  TrailFleetingNote,
-  TrailProject,
-  TrailStoredFleetingNote,
-  TrailTask,
-  TrailTaskStatus,
-} from "./domain/trail-model";
-import type { TrailRuntimeStore } from "./domain/trail-runtime-store";
+import type { TrailApplication } from "./domain/trail-application";
+import type { TrailRuntimeStore } from "./domain/trail-runtime";
 import { TrailApp } from "./trail-app";
-import { TrailTaskModalProvider } from "./trail-task-modal-context";
-import { TrailTaskTitleModal } from "./trail-task-title-modal";
+
 export const TRAIL_VIEW_TYPE = "trail-view";
-export type TrailFleetingNoteCreator = (
-  text: string,
-) => Promise<void>;
 
-export type TrailFleetingNoteEditor = (
-  note: TrailFleetingNote,
-  text: string,
-) => Promise<void>;
-
-export type TrailTaskStatusUpdater = (
-  task: TrailTask,
-  targetStatus: TrailTaskStatus,
-) => Promise<void>;
-
-export type TrailTaskTitleUpdater = (
-  task: TrailTask,
-  title: string,
-) => Promise<void>;
-
-export type TrailFleetingNoteProjectConverter = (
-  note: TrailFleetingNote,
-  area: TrailArea,
-  projectName: string,
-) => Promise<void>;
-export type TrailFleetingNoteConverter = (
-  note: TrailFleetingNote,
-  project: TrailProject,
-) => Promise<void>;
-
-export type TrailFleetingNoteAction = (
-  note: TrailFleetingNote,
-) => Promise<void>;
-
-export type TrailStoredFleetingNoteRestorer = (
-  note: TrailStoredFleetingNote,
-) => Promise<void>;
+/**
+ * Obsidian host view. React mounts once; Zustand selectors inside TrailApp own
+ * incremental rendering instead of manually re-rendering the root on every store
+ * notification as the POC shell did.
+ */
 export class TrailView extends ItemView {
   private root: Root | null = null;
-  private unsubscribe: (() => void) | null = null;
-  constructor(
+
+  public constructor(
     leaf: WorkspaceLeaf,
     private readonly runtimeStore: TrailRuntimeStore,
-    private readonly createFleetingNote:
-      TrailFleetingNoteCreator,
-    private readonly editFleetingNote:
-      TrailFleetingNoteEditor,
-    private readonly updateTaskStatus: TrailTaskStatusUpdater,
-    private readonly updateTaskTitle: TrailTaskTitleUpdater,
-    private readonly convertFleetingNoteToProject:
-      TrailFleetingNoteProjectConverter,
-    private readonly convertFleetingNoteToTask:
-      TrailFleetingNoteConverter,
-    private readonly archiveFleetingNote:
-      TrailFleetingNoteAction,
-    private readonly deleteFleetingNote:
-      TrailFleetingNoteAction,
-    private readonly restoreFleetingNote:
-      TrailStoredFleetingNoteRestorer,
+    private readonly application: TrailApplication,
   ) {
     super(leaf);
   }
-  getViewType(): string {
+
+  public getViewType(): string {
     return TRAIL_VIEW_TYPE;
   }
 
-  getDisplayText(): string {
+  public getDisplayText(): string {
     return "Trail";
   }
 
-  getIcon(): string {
+  public getIcon(): string {
     return "route";
   }
-  async onOpen(): Promise<void> {
+
+  public async onOpen(): Promise<void> {
     this.contentEl.empty();
     this.contentEl.addClass("trail-view");
 
@@ -96,123 +45,19 @@ export class TrailView extends ItemView {
     });
 
     this.root = createRoot(mountElement);
-    this.unsubscribe = this.runtimeStore.subscribe(
-      this.renderSnapshot,
-    );
-    this.renderSnapshot();
-    await this.runtimeStore.initialize();
-  }
-
-  async onClose(): Promise<void> {
-    this.unsubscribe?.();
-    this.unsubscribe = null;
-    this.root?.unmount();
-    this.root = null;
-
-    this.contentEl.empty();
-  }
-
-  private readonly handleCreateFleetingNote = async (
-    text: string,
-  ): Promise<void> => {
-    await this.createFleetingNote(text);
-  };
-  private readonly handleEditFleetingNote = async (
-    note: TrailFleetingNote,
-    text: string,
-  ): Promise<void> => {
-    await this.editFleetingNote(note, text);
-  };
-
-  private readonly handleUpdateTaskStatus = async (
-    task: TrailTask,
-    targetStatus: TrailTaskStatus,
-  ): Promise<void> => {
-    await this.updateTaskStatus(task, targetStatus);
-  };
-  private readonly handleUpdateTaskTitle = async (
-    task: TrailTask,
-    title: string,
-  ): Promise<void> => {
-    await this.updateTaskTitle(task, title);
-  };
-  private readonly handleOpenTask = (task: TrailTask): void => {
-    new TrailTaskTitleModal(
-      this.app,
-      task,
-      this.handleUpdateTaskTitle,
-    ).open();
-  };
-  private readonly handleConvertFleetingNoteToProject = async (
-    note: TrailFleetingNote,
-    area: TrailArea,
-    projectName: string,
-  ): Promise<void> => {
-    await this.convertFleetingNoteToProject(
-      note,
-      area,
-      projectName,
-    );
-  };
-
-  private readonly handleConvertFleetingNoteToTask = async (
-    note: TrailFleetingNote,
-    project: TrailProject,
-  ): Promise<void> => {
-    await this.convertFleetingNoteToTask(note, project);
-  };
-  private readonly handleArchiveFleetingNote = async (
-    note: TrailFleetingNote,
-  ): Promise<void> => {
-    await this.archiveFleetingNote(note);
-  };
-
-  private readonly handleDeleteFleetingNote = async (
-    note: TrailFleetingNote,
-  ): Promise<void> => {
-    await this.deleteFleetingNote(note);
-  };
-  private readonly handleRestoreFleetingNote = async (
-    note: TrailStoredFleetingNote,
-  ): Promise<void> => {
-    await this.restoreFleetingNote(note);
-  };
-  private readonly renderSnapshot = (): void => {
-    const snapshot = this.runtimeStore.getSnapshot();
-
-    if (!snapshot.isInitialized) {
-      return;
-    }
-    this.root?.render(
+    this.root.render(
       <StrictMode>
-        <TrailTaskModalProvider openTask={this.handleOpenTask}>
-          <TrailApp
-            data={snapshot.data}
-            onCreateFleetingNote={
-              this.handleCreateFleetingNote
-            }
-            onEditFleetingNote={
-              this.handleEditFleetingNote
-            }
-            onUpdateTaskStatus={this.handleUpdateTaskStatus}
-            onConvertFleetingNoteToProject={
-              this.handleConvertFleetingNoteToProject
-            }
-            onConvertFleetingNoteToTask={
-              this.handleConvertFleetingNoteToTask
-            }
-            onArchiveFleetingNote={
-              this.handleArchiveFleetingNote
-            }
-            onDeleteFleetingNote={
-              this.handleDeleteFleetingNote
-            }
-            onRestoreFleetingNote={
-              this.handleRestoreFleetingNote
-            }
-          />
-        </TrailTaskModalProvider>
+        <TrailApp
+          onCapture={(title) => this.application.capture(title)}
+          runtimeStore={this.runtimeStore}
+        />
       </StrictMode>,
     );
-  };
+  }
+
+  public async onClose(): Promise<void> {
+    this.root?.unmount();
+    this.root = null;
+    this.contentEl.empty();
+  }
 }

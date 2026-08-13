@@ -12,8 +12,7 @@
     "test:run": "vitest run --reporter=dot",
     "test:run:verbose": "vitest run",
     "lint": "eslint .",
-    "check": "npm run lint && npm run test:run && npm run build",
-    "bench:vault": "vitest bench --run plugin/src/domain/trail-vault-reader.bench.ts"
+    "check": "npm run lint && npm run test:run && npm run build"
   },
   "engines": {
     "node": ">=24.19.0 <25",

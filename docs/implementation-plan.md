@@ -24,7 +24,7 @@
 | 阶段 | 目标 | 状态 |
 |---|---|---|
 | Formal Design | Product、Domain、Logical、Physical 与 Technical Design 收口 | 已完成 |
-| Formal Intake | 建立正式运行主链，打通 Quick Capture → Triage | 当前 |
+| Formal Intake | 建立正式运行主链，打通 Quick Capture → Triage，并完善基本 Triage 管理 | 当前 |
 | Workflow | 建立 Project / Workflow Issue 的基本执行闭环 | 待开始 |
 | Intake → Workflow | Triage Accept / Convert 接入正式 Workflow | 待开始 |
 | Project Organization | Board / List、Move、Milestone、Initiative 等项目组织能力 | 待开始 |
@@ -36,7 +36,7 @@
 
 ## 3. 当前阶段：Formal Intake
 
-Formal Intake 的目标是建立第一条完整的正式纵向链路：
+Formal Intake 的第一条正式纵向链路已经打通：
 
 ```text
 Workspace initialization
@@ -47,36 +47,38 @@ Workspace initialization
 → reload / external change 后正确恢复
 ```
 
-这一阶段同时完成正式运行路径对 POC validation shell 的接管。POC 中已经验证的 Parser、guarded mutation、Mutation Queue、optimistic UI、Vault event reconciliation 等能力继续作为技术证据，但正式实现按当前架构和 reuse-before-build policy 重新选择实现方案；不继承 POC-era Area / Task / Fleeting Note schema，也不建立 POC → Formal migration compatibility。
+active runtime 已完成 POC validation shell → Formal Triage cutover。POC 中已经验证的 Parser、guarded mutation、Mutation Queue、optimistic UI、Vault event reconciliation 等继续作为技术证据，但正式实现按当前架构和 reuse-before-build policy 重新选择实现方案；不继承 POC-era Area / Task / Fleeting Note schema，也不建立 POC → Formal migration compatibility。
 
 ### 3.1 近期计划
 
 | Slice | 目标 | 状态 |
 |---|---|---|
-| Formal Triage Intake | Initialize Trail；Quick Capture 创建正式 Triage Issue；列表即时可见；持久化、reload 与外部变化后正确恢复 | 当前 |
-| Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链可复用 | 待开始 |
+| Formal Triage Intake | Initialize Trail；Quick Capture 创建正式 Triage Issue；列表即时可见；持久化、reload 与外部变化后正确恢复 | 已完成 |
+| Development Diagnostics | 为后续真实 Obsidian 操作建立 session-scoped structured trace；不进入 Domain / Product Activity history | 下一步 |
+| Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链继续复用 | 待开始 |
 | Workflow Entry | 建立 Project / Workflow Issue 的最小可用执行闭环 | 待开始 |
 
-Formal Triage Intake 当前只记录稳定实施边界，不拆成逐任务 backlog：
+Formal Triage Intake 的稳定 checkpoint：
 
-- [x] **Gate A — Formal foundation**：固化 `bd7a693...` POC baseline archive；完成 Zustand / Markdown parser focused validation；建立 Formal Configuration、Workspace safety classification/bootstrap 与 Obsidian host boundary。
-- [ ] **Gate B — Formal Triage vertical path**：实现正式 Triage parser/model/runtime、Quick Capture optimistic persistence/reconciliation，并完成 active POC → Formal cutover。
-- [ ] **Slice checkpoint**：按真实 Obsidian protocol 完成端到端验证，校准受影响文档，运行最终 `npm run check`，commit / push 并远端回查。
+- [x] **Gate A — Formal foundation**：固化 POC baseline archive；完成 Zustand / Markdown parser focused validation；建立 Formal Configuration、Workspace safety classification/bootstrap 与 Obsidian host boundary。
+- [x] **Gate B — Formal Triage vertical path**：建立正式 Triage model/parser、Quick Capture command/planner、Zustand committed + optimistic runtime、serial mutation、`Vault.process()` persistence/reconciliation，并完成 active POC → Formal cutover。
+- [x] **Real Obsidian validation**：验证 Fresh bootstrap、Quick Capture persistence/reload、合法外部修改 reconcile、非法 source last-known-good 隔离与恢复、required singleton 缺失保护。
 
-`Workflow Entry` 的具体边界在前两个 Slice 完成后根据实际实现规模重新评估，不提前固定 Board、DnD、Peek、Priority 或 Milestone 是否属于同一 Slice。
+下一步先补统一 Development Diagnostics，再进入新的交互 Slice。Diagnostics 只服务开发/实机测试 observability，不成为 Canonical Domain、Event Sourcing 或 Product Activity Log。
+
+`Workflow Entry` 的具体边界在 Triage Management 完成后根据实际实现规模重新评估，不提前固定 Board、DnD、Peek、Priority 或 Milestone 是否属于同一 Slice。
 
 Triage Accept 后置到 Workflow 已经可见、可操作之后，使 Intake → Workflow 成为完整用户路径，而不是只完成一次跨容器持久化操作。
 
 ### 3.2 Formal Cutover
 
-Formal Intake 同时完成 implementation authority cutover：
+Formal active path 已完成 implementation authority cutover：
 
-- `plugin/src/`、根目录 `Trail/` 与正式 `styles.css` 只承载 Formal Implementation；
-- POC implementation、tests、fixtures 与样式统一移入 `archive/poc/`，并退出 active build / runtime / lint / test path；POC 设计与技术证据文档继续按各自既定位置保留；
+- `plugin/src/` 与正式 `styles.css` 只承载 Formal Implementation；
+- 根目录 `Trail/` 是 Formal plugin 在真实 Vault 中创建和维护的 authoritative Domain Markdown，本地开发环境通过 root-only Git ignore 排除，不再作为 checked-in fixture；
+- POC implementation、tests、fixtures 与样式保存在 `archive/poc/`，并退出 active build / runtime / lint / test path；POC 设计与技术证据文档继续按既定位置保留；
 - 不长期维护 Formal / POC 双实现，也不要求 Formal schema 兼容 POC persistence；
 - POC 中验证过的技术能力可以重新采用，但必须按当前 Formal architecture 实现，而不是继续扩展旧 POC 业务结构。
-
-Gate A 已先从 Git object 中固化 `bd7a693...` 的 POC implementation / fixture / style 原始 baseline 到 `archive/poc/`，并将 archive 排除出 active lint / test path。active `plugin/src/`、`Trail/` 与 `styles.css` 的最终 Formal replacement 仍属于 Gate B；在 Gate B 完成前，当前运行 shell 仍是 POC。
 
 ## 4. 实施原则
 
@@ -98,7 +100,8 @@ Gate A 已先从 Git object 中固化 `bd7a693...` 的 POC implementation / fixt
 | Markdown Physical Model | 已完成 | Formal persistence model 已收口 |
 | Technical Design | 已完成 | Formal implementation architecture baseline 已收口 |
 | Implementation Plan | 已形成 | V1 总路线与 Formal Intake 近期计划建立 |
-| Formal Intake | 当前 | Gate A Formal foundation 已完成；Gate B Triage vertical path 待开始 |
+| Formal Triage Intake | 已完成 | Formal foundation、Triage vertical path、active cutover 与真实 Obsidian 验证已完成 |
+| Formal Intake | 当前 | 下一步 Development Diagnostics，然后进入 Triage Management |
 | Formal Workflow | 待开始 | — |
 | V1 Exit | 待开始 | — |
 
