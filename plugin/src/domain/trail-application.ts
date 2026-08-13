@@ -24,6 +24,10 @@ import {
   parseLocalDateTimeInTimeZone,
 } from "./trail-temporal";
 import {
+  TrailTriageAcceptService,
+  type TriageAcceptReceipt,
+} from "./trail-triage-accept";
+import {
   TrailTriageIntakeService,
   type TriageCaptureReceipt,
 } from "./trail-triage-intake";
@@ -92,6 +96,7 @@ interface ReadyTriageManagement {
  * Obsidian host APIs into React or Domain planners.
  */
 export class TrailApplication {
+  private accept: TrailTriageAcceptService | null = null;
   private intake: TrailTriageIntakeService | null = null;
   private management: TrailTriageManagementService | null = null;
   private workflow: TrailWorkflowEntryService | null = null;
@@ -192,6 +197,15 @@ export class TrailApplication {
         { createId, now },
         this.diagnostics,
       );
+      const accept = new TrailTriageAcceptService(
+        runtimeStore,
+        mutationQueue,
+        triagePersistence,
+        workflowPersistence,
+        configuration,
+        { createId, now },
+        this.diagnostics,
+      );
 
       this.diagnostics.record("triage.initialize.started", {
         correlationId: operationId,
@@ -199,6 +213,7 @@ export class TrailApplication {
       await intake.initialize(operationId);
       await workflow.initialize(operationId);
 
+      this.accept = accept;
       this.intake = intake;
       this.management = management;
       this.workflow = workflow;
@@ -261,6 +276,20 @@ export class TrailApplication {
       "Quick Capture is paused until Triage.md is valid again",
     );
     return this.intake.capture({ title });
+  }
+
+  public acceptTriageIssue(
+    expectedIssue: TrailTriageIssue,
+    projectId: string,
+  ): TriageAcceptReceipt {
+    const accept = this.requireTriageAccept(expectedIssue.id, projectId);
+    this.diagnostics.record("application.triage.accept.requested", {
+      data: {
+        projectId,
+        sourceIssueId: expectedIssue.id,
+      },
+    });
+    return accept.accept(expectedIssue, projectId);
   }
 
   public editTriageIssue(
@@ -418,6 +447,7 @@ export class TrailApplication {
     message: string,
     correlationId?: string,
   ): void {
+    this.accept = null;
     this.intake = null;
     this.management = null;
     setSourceIssuesForPath(this.dependencies.runtimeStore, TRAIL_TRIAGE_PATH, [{
@@ -456,6 +486,44 @@ export class TrailApplication {
       level: "warn",
     });
     throw new TrailApplicationError("triage-invalid", message);
+  }
+
+  private requireTriageAccept(
+    sourceIssueId: string,
+    projectId: string,
+  ): TrailTriageAcceptService {
+    const state = this.dependencies.runtimeStore.getState();
+    if (state.availability.kind !== "ready" || this.accept === null) {
+      this.diagnostics.record("application.triage.accept.rejected", {
+        data: { projectId, reason: "not-ready", sourceIssueId },
+        level: "warn",
+      });
+      throw new TrailApplicationError(
+        "not-ready",
+        "Trail is not ready for Triage Accept",
+      );
+    }
+
+    this.assertTriageSourceValid("application.triage.accept.rejected");
+    const rootIssues = selectSourceIssuesForPath(state, TRAIL_PROJECTS_PATH);
+    const targetPath = state.committed.sourceByEntityId[projectId];
+    const targetIssues = selectSourceIssuesForPath(state, targetPath);
+    if (rootIssues.length > 0 || targetIssues.length > 0) {
+      this.diagnostics.record("application.triage.accept.rejected", {
+        data: {
+          projectId,
+          reason: "workflow-invalid",
+          sourceIssueCount: rootIssues.length + targetIssues.length,
+          sourceIssueId,
+        },
+        level: "warn",
+      });
+      throw new TrailApplicationError(
+        "workflow-invalid",
+        "Triage Accept is paused until the target Workflow source is valid again",
+      );
+    }
+    return this.accept;
   }
 
   private requireTriageManagement(
@@ -512,6 +580,7 @@ export class TrailApplication {
   }
 
   private clearServices(): void {
+    this.accept = null;
     this.intake = null;
     this.management = null;
     this.workflow = null;

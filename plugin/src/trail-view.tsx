@@ -56,6 +56,8 @@ export class TrailView extends ItemView {
     this.root.render(
       <StrictMode>
         <TrailApp
+          onAccept={(issue, projectId) =>
+            this.application.acceptTriageIssue(issue, projectId)}
           onCapture={(title) => this.application.capture(title)}
           onCreateProject={(title) => this.application.createProject(title)}
           onCreateWorkflowIssue={(projectId, title) =>

@@ -10,6 +10,7 @@ import {
   isTrailProjectMarkdownPath,
 } from "./trail-physical-schema";
 import type { TrailProject } from "./trail-project";
+import { deleteWorkflowIssueFromProjectMarkdown } from "./trail-project-issue-delete";
 import {
   appendWorkflowIssueToProjectMarkdown,
   parseProjectMarkdown,
@@ -19,6 +20,7 @@ import {
 } from "./trail-project-markdown";
 import type { TrailSourceIssue } from "./trail-source-issue";
 import type { TrailYamlParser } from "./trail-triage-markdown";
+import type { TrailWorkflowIssueDeletionPersistence } from "./trail-workflow-issue-deletion-persistence";
 import type { TrailWorkflowPersistence } from "./trail-workflow-persistence";
 import type { ObsidianWorkspaceFileKinds } from "./trail-workspace-obsidian";
 
@@ -72,13 +74,21 @@ function structuralIssue(
   };
 }
 
+type WorkflowPersistence = TrailWorkflowPersistence
+  & TrailWorkflowIssueDeletionPersistence;
+
+type WorkflowPhysicalOperation =
+  | "append-issue"
+  | "delete-issue"
+  | "update-issue";
+
 /** Obsidian adapter for Project-file discovery and guarded Workflow mutations. */
 export function createObsidianWorkflowPersistence(
   app: Pick<App, "vault">,
   parseYaml: TrailYamlParser,
   fileKinds: ObsidianWorkspaceFileKinds,
   diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
-): TrailWorkflowPersistence {
+): WorkflowPersistence {
   const parseFile = async (file: TFile): Promise<TrailProjectParseResult> => {
     const result = parseProjectMarkdown({
       filePath: file.path,
@@ -104,7 +114,7 @@ export function createObsidianWorkflowPersistence(
   const processMutation = async (
     filePath: string,
     issueId: string,
-    operation: "append-issue" | "update-issue",
+    operation: WorkflowPhysicalOperation,
     transform: (latest: string) => string,
     correlationId?: string,
   ): Promise<TrailProjectParseResult> => {
@@ -187,6 +197,25 @@ export function createObsidianWorkflowPersistence(
         },
       });
       return result;
+    },
+
+    async deleteIssue(
+      filePath: string,
+      expectedIssue: TrailWorkflowIssue,
+      correlationId?: string,
+    ): Promise<TrailProjectParseResult> {
+      return processMutation(
+        filePath,
+        expectedIssue.id,
+        "delete-issue",
+        (latest) => deleteWorkflowIssueFromProjectMarkdown({
+          expectedIssue,
+          filePath,
+          markdown: latest,
+          parseYaml,
+        }),
+        correlationId,
+      );
     },
 
     async readAll() {

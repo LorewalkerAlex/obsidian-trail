@@ -48,7 +48,7 @@ Workspace initialization
 → reload / external change 后正确恢复
 ```
 
-Workflow Entry 现在也已经形成经过自动化与真实 Obsidian 验证的最小执行闭环：
+Workflow Entry 也已经形成经过自动化与真实 Obsidian 验证的最小执行闭环：
 
 ```text
 Create Project
@@ -64,9 +64,26 @@ Project 创建使用 Project `Unstarted` category 的 configured default；Fresh
 
 Workflow Runtime 与 Triage 继续共享正式的 committed + ordered optimistic state、global serial mutation queue、latest-source guard、`Vault.process()`、authoritative reread / validation 和 reconcile 机制。Project / Workflow Issue source 采用 source-scoped fault isolation；外部 Project / Issue Markdown 修改可以通过 host event 触发 reread / parse / reconcile，而不需要 reload。
 
-Development Diagnostics 继续作为 development-only observability 基础设施，已在 Workflow Entry 实机验证中用于重建 Project / Issue mutation、Estimate gate、reload reconstruction 和 external reconcile；production build 仍默认排除 Diagnostics。
+Triage Accept 现在也已经形成经过自动化与真实 Obsidian 验证的跨 source 闭环：
 
-Workflow 基本执行闭环至此完成。当前进入 Intake → Workflow 阶段；下一步是 Triage Accept，使已经稳定的 Intake 入口真正进入已经可见、可操作的 Workflow。
+```text
+Triage Issue A
+→ plan NEW Workflow Issue B with new identity
+→ optimistic source removal + target creation
+→ preflight latest Triage source
+→ write + reread + validate B in target Project
+→ delete + reread + validate A absent
+→ reconcile Workflow + Triage
+→ remove optimistic state
+```
+
+Accept 不是 context patch，也不复用 source identity。新 Workflow Issue 使用自己的 stable ID、configured Backlog default 与 `createdAt`；Triage Due 不自动继承。真实 Obsidian Diagnostics 已验证 destination write / authoritative verify 完成后才开始 source delete；两次 Vault host modify event 都排入同一个 global mutation queue，并在 Accept logical command 完成后收敛为无额外业务变化的 reconcile。
+
+如果 target creation / verification 失败，source 保持原样。如果 target 已创建而 source delete 失败，Accept 会尝试只删除刚创建且仍匹配计划结果的 target 作为 guarded compensation；只有 compensation 无法安全完成时才暴露显式 partial Data Issue，而不是猜测磁盘事实或静默丢失 capture。
+
+Development Diagnostics 继续作为 development-only observability 基础设施；production build 默认排除 Diagnostics。Triage Accept 的实机验证只覆盖其独有的跨 source ordering / reconciliation 风险，没有机械重复已经由 Triage Management 和 Workflow Entry 覆盖的普通字段修改与同类 host 行为。
+
+Triage Accept 至此完成。当前 Intake → Workflow 阶段继续推进；下一步是 **Triage Convert to Project**，复用已经建立的 create-target-before-delete-source 可靠性原则，把值得升级为 outcome 的 capture 转成新的 Project。Convert to Note 属于 knowledge action，不强行与下一小步绑定，后续再按实际产品价值展开。
 
 ### 3.1 近期计划
 
@@ -76,7 +93,8 @@ Workflow 基本执行闭环至此完成。当前进入 Intake → Workflow 阶�
 | Development Diagnostics | 为后续真实 Obsidian 操作建立 session-scoped structured trace；不进入 Domain / Product Activity history | 已完成 |
 | Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链继续复用 | 已完成 |
 | Workflow Entry | 创建 Project / Workflow Issue；完成基本 Issue lifecycle、Estimate gate、reload 与外部 reconcile | 已完成 |
-| Triage Accept | 将 Triage Issue 显式接受为新的 Workflow Issue，并接入正式跨容器 mutation | 下一步 |
+| Triage Accept | 将 Triage Issue 显式接受为新的 Project-owned Workflow Issue；验证跨 source optimistic、destination-first write/verify、source delete 与 compensation | 已完成 |
+| Triage Convert to Project | 将 Triage Issue 显式升级为新的 Project，并继续复用 create-target-before-delete-source 可靠性边界 | 下一步 |
 
 当前稳定 checkpoint：
 
@@ -86,10 +104,11 @@ Workflow 基本执行闭环至此完成。当前进入 Intake → Workflow 阶�
 - [x] **Development Diagnostics**：建立 development-only session trace，覆盖 command / optimistic / queue / persistence / validation / reconcile；验证跨 session 保留、实体/字段 diff、两 session retention 与 production build 排除。
 - [x] **Triage Management**：验证 title / Due 编辑、七个日历日 defer、delete、optimistic mutation、外部修改 reconcile、stale edit 拒绝覆盖以及 production build 边界。
 - [x] **Workflow Entry**：验证 Project / Workflow Issue 创建、configured defaults、Started / terminal lifecycle 时间、Completed Estimate gate、optimistic mutation、reload reconstruction、Project / Issue external reconcile 与 source-scoped fault isolation。
+- [x] **Triage Accept**：验证新 Workflow identity、source / target 协调 optimistic projection、destination write + authoritative verify 先于 source delete、guarded compensation、host event queue ordering、最终双 source reconcile 与 production Diagnostics boundary。
 
-下一步进入 Triage Accept。其核心不是简单“移动 Markdown block”，而是按 Canonical Domain contract 创建新的 Workflow Issue identity，并在跨容器 mutation 成功后移除原 Triage Issue；目标 Project、status default、optimistic projection、跨文件 failure/compensation 和 authoritative reconcile 必须继续服从正式 mutation 主链。
+下一步进入 Triage Convert to Project。其核心不需要重新发明跨 source transaction 规则：继续遵循 create-target-before-delete-source，并优先复用已经通过 Triage Accept 验证的 queue、optimistic、verification、compensation 与 diagnostics 边界。需要新增的是 Triage → Project 的具体 planner / field mapping / UI intent，而不是再为同一可靠性问题造一套机制。
 
-Convert to Project / Convert to Note 等其他 Intake → Workflow / knowledge actions 不强行并入 Triage Accept 第一小步；根据 Triage Accept 的正式跨容器实现结果再展开。
+Convert to Note 不作为下一小步的阻塞项。它如果进入后续 V1 范围，仍遵循 Product Design 已冻结的 create-target-before-delete-source 原则，但其 destination 是普通 Obsidian Markdown / knowledge flow，应作为独立产品价值切片评估。
 
 ### 3.2 Formal Cutover
 
@@ -128,7 +147,8 @@ Formal active path 已完成 implementation authority cutover：
 | Formal Intake | 已完成 | Formal Triage Intake、Development Diagnostics 与 Triage Management 形成稳定入口链路 |
 | Workflow Entry | 已完成 | Project / Workflow Issue 最小执行闭环、Estimate gate、reload 与 external reconcile 已通过自动化和真实 Obsidian 验证 |
 | Formal Workflow | 已完成 | Project / Workflow Issue 已经可见、可创建、可执行并能从 Markdown 重建 |
-| Intake → Workflow | 当前 | 下一步 Triage Accept |
+| Triage Accept | 已完成 | Triage → new Project-owned Workflow Issue 的 destination-first 跨 source flow 已通过自动化与真实 Obsidian 验证 |
+| Intake → Workflow | 当前 | Triage Accept 已完成；下一步 Triage Convert to Project |
 | V1 Exit | 待开始 | — |
 
 Checkpoint 只记录真正形成稳定阶段边界的结果，不追踪每个内部实现任务。完成一个阶段后更新本表，并展开下一阶段的近期计划。
