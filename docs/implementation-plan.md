@@ -7,7 +7,7 @@
 > 上游 Logical Data Model：`docs/logical-data-model.md`
 > 上游 Physical Model：`docs/markdown-physical-model.md`
 > 上游 Technical Design：`docs/technical-design-baseline.md`
-> 当前阶段：Formal Intake
+> 当前阶段：Workflow
 
 ## 1. 文档定位
 
@@ -24,8 +24,8 @@
 | 阶段 | 目标 | 状态 |
 |---|---|---|
 | Formal Design | Product、Domain、Logical、Physical 与 Technical Design 收口 | 已完成 |
-| Formal Intake | 建立正式运行主链，打通 Quick Capture → Triage，并完善基本 Triage 管理 | 当前 |
-| Workflow | 建立 Project / Workflow Issue 的基本执行闭环 | 待开始 |
+| Formal Intake | 建立正式运行主链，打通 Quick Capture → Triage，并完善基本 Triage 管理 | 已完成 |
+| Workflow | 建立 Project / Workflow Issue 的基本执行闭环 | 当前 |
 | Intake → Workflow | Triage Accept / Convert 接入正式 Workflow | 待开始 |
 | Project Organization | Board / List、Move、Milestone、Initiative 等项目组织能力 | 待开始 |
 | Cycles & Views | Cycle、Filter、Custom View、Search、Favorites 等组织与查看能力 | 待开始 |
@@ -34,15 +34,16 @@
 
 以上阶段表达 V1 的总体建设顺序，不等同于固定 Session 数量。独立能力可以在依赖满足后调整顺序；具体 Slice 只在进入近期计划后展开。
 
-## 3. 当前阶段：Formal Intake
+## 3. 当前阶段：Workflow
 
-Formal Intake 的第一条正式纵向链路已经打通：
+Formal Intake 已经形成完整且经过真实 Obsidian 验证的稳定入口链路：
 
 ```text
 Workspace initialization
 → Quick Capture
 → Triage Issue
 → Triage List
+→ Edit / Defer / Delete
 → authoritative Markdown
 → reload / external change 后正确恢复
 ```
@@ -51,25 +52,26 @@ active runtime 已完成 POC validation shell → Formal Triage cutover。POC �
 
 Development Diagnostics 已作为独立的开发/实机测试 observability 基础设施补齐，并通过真实 Obsidian 验证。它只记录结构化生命周期、实体/字段级 reconcile diff 和必要诊断元数据，不进入 Canonical Domain、Event Sourcing 或 Product Activity history；production build 默认关闭。
 
+Triage Management 已在同一正式 mutation 主链上补齐 title / Due 编辑、七个日历日 defer 与 delete，并通过真实 Obsidian 验证 optimistic update、`Vault.process()` 持久化、外部 Markdown reconcile 与 stale-edit protection。Formal Intake 至此完成；当前进入 Workflow 阶段。
+
 ### 3.1 近期计划
 
 | Slice | 目标 | 状态 |
 |---|---|---|
 | Formal Triage Intake | Initialize Trail；Quick Capture 创建正式 Triage Issue；列表即时可见；持久化、reload 与外部变化后正确恢复 | 已完成 |
 | Development Diagnostics | 为后续真实 Obsidian 操作建立 session-scoped structured trace；不进入 Domain / Product Activity history | 已完成 |
-| Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链继续复用 | 下一步 |
-| Workflow Entry | 建立 Project / Workflow Issue 的最小可用执行闭环 | 待开始 |
+| Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链继续复用 | 已完成 |
+| Workflow Entry | 建立 Project / Workflow Issue 的最小可用执行闭环 | 下一步 |
 
-Formal Intake 当前稳定 checkpoint：
+Formal Intake 稳定 checkpoint：
 
 - [x] **Gate A — Formal foundation**：固化 POC baseline archive；完成 Zustand / Markdown parser focused validation；建立 Formal Configuration、Workspace safety classification/bootstrap 与 Obsidian host boundary。
 - [x] **Gate B — Formal Triage vertical path**：建立正式 Triage model/parser、Quick Capture command/planner、Zustand committed + optimistic runtime、serial mutation、`Vault.process()` persistence/reconciliation，并完成 active POC → Formal cutover。
 - [x] **Real Obsidian validation**：验证 Fresh bootstrap、Quick Capture persistence/reload、合法外部修改 reconcile、非法 source last-known-good 隔离与恢复、required singleton 缺失保护。
 - [x] **Development Diagnostics**：建立 development-only session trace，覆盖 command / optimistic / queue / persistence / validation / reconcile；验证跨 session 保留、实体/字段 diff、两 session retention 与 production build 排除。
+- [x] **Triage Management**：验证 title / Due 编辑、七个日历日 defer、delete、optimistic mutation、外部修改 reconcile、stale edit 拒绝覆盖以及 production build 边界。
 
-下一步进入 Triage Management，继续在同一正式 mutation 主链上补齐 title / Due 编辑、defer 与 delete，并用现有 Diagnostics 辅助真实 Obsidian 回归。
-
-`Workflow Entry` 的具体边界在 Triage Management 完成后根据实际实现规模重新评估，不提前固定 Board、DnD、Peek、Priority 或 Milestone 是否属于同一 Slice。
+下一步进入 Workflow Entry，建立 Project / Workflow Issue 的最小可用执行闭环。具体边界根据当前 Formal runtime 与既有设计 contract 继续展开，不提前把 Board、DnD、Peek、Priority 或 Milestone 强行放进同一 Slice。
 
 Triage Accept 后置到 Workflow 已经可见、可操作之后，使 Intake → Workflow 成为完整用户路径，而不是只完成一次跨容器持久化操作。
 
@@ -102,11 +104,12 @@ Formal active path 已完成 implementation authority cutover：
 | Logical Data Model | 已完成 | Logical model 已收口 |
 | Markdown Physical Model | 已完成 | Formal persistence model 已收口 |
 | Technical Design | 已完成 | Formal implementation architecture baseline 已收口 |
-| Implementation Plan | 已形成 | V1 总路线与 Formal Intake 近期计划建立 |
+| Implementation Plan | 已形成 | V1 总路线与近期计划建立 |
 | Formal Triage Intake | 已完成 | Formal foundation、Triage vertical path、active cutover 与真实 Obsidian 验证已完成 |
 | Development Diagnostics | 已完成 | development-only structured trace 已完成并通过真实 Obsidian 与 production boundary 验证 |
-| Formal Intake | 当前 | 下一步 Triage Management |
-| Formal Workflow | 待开始 | — |
+| Triage Management | 已完成 | title / Due 编辑、defer、delete 与 stale-edit protection 已通过自动化和真实 Obsidian 验证 |
+| Formal Intake | 已完成 | Formal Triage Intake、Development Diagnostics 与 Triage Management 形成稳定入口链路 |
+| Formal Workflow | 当前 | 下一步 Workflow Entry |
 | V1 Exit | 待开始 | — |
 
 Checkpoint 只记录真正形成稳定阶段边界的结果，不追踪每个内部实现任务。完成一个阶段后更新本表，并展开下一阶段的近期计划。
