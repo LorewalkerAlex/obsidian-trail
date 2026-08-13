@@ -1,5 +1,9 @@
 import type { App, TFile } from "obsidian";
 
+import {
+  NOOP_TRAIL_DIAGNOSTICS,
+  type TrailDiagnostics,
+} from "../diagnostics/trail-diagnostics";
 import type { ObsidianWorkspaceFileKinds } from "./trail-workspace-obsidian";
 import type { TrailTriageIssue } from "./trail-issue";
 import { TRAIL_TRIAGE_PATH } from "./trail-physical-schema";
@@ -42,22 +46,52 @@ export function createObsidianTriagePersistenceGateway(
   app: Pick<App, "vault">,
   parseYaml: TrailYamlParser,
   fileKinds: ObsidianWorkspaceFileKinds,
+  diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
 ): TrailTriagePersistenceGateway {
   return {
-    async appendIssue(issue: TrailTriageIssue): Promise<TrailTriageParseResult> {
+    async appendIssue(
+      issue: TrailTriageIssue,
+      correlationId?: string,
+    ): Promise<TrailTriageParseResult> {
       const file = requireTriageFile(app, fileKinds);
 
-      await app.vault.process(file, (latest) =>
+      diagnostics.record("persistence.triage.process.started", {
+        correlationId,
+        data: {
+          issueId: issue.id,
+          path: TRAIL_TRIAGE_PATH,
+        },
+      });
+      await app.vault.process(file, (latest: string) =>
         appendTriageIssueToMarkdown({
           filePath: TRAIL_TRIAGE_PATH,
           issue,
           markdown: latest,
           parseYaml,
         }));
+      diagnostics.record("persistence.triage.process.completed", {
+        correlationId,
+        data: {
+          issueId: issue.id,
+          path: TRAIL_TRIAGE_PATH,
+        },
+      });
 
       // A post-write authoritative read verifies the disk fact rather than trusting
       // the in-memory transform result or an event notification.
-      return parseLatest(await app.vault.read(file), parseYaml);
+      diagnostics.record("persistence.triage.verify-read.started", {
+        correlationId,
+        data: { path: TRAIL_TRIAGE_PATH },
+      });
+      const result = parseLatest(await app.vault.read(file), parseYaml);
+      diagnostics.record("persistence.triage.verify-read.completed", {
+        correlationId,
+        data: {
+          parseIssueCount: result.issues.length,
+          recordCount: Object.keys(result.contribution.issuesById).length,
+        },
+      });
+      return result;
     },
 
     async readLatest(): Promise<TrailTriageParseResult> {

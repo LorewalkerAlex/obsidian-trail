@@ -4,7 +4,7 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, and Technical Design stages. Formal implementation is in the **Formal Intake** stage, and the first complete Formal Triage vertical path is now implemented and validated.
+Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, and Technical Design stages. Formal implementation is in the **Formal Intake** stage. The first complete Formal Triage vertical path and the development-only structured Diagnostics foundation are now implemented and validated in real Obsidian; the next user-facing Slice is Triage Management.
 
 The current design and implementation chain is:
 
@@ -24,13 +24,13 @@ docs/implementation-plan.md
 
 Project progress, the current Slice, and implementation checkpoints are maintained in `docs/implementation-plan.md`. Closed design documents record their own contracts and authority boundaries rather than duplicating project progress.
 
-The active runtime is now the **Formal Triage implementation**, not the former POC validation shell. The completed vertical path covers Formal workspace initialization, Quick Capture, Triage Issue parsing/serialization, Due resolution through the configured IANA timezone, Zustand committed + optimistic runtime state, serial mutation execution, `Vault.process()` persistence, reload reconstruction, and host-file reconciliation. Real Obsidian regression has also verified invalid-source isolation with last-known-good runtime state and refusal to silently recreate a missing required Triage singleton.
+The active runtime is now the **Formal Triage implementation**, not the former POC validation shell. The completed vertical path covers Formal workspace initialization, Quick Capture, Triage Issue parsing/serialization, Due resolution through the configured IANA timezone, Zustand committed + optimistic runtime state, serial mutation execution, `Vault.process()` persistence, reload reconstruction, and host-file reconciliation. Real Obsidian regression has also verified invalid-source isolation with last-known-good runtime state and refusal to silently recreate a missing required Triage singleton. Development Diagnostics now correlate application intent, command planning, optimistic state, mutation execution, persistence, validation, and runtime reconciliation, including entity/field-level reconcile diffs without persisting title, description, or full Markdown content.
 
 The exact POC implementation / fixture / style baseline remains preserved under `archive/poc/` as technical evidence. POC-era Area / Task / Fleeting Note code is no longer part of the active runtime, lint, or test path.
 
 Formal implementation follows the **reuse before build** policy in `docs/technical-design-baseline.md`: Obsidian / host / browser capabilities and mature focused libraries are evaluated before custom infrastructure. POC evidence can inform a choice but does not receive default priority over a better formal implementation.
 
-The next cross-cutting implementation step is a development-only structured diagnostics trace for real Obsidian testing. It will remain observability infrastructure rather than Product Activity / Domain history. After that foundation, the next user-facing Slice is Triage Management.
+Development Diagnostics are observability infrastructure only, not Product Activity / Domain history. Production builds exclude Diagnostics; diagnostics-enabled development builds expose the structured trace and copy command for real-host testing. The next user-facing Slice is Triage Management.
 
 Active branch:
 
@@ -137,16 +137,18 @@ npm run test:run
 npm run test:run:verbose
 npm run typecheck
 npm run build
+npm run build:diagnostics
 npm run check
 ~~~
 
-- `npm run dev` watches source and static files and updates `.obsidian/plugins/trail/`.
+- `npm run dev` watches source and static files, updates `.obsidian/plugins/trail/`, and keeps development Diagnostics enabled.
 - `npm run lint` checks active source against ESLint and Obsidian plugin rules.
 - `npm run test` starts Vitest in interactive watch mode.
 - `npm run test:run` runs the active test suite once with the compact reporter.
 - `npm run test:run:verbose` runs the same suite with detailed output.
 - `npm run typecheck` checks TypeScript without generating files.
-- `npm run build` type-checks and creates a production plugin build.
+- `npm run build` type-checks and creates a production plugin build with Development Diagnostics disabled.
+- `npm run build:diagnostics` type-checks and creates a one-shot Diagnostics-enabled plugin build for real Obsidian testing.
 - `npm run check` runs lint, tests, type-checking, and the production build.
 
 During one implementation slice, run focused tests plus directly affected regression tests. Run the full `npm run check` once when a coherent slice is complete and ready for a repository checkpoint.
@@ -156,16 +158,16 @@ During one implementation slice, run focused tests plus directly affected regres
 The active plugin is now the Formal Triage runtime. For real Obsidian regression testing:
 
 1. Open the repository root as an Obsidian Vault.
-2. Build or keep `npm run dev` active.
+2. Build or keep `npm run dev` active. When a deterministic one-shot structured trace is needed, use `npm run build:diagnostics`.
 3. Enable Trail under **Settings → Community plugins**.
 4. Open Trail from the Ribbon or **Trail: Open**.
 5. Reload the plugin after rebuilding when Obsidian still has an older bundle loaded.
 6. Use a written protocol covering repository / Obsidian starting state, exact fixture data, default values, expected UI / disk end state, cleanup / restore, and whether the test Vault should remain open.
-7. Treat root `Trail/` and plugin `data.json` as local test/runtime state; do not commit them as implementation source.
+7. Treat root `Trail/`, plugin `data.json`, and development Diagnostics trace files as local test/runtime state; do not commit them as implementation source.
 
-The current Formal Triage path has real-host evidence for Fresh bootstrap, Quick Capture persistence, reload reconstruction, valid external-edit reconciliation, invalid-source isolation/recovery, and missing-required-singleton protection. Current UI is a functional Formal Triage surface; final visual system refinement and additional Triage actions belong to later slices.
+The current Formal Triage path has real-host evidence for Fresh bootstrap, Quick Capture persistence/reload, valid external-edit reconciliation, invalid-source isolation/recovery, missing-required-singleton protection, and structured Diagnostics across reload sessions and external edits. Current UI is a functional Formal Triage surface; final visual system refinement and additional Triage actions belong to later slices.
 
-Development diagnostics will be added before the next interactive real-host Slice so one user action can be correlated across UI intent, command planning, optimistic state, mutation execution, validation, reconciliation, and error/recovery stages without turning those traces into Product history.
+Development Diagnostics are enabled only in diagnostics-enabled development builds. They persist a compact JSONL trace under `<vault-config>/plugins/trail/diagnostics/trace.jsonl`, keep at most the latest two sessions with at most 2000 events per session, and expose **Trail: Copy diagnostics trace** to copy up to the latest two sessions. Events use IDs, paths, lifecycle stages, revisions, counts, validation codes, and changed field names for diagnosis; title, description, and full Markdown content are not persisted by default. The trace is development observability, not Canonical Domain state, Event Sourcing, or Product Activity history.
 
 ## Continuous integration
 

@@ -1,9 +1,12 @@
 import {
+  normalizePath,
+  Notice,
   parseYaml,
   Plugin,
   TFile,
   TFolder,
   type TAbstractFile,
+  type WorkspaceLeaf,
 } from "obsidian";
 
 import { TrailApplication } from "./domain/trail-application";
@@ -17,6 +20,14 @@ import {
   type ObsidianWorkspaceFileKinds,
 } from "./domain/trail-workspace-obsidian";
 import {
+  createObsidianDiagnosticPersistence,
+} from "./diagnostics/trail-diagnostics-obsidian";
+import {
+  createTrailDiagnostics,
+  NOOP_TRAIL_DIAGNOSTICS,
+  type TrailDiagnostics,
+} from "./diagnostics/trail-diagnostics";
+import {
   TRAIL_VIEW_TYPE,
   TrailView,
 } from "./trail-view";
@@ -26,6 +37,10 @@ function resolveHostTimezone(): string {
   return timezone.trim() === "" ? "UTC" : timezone;
 }
 
+function errorName(error: unknown): string {
+  return error instanceof Error ? error.name : "UnknownError";
+}
+
 const fileKinds: ObsidianWorkspaceFileKinds = {
   isFile: (file: TAbstractFile | null): file is TFile => file instanceof TFile,
   isFolder: (file: TAbstractFile | null): file is TFolder => file instanceof TFolder,
@@ -33,10 +48,20 @@ const fileKinds: ObsidianWorkspaceFileKinds = {
 
 export default class TrailPlugin extends Plugin {
   private application: TrailApplication | null = null;
+  private diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS;
 
   public onload(): void {
+    const diagnostics = this.createDiagnostics();
+    this.diagnostics = diagnostics;
+    diagnostics.record("plugin.loaded", {
+      data: {
+        diagnosticsEnabled: diagnostics.enabled,
+        pluginVersion: this.manifest.version,
+      },
+    });
+
     const runtimeStore = createTrailRuntimeStore();
-    const mutationQueue = new TrailMutationQueue();
+    const mutationQueue = new TrailMutationQueue(diagnostics);
     const parseYamlDocument = (yaml: string): unknown => parseYaml(yaml);
     const workspaceGateway = createObsidianWorkspaceBootstrapGateway(
       this.app,
@@ -51,9 +76,11 @@ export default class TrailPlugin extends Plugin {
       this.app,
       parseYamlDocument,
       fileKinds,
+      diagnostics,
     );
     const application = new TrailApplication({
       createId: () => crypto.randomUUID(),
+      diagnostics,
       mutationQueue,
       now: () => Date.now(),
       persistence: triagePersistence,
@@ -66,32 +93,96 @@ export default class TrailPlugin extends Plugin {
 
     this.registerView(
       TRAIL_VIEW_TYPE,
-      (leaf) => new TrailView(leaf, runtimeStore, application),
+      (leaf: WorkspaceLeaf) => new TrailView(
+        leaf,
+        runtimeStore,
+        application,
+        diagnostics,
+      ),
     );
 
     this.app.workspace.onLayoutReady(() => {
+      diagnostics.record("host.layout.ready");
       if (this.application !== application) {
         return;
       }
       void this.initializeAfterLayout(application);
     });
 
-    this.addRibbonIcon("route", "Open Trail", () => {
-      void this.activateView();
+    this.addRibbonIcon("route", "Open trail", () => {
+      void this.activateView("ribbon");
     });
 
     this.addCommand({
       id: "open",
       name: "Open",
       callback: () => {
-        void this.activateView();
+        void this.activateView("command");
       },
     });
+
+    if (__TRAIL_DIAGNOSTICS_ENABLED__) {
+      this.addCommand({
+        id: "copy-diagnostics-trace",
+        name: "Copy diagnostics trace",
+        callback: () => {
+          void this.copyDiagnosticsTrace();
+        },
+      });
+    }
   }
 
   public onunload(): void {
+    this.diagnostics.record("plugin.unloading");
     this.application?.dispose();
     this.application = null;
+    void this.diagnostics.dispose();
+    this.diagnostics = NOOP_TRAIL_DIAGNOSTICS;
+  }
+
+  private createDiagnostics(): TrailDiagnostics {
+    if (!__TRAIL_DIAGNOSTICS_ENABLED__) {
+      return NOOP_TRAIL_DIAGNOSTICS;
+    }
+
+    const directoryPath = normalizePath(
+      `${this.app.vault.configDir}/plugins/${this.manifest.id}/diagnostics`,
+    );
+    return createTrailDiagnostics({
+      createId: () => crypto.randomUUID(),
+      now: () => Date.now(),
+      persistence: createObsidianDiagnosticPersistence(
+        this.app.vault.adapter,
+        directoryPath,
+      ),
+    });
+  }
+
+  private async copyDiagnosticsTrace(): Promise<void> {
+    const correlationId = this.diagnostics.createCorrelationId("diagnostics.export");
+    this.diagnostics.record("diagnostics.export.requested", {
+      correlationId,
+      data: { maxSessions: 2 },
+    });
+
+    try {
+      const trace = await this.diagnostics.exportRecent(2);
+      if (trace.trim() === "") {
+        new Notice("Trail diagnostics trace is empty.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(trace);
+      new Notice("Trail diagnostics copied (up to 2 recent sessions).");
+    } catch (error: unknown) {
+      this.diagnostics.record("diagnostics.export.failed", {
+        correlationId,
+        data: { errorName: errorName(error) },
+        level: "error",
+      });
+      console.error("Trail diagnostics export failed", error);
+      new Notice("Trail diagnostics could not be copied.");
+    }
   }
 
   private async initializeAfterLayout(
@@ -103,16 +194,31 @@ export default class TrailPlugin extends Plugin {
         return;
       }
       this.registerTriageEvents(application);
+      this.diagnostics.record("host.triage-events.registered");
     } catch (error: unknown) {
+      this.diagnostics.record("plugin.initialization.failed", {
+        data: { errorName: errorName(error) },
+        level: "error",
+      });
       console.error("Trail Formal initialization failed", error);
     }
   }
 
   private registerTriageEvents(application: TrailApplication): void {
     this.registerEvent(
-      this.app.vault.on("modify", (file) => {
+      this.app.vault.on("modify", (file: TAbstractFile) => {
         if (file.path === TRAIL_TRIAGE_PATH) {
-          void application.refreshTriage().catch((error: unknown) => {
+          const correlationId = this.diagnostics.createCorrelationId("vault.modify");
+          this.diagnostics.record("host.vault.modify", {
+            correlationId,
+            data: { path: file.path },
+          });
+          void application.refreshTriage(correlationId).catch((error: unknown) => {
+            this.diagnostics.record("host.vault.modify.reconcile-failed", {
+              correlationId,
+              data: { errorName: errorName(error) },
+              level: "error",
+            });
             console.error("Trail Triage reconciliation failed", error);
           });
         }
@@ -120,38 +226,75 @@ export default class TrailPlugin extends Plugin {
     );
 
     this.registerEvent(
-      this.app.vault.on("delete", (file) => {
+      this.app.vault.on("delete", (file: TAbstractFile) => {
         if (file.path === TRAIL_TRIAGE_PATH) {
+          const correlationId = this.diagnostics.createCorrelationId("vault.delete");
+          this.diagnostics.record("host.vault.delete", {
+            correlationId,
+            data: { path: file.path },
+            level: "warn",
+          });
           application.markRequiredTriageUnavailable(
             `Required Formal Triage file was removed: ${TRAIL_TRIAGE_PATH}. Restore it and reload Trail; it will not be silently recreated.`,
+            correlationId,
           );
         }
       }),
     );
 
     this.registerEvent(
-      this.app.vault.on("rename", (file, oldPath) => {
+      this.app.vault.on("rename", (file: TAbstractFile, oldPath: string) => {
         if (oldPath === TRAIL_TRIAGE_PATH || file.path === TRAIL_TRIAGE_PATH) {
+          const correlationId = this.diagnostics.createCorrelationId("vault.rename");
+          this.diagnostics.record("host.vault.rename", {
+            correlationId,
+            data: {
+              newPath: file.path,
+              oldPath,
+            },
+            level: "warn",
+          });
           application.markRequiredTriageUnavailable(
             `Required Formal Triage path changed. Restore ${TRAIL_TRIAGE_PATH} and reload Trail.`,
+            correlationId,
           );
         }
       }),
     );
   }
 
-  private async activateView(): Promise<void> {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(TRAIL_VIEW_TYPE)[0];
+  private async activateView(trigger: "command" | "ribbon"): Promise<void> {
+    const correlationId = this.diagnostics.createCorrelationId("view.activate");
+    this.diagnostics.record("view.activate.requested", {
+      correlationId,
+      data: { trigger },
+    });
 
-    if (!leaf) {
-      leaf = workspace.getLeaf("tab");
-      await leaf.setViewState({
-        active: true,
-        type: TRAIL_VIEW_TYPE,
+    try {
+      const { workspace } = this.app;
+      let leaf = workspace.getLeavesOfType(TRAIL_VIEW_TYPE)[0];
+      const reusedExistingLeaf = leaf !== undefined;
+
+      if (!leaf) {
+        leaf = workspace.getLeaf("tab");
+        await leaf.setViewState({
+          active: true,
+          type: TRAIL_VIEW_TYPE,
+        });
+      }
+
+      await workspace.revealLeaf(leaf);
+      this.diagnostics.record("view.activate.completed", {
+        correlationId,
+        data: { reusedExistingLeaf },
       });
+    } catch (error: unknown) {
+      this.diagnostics.record("view.activate.failed", {
+        correlationId,
+        data: { errorName: errorName(error) },
+        level: "error",
+      });
+      throw error;
     }
-
-    await workspace.revealLeaf(leaf);
   }
 }

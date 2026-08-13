@@ -4,6 +4,10 @@ import { ItemView, type WorkspaceLeaf } from "obsidian";
 
 import type { TrailApplication } from "./domain/trail-application";
 import type { TrailRuntimeStore } from "./domain/trail-runtime";
+import {
+  NOOP_TRAIL_DIAGNOSTICS,
+  type TrailDiagnostics,
+} from "./diagnostics/trail-diagnostics";
 import { TrailApp } from "./trail-app";
 
 export const TRAIL_VIEW_TYPE = "trail-view";
@@ -20,6 +24,7 @@ export class TrailView extends ItemView {
     leaf: WorkspaceLeaf,
     private readonly runtimeStore: TrailRuntimeStore,
     private readonly application: TrailApplication,
+    private readonly diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
   ) {
     super(leaf);
   }
@@ -37,6 +42,9 @@ export class TrailView extends ItemView {
   }
 
   public async onOpen(): Promise<void> {
+    this.diagnostics.record("view.opened", {
+      data: { viewType: TRAIL_VIEW_TYPE },
+    });
     this.contentEl.empty();
     this.contentEl.addClass("trail-view");
 
@@ -56,6 +64,9 @@ export class TrailView extends ItemView {
   }
 
   public async onClose(): Promise<void> {
+    this.diagnostics.record("view.closed", {
+      data: { viewType: TRAIL_VIEW_TYPE },
+    });
     this.root?.unmount();
     this.root = null;
     this.contentEl.empty();

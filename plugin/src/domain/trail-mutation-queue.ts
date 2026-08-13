@@ -1,4 +1,14 @@
+import {
+  NOOP_TRAIL_DIAGNOSTICS,
+  type TrailDiagnostics,
+} from "../diagnostics/trail-diagnostics";
+
 export type TrailMutationCommand<Result> = () => Promise<Result>;
+
+export interface TrailMutationQueueMetadata {
+  readonly correlationId?: string;
+  readonly kind?: string;
+}
 
 export type TrailMutationQueueErrorCode =
   | "queue-disposed";
@@ -14,8 +24,13 @@ export class TrailMutationQueueError extends Error {
 }
 
 interface QueuedMutation {
-  run(): Promise<void>;
+  readonly metadata?: TrailMutationQueueMetadata;
   reject(error: unknown): void;
+  run(): Promise<void>;
+}
+
+function errorName(error: unknown): string {
+  return error instanceof Error ? error.name : "UnknownError";
 }
 
 export class TrailMutationQueue {
@@ -23,19 +38,40 @@ export class TrailMutationQueue {
   private isRunning = false;
   private disposed = false;
 
+  public constructor(
+    private readonly diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
+  ) {}
+
   enqueue<Result>(
     command: TrailMutationCommand<Result>,
+    metadata?: TrailMutationQueueMetadata,
   ): Promise<Result> {
     if (this.disposed) {
+      this.diagnostics.record("mutation.queue.rejected", {
+        correlationId: metadata?.correlationId,
+        data: {
+          kind: metadata?.kind ?? null,
+          reason: "queue-disposed",
+        },
+        level: "warn",
+      });
       return Promise.reject(createDisposedError());
     }
 
     return new Promise<Result>((resolve, reject) => {
       this.pending.push({
+        metadata,
         run: async () => {
           resolve(await command());
         },
         reject,
+      });
+      this.diagnostics.record("mutation.queue.enqueued", {
+        correlationId: metadata?.correlationId,
+        data: {
+          kind: metadata?.kind ?? null,
+          pendingCount: this.pending.length,
+        },
       });
 
       void this.run();
@@ -48,10 +84,21 @@ export class TrailMutationQueue {
     }
 
     this.disposed = true;
+    this.diagnostics.record("mutation.queue.disposed", {
+      data: { queuedCount: this.pending.length },
+    });
 
     const error = createDisposedError();
 
     for (const mutation of this.pending.splice(0)) {
+      this.diagnostics.record("mutation.queue.rejected", {
+        correlationId: mutation.metadata?.correlationId,
+        data: {
+          kind: mutation.metadata?.kind ?? null,
+          reason: "queue-disposed",
+        },
+        level: "warn",
+      });
       mutation.reject(error);
     }
   }
@@ -71,9 +118,33 @@ export class TrailMutationQueue {
           return;
         }
 
+        this.diagnostics.record("mutation.queue.started", {
+          correlationId: mutation.metadata?.correlationId,
+          data: {
+            kind: mutation.metadata?.kind ?? null,
+            queuedBehind: this.pending.length,
+          },
+        });
+
         try {
           await mutation.run();
+          this.diagnostics.record("mutation.queue.completed", {
+            correlationId: mutation.metadata?.correlationId,
+            data: {
+              kind: mutation.metadata?.kind ?? null,
+              queuedBehind: this.pending.length,
+            },
+          });
         } catch (error: unknown) {
+          this.diagnostics.record("mutation.queue.failed", {
+            correlationId: mutation.metadata?.correlationId,
+            data: {
+              errorName: errorName(error),
+              kind: mutation.metadata?.kind ?? null,
+              queuedBehind: this.pending.length,
+            },
+            level: "error",
+          });
           mutation.reject(error);
         }
       }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  createTrailDiagnostics,
+  type TrailDiagnosticPersistence,
+} from "../diagnostics/trail-diagnostics";
 import { TRAIL_TRIAGE_EMPTY_MARKDOWN } from "./trail-physical-schema";
 import { TrailMutationQueue } from "./trail-mutation-queue";
 import {
@@ -105,6 +109,31 @@ function createHarness(ids: string[]) {
   );
 
   return { persistence, queue, service, store };
+}
+
+interface ParsedTriageDiagnosticEvent {
+  readonly correlationId?: string;
+  readonly data?: unknown;
+  readonly name: string;
+}
+
+function parseDiagnosticEvent(line: string): ParsedTriageDiagnosticEvent {
+  const parsed: unknown = JSON.parse(line);
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new Error("Diagnostic line is not an object");
+  }
+
+  const record = parsed as Record<string, unknown>;
+  if (typeof record.name !== "string") {
+    throw new Error("Diagnostic line is missing an event name");
+  }
+  return {
+    correlationId: typeof record.correlationId === "string"
+      ? record.correlationId
+      : undefined,
+    data: record.data,
+    name: record.name,
+  };
 }
 
 describe("Formal Triage Intake vertical core", () => {
@@ -237,4 +266,133 @@ describe("Formal Triage Intake vertical core", () => {
     expect(harness.store.getState().committed.sourceIssues.length).toBeGreaterThan(0);
     harness.queue.dispose();
   });
+
+  it("records the Quick Capture lifecycle without persisting title text in diagnostics", async () => {
+    const lines: string[] = [];
+    const diagnosticPersistence: TrailDiagnosticPersistence = {
+      appendLine: async (line) => {
+        lines.push(line);
+      },
+      beginSession: async () => undefined,
+      readRecentSessions: async () => lines.join(""),
+      replaceSession: async () => undefined,
+    };
+    const diagnostics = createTrailDiagnostics({
+      createId: () => "diagnostic-session",
+      now: () => NOW,
+      persistence: diagnosticPersistence,
+    });
+    const store = createTrailRuntimeStore();
+    const queue = new TrailMutationQueue(diagnostics);
+    const persistence = new MemoryTriagePersistence();
+    const ids = ["command-a", "issue-a"];
+    const service = new TrailTriageIntakeService(
+      store,
+      queue,
+      persistence,
+      {
+        createId: () => ids.shift() ?? "unexpected",
+        now: () => NOW,
+        resolveDefaultDue: (effectiveAt) => effectiveAt + 7,
+      },
+      diagnostics,
+    );
+
+    await service.initialize("initialize-a");
+    const receipt = service.capture({ title: "Sensitive title text" });
+    await receipt.completion;
+    await diagnostics.flush();
+
+    const trace = lines.join("");
+    const names = lines
+      .map(parseDiagnosticEvent)
+      .map((event) => event.name)
+      .filter((name) => name !== "diagnostics.session.started");
+
+    expect(names).toContain("command.created");
+    expect(names).toContain("command.planned");
+    expect(names).toContain("runtime.optimistic.applied");
+    expect(names).toContain("triage.persistence.write.started");
+    expect(names).toContain("runtime.triage.reconciled");
+    expect(names).toContain("runtime.optimistic.removed");
+    expect(names).toContain("command.committed");
+    expect(trace).not.toContain("Sensitive title text");
+    expect(trace).toContain('"titleLength":20');
+    queue.dispose();
+  });
+
+  it("records privacy-preserving entity and field diffs for external reconciliation", async () => {
+    const lines: string[] = [];
+    const diagnosticPersistence: TrailDiagnosticPersistence = {
+      appendLine: async (line) => {
+        lines.push(line);
+      },
+      beginSession: async () => undefined,
+      readRecentSessions: async () => lines.join(""),
+      replaceSession: async () => undefined,
+    };
+    const diagnostics = createTrailDiagnostics({
+      createId: () => "diagnostic-session",
+      now: () => NOW,
+      persistence: diagnosticPersistence,
+    });
+    const store = createTrailRuntimeStore();
+    const queue = new TrailMutationQueue(diagnostics);
+    const persistence = new MemoryTriagePersistence();
+    persistence.appendExternal({
+      context: "triage",
+      due: NOW,
+      id: "external",
+      labelIds: [],
+      title: "External title",
+    });
+    const service = new TrailTriageIntakeService(
+      store,
+      queue,
+      persistence,
+      {
+        createId: () => "unused",
+        now: () => NOW,
+        resolveDefaultDue: (effectiveAt) => effectiveAt + 7,
+      },
+      diagnostics,
+    );
+
+    await service.initialize("initialize");
+    persistence.markdown = persistence.markdown.replace(
+      "## External title",
+      "## External title edited",
+    );
+    await service.refreshFromPersistence("external-edit");
+    await service.refreshFromPersistence("external-noop");
+    await diagnostics.flush();
+
+    const events = lines.map(parseDiagnosticEvent);
+    const changed = events.find(
+      (event) =>
+        event.name === "runtime.triage.reconciled"
+        && event.correlationId === "external-edit",
+    );
+    const noop = events.find(
+      (event) =>
+        event.name === "runtime.triage.reconciled"
+        && event.correlationId === "external-noop",
+    );
+
+    expect(changed?.data).toMatchObject({
+      addedIds: [],
+      changedFieldsById: { external: ["title"] },
+      changedIds: ["external"],
+      removedIds: [],
+    });
+    expect(noop?.data).toMatchObject({
+      addedIds: [],
+      changedFieldsById: {},
+      changedIds: [],
+      removedIds: [],
+    });
+    expect(lines.join("")).not.toContain("External title edited");
+    queue.dispose();
+  });
+
 });

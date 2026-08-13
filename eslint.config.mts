@@ -17,6 +17,7 @@ export default defineConfig(
     languageOptions: {
       globals: {
         ...globals.browser,
+        __TRAIL_DIAGNOSTICS_ENABLED__: "readonly",
       },
       parserOptions: {
         projectService: {

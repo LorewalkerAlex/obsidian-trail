@@ -6,6 +6,10 @@ import {
 } from "vitest";
 
 import {
+  createTrailDiagnostics,
+  type TrailDiagnosticPersistence,
+} from "../diagnostics/trail-diagnostics";
+import {
   TrailMutationQueue,
   TrailMutationQueueError,
 } from "./trail-mutation-queue";
@@ -32,6 +36,49 @@ function deferred<Value>(): Deferred<Value> {
 
       resolvePromise(value);
     },
+  };
+}
+
+function createDiagnosticHarness() {
+  const lines: string[] = [];
+  const persistence: TrailDiagnosticPersistence = {
+    appendLine: async (line) => {
+      lines.push(line);
+    },
+    beginSession: async () => undefined,
+    readRecentSessions: async () => lines.join(""),
+    replaceSession: async () => undefined,
+  };
+  const diagnostics = createTrailDiagnostics({
+    createId: () => "session-a",
+    now: () => 1,
+    persistence,
+  });
+
+  return { diagnostics, lines };
+}
+
+interface ParsedQueueDiagnosticEvent {
+  readonly correlationId?: string;
+  readonly name: string;
+}
+
+function parseQueueDiagnosticEvent(line: string): ParsedQueueDiagnosticEvent {
+  const parsed: unknown = JSON.parse(line);
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new Error("Diagnostic line is not an object");
+  }
+
+  const record = parsed as Record<string, unknown>;
+  if (typeof record.name !== "string") {
+    throw new Error("Diagnostic line is missing an event name");
+  }
+
+  return {
+    correlationId: typeof record.correlationId === "string"
+      ? record.correlationId
+      : undefined,
+    name: record.name,
   };
 }
 
@@ -123,5 +170,29 @@ describe("Trail mutation queue", () => {
     ).rejects.toBeInstanceOf(
       TrailMutationQueueError,
     );
+  });
+
+  it("emits correlated queue lifecycle events without changing queue semantics", async () => {
+    const { diagnostics, lines } = createDiagnosticHarness();
+    const queue = new TrailMutationQueue(diagnostics);
+
+    await expect(queue.enqueue(
+      () => Promise.resolve("done"),
+      {
+        correlationId: "command-a",
+        kind: "triage.capture",
+      },
+    )).resolves.toBe("done");
+    await diagnostics.flush();
+
+    const events = lines
+      .map(parseQueueDiagnosticEvent)
+      .filter((event) => event.name.startsWith("mutation.queue."));
+    expect(events.map((event) => event.name)).toEqual([
+      "mutation.queue.enqueued",
+      "mutation.queue.started",
+      "mutation.queue.completed",
+    ]);
+    expect(events.every((event) => event.correlationId === "command-a")).toBe(true);
   });
 });

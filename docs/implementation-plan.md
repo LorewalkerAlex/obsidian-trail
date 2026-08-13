@@ -49,22 +49,25 @@ Workspace initialization
 
 active runtime 已完成 POC validation shell → Formal Triage cutover。POC 中已经验证的 Parser、guarded mutation、Mutation Queue、optimistic UI、Vault event reconciliation 等继续作为技术证据，但正式实现按当前架构和 reuse-before-build policy 重新选择实现方案；不继承 POC-era Area / Task / Fleeting Note schema，也不建立 POC → Formal migration compatibility。
 
+Development Diagnostics 已作为独立的开发/实机测试 observability 基础设施补齐，并通过真实 Obsidian 验证。它只记录结构化生命周期、实体/字段级 reconcile diff 和必要诊断元数据，不进入 Canonical Domain、Event Sourcing 或 Product Activity history；production build 默认关闭。
+
 ### 3.1 近期计划
 
 | Slice | 目标 | 状态 |
 |---|---|---|
 | Formal Triage Intake | Initialize Trail；Quick Capture 创建正式 Triage Issue；列表即时可见；持久化、reload 与外部变化后正确恢复 | 已完成 |
-| Development Diagnostics | 为后续真实 Obsidian 操作建立 session-scoped structured trace；不进入 Domain / Product Activity history | 下一步 |
-| Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链继续复用 | 待开始 |
+| Development Diagnostics | 为后续真实 Obsidian 操作建立 session-scoped structured trace；不进入 Domain / Product Activity history | 已完成 |
+| Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链继续复用 | 下一步 |
 | Workflow Entry | 建立 Project / Workflow Issue 的最小可用执行闭环 | 待开始 |
 
-Formal Triage Intake 的稳定 checkpoint：
+Formal Intake 当前稳定 checkpoint：
 
 - [x] **Gate A — Formal foundation**：固化 POC baseline archive；完成 Zustand / Markdown parser focused validation；建立 Formal Configuration、Workspace safety classification/bootstrap 与 Obsidian host boundary。
 - [x] **Gate B — Formal Triage vertical path**：建立正式 Triage model/parser、Quick Capture command/planner、Zustand committed + optimistic runtime、serial mutation、`Vault.process()` persistence/reconciliation，并完成 active POC → Formal cutover。
 - [x] **Real Obsidian validation**：验证 Fresh bootstrap、Quick Capture persistence/reload、合法外部修改 reconcile、非法 source last-known-good 隔离与恢复、required singleton 缺失保护。
+- [x] **Development Diagnostics**：建立 development-only session trace，覆盖 command / optimistic / queue / persistence / validation / reconcile；验证跨 session 保留、实体/字段 diff、两 session retention 与 production build 排除。
 
-下一步先补统一 Development Diagnostics，再进入新的交互 Slice。Diagnostics 只服务开发/实机测试 observability，不成为 Canonical Domain、Event Sourcing 或 Product Activity Log。
+下一步进入 Triage Management，继续在同一正式 mutation 主链上补齐 title / Due 编辑、defer 与 delete，并用现有 Diagnostics 辅助真实 Obsidian 回归。
 
 `Workflow Entry` 的具体边界在 Triage Management 完成后根据实际实现规模重新评估，不提前固定 Board、DnD、Peek、Priority 或 Milestone 是否属于同一 Slice。
 
@@ -101,7 +104,8 @@ Formal active path 已完成 implementation authority cutover：
 | Technical Design | 已完成 | Formal implementation architecture baseline 已收口 |
 | Implementation Plan | 已形成 | V1 总路线与 Formal Intake 近期计划建立 |
 | Formal Triage Intake | 已完成 | Formal foundation、Triage vertical path、active cutover 与真实 Obsidian 验证已完成 |
-| Formal Intake | 当前 | 下一步 Development Diagnostics，然后进入 Triage Management |
+| Development Diagnostics | 已完成 | development-only structured trace 已完成并通过真实 Obsidian 与 production boundary 验证 |
+| Formal Intake | 当前 | 下一步 Triage Management |
 | Formal Workflow | 待开始 | — |
 | V1 Exit | 待开始 | — |
 

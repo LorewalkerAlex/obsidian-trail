@@ -8,6 +8,7 @@
     "dev": "node esbuild.config.mjs",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && node esbuild.config.mjs production",
+    "build:diagnostics": "npm run typecheck && node esbuild.config.mjs diagnostics",
     "test": "vitest",
     "test:run": "vitest run --reporter=dot",
     "test:run:verbose": "vitest run",
