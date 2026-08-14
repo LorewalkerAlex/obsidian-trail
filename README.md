@@ -153,6 +153,18 @@ During one implementation slice, run focused tests plus directly affected repres
 
 The active plugin is the Formal Trail runtime. Real Obsidian regression follows **independent-risk sampling**: once a shared implementation path has representative host evidence, do not repeat the same real-host test merely because a different field, Entity or button reuses it. Add real-host coverage when a change introduces a genuinely different Obsidian API, source type, cross-source execution pattern, host event interaction or other independent risk.
 
+Every real-host test that is actually needed still begins with an explicit protocol covering:
+
+1. repository / branch / build state and the starting Trail Vault state；
+2. whether the Trail plugin / relevant Trail Vault must be reloaded before the test；
+3. the exact page / view to open, fixture data and important default values；
+4. any Development Diagnostics / Developer Console hook that must be armed；
+5. the expected UI and authoritative-disk end state；
+6. cleanup / restore steps, including restoration of any diagnostics hook；
+7. whether the relevant Trail Vault should remain open, be closed, or be reloaded afterward.
+
+If a host-state reset is needed, operate only on the relevant Trail Vault / plugin lifecycle; do not close unrelated Obsidian windows or Vaults. Test fixture names should be short and visually distinct so manual verification remains low-friction.
+
 Development Diagnostics are enabled only in diagnostics-enabled development builds. They persist a compact JSONL trace under `<vault-config>/plugins/trail/diagnostics/trace.jsonl`, keep at most the latest two sessions with at most 2000 events per session, and expose **Trail: Copy diagnostics trace**. The trace is development observability, not Canonical Domain state, Event Sourcing, or Product Activity history.
 
 ## Continuous integration

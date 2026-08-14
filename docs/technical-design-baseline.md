@@ -1,11 +1,12 @@
 # Trail Technical Design Baseline
 
 > 状态：Formal Technical Design baseline（第一轮）
-> 最后更新：2026-08-12
+> 最后更新：2026-08-14
 > 上游 Product：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
 > 上游 Physical Model：`docs/markdown-physical-model.md`
+> 下游 Implementation Architecture：`docs/implementation-architecture.md`
 > POC 技术证据：`docs/technical-design.md`
 
 ## 1. 文档定位
@@ -15,6 +16,8 @@
 本文不是 POC schema 的延续。旧 `docs/technical-design.md` 继续保留作为可复用技术证据，其中已经验证的 Parser、guarded mutation、cross-file compensation、Runtime Store、Mutation Queue、optimistic UI、file-event reconciliation、Obsidian Modal、BOM compatibility、scale benchmark 等可以被正式实现复用；POC-era Area / Task / Subtask / Fleeting 数据结构不具有权威性。
 
 本轮 Technical Design 只冻结已经讨论清楚的架构边界。具体 React component tree、CSS 数值、library API wiring、虚拟列表阈值、动画参数等后置到 Implementation Design / slice implementation。
+
+`docs/implementation-architecture.md` 是本文的 code-level projection：它不能删除本文已经确定的 capability，但可以在不改变 ownership / extension point 的前提下，为当前个人 V1 选择更粗的 operational policy。例如 fault scope / per-source reconciliation 结构保留，而 mutation availability 与 unexpected external refresh 可以先采用 global fail-closed + full reload。
 
 ## 2. Design Goals
 
@@ -316,9 +319,10 @@ issue-123 → Trail/Projects/0007 Project A.md
 
 这支持：
 
-- per-source external edit reconcile；
+- Trail-controlled write 的 per-source authoritative reconcile；
+- future finer-grained external-change reconcile；
 - cross-container mutation source/destination lookup；
-- fault isolation；
+- fault-scope identification；
 - 不扫描全 Vault 即可替换一个 source contribution。
 
 ## 9. Reconciliation
@@ -338,12 +342,13 @@ read latest source
 
 一次 reconcile 对 UI 不暴露半更新中间态。
 
-Invalid source：
+Invalid source 的 validation result 必须保留 smallest reliable fault scope：
 
-- isolate smallest reliable fault domain；
-- 不把 invalid object 混入 trusted graph；
-- unrelated valid work 继续工作；
-- global prerequisite（例如 corrupt configuration）只阻止依赖它的 mutation/capability。
+- invalid object 不混入 trusted candidate graph；
+- source / record / configuration / workspace scope 必须可区分；
+- per-source reconciliation 与 granular Data Issue 结构继续保留，作为后续 finer fault isolation 的正式能力边界。
+
+这里区分 **validation granularity** 与 **V1 mutation-availability policy**。当前个人本地场景允许先采用粗粒度 fail-closed：任一 blocking validation error 都可以暂时关闭全局 mutation gate，并在可能时保留 last-known-good committed state 用于查看。以后若真实运行证明有必要，再利用已经保留的 scope / ownership / reconciliation 细化为“无关 source 继续可写”，而不改变 Validator / Runtime 主干。
 
 ## 10. Physical Mutation Planner / Executor
 
@@ -473,22 +478,22 @@ Pending/Writing/Verifying → Conflict / Failed / Partial
 
 这些状态不进入 Canonical Domain。
 
-## 13. Latest-Source Guard / External Conflict
+## 13. Latest-Source Write Boundary / External Change
 
-真正写入前必须重读 affected source 最新 snapshot，并检查 plan preconditions / fingerprint / source identity。
+Trail-controlled normal write 仍然在 authoritative latest source 上执行。Repository 使用 `Vault.process(latest => ...)` 一类 read-modify-write primitive，在 transform 内重新 parse / locate expected record，并由 Mutation Runner 在 dequeue 时确认 logical preconditions 仍成立；如果 latest source 已经 invalid、目标无法可靠定位或 logical precondition 不再成立，本次 operation 停止，不凭 optimistic UI 强制覆盖。
 
-例如用户看到 Doing 并点击 Complete，但外部 Markdown 已改为 Canceled：
+V1 **不要求**每个 field / record 维护独立 fingerprint、version vector 或 per-entity MVCC。Unexpected external managed-persistence change 主要走统一 refresh gate：
 
 ```text
-expected = Doing
-latest = Canceled
-→ Conflict
-→ no overwrite
-→ remove/recompute optimistic projection
-→ reconcile latest valid source
+unexpected managed persistence event
+→ close mutation gate
+→ full authoritative reload
+→ parse / validate
+→ success: atomically replace committed runtime
+→ failure: retain viewable LKG when possible + read-only error
 ```
 
-不因为 UI 先 optimistic 就强制覆盖 external edit。
+如果极小窗口内 external change 与正在执行的 Trail mutation 交叠，latest-source parse / logical precondition check 是最后一道简单保护；不在 V1 建设额外 merge protocol。以后真实 Sync / external-edit evidence 若证明需要 finer conflict detection，再在现有 Repository / RefreshStrategy / MutationAvailabilityPolicy 内增强。
 
 ## 14. View / Data Selection
 
@@ -504,14 +509,15 @@ Effective Runtime
 → React components
 ```
 
-主要 selectors：
+主要系统页面 selectors：
 
 - Home focus / summaries / heatmap
 - Projects root / Initiative focus
 - Project Issues
 - Triage
 - Current Cycle / Past Cycle
-- Custom View（有限配置）
+
+Custom View 不默认拥有专用 selector / query engine。它持久化已经支持的 scope / filter / sort / group / presentation 参数，并复用上述页面使用的 shared read capabilities；只有未来出现现有组合无法表达的真实需求时，才增加 Custom View-specific logic。
 
 ### 14.1 Candidate Narrowing
 
@@ -886,7 +892,7 @@ Expect PlanResult / Effects / invariants
 - Triage / Workflow context-conditioned fields
 - cross-container destination-first + compensation
 - duplicate ID isolation
-- external edit conflict
+- unexpected external change → refresh / read-only boundary；只有真实需要时再增加 finer conflict guard
 - Weekly Note Current edit / Archive
 
 ### 26.3 Runtime Tests
@@ -951,7 +957,7 @@ User action
 → Pure Domain Mutation Planner
 → Optimistic Projection
 → Serial Mutation Queue
-→ Latest-source guarded Physical Mutation
+→ Latest-source process / logical-precondition-checked Physical Mutation
 → Re-read / Validate
 → Runtime Reconcile
 ```

@@ -315,7 +315,7 @@ Cycle defaults
 Temporal / timezone policy
 ```
 
-已批准但当前尚未实现的 configuration capability 应在对应 slice 中补充 concrete type，不提前发明未知字段。
+已经由 Product / Domain / Logical / Physical contracts 冻结的 Configuration 结构（例如 Status、LabelGroup / Label、Cycle default）应在 Architecture Foundation 阶段成为真实可编译 TypeScript contract；当前尚未实现的是 behavior，不是 architecture。只有仍未冻结的细节（例如部分 temporal presentation policy）保留 TODO / deferred，不提前发明未知字段。
 
 ### 6.3 Workspace State
 
@@ -327,7 +327,7 @@ Favorites (authoritative ordered list)
 Home composition
 ```
 
-Home exact layout schema 仍属于 Technical Design 已明确 deferred 的交互细节；architecture 只冻结 persistence ownership 与消费边界。
+CustomView / Favorites 已冻结的 logical shape 应与 Configuration 一样在 Architecture Foundation 阶段成为真实可编译 contract。Home composition 的 persistence ownership 已冻结，但 exact ModuleConfig / layout schema 仍属于 Technical Design 已明确 deferred 的交互细节，因此只保留清晰 TODO / extension boundary，不提前发明 builder state。
 
 ## 7. Runtime Architecture
 
@@ -713,9 +713,18 @@ target operation
 
 ### 12.3 Integrity Batch
 
-为已经由 Logical Model 确定但低频的 cross-carrier reference-integrity mutation预留，例如 Delete Label、destructive StatusDefinition replacement。
+`IntegrityBatchTransaction` 从 Architecture Foundation 起就是 `PersistenceTransactionPlan` 的正式 compile-time topology，不等到第一个 UI Feature 出现才重新设计 transaction universe。它负责低频、跨 carrier / 多 source 的 referential-integrity mutation，例如：
 
-Architecture 只冻结这一 topology 和 owner，不提前建设 generic transaction graph。V1 首次实现此类 capability 时优先采用简单 staged execution，失败进入 authoritative reload / validation 大兜底。
+```text
+Delete / replace Label or StatusDefinition
+Delete Initiative while preserving / reassigning Projects
+Delete Project while preserving project-less Issues and clearing Milestones
+Delete Issue while removing Cycle membership
+Delete Cycle while preserving Issues / Status
+其他需要同时修复 Domain + Configuration + Workspace references 的 destructive operation
+```
+
+这不增加第四种 transaction topology，也不建设 generic transaction graph。具体 executor behavior 可以渐进实现：第一次真实 consumer 出现时使用简单 staged execution（先建立 replacement / 更新 consumers，再做 destructive removal），失败进入 authoritative reload / validation 大兜底；只有真实故障证据出现后才细化 compensation。
 
 ## 13. Placement Architecture
 
@@ -877,6 +886,10 @@ ui/
 
 可复用 `useTrailAction` 类机制统一处理 use case result、NeedsInput、pending/error presentation；Feature-specific Picker / Modal 决定具体输入 UI。
 
+Product 已确认的 Focus / Peek / Selection / Bulk Actions / Context Menu / Command Menu / Keyboard Shortcuts / Search / Undo-Recovery 统一归属 `ui/interactions` + 对应 Application Behavior。页面只组合这些能力，不各自复制 selection、shortcut、command dispatch 或 recovery semantics。
+
+Undo / Recovery 是用户交互与 persistence recovery capability，不进入 Canonical Domain，不要求建立 Activity Log / Event Sourcing；具体可逆范围按实际 mutation topology 与 Obsidian/Trash 能力逐步实现。
+
 同一 Entity 在 Home、Project、Cycle、Peek 中都通过 ID 读取 Effective Runtime，不在各页面复制自己的 Entity state。
 
 ### 17.3 Picker / Board / Peek
@@ -931,7 +944,9 @@ Architecture 对 host create/modify/delete/rename 提供统一 RefreshController
 
 ### 18.3 Obsidian Adapter
 
-Obsidian 只通过 ports 暴露：Vault I/O、plugin data、workspace/layout lifecycle、commands、views、file events。
+Obsidian 只通过 ports 暴露：Vault I/O、plugin data、workspace/layout lifecycle、commands、views、file events，以及 native link / backlink read capability。
+
+Related Notes 继续使用普通 Obsidian wikilinks / backlinks，不升级为 Canonical Domain relation。需要 link/backlink 数据的 Query / UI 通过一个薄的 Obsidian link-index adapter（例如封装 MetadataCache 的稳定读取能力）消费；React page 不直接到处调用 MetadataCache，也不把 link index 混进 Trail authoritative Runtime。
 
 `main.ts` 最终只承担 composition root 与 host registration，不承载 Domain / persistence / page behavior。
 

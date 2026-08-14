@@ -1,10 +1,12 @@
 # Trail Markdown Physical Model
 
 > 状态：Markdown Physical Model 已收口
-> 最后更新：2026-08-12
+> 最后更新：2026-08-14
 > 上游 Product Design：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
+> 下游 Technical Design：`docs/technical-design-baseline.md`
+> 下游 Implementation Architecture：`docs/implementation-architecture.md`
 
 ## 1. 文档定位
 
@@ -1025,29 +1027,32 @@ Workspace Validation
 
 统一原则：
 
-> **发现问题时隔离最小可信故障域。**
+> **validation 必须识别并保留最小可信故障域；mutation availability 可以按实现阶段采用更粗的 policy。**
 
 例如一个 Project file 内某个 Issue metadata 缺少 Workflow status：
 
 - 该 Issue invalid；
-- 同 Project 其他可独立验证的 records 可以继续进入 Runtime；
-- 记录 Data Issue。
+- 同 Project 其他可独立解析 / 验证的 records 仍应保留为可识别的 valid contribution candidate；
+- Data Issue 记录 source / entity / field scope。
 
-如果 Project file 的 file identity / core structure 已经不可信，例如 frontmatter `id` 无法解析、required structural section 混乱到无法可靠界定 records，则隔离整个 file。
+如果 Project file 的 file identity / core structure 已经不可信，例如 frontmatter `id` 无法解析、required structural section 混乱到无法可靠界定 records，则 fault scope 提升为整个 file。
 
-一处无关 Project 的损坏不让整个 Workspace 进入全局不可用状态。
+这些 granular scope 是长期 fault isolation 能力，不能在实现中丢失。但当前 V1 operational policy 可以更保守：只要存在 blocking validation error，就先关闭全局 mutation gate，并在可能时保留 last-known-good state 用于查看；以后再基于真实故障频率利用现有 scope 细化“无关 source 继续可写”，不修改 Physical Schema 或 Validation contract。
 
-## 21. External Manual Modification Policy
+## 21. External Modification Policy
 
-Trail Markdown 可读、可检查，但正式 mutation path 仍是 Trail UI / recognized migration tooling。
+Trail Markdown 可读、可检查，但正常 mutation path 仍是 Trail UI / recognized migration tooling。Unexpected managed-persistence change 主要来自 Sync，也可能来自用户或其他工具的直接修改；无论来源，Physical contract 都要求 authoritative reread + current-schema validation，不基于猜测静默改写 Domain relationship。当前 V1 external-change execution policy 可以统一为：
 
-用户或外部工具直接修改 Markdown 后：
+```text
+unexpected managed persistence event
+→ close mutation gate
+→ full authoritative reload
+→ validate
+→ success: atomic runtime replacement
+→ failure: last-known-good view when available + read-only error
+```
 
-- Trail re-read latest snapshot；
-- 按 current schema 验证；
-- 合法则进入新 Runtime snapshot；
-- 非法则报告 Data Issue；
-- 不基于猜测静默改写 Domain relationship。
+因此当前不要求每个 record 维护独立 fingerprint / merge state；更细的 affected-source refresh 是未来可替换 strategy，不改变这里的 validation facts。
 
 关系 / placement inconsistency 不自动修复。例如：
 
@@ -1060,11 +1065,7 @@ projectId = Project B
 
 ## 22. Mutation Refusal Boundary
 
-Trail 不因为整个 Vault 某处有错误就禁止所有 mutation。
-
-每次 mutation 必须重新确认 **affected validation scope** 足以证明目标操作可以合法提交。
-
-例如 Move Issue A → Project B 至少要求可信：
+每次 mutation 的 **logical affected scope** 必须能够被识别，并且只有在该操作可以证明会产生合法 authoritative graph 时才允许提交。Move Issue A → Project B 至少涉及：
 
 - Issue A；
 - source / target Project containers；
@@ -1072,9 +1073,9 @@ Trail 不因为整个 Vault 某处有错误就禁止所有 mutation。
 - relevant Status / Label configuration；
 - latest source snapshots。
 
-无关 Project C 的 isolated error 不阻止该操作。
+Physical / Validation architecture 保留这些 scope，是为了未来可以实施 source-scoped availability；但 V1 不必立即实现细粒度 mutation gate。当前可以采用 **any blocking error → block all mutations** 的简单 policy。以后若真实使用证明值得细化，再让无关 Project C 的 isolated error 不阻止 A → B，而不改变 source scope、issue shape 或 validation stages。
 
-如果 mutation target 本身存在 identity ambiguity，例如同一 stable ID 重复出现，则必须拒绝相关 mutation，不能任意选择一个 record。
+无论 policy 粗细，如果 mutation target 本身存在 identity ambiguity，例如同一 stable ID 重复出现，都必须拒绝相关 mutation，不能任意选择一个 record。
 
 ## 23. `data.json` Failure Boundary
 
@@ -1204,20 +1205,21 @@ POC Exit 已验证的技术能力继续作为 Formal Implementation 的技术证
 
 ## 29. Implementation Boundary
 
-Markdown Physical Model 已关闭；`docs/technical-design-baseline.md` 已定义正式 Runtime / optimistic / mutation / page / frontend architecture。以下仍属于 implementation-slice level decisions，而不是继续开放 Technical Design：
+Markdown Physical Model 已关闭。`docs/technical-design-baseline.md` 定义 conceptual Technical Design，`docs/implementation-architecture.md` 进一步冻结正式 module ownership、standard read/write path、Runtime / Mutation / Repository contracts 与 V1 coarse reliability policy。
 
-1. Physical Schema Registry 的 TypeScript representation 与 shared Parser / Serializer / Validator API；
-2. 如何利用 Obsidian MetadataCache heading positions 加速结构索引，同时用 latest Markdown snapshot + stable ID + guard 保护 authoritative write；
-3. Runtime Store 如何构建 indexes、label usage count、derived queries 与 Data Issues；
-4. single-file / cross-file mutation 的正式 transaction / compensation / write-verify protocol；
-5. `data.json` load/save、invalid configuration 与 last-known-good snapshot handling；
-6. external file event reconciliation 与 affected-scope validation；
-7. explicit migration 的 execution / recovery contract；
-8. diagnostics / observability 如何服务真实 Obsidian 回归但不进入 Product History。
+因此以下内容不再作为“每个 Feature 自己决定”的开放项：
 
-这些决定必须在当前 Product / Domain / Logical / Physical / Technical contracts 内完成；只有真实实现证据证明 contract 本身不成立时，才回到相应设计文档修订。
+- Physical Schema Registry / explicit Codec / Markdown Core 的 ownership；
+- SourceIO / PluginDataIO 与 DomainSourceRepository boundary；
+- normal Trail write 的 latest-source process + authoritative reread / validation；
+- global serial queue、Single / Source Transition / Integrity Batch topology；
+- Runtime source ownership / reconciliation / Data Issue scope；
+- unexpected external change 的 V1 FullWorkspaceRefreshStrategy；
+- Diagnostics 与 Product History 的分离。
 
-项目当前阶段、近期 Slice 与 checkpoint 统一查看 `docs/implementation-plan.md`。
+仍然可以在 implementation slice 内决定的是这些 owner 内部的具体 TypeScript API、MetadataCache 是否用于加速结构定位、具体 error object shape、benchmark-driven optimization，以及第一次真实 breaking migration 出现时的 execution / recovery 细节。它们不得反向改变本文 Physical Schema / carrier / validation facts。
+
+只有真实实现证据证明上游 contract 本身不成立时，才回到相应设计文档修订。项目当前阶段、近期 Slice 与 checkpoint 统一查看 `docs/implementation-plan.md`。
 
 ## 30. Closeout
 
