@@ -1,23 +1,22 @@
 # Trail V1 Implementation Plan
 
 > 状态：当前 Implementation Plan baseline
-> 最后更新：2026-08-13
+> 最后更新：2026-08-14
 > 上游 Product：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
 > 上游 Physical Model：`docs/markdown-physical-model.md`
 > 上游 Technical Design：`docs/technical-design-baseline.md`
-> 当前阶段：Intake → Workflow
+> Implementation Architecture：`docs/implementation-architecture.md`
+> 当前阶段：Implementation Architecture Re-baseline
 
 ## 1. 文档定位
 
 本文记录 Trail V1 从正式设计进入正式实现后的总体路线、当前近期计划和阶段 checkpoint。
 
-本文是项目实现进度的单一权威来源：当前阶段、近期 Slice 和 Implementation Checkpoints 只在本文维护。README 只做入口摘要；已经收口的 Product / Domain / Logical / Physical / Technical Design 文档只记录各自的 contract 与 authority boundary，不重复维护项目进度。
+本文是项目实现进度的单一权威来源。Product / Domain / Logical / Physical / Technical Design 继续记录各自 contract；`docs/implementation-architecture.md` 记录代码模块、依赖和标准调用框架；本文只维护阶段顺序、近期迁移范围和完成状态。
 
-本文不是逐任务 backlog，也不提前冻结全部未来 Session。距离当前越近的实现范围越具体；中远期只保留稳定的能力顺序和用户价值边界，并根据已经完成的正式实现继续展开。
-
-正式实现以 Product / Canonical Domain / Logical / Physical / Technical Design 为约束。POC 只作为技术证据：已经验证的方法可以继续采用，但正式实现仍需结合当前架构与 Implementation Selection Policy 重新判断是否保留、重构或替换。
+正式实现仍以用户价值路线为主，不因为 Architecture Re-baseline 转向无限重构。Re-baseline 的目的，是先把已经实现的 Formal 能力迁移到可复用架构，再继续新增 Feature。
 
 ## 2. V1 Implementation Roadmap
 
@@ -26,129 +25,103 @@
 | Formal Design | Product、Domain、Logical、Physical 与 Technical Design 收口 | 已完成 |
 | Formal Intake | 建立正式运行主链，打通 Quick Capture → Triage，并完善基本 Triage 管理 | 已完成 |
 | Workflow | 建立 Project / Workflow Issue 的基本执行闭环 | 已完成 |
-| Intake → Workflow | Triage Accept / Convert 接入正式 Workflow | 当前 |
+| **Implementation Architecture Re-baseline** | 固化共享模块与调用框架；把当前 Formal Intake / Workflow / Accept 迁移到新架构 | **当前** |
+| Intake → Workflow | 在新架构上继续 Triage → Workflow / Project 转换能力 | 待继续 |
 | Project Organization | Board / List、Move、Milestone、Initiative 等项目组织能力 | 待开始 |
 | Cycles & Views | Cycle、Filter、Custom View、Search、Favorites 等组织与查看能力 | 待开始 |
 | Home & Utilities | Home、Weekly Note 与全局入口 | 待开始 |
 | V1 Hardening | 响应式、性能、恢复、诊断、整体回归与 V1 收口 | 待开始 |
 
-以上阶段表达 V1 的总体建设顺序，不等同于固定 Session 数量。独立能力可以在依赖满足后调整顺序；具体 Slice 只在进入近期计划后展开。
+Triage Accept 已经在 Re-baseline 之前实现并通过自动化与真实 Obsidian 验证。它现在作为现有行为和跨 source 技术证据进入重构，不要求保留旧 Service / executor 结构。Re-baseline 完成后，Accept 应成为新架构上的已迁移能力；`Triage Convert to Project` 是下一个净新增用户 Slice。
 
-## 3. 当前阶段：Intake → Workflow
+## 3. 当前阶段：Implementation Architecture Re-baseline
 
-Formal Intake 已经形成完整且经过真实 Obsidian 验证的稳定入口链路：
-
-```text
-Workspace initialization
-→ Quick Capture
-→ Triage Issue
-→ Triage List
-→ Edit / Defer / Delete
-→ authoritative Markdown
-→ reload / external change 后正确恢复
-```
-
-Workflow Entry 也已经形成经过自动化与真实 Obsidian 验证的最小执行闭环：
+当前 Product / Domain / Physical contracts 不重做。重点调整 Formal Implementation 的工程结构：
 
 ```text
-Create Project
-→ Project Markdown
-→ Create Workflow Issue
-→ Backlog / Started / Completed / reopen lifecycle
-→ Completed Estimate gate
-→ authoritative Markdown
-→ reload / external change 后正确恢复
+Feature-specific stacks
+        ↓
+shared Domain effects
+shared Markdown / Physical capabilities
+shared Runtime projection / reconcile
+shared mutation execution
+thin Application use cases
+modular UI
 ```
 
-Project 创建使用 Project `Unstarted` category 的 configured default；Fresh Workspace 下显示为 `Planned`。Workflow Issue 创建使用 Issue `Backlog` configured default。Issue 第一次进入 Started 写入 `firstStartedAt`；进入 Completed / Canceled 写入 `terminalAt`；reopen 清除当前 `terminalAt` 但保留首次开始时间。Completed 缺少 Estimate 时 Planner 返回 `NeedsInput`，不会先制造非法 optimistic state 或写入无效 Markdown。
-
-Workflow Runtime 与 Triage 继续共享正式的 committed + ordered optimistic state、global serial mutation queue、latest-source guard、`Vault.process()`、authoritative reread / validation 和 reconcile 机制。Project / Workflow Issue source 采用 source-scoped fault isolation；外部 Project / Issue Markdown 修改可以通过 host event 触发 reread / parse / reconcile，而不需要 reload。
-
-Triage Accept 现在也已经形成经过自动化与真实 Obsidian 验证的跨 source 闭环：
-
-```text
-Triage Issue A
-→ plan NEW Workflow Issue B with new identity
-→ optimistic source removal + target creation
-→ preflight latest Triage source
-→ write + reread + validate B in target Project
-→ delete + reread + validate A absent
-→ reconcile Workflow + Triage
-→ remove optimistic state
-```
-
-Accept 不是 context patch，也不复用 source identity。新 Workflow Issue 使用自己的 stable ID、configured Backlog default 与 `createdAt`；Triage Due 不自动继承。真实 Obsidian Diagnostics 已验证 destination write / authoritative verify 完成后才开始 source delete；两次 Vault host modify event 都排入同一个 global mutation queue，并在 Accept logical command 完成后收敛为无额外业务变化的 reconcile。
-
-如果 target creation / verification 失败，source 保持原样。如果 target 已创建而 source delete 失败，Accept 会尝试只删除刚创建且仍匹配计划结果的 target 作为 guarded compensation；只有 compensation 无法安全完成时才暴露显式 partial Data Issue，而不是猜测磁盘事实或静默丢失 capture。
-
-Development Diagnostics 继续作为 development-only observability 基础设施；production build 默认排除 Diagnostics。Triage Accept 的实机验证只覆盖其独有的跨 source ordering / reconciliation 风险，没有机械重复已经由 Triage Management 和 Workflow Entry 覆盖的普通字段修改与同类 host 行为。
-
-Triage Accept 至此完成。当前 Intake → Workflow 阶段继续推进；下一步是 **Triage Convert to Project**，复用已经建立的 create-target-before-delete-source 可靠性原则，把值得升级为 outcome 的 capture 转成新的 Project。Convert to Note 属于 knowledge action，不强行与下一小步绑定，后续再按实际产品价值展开。
+详细模块图、依赖方向、标准 Read / Write Framework、测试 ownership 和 reliability 尺度由 `docs/implementation-architecture.md` 定义。
 
 ### 3.1 近期计划
 
 | Slice | 目标 | 状态 |
 |---|---|---|
-| Formal Triage Intake | Initialize Trail；Quick Capture 创建正式 Triage Issue；列表即时可见；持久化、reload 与外部变化后正确恢复 | 已完成 |
-| Development Diagnostics | 为后续真实 Obsidian 操作建立 session-scoped structured trace；不进入 Domain / Product Activity history | 已完成 |
-| Triage Management | 编辑 Triage title / Due，defer 与 delete；验证正式 mutation 主链继续复用 | 已完成 |
-| Workflow Entry | 创建 Project / Workflow Issue；完成基本 Issue lifecycle、Estimate gate、reload 与外部 reconcile | 已完成 |
-| Triage Accept | 将 Triage Issue 显式接受为新的 Project-owned Workflow Issue；验证跨 source optimistic、destination-first write/verify、source delete 与 compensation | 已完成 |
-| Triage Convert to Project | 将 Triage Issue 显式升级为新的 Project，并继续复用 create-target-before-delete-source 可靠性边界 | 下一步 |
+| Architecture Contract | 固化目标模块、依赖规则、Domain Effects、Source Operations、Read / Write Framework、Testing / Reliability 原则；完成文档 checkpoint、push 后 consistency review | 当前 |
+| Markdown + Persistence Foundation | 建立共享 Markdown Core、Physical Schema / Registry、Source I/O / Repository；迁移 Triage / Project physical path | 待开始 |
+| Runtime + Mutation Foundation | 拆分 Runtime ownership；建立共享 projection / physical planning / single- and multi-source execution | 待开始 |
+| Existing Formal Migration | 迁移 Quick Capture、Triage Management、Workflow Entry、Triage Accept；删除被共享能力取代的 feature-owned lifecycle | 待开始 |
+| UI + Test Ownership Cleanup | 拆 Formal UI module；提取重复 interaction；按 independent risk 重组测试 | 待开始 |
+| Re-baseline Exit | full check、代表性 real-host 回归、文档校准、commit / push / GitHub 回查 | 待开始 |
 
-当前稳定 checkpoint：
+### 3.2 Re-baseline 原则
 
-- [x] **Gate A — Formal foundation**：固化 POC baseline archive；完成 Zustand / Markdown parser focused validation；建立 Formal Configuration、Workspace safety classification/bootstrap 与 Obsidian host boundary。
-- [x] **Gate B — Formal Triage vertical path**：建立正式 Triage model/parser、Quick Capture command/planner、Zustand committed + optimistic runtime、serial mutation、`Vault.process()` persistence/reconciliation，并完成 active POC → Formal cutover。
-- [x] **Real Obsidian Intake validation**：验证 Fresh bootstrap、Quick Capture persistence/reload、合法外部修改 reconcile、非法 source last-known-good 隔离与恢复、required singleton 缺失保护。
-- [x] **Development Diagnostics**：建立 development-only session trace，覆盖 command / optimistic / queue / persistence / validation / reconcile；验证跨 session 保留、实体/字段 diff、两 session retention 与 production build 排除。
-- [x] **Triage Management**：验证 title / Due 编辑、七个日历日 defer、delete、optimistic mutation、外部修改 reconcile、stale edit 拒绝覆盖以及 production build 边界。
-- [x] **Workflow Entry**：验证 Project / Workflow Issue 创建、configured defaults、Started / terminal lifecycle 时间、Completed Estimate gate、optimistic mutation、reload reconstruction、Project / Issue external reconcile 与 source-scoped fault isolation。
-- [x] **Triage Accept**：验证新 Workflow identity、source / target 协调 optimistic projection、destination write + authoritative verify 先于 source delete、guarded compensation、host event queue ordering、最终双 source reconcile 与 production Diagnostics boundary。
+- **行为保留，代码结构不保守**：Triage / Workflow / Accept 已验证行为是资产；旧 class、file、service 可拆分、合并或局部重写。
+- **先框架、后迁移、再新增**：先建立共享 module/call framework，再迁移现有 Formal 功能；Re-baseline 未完成前不新增 Convert。
+- **Capability-first**：Feature 组合共享能力，不再自带 parser / runtime / persistence / execution stack。
+- **One mechanism, one owner**：同一机制只有一个 canonical implementation。
+- **Reuse code, reuse evidence**：机制测试在所属层证明一次，上层只测试新增语义和独立风险。
+- **Proportional Reliability**：保护现实数据完整性，不为极低概率多重故障建立庞大恢复树。
+- **不偏航**：不改变 V1 Product roadmap，不重做 Canonical Domain，不扩展 `archive/poc/`，不提前建设未来未知能力。
 
-下一步进入 Triage Convert to Project。其核心不需要重新发明跨 source transaction 规则：继续遵循 create-target-before-delete-source，并优先复用已经通过 Triage Accept 验证的 queue、optimistic、verification、compensation 与 diagnostics 边界。需要新增的是 Triage → Project 的具体 planner / field mapping / UI intent，而不是再为同一可靠性问题造一套机制。
+### 3.3 Re-baseline Exit Gate
 
-Convert to Note 不作为下一小步的阻塞项。它如果进入后续 V1 范围，仍遵循 Product Design 已冻结的 create-target-before-delete-source 原则，但其 destination 是普通 Obsidian Markdown / knowledge flow，应作为独立产品价值切片评估。
+只有以下条件同时满足，才进入 Intake → Workflow：
 
-### 3.2 Formal Cutover
+- active Formal code 已按新模块依赖迁移；
+- Triage / Project 共享 Markdown / persistence 基础机制；
+- Runtime / Mutation lifecycle 不再按 Feature 复制；
+- Triage Accept 已迁移到共享 multi-source capability；
+- UI 与测试 ownership 已完成必要收敛；
+- 现有 Formal user behavior 无回归；
+- full `npm run check` 通过；
+- 只对新增独立 host risk 完成代表性真实 Obsidian 验证；
+- 文档、commit / push、GitHub 回查完成。
 
-Formal active path 已完成 implementation authority cutover：
+## 4. 下一阶段：Intake → Workflow
 
-- `plugin/src/` 与正式 `styles.css` 只承载 Formal Implementation；
-- 根目录 `Trail/` 是 Formal plugin 在真实 Vault 中创建和维护的 authoritative Domain Markdown，本地开发环境通过 root-only Git ignore 排除，不再作为 checked-in fixture；
-- POC implementation、tests、fixtures 与样式保存在 `archive/poc/`，并退出 active build / runtime / lint / test path；POC 设计与技术证据文档继续按既定位置保留；
-- 不长期维护 Formal / POC 双实现，也不要求 Formal schema 兼容 POC persistence；
-- POC 中验证过的技术能力可以重新采用，但必须按当前 Formal architecture 实现，而不是继续扩展旧 POC 业务结构。
+Re-baseline 完成后恢复产品路线。
 
-## 4. 实施原则
+已存在的 Triage Accept 不重新作为新 Feature 开发；它应已经成为新架构中的稳定 capability consumer。
 
-- **纵向用户价值优先**：Slice 应从用户操作穿过正式 Domain、Runtime、Persistence 和 UI，而不是按 Parser / Store / UI 分层独立开发。
-- **Formal Design 权威**：实现不能由现有 POC schema 或代码结构反向定义正式模型。
-- **POC evidence, not inheritance**：POC 证明过的技术是证据而不是默认实现优先级；通用能力仍按 `Obsidian / host / browser → mature focused library → thin Trail adapter → justified custom implementation` 的顺序评估。
-- **近期具体、远期粗粒度**：只展开即将实施的 Slice；远期 roadmap 保留调整空间。
-- **正式验证重新建立**：POC 测试不能替代 Formal tests；每条正式路径都需要自动化验证与必要的真实 Obsidian 回归。
-- **实机回归按独立风险取样**：真实 Obsidian 回归优先覆盖独立 code path、host integration 与 failure mode；同一实现链已经有代表性实机证据后，不按字段或按钮机械重复相同测试，除非新的操作引入不同风险。
-- **Checkpoint 后再推进**：一个 Slice 只有在实现、验证、文档校准、commit / push 和远端回查完成后才视为完成。
+第一个净新增 Slice：
+
+```text
+Triage Convert to Project
+```
+
+它应直接复用新的 Domain Effects、Physical Planner、source transaction executor、Runtime projection / reconcile 和 Markdown / persistence infrastructure，只新增 Triage → Project 的业务 planner / field mapping / UI intent。
+
+Convert to Note 仍属于后续 knowledge action，不阻塞下一步。
 
 ## 5. Implementation Checkpoints
 
 | Checkpoint | 状态 | 结果 |
 |---|---|---|
-| POC Exit | 已完成 | 核心技术路线已获得足够可行性证据 |
+| POC Exit | 已完成 | 核心技术路线获得足够可行性证据 |
 | Product Design | 已完成 | Formal Product baseline 已收口 |
 | Canonical Domain | 已完成 | Canonical Domain 已收口 |
 | Logical Data Model | 已完成 | Logical model 已收口 |
 | Markdown Physical Model | 已完成 | Formal persistence model 已收口 |
-| Technical Design | 已完成 | Formal implementation architecture baseline 已收口 |
+| Technical Design | 已完成 | Formal Technical Design baseline 已收口 |
 | Implementation Plan | 已形成 | V1 总路线与近期计划建立 |
-| Formal Triage Intake | 已完成 | Formal foundation、Triage vertical path、active cutover 与真实 Obsidian 验证已完成 |
-| Development Diagnostics | 已完成 | development-only structured trace 已完成并通过真实 Obsidian 与 production boundary 验证 |
-| Triage Management | 已完成 | title / Due 编辑、defer、delete 与 stale-edit protection 已通过自动化和真实 Obsidian 验证 |
-| Formal Intake | 已完成 | Formal Triage Intake、Development Diagnostics 与 Triage Management 形成稳定入口链路 |
-| Workflow Entry | 已完成 | Project / Workflow Issue 最小执行闭环、Estimate gate、reload 与 external reconcile 已通过自动化和真实 Obsidian 验证 |
-| Formal Workflow | 已完成 | Project / Workflow Issue 已经可见、可创建、可执行并能从 Markdown 重建 |
-| Triage Accept | 已完成 | Triage → new Project-owned Workflow Issue 的 destination-first 跨 source flow 已通过自动化与真实 Obsidian 验证 |
-| Intake → Workflow | 当前 | Triage Accept 已完成；下一步 Triage Convert to Project |
+| Formal Triage Intake | 已完成 | Formal foundation、Triage vertical path、active cutover 与真实 Obsidian 验证完成 |
+| Development Diagnostics | 已完成 | development-only structured trace 完成并验证 production boundary |
+| Triage Management | 已完成 | Edit / Defer / Delete 与 stale-edit protection 完成 |
+| Formal Intake | 已完成 | Quick Capture → Triage → Management 形成稳定入口链路 |
+| Workflow Entry | 已完成 | Project / Workflow Issue 基本执行闭环完成 |
+| Formal Workflow | 已完成 | Workflow 可创建、执行并从 Markdown 重建 |
+| Triage Accept | 已完成（迁移输入） | 新 identity、destination-first、optimistic / reconcile 与真实 host evidence 已建立 |
+| **Implementation Architecture Re-baseline** | **当前** | 先固化目标模块，再迁移当前全部 active Formal capability |
+| Intake → Workflow | 待继续 | Re-baseline 后以 Convert to Project 作为第一个净新增 Slice |
 | V1 Exit | 待开始 | — |
 
-Checkpoint 只记录真正形成稳定阶段边界的结果，不追踪每个内部实现任务。完成一个阶段后更新本表，并展开下一阶段的近期计划。
+Checkpoint 只记录稳定阶段边界，不追踪每个内部实现任务。

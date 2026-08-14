@@ -4,7 +4,9 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, and basic Workflow stages. Formal implementation is now in the **Intake → Workflow** stage. The complete Formal Triage vertical path, development-only structured Diagnostics foundation, Triage Management actions, Workflow Entry vertical path, and Triage Accept cross-source flow are implemented and validated in real Obsidian; the next user-facing Slice is Triage Convert to Project.
+Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, and basic Workflow stages. The project is now in the **Implementation Architecture Re-baseline** stage before continuing Intake → Workflow.
+
+The existing Formal Quick Capture / Triage path, Triage Management actions, Workflow Entry path, Development Diagnostics, and Triage Accept cross-source flow are implemented and have representative real-Obsidian evidence. The Re-baseline does not discard those behaviors; it migrates the active Formal implementation from feature-owned stacks toward shared Markdown / Physical, Runtime, Mutation, Persistence and UI capabilities. Existing classes and files may be refactored or locally rewritten where that produces a clearer reusable implementation, while Product / Domain / Physical contracts remain authoritative.
 
 The current design and implementation chain is:
 
@@ -19,18 +21,20 @@ docs/markdown-physical-model.md
     ↓
 docs/technical-design-baseline.md
     ↓
+docs/implementation-architecture.md
+    ↓
 docs/implementation-plan.md
 ~~~
 
-Project progress, the current Slice, and implementation checkpoints are maintained in `docs/implementation-plan.md`. Closed design documents record their own contracts and authority boundaries rather than duplicating project progress.
+`docs/implementation-architecture.md` defines the Formal code module map, dependency direction, shared Domain Effects, Physical / Markdown operations, standard read/write framework, Runtime ownership, proportional reliability, and independent-risk testing rules. `docs/implementation-plan.md` remains the single source of truth for project progress and implementation checkpoints.
 
-The active runtime is the **Formal Trail implementation**, not the former POC validation shell. Formal Intake covers Formal workspace initialization, Quick Capture, Triage Issue parsing/serialization, Due resolution through the configured IANA timezone, Zustand committed + optimistic runtime state, serial mutation execution, `Vault.process()` persistence, reload reconstruction, host-file reconciliation, and Triage Management for title / Due editing, seven-calendar-day defer, and delete. Workflow Entry extends that same Formal runtime with Project creation, Project-owned Workflow Issue creation, configured default status resolution, Issue lifecycle transitions, first-start / terminal timestamps, the Completed Estimate gate, reload reconstruction, Project / Issue Markdown parsing, and source-scoped external-change reconciliation. Triage Accept now connects those two stable paths: accepting a Triage Issue creates a new Project-owned Workflow Issue identity with the configured Backlog default and its own `createdAt`, verifies the destination before deleting the source, does not inherit the Triage Due, and uses guarded compensation if source deletion fails after target creation. Real Obsidian regression has verified these paths together with invalid-source isolation, last-known-good runtime retention, missing-required-singleton protection, stale-edit protection, and production Diagnostics exclusion.
+The Re-baseline is intentionally placed **before further Intake → Workflow feature work**. Its scope is to migrate the currently implemented Formal Intake, Workflow and Triage Accept behavior onto the shared architecture, remove duplicated feature-owned mutation/persistence/runtime mechanisms, and preserve existing user-visible behavior. After that checkpoint is complete, the next net-new user-facing Slice is **Triage Convert to Project**.
 
-The exact POC implementation / fixture / style baseline remains preserved under `archive/poc/` as technical evidence. POC-era Area / Task / Fleeting Note code is no longer part of the active runtime, lint, or test path.
+The exact POC implementation / fixture / style baseline remains preserved under `archive/poc/` as technical evidence. POC-era Area / Task / Fleeting Note code is not part of the active runtime, lint, or test path and is not a target of the Re-baseline.
 
-Formal implementation follows the **reuse before build** policy in `docs/technical-design-baseline.md`: Obsidian / host / browser capabilities and mature focused libraries are evaluated before custom infrastructure. POC evidence can inform a choice but does not receive default priority over a better formal implementation.
+Formal implementation follows the **reuse before build** policy in `docs/technical-design-baseline.md` and the capability-ownership rules in `docs/implementation-architecture.md`. General mechanisms are implemented once and reused by multiple semantic Use Cases; tests follow the same ownership model so an already-proven parser, source mutation or host integration is not mechanically re-tested for every field or Feature name.
 
-Development Diagnostics are observability infrastructure only, not Product Activity / Domain history. Production builds exclude Diagnostics; diagnostics-enabled development builds expose the structured trace and copy command for real-host testing. The next user-facing Slice is Triage Convert to Project, reusing the cross-source safety evidence established by Triage Accept without widening the current Slice into unrelated knowledge actions.
+Development Diagnostics remain observability infrastructure only, not Product Activity / Domain history. Production builds exclude Diagnostics.
 
 Active branch:
 
@@ -59,7 +63,7 @@ obsidian-trail-active/
 |-- plugin/
 |   `-- src/              Current active Formal Trail plugin source code
 |-- Trail/                Local Formal Domain Markdown created at runtime; ignored by Git
-`-- docs/                 Product, design, and implementation documents
+`-- docs/                 Product, design and implementation documents
 ~~~
 
 The root `Trail/` directory is authoritative user/domain persistence produced by the Formal plugin. It is intentionally not a checked-in development fixture. Fresh initialization creates the structure defined by `docs/markdown-physical-model.md`; real Obsidian tests must use guarded fixture setup/cleanup rather than committing generated Domain Markdown. The archived POC fixture remains under `archive/poc/Trail/` and is unaffected by the root-only ignore rule.
@@ -73,12 +77,11 @@ Node.js 24.19.0
 npm 11.17.0
 ~~~
 
-Node.js is managed with nvm-windows on the current development machines.
+Node.js is managed with nvm-windows on the current development machines. On machines where the NVM symlink cannot be activated because of local Windows permissions, the installed Node version can be placed on the current terminal PATH directly; project Git and npm commands remain the same across environments.
 
 Confirm the active versions:
 
 ~~~powershell
-nvm current
 node --version
 npm --version
 ~~~
@@ -87,19 +90,12 @@ Expected output:
 
 ~~~text
 v24.19.0
-v24.19.0
 11.17.0
 ~~~
 
 ## Initial setup
 
-After cloning the repository or switching to a new worktree, activate the required Node.js version:
-
-~~~powershell
-nvm use 24.19.0
-~~~
-
-Install the exact project dependencies with:
+After cloning the repository or switching to a new worktree, make Node.js 24.19.0 available in the current terminal, then install the exact project dependencies:
 
 ~~~powershell
 npm ci
@@ -151,23 +147,13 @@ npm run check
 - `npm run build:diagnostics` type-checks and creates a one-shot Diagnostics-enabled plugin build for real Obsidian testing.
 - `npm run check` runs lint, tests, type-checking, and the production build.
 
-During one implementation slice, run focused tests plus directly affected regression tests. Run the full `npm run check` once when a coherent slice is complete and ready for a repository checkpoint. Real Obsidian regression should cover representative independent code paths, host integrations, and failure modes rather than mechanically repeating the same implementation path for every field or control.
+During one implementation slice, run focused tests plus directly affected representative regressions. Run the full `npm run check` once when a coherent checkpoint is ready. Shared mechanism tests are owned by the shared capability; Feature tests cover Feature semantics and wiring rather than repeating the same Markdown or host-risk matrix under different names.
 
 ## Testing in Obsidian
 
-The active plugin is now the Formal Trail runtime. For real Obsidian regression testing:
+The active plugin is the Formal Trail runtime. Real Obsidian regression follows **independent-risk sampling**: once a shared implementation path has representative host evidence, do not repeat the same real-host test merely because a different field, Entity or button reuses it. Add real-host coverage when a change introduces a genuinely different Obsidian API, source type, cross-source execution pattern, host event interaction or other independent risk.
 
-1. Open the repository root as an Obsidian Vault.
-2. Build or keep `npm run dev` active. When a deterministic one-shot structured trace is needed, use `npm run build:diagnostics`.
-3. Enable Trail under **Settings → Community plugins**.
-4. Open Trail from the Ribbon or **Trail: Open**.
-5. Reload the plugin after rebuilding when Obsidian still has an older bundle loaded.
-6. Use a written protocol covering repository / Obsidian starting state, exact fixture data, default values, expected UI / disk end state, cleanup / restore, and whether the test Vault should remain open.
-7. Treat root `Trail/`, plugin `data.json`, and development Diagnostics trace files as local test/runtime state; do not commit them as implementation source.
-
-Formal real-host evidence now covers Fresh bootstrap; Quick Capture persistence/reload; Triage legal external-edit reconciliation, invalid-source isolation/recovery, missing-required-singleton protection, Edit / Defer / Delete, and stale-edit conflict protection; structured Diagnostics across reload sessions; Project creation; Workflow Issue creation; Started / Completed / reopen lifecycle semantics; the Completed Estimate gate; Workflow reload reconstruction; external Project / Issue Markdown reconciliation; and Triage Accept with a new Workflow identity, destination write/verify before source deletion, coordinated optimistic projection, queued host events, and final authoritative reconciliation. Current UI is a functional Formal Triage + Projects surface; Triage Convert to Project is the next user-facing implementation Slice, while Board / List organization and final visual system refinement remain later work.
-
-Development Diagnostics are enabled only in diagnostics-enabled development builds. They persist a compact JSONL trace under `<vault-config>/plugins/trail/diagnostics/trace.jsonl`, keep at most the latest two sessions with at most 2000 events per session, and expose **Trail: Copy diagnostics trace** to copy up to the latest two sessions. Events use IDs, paths, lifecycle stages, revisions, counts, validation codes, and changed field names for diagnosis; title, description, and full Markdown content are not persisted by default. The trace is development observability, not Canonical Domain state, Event Sourcing, or Product Activity history.
+Development Diagnostics are enabled only in diagnostics-enabled development builds. They persist a compact JSONL trace under `<vault-config>/plugins/trail/diagnostics/trace.jsonl`, keep at most the latest two sessions with at most 2000 events per session, and expose **Trail: Copy diagnostics trace**. The trace is development observability, not Canonical Domain state, Event Sourcing, or Product Activity history.
 
 ## Continuous integration
 
@@ -183,7 +169,8 @@ npm run check
 - `docs/canonical-domain-model.md` — canonical Domain objects, semantics, lifecycle, relationships, field contracts, and derivation boundaries.
 - `docs/logical-data-model.md` — logical records, persistence roles, stable references, timestamp contract, Query Contract, and Mutation Contract.
 - `docs/markdown-physical-model.md` — authoritative Vault / Markdown / `data.json` persistence layout, serialization rules, validation boundaries, and migration policy.
-- `docs/technical-design-baseline.md` — formal Technical Design baseline for Runtime, optimistic state, mutation planning/execution, reconciliation, page selectors, frontend architecture, performance, reusable UI infrastructure, and diagnostics boundaries.
-- `docs/implementation-plan.md` — V1 implementation roadmap, current near-term focus, and implementation checkpoints; this is the single source of truth for project implementation progress.
+- `docs/technical-design-baseline.md` — formal conceptual Technical Design for Runtime, optimistic state, mutation planning/execution, reconciliation, frontend architecture, performance and diagnostics boundaries.
+- `docs/implementation-architecture.md` — formal code module architecture, dependency direction, shared capabilities, standard read/write pipeline, testing ownership and Re-baseline migration contract.
+- `docs/implementation-plan.md` — V1 roadmap, current stage and implementation checkpoints.
 - `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as historical design and validation context; superseded where it conflicts with current canonical docs.
 - `docs/technical-design.md` — POC technical baseline and verified architecture evidence only; superseded where it conflicts with the formal design chain.
