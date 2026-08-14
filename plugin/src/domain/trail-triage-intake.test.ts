@@ -184,7 +184,13 @@ describe("Formal Triage Intake vertical core", () => {
       "issue-b",
     ]);
 
-    await Promise.resolve();
+    for (
+      let attempt = 0;
+      attempt < 10 && harness.persistence.appendCalls.length === 0;
+      attempt += 1
+    ) {
+      await Promise.resolve();
+    }
     expect(harness.persistence.appendCalls).toEqual(["issue-a"]);
 
     gate.resolve();

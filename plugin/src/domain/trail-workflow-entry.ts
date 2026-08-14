@@ -3,6 +3,15 @@ import {
   type TrailDiagnostics,
 } from "../diagnostics/trail-diagnostics";
 import {
+  executeTrailSingleTransaction,
+  type TrailProjectCreateAtPathPersistence,
+} from "../mutation/execution/trail-single-transaction-executor";
+import {
+  createTrailProjectPathAllocator,
+  type TrailProjectSourceLister,
+} from "../mutation/physical/trail-file-backed-entity-path-allocator";
+import { materializeTrailSingleTransactionPlan } from "../mutation/physical/trail-single-transaction-plan";
+import {
   resolveDefaultStatusDefinition,
   resolveStatusDefinition,
   type TrailConfiguration,
@@ -40,11 +49,9 @@ import {
 } from "./trail-runtime";
 import type { TrailSourceIssue } from "./trail-source-issue";
 import type { TrailWorkflowPersistence } from "./trail-workflow-persistence";
-import type {
-  CreateProjectPlan,
-  CreateWorkflowIssuePlan,
-  UpdateWorkflowIssuePlan,
-  WorkflowMutationPlan,
+import {
+  toTrailMutationPlan,
+  type WorkflowMutationPlan,
 } from "./trail-workflow-plan";
 import { validateProjectContribution } from "./trail-workflow-validation";
 
@@ -119,6 +126,11 @@ interface ChangeWorkflowIssueStatusCommand {
   readonly targetStatusDefinitionId: string;
 }
 
+interface WorkflowPhysicalPersistence
+  extends TrailProjectCreateAtPathPersistence<TrailProjectParseResult> {
+  readonly listProjectSources: TrailProjectSourceLister;
+}
+
 export type WorkflowPlanResult =
   | { readonly kind: "needs-input"; readonly requiredInput: "estimate" }
   | { readonly kind: "ready"; readonly plan: WorkflowMutationPlan }
@@ -163,6 +175,23 @@ function normalizeId(id: string, label: string): string {
     );
   }
   return normalized;
+}
+
+function requireWorkflowPhysicalPersistence(
+  persistence: TrailWorkflowPersistence,
+): TrailWorkflowPersistence & WorkflowPhysicalPersistence {
+  const candidate = persistence as TrailWorkflowPersistence
+    & Partial<WorkflowPhysicalPersistence>;
+  if (
+    typeof candidate.createProjectAtPath !== "function"
+    || typeof candidate.listProjectSources !== "function"
+  ) {
+    throw new WorkflowEntryError(
+      "persistence-failed",
+      "Workflow persistence is missing single-transaction physical capabilities",
+    );
+  }
+  return candidate as TrailWorkflowPersistence & WorkflowPhysicalPersistence;
 }
 
 export function normalizeCreateProjectCommand(
@@ -407,7 +436,8 @@ function validationIssueCodes(issues: readonly TrailSourceIssue[]): readonly str
 
 /**
  * Orchestrates the first Formal Workflow vertical slice through the shared
- * optimistic overlay, global queue, latest-source guards, and authoritative reread.
+ * optimistic overlay, global queue, dequeue-time physical planning, and
+ * authoritative reread/reconciliation.
  */
 export class TrailWorkflowEntryService {
   public constructor(
@@ -682,32 +712,24 @@ export class TrailWorkflowEntryService {
     plan: WorkflowMutationPlan,
     correlationId: string,
   ): Promise<TrailProjectParseResult> {
-    if (plan.kind === "create-project") {
-      this.diagnostics.record("workflow.persistence.write.started", {
-        correlationId,
-        data: { kind: plan.kind, projectId: plan.project.id },
-      });
-      return this.persistence.createProject(plan.project, correlationId);
-    }
+    const logicalPlan = toTrailMutationPlan(plan);
+    const physicalPersistence = requireWorkflowPhysicalPersistence(this.persistence);
+    const allocateProjectPath = createTrailProjectPathAllocator(
+      () => physicalPersistence.listProjectSources(),
+    );
+    const physicalPlan = await materializeTrailSingleTransactionPlan(
+      logicalPlan,
+      this.runtimeStore.getState().committed,
+      { allocateProjectPath },
+    );
 
-    const projectId = plan.kind === "create-workflow-issue"
-      ? plan.expectedProject.id
-      : plan.issue.projectId;
-    if (projectId === undefined) {
-      throw new WorkflowEntryError(
-        "planning-rejected",
-        "Project-owned Workflow mutation is missing projectId",
-      );
-    }
-    const state = this.runtimeStore.getState();
-    const filePath = state.committed.sourceByEntityId[projectId];
-    if (filePath === undefined) {
-      throw new WorkflowEntryError(
-        "conflict",
-        `Project source is not committed yet: ${projectId}`,
-      );
-    }
-    if (selectSourceIssuesForPath(state, filePath).length > 0) {
+    if (
+      plan.kind !== "create-project"
+      && selectSourceIssuesForPath(
+        this.runtimeStore.getState(),
+        physicalPlan.sourcePath,
+      ).length > 0
+    ) {
       throw new WorkflowEntryError(
         "source-invalid",
         "Project source is invalid; review the Markdown before retrying",
@@ -716,22 +738,31 @@ export class TrailWorkflowEntryService {
 
     this.diagnostics.record("workflow.persistence.write.started", {
       correlationId,
-      data: { filePath, issueId: plan.issue.id, kind: plan.kind },
+      data: {
+        filePath: physicalPlan.sourcePath,
+        kind: plan.kind,
+        projectId: plan.kind === "create-project"
+          ? plan.project.id
+          : plan.issue.projectId ?? null,
+        issueId: plan.kind === "create-project" ? null : plan.issue.id,
+      },
     });
-    if (plan.kind === "create-workflow-issue") {
-      return this.persistence.appendIssue(
-        filePath,
-        plan.expectedProject,
-        plan.issue,
-        correlationId,
-      );
-    }
-    return this.persistence.updateIssue(
-      filePath,
-      plan.expectedIssue,
-      plan.issue,
+
+    const executed = await executeTrailSingleTransaction(
+      physicalPlan,
+      {
+        projectCreate: physicalPersistence,
+        workflow: physicalPersistence,
+      },
       correlationId,
     );
+    if (executed.kind !== "project-source") {
+      throw new WorkflowEntryError(
+        "verification-failed",
+        "Workflow single transaction returned a non-Project source result",
+      );
+    }
+    return executed.result;
   }
 
   private verifyPersistedResult(

@@ -20,15 +20,26 @@ import {
   type TrailProjectParseResult,
 } from "../../markdown/codecs/trail-project-codec";
 import {
-  createTrailSequencedEntityPath,
   readTrailEntityFileSequence,
   TRAIL_PROJECTS_PATH,
   isTrailProjectMarkdownPath,
 } from "../../markdown/schema/trail-physical-schema";
+import type { TrailSourceEntry } from "../ports/trail-source-io";
 import type { TrailDomainSourceRepository } from "./trail-domain-source-repository";
 
-type WorkflowPersistence = TrailWorkflowPersistence
+type WorkflowPersistence = Omit<TrailWorkflowPersistence, "createProject">
   & TrailWorkflowIssueDeletionPersistence;
+
+export interface TrailProjectSourcePhysicalPersistence {
+  readonly createProjectAtPath: (
+    filePath: string,
+    project: TrailProject,
+    correlationId?: string,
+  ) => Promise<TrailProjectParseResult>;
+  readonly listProjectSources: () => Promise<readonly TrailSourceEntry[]>;
+}
+
+type ProjectSourcePersistence = WorkflowPersistence & TrailProjectSourcePhysicalPersistence;
 
 type WorkflowPhysicalOperation =
   | "append-issue"
@@ -47,7 +58,7 @@ export function createProjectSourcePersistence(
   repository: TrailDomainSourceRepository,
   parseYaml: TrailYamlParser,
   diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
-): WorkflowPersistence {
+): ProjectSourcePersistence {
   const parse = (path: string, markdown: string): TrailProjectParseResult => {
     const result = parseProjectMarkdown({
       filePath: path,
@@ -125,31 +136,18 @@ export function createProjectSourcePersistence(
       );
     },
 
-    async createProject(
+    async createProjectAtPath(
+      filePath: string,
       project: TrailProject,
       correlationId?: string,
     ): Promise<TrailProjectParseResult> {
-      const entries = await repository.list(TRAIL_PROJECTS_PATH);
-      let maxSequence = 0;
-      for (const entry of entries) {
-        if (entry.kind !== "file") {
-          continue;
-        }
-        const sequence = readTrailEntityFileSequence(entry.name);
-        if (sequence !== undefined) {
-          maxSequence = Math.max(maxSequence, sequence);
-        }
+      if (!isTrailProjectMarkdownPath(filePath)) {
+        throw new Error(`Not a direct Formal Project Markdown path: ${filePath}`);
       }
-      const nextSequence = maxSequence + 1;
-      if (nextSequence > 9999) {
-        throw new Error("Project physical sequence exhausted the four-digit namespace");
+      const name = filePath.split("/").pop() ?? filePath;
+      if (readTrailEntityFileSequence(name) === undefined) {
+        throw new Error(`Project path must use a four-digit sequence: ${filePath}`);
       }
-      const filePath = createTrailSequencedEntityPath(
-        TRAIL_PROJECTS_PATH,
-        nextSequence,
-        project.title,
-        "Project",
-      );
       diagnostics.record("persistence.workflow.project-create.started", {
         correlationId,
         data: { filePath, projectId: project.id },
@@ -187,6 +185,10 @@ export function createProjectSourcePersistence(
         }),
         correlationId,
       );
+    },
+
+    listProjectSources(): Promise<readonly TrailSourceEntry[]> {
+      return repository.list(TRAIL_PROJECTS_PATH);
     },
 
     async readAll(): Promise<TrailWorkflowSnapshot> {

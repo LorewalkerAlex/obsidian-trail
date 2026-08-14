@@ -6,6 +6,7 @@ import {
   TRAIL_BOOTSTRAP_FILES,
   TRAIL_TOP_LEVEL_DIRECTORIES,
 } from "./trail-physical-schema";
+import type { TrailProject } from "./trail-project";
 import { TrailApplication } from "./trail-application";
 import {
   createTrailRuntimeStore,
@@ -138,18 +139,23 @@ function createWorkflowPersistence(): TrailWorkflowPersistence {
   };
 }
 
-function createProjectWritingWorkflowPersistence(): TrailWorkflowPersistence {
+function createProjectWritingWorkflowPersistence() {
+  const path = "Trail/Projects/0001 Workflow survives.md";
   return {
     appendIssue: async () => {
       throw new Error("Workflow append is unused");
     },
-    async createProject(project) {
+    createProject: async () => {
+      throw new Error("Legacy Workflow Project create must not be used");
+    },
+    async createProjectAtPath(filePath: string, project: TrailProject) {
       return parseProjectMarkdown({
-        filePath: "Trail/Projects/0001 Workflow survives.md",
+        filePath,
         markdown: serializeProjectMarkdown(project),
         parseYaml,
       });
     },
+    listProjectSources: async () => [],
     readAll: async () => ({ projectResults: [], structuralIssues: [] }),
     readSource: async () => {
       throw new Error("Workflow source read is unused");
@@ -157,6 +163,7 @@ function createProjectWritingWorkflowPersistence(): TrailWorkflowPersistence {
     updateIssue: async () => {
       throw new Error("Workflow update is unused");
     },
+    expectedPath: path,
   };
 }
 
@@ -434,6 +441,7 @@ describe("Formal Trail application startup", () => {
     });
     const ids = ["command-project", "project-a"];
     const runtimeStore = createTrailRuntimeStore();
+    const workflowPersistence = createProjectWritingWorkflowPersistence();
     const application = new TrailApplication({
       createId: () => ids.shift() ?? "unexpected",
       mutationQueue: new TrailMutationQueue(),
@@ -441,7 +449,7 @@ describe("Formal Trail application startup", () => {
       triagePersistence: createPersistence(),
       resolveHostTimezone: () => "UTC",
       runtimeStore,
-      workflowPersistence: createProjectWritingWorkflowPersistence(),
+      workflowPersistence,
       workspace: createWorkspaceGateway(createExistingProbe(pluginData)),
     });
     await application.initialize();
@@ -462,6 +470,9 @@ describe("Formal Trail application startup", () => {
     await receipt.completion;
 
     expect(runtimeStore.getState().committed.projectIds).toEqual(["project-a"]);
+    expect(runtimeStore.getState().committed.sourceByEntityId["project-a"]).toBe(
+      workflowPersistence.expectedPath,
+    );
   });
 
   it("routes delete through Triage management and blocks management on Data Issues", async () => {

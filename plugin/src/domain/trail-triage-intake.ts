@@ -2,13 +2,17 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "../diagnostics/trail-diagnostics";
+import { submitTrailMutation } from "../mutation/coordinator/trail-mutation-coordinator";
+import {
+  executeTrailSingleTransaction,
+} from "../mutation/execution/trail-single-transaction-executor";
+import {
+  materializeTrailSingleTransactionPlan,
+} from "../mutation/physical/trail-single-transaction-plan";
 import { TrailMutationQueue } from "./trail-mutation-queue";
-import { TRAIL_TRIAGE_PATH } from "./trail-physical-schema";
 import type { TrailTriageIssue } from "./trail-issue";
 import {
-  addPendingPlan,
   reconcileTriageContribution,
-  removePendingPlan,
   selectEffectiveIssueIdSet,
   setTriageSourceIssues,
   type TrailRuntimeStore,
@@ -24,6 +28,7 @@ import type {
   TrailTriageParseIssue,
 } from "./trail-triage-markdown";
 import type { TrailTriagePersistenceGateway } from "./trail-triage-persistence";
+import { toTrailMutationPlan } from "./trail-triage-plan";
 
 export type { TrailTriagePersistenceGateway } from "./trail-triage-persistence";
 
@@ -70,9 +75,9 @@ function issueCodes(
 }
 
 /**
- * Application service for the first Formal vertical path. It owns command
- * normalization, optimistic projection, queue ordering, persistence verification,
- * and committed-runtime reconciliation; the Markdown gateway owns physical I/O.
+ * Application service for the first Formal vertical path. Command planning stays
+ * feature-specific while optimistic projection and persistence materialization
+ * consume the canonical logical mutation plan.
  */
 export class TrailTriageIntakeService {
   public constructor(
@@ -117,8 +122,8 @@ export class TrailTriageIntakeService {
   }
 
   /**
-   * Publishes the pending plan synchronously and returns a separate completion
-   * promise. React can therefore render the new Issue before Markdown I/O finishes.
+   * Publishes the pending logical plan synchronously. Physical placement is
+   * materialized only after the global queue dequeues this command.
    */
   public capture(input: QuickCaptureInput): TriageCaptureReceipt {
     const command = normalizeQuickCaptureCommand(
@@ -158,6 +163,7 @@ export class TrailTriageIntakeService {
     }
 
     const { plan } = result;
+    const logicalPlan = toTrailMutationPlan(plan);
     this.diagnostics.record("command.planned", {
       correlationId,
       data: {
@@ -165,119 +171,130 @@ export class TrailTriageIntakeService {
         kind: plan.kind,
       },
     });
-    addPendingPlan(this.runtimeStore, plan);
-    this.diagnostics.record("runtime.optimistic.applied", {
-      correlationId,
-      data: {
-        issueId: plan.issue.id,
-        pendingCount: this.runtimeStore.getState().pendingPlans.length,
-      },
-    });
-
-    const completion = this.mutationQueue.enqueue(async () => {
-      try {
-        this.diagnostics.record("triage.persistence.write.started", {
-          correlationId,
-          data: {
-            issueId: plan.issue.id,
-            path: TRAIL_TRIAGE_PATH,
-          },
-        });
-        const persisted = await this.persistence.appendIssue(plan.issue, correlationId);
-        this.diagnostics.record("triage.persistence.write.completed", {
-          correlationId,
-          data: {
-            parseIssueCount: persisted.issues.length,
-            recordCount: Object.keys(persisted.contribution.issuesById).length,
-          },
-        });
-        if (persisted.issues.length > 0) {
-          setTriageSourceIssues(this.runtimeStore, persisted.issues);
-          this.diagnostics.record("triage.validation.failed", {
+    const completion = submitTrailMutation(
+      this.runtimeStore,
+      this.mutationQueue,
+      {
+        execute: async () => {
+          const physicalPlan = await materializeTrailSingleTransactionPlan(
+            logicalPlan,
+            this.runtimeStore.getState().committed,
+          );
+          this.diagnostics.record("mutation.physical.planned", {
             correlationId,
             data: {
-              issueCodes: issueCodes(persisted.issues),
-              reason: "post-write",
+              intent: physicalPlan.intent,
+              operation: physicalPlan.operation.kind,
+              sourcePath: physicalPlan.sourcePath,
+              topology: "single",
             },
-            level: "error",
           });
-          throw new TriageIntakeError(
-            "verification-failed",
-            `Persisted Triage source is invalid: ${invalidSourceMessage(persisted.issues)}`,
-          );
-        }
-        if (persisted.contribution.issuesById[plan.issue.id] === undefined) {
-          this.diagnostics.record("triage.validation.failed", {
+          this.diagnostics.record("triage.persistence.write.started", {
             correlationId,
             data: {
               issueId: plan.issue.id,
-              reason: "created-issue-missing",
+              path: physicalPlan.sourcePath,
+            },
+          });
+          const executed = await executeTrailSingleTransaction(
+            physicalPlan,
+            { triageCreate: this.persistence },
+            correlationId,
+          );
+          if (executed.kind !== "triage-source") {
+            throw new TriageIntakeError(
+              "verification-failed",
+              "Quick Capture physical execution returned the wrong source kind",
+            );
+          }
+          this.diagnostics.record("triage.persistence.write.completed", {
+            correlationId,
+            data: {
+              parseIssueCount: executed.result.issues.length,
+              recordCount: Object.keys(executed.result.contribution.issuesById).length,
+            },
+          });
+          return executed.result;
+        },
+        mapError: (error) => {
+          if (error instanceof TriageIntakeError) {
+            return error;
+          }
+          return new TriageIntakeError(
+            "persistence-failed",
+            "Quick Capture could not be persisted",
+            error,
+          );
+        },
+        onCommitted: () => {
+          this.diagnostics.record("command.committed", {
+            correlationId,
+            data: {
+              issueId: plan.issue.id,
+              kind: "triage.capture",
+            },
+          });
+        },
+        onFailed: (error) => {
+          this.diagnostics.record("command.failed", {
+            correlationId,
+            data: {
+              category: errorCategory(error),
+              issueId: plan.issue.id,
+              kind: "triage.capture",
             },
             level: "error",
           });
-          throw new TriageIntakeError(
-            "verification-failed",
-            `Persisted Triage source does not contain Issue ${plan.issue.id}`,
-          );
-        }
+        },
+        optimisticData: { issueId: plan.issue.id },
+        plan: logicalPlan,
+        queueKind: "triage.capture",
+        recover: async () => {
+          await this.reconcileAfterFailure(correlationId);
+        },
+        settle: (persisted) => {
+          if (persisted.issues.length > 0) {
+            setTriageSourceIssues(this.runtimeStore, persisted.issues);
+            this.diagnostics.record("triage.validation.failed", {
+              correlationId,
+              data: {
+                issueCodes: issueCodes(persisted.issues),
+                reason: "post-write",
+              },
+              level: "error",
+            });
+            throw new TriageIntakeError(
+              "verification-failed",
+              `Persisted Triage source is invalid: ${invalidSourceMessage(persisted.issues)}`,
+            );
+          }
+          if (persisted.contribution.issuesById[plan.issue.id] === undefined) {
+            this.diagnostics.record("triage.validation.failed", {
+              correlationId,
+              data: {
+                issueId: plan.issue.id,
+                reason: "created-issue-missing",
+              },
+              level: "error",
+            });
+            throw new TriageIntakeError(
+              "verification-failed",
+              `Persisted Triage source does not contain Issue ${plan.issue.id}`,
+            );
+          }
 
-        this.diagnostics.record("triage.validation.completed", {
-          correlationId,
-          data: {
-            issueId: plan.issue.id,
-            reason: "post-write",
-          },
-        });
-        this.reconcileContribution(persisted.contribution, "capture", correlationId);
-        removePendingPlan(this.runtimeStore, plan.commandId);
-        this.diagnostics.record("runtime.optimistic.removed", {
-          correlationId,
-          data: {
-            pendingCount: this.runtimeStore.getState().pendingPlans.length,
-            reason: "committed",
-          },
-        });
-        this.diagnostics.record("command.committed", {
-          correlationId,
-          data: {
-            issueId: plan.issue.id,
-            kind: "triage.capture",
-          },
-        });
-      } catch (error: unknown) {
-        this.diagnostics.record("command.failed", {
-          correlationId,
-          data: {
-            category: errorCategory(error),
-            issueId: plan.issue.id,
-            kind: "triage.capture",
-          },
-          level: "error",
-        });
-        await this.reconcileAfterFailure(correlationId);
-        removePendingPlan(this.runtimeStore, plan.commandId);
-        this.diagnostics.record("runtime.optimistic.removed", {
-          correlationId,
-          data: {
-            pendingCount: this.runtimeStore.getState().pendingPlans.length,
-            reason: "failed",
-          },
-          level: "warn",
-        });
-
-        if (error instanceof TriageIntakeError) {
-          throw error;
-        }
-        throw new TriageIntakeError(
-          "persistence-failed",
-          "Quick Capture could not be persisted",
-          error,
-        );
-      }
-    }, {
-      correlationId,
-      kind: "triage.capture",
-    });
+          this.diagnostics.record("triage.validation.completed", {
+            correlationId,
+            data: {
+              issueId: plan.issue.id,
+              reason: "post-write",
+            },
+          });
+          this.reconcileContribution(persisted.contribution, "capture", correlationId);
+        },
+      },
+      this.diagnostics,
+    );
 
     return {
       completion,

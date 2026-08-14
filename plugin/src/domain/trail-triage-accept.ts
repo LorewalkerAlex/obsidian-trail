@@ -3,6 +3,21 @@ import {
   type TrailDiagnostics,
 } from "../diagnostics/trail-diagnostics";
 import {
+  executeTrailSourceTransition,
+  type TrailSourceTransitionOutcome,
+  type TrailTransitionObservation,
+} from "../mutation/execution/trail-source-transition-executor";
+import { executeTrailSingleTransaction } from "../mutation/execution/trail-single-transaction-executor";
+import {
+  materializeTrailSourceTransitionPlan,
+  type TrailSourceTransitionPlan,
+} from "../mutation/physical/trail-source-transition-plan";
+import type { TrailSingleTransactionPlan } from "../mutation/physical/trail-single-transaction-plan";
+import {
+  mergeTrailMutationPlans,
+  type TrailMutationPlan,
+} from "../mutation/plans/trail-mutation-plan";
+import {
   resolveDefaultStatusDefinition,
   resolveStatusDefinition,
   type TrailConfiguration,
@@ -26,6 +41,7 @@ import {
   type TrailProjectParseResult,
 } from "./trail-project-markdown";
 import {
+  addPendingPlan,
   reconcileProjectContribution,
   reconcileTriageContribution,
   removePendingPlan,
@@ -44,10 +60,16 @@ import {
   type TrailTriageParseResult,
 } from "./trail-triage-markdown";
 import type { TrailTriagePersistence } from "./trail-triage-persistence";
-import type { DeleteTriageIssuePlan } from "./trail-triage-plan";
+import {
+  toTrailMutationPlan as toTriageMutationPlan,
+  type DeleteTriageIssuePlan,
+} from "./trail-triage-plan";
 import { supportsWorkflowIssueDeletion } from "./trail-workflow-issue-deletion-persistence";
 import type { TrailWorkflowPersistence } from "./trail-workflow-persistence";
-import type { CreateWorkflowIssuePlan } from "./trail-workflow-plan";
+import {
+  toTrailMutationPlan as toWorkflowMutationPlan,
+  type CreateWorkflowIssuePlan,
+} from "./trail-workflow-plan";
 import { validateProjectContribution } from "./trail-workflow-validation";
 
 export interface TriageAcceptReceipt {
@@ -230,7 +252,6 @@ export function planAcceptTriageIssue(
   };
 }
 
-
 function errorCategory(error: unknown): string {
   if (error instanceof TriageAcceptError) return error.code;
   if (error instanceof TriageMarkdownMutationError) return error.code;
@@ -315,7 +336,7 @@ export class TrailTriageAcceptService {
         targetIssueId: plan.targetCreate.issue.id,
       },
     });
-    this.addOptimisticPlan(plan);
+    const logicalPlan = this.addOptimisticPlan(plan);
     this.diagnostics.record("runtime.optimistic.applied", {
       correlationId: command.commandId,
       data: {
@@ -326,7 +347,7 @@ export class TrailTriageAcceptService {
     });
 
     const completion = this.mutationQueue.enqueue(
-      () => this.executePersistedAccept(plan, command.commandId),
+      () => this.executePersistedAccept(plan, logicalPlan, command.commandId),
       { correlationId: command.commandId, kind: command.kind },
     );
     return {
@@ -336,26 +357,31 @@ export class TrailTriageAcceptService {
     };
   }
 
-  private addOptimisticPlan(plan: TriageAcceptPlan): void {
-    // Both effects publish in one Zustand update so no view observes a half-Accept.
-    this.runtimeStore.setState((state) => ({
-      availability: state.availability,
-      committed: state.committed,
-      pendingPlans: [
-        ...state.pendingPlans,
-        plan.sourceDelete,
-        plan.targetCreate,
+  private addOptimisticPlan(plan: TriageAcceptPlan): TrailMutationPlan {
+    const logicalPlan = mergeTrailMutationPlans({
+      commandId: plan.commandId,
+      intent: "triage.accept",
+      plans: [
+        toTriageMutationPlan(plan.sourceDelete),
+        toWorkflowMutationPlan(plan.targetCreate),
       ],
-    }));
+    });
+    // Both logical effects publish in one store update; no view observes a half-Accept.
+    addPendingPlan(this.runtimeStore, logicalPlan);
+    return logicalPlan;
   }
 
   private async executePersistedAccept(
     plan: TriageAcceptPlan,
+    logicalPlan: TrailMutationPlan,
     correlationId: string,
   ): Promise<void> {
-    let targetPath: string;
+    let physicalPlan: TrailSourceTransitionPlan;
     try {
-      targetPath = this.resolveTargetPath(plan);
+      physicalPlan = await materializeTrailSourceTransitionPlan(
+        logicalPlan,
+        this.runtimeStore.getState().committed,
+      );
     } catch (error: unknown) {
       removePendingPlan(this.runtimeStore, plan.commandId);
       this.diagnostics.record("runtime.optimistic.removed", {
@@ -379,96 +405,266 @@ export class TrailTriageAcceptService {
       throw this.mapError(error);
     }
 
-    try {
-      await this.verifySourcePrecondition(plan, correlationId);
-      this.assertTargetSourceValid(targetPath);
-    } catch (error: unknown) {
-      await this.finishFailed(plan, targetPath, error, correlationId);
-      throw this.mapError(error);
-    }
+    const compensationDriver = supportsWorkflowIssueDeletion(this.workflowPersistence)
+      ? {
+          compensateTarget: (compensationPlan: TrailSingleTransactionPlan) =>
+            this.executeCompensation(plan, compensationPlan, correlationId),
+        }
+      : {};
 
+    const outcome = await executeTrailSourceTransition<
+      TrailProjectContribution,
+      TrailTriageContribution
+    >(physicalPlan, {
+      ...compensationDriver,
+      executeSource: (sourcePlan) =>
+        this.executeSourceDelete(plan, sourcePlan, correlationId),
+      executeTarget: (targetPlan) =>
+        this.executeTargetCreate(plan, targetPlan, correlationId),
+      observeSource: () => this.observeSource(plan),
+      observeTarget: () =>
+        this.observeTarget(plan, physicalPlan.target.sourcePath),
+      preflight: async (transitionPlan) => {
+        await this.verifySourcePrecondition(plan, correlationId);
+        this.assertTargetSourceValid(transitionPlan.target.sourcePath);
+      },
+    });
+
+    await this.finishTransitionOutcome(
+      plan,
+      physicalPlan.target.sourcePath,
+      outcome,
+      correlationId,
+    );
+  }
+
+  private async executeTargetCreate(
+    plan: TriageAcceptPlan,
+    targetPlan: TrailSingleTransactionPlan,
+    correlationId: string,
+  ): Promise<TrailProjectContribution> {
     this.diagnostics.record("triage.accept.target-write.started", {
       correlationId,
       data: {
         projectId: plan.targetCreate.expectedProject.id,
         targetIssueId: plan.targetCreate.issue.id,
-        targetPath,
+        targetPath: targetPlan.sourcePath,
       },
     });
 
-    let targetContribution: TrailProjectContribution;
-    try {
-      const targetResult = await this.workflowPersistence.appendIssue(
-        targetPath,
-        plan.targetCreate.expectedProject,
-        plan.targetCreate.issue,
-        correlationId,
+    const executed = await executeTrailSingleTransaction(
+      targetPlan,
+      { workflow: this.workflowPersistence },
+      correlationId,
+    );
+    if (executed.kind !== "project-source") {
+      throw new TriageAcceptError(
+        "verification-failed",
+        "Triage Accept target did not execute against a Project source",
       );
-      targetContribution = this.verifyTargetResult(
-        plan,
-        targetResult,
-        correlationId,
-      );
-    } catch (error: unknown) {
-      await this.handleTargetWriteFailure(plan, targetPath, error, correlationId);
-      return;
     }
-
+    const contribution = this.verifyTargetResult(
+      plan,
+      executed.result,
+      correlationId,
+    );
     this.diagnostics.record("triage.accept.target-write.completed", {
       correlationId,
       data: {
-        projectId: targetContribution.project.id,
+        projectId: contribution.project.id,
         targetIssueId: plan.targetCreate.issue.id,
-        targetPath,
+        targetPath: contribution.filePath,
       },
     });
+    return contribution;
+  }
+
+  private async executeSourceDelete(
+    plan: TriageAcceptPlan,
+    sourcePlan: TrailSingleTransactionPlan,
+    correlationId: string,
+  ): Promise<TrailTriageContribution> {
     this.diagnostics.record("triage.accept.source-delete.started", {
       correlationId,
       data: {
         sourceIssueId: plan.sourceDelete.issueId,
-        sourcePath: TRAIL_TRIAGE_PATH,
+        sourcePath: sourcePlan.sourcePath,
       },
     });
-
-    let sourceContribution: TrailTriageContribution;
-    try {
-      const sourceResult = await this.triagePersistence.deleteIssue(
-        plan.sourceDelete.expectedIssue,
-        correlationId,
+    const executed = await executeTrailSingleTransaction(
+      sourcePlan,
+      { triageManage: this.triagePersistence },
+      correlationId,
+    );
+    if (executed.kind !== "triage-source") {
+      throw new TriageAcceptError(
+        "verification-failed",
+        "Triage Accept source delete did not execute against Triage",
       );
-      sourceContribution = this.verifySourceDeleted(
-        plan,
-        sourceResult,
-        correlationId,
-      );
-    } catch (error: unknown) {
-      await this.handleSourceDeleteFailure(
-        plan,
-        targetPath,
-        targetContribution,
-        error,
-        correlationId,
-      );
-      return;
     }
-
-    this.reconcileTarget(targetContribution, "triage.accept", correlationId);
-    this.reconcileSource(sourceContribution, "triage.accept", correlationId);
-    this.finishCommitted(plan, correlationId);
+    return this.verifySourceDeleted(plan, executed.result, correlationId);
   }
 
-  private resolveTargetPath(plan: TriageAcceptPlan): string {
-    const state = this.runtimeStore.getState();
-    const targetPath = state.committed.sourceByEntityId[
-      plan.targetCreate.expectedProject.id
-    ];
-    if (targetPath === undefined) {
+  private async executeCompensation(
+    plan: TriageAcceptPlan,
+    compensationPlan: TrailSingleTransactionPlan,
+    correlationId: string,
+  ): Promise<TrailProjectContribution> {
+    if (!supportsWorkflowIssueDeletion(this.workflowPersistence)) {
+      throw new Error("Workflow target deletion is unavailable for compensation");
+    }
+    this.diagnostics.record("triage.accept.compensation.started", {
+      correlationId,
+      data: {
+        targetIssueId: plan.targetCreate.issue.id,
+        targetPath: compensationPlan.sourcePath,
+      },
+      level: "warn",
+    });
+    const executed = await executeTrailSingleTransaction(
+      compensationPlan,
+      { workflow: this.workflowPersistence },
+      correlationId,
+    );
+    if (executed.kind !== "project-source") {
       throw new TriageAcceptError(
-        "conflict",
-        `Target Project source is not committed: ${plan.targetCreate.expectedProject.id}`,
+        "verification-failed",
+        "Triage Accept compensation did not execute against a Project source",
       );
     }
-    return targetPath;
+    return this.verifyCompensationResult(plan, executed.result);
+  }
+
+  private async observeTarget(
+    plan: TriageAcceptPlan,
+    targetPath: string,
+  ): Promise<TrailTransitionObservation<TrailProjectContribution>> {
+    const latest = await this.safeReadTarget(targetPath);
+    if (
+      latest === undefined
+      || latest.issues.length > 0
+      || latest.contribution === undefined
+    ) {
+      return { kind: "unsafe" };
+    }
+    const domainIssues = validateProjectContribution(
+      latest.contribution,
+      this.configuration,
+    );
+    if (domainIssues.length > 0) {
+      return { kind: "unsafe" };
+    }
+    const persisted = latest.contribution.issuesById[plan.targetCreate.issue.id];
+    if (persisted === undefined) {
+      return { kind: "absent", value: latest.contribution };
+    }
+    if (sameTrailWorkflowIssue(persisted, plan.targetCreate.issue)) {
+      return { kind: "present", value: latest.contribution };
+    }
+    return { kind: "unsafe" };
+  }
+
+  private async observeSource(
+    plan: TriageAcceptPlan,
+  ): Promise<TrailTransitionObservation<TrailTriageContribution>> {
+    const latest = await this.safeReadSource();
+    if (latest === undefined || latest.issues.length > 0) {
+      return { kind: "unsafe" };
+    }
+    if (latest.contribution.issuesById[plan.sourceDelete.issueId] === undefined) {
+      return { kind: "absent", value: latest.contribution };
+    }
+    // Any physically valid surviving source makes removal of the just-created
+    // target safe; the source itself is authoritative even if externally edited.
+    return { kind: "present", value: latest.contribution };
+  }
+
+  private async finishTransitionOutcome(
+    plan: TriageAcceptPlan,
+    targetPath: string,
+    outcome: TrailSourceTransitionOutcome<
+      TrailProjectContribution,
+      TrailTriageContribution
+    >,
+    correlationId: string,
+  ): Promise<void> {
+    switch (outcome.kind) {
+      case "committed":
+        this.reconcileTarget(
+          outcome.target,
+          outcome.recovered ? "triage.accept-recovered" : "triage.accept",
+          correlationId,
+        );
+        this.reconcileSource(
+          outcome.source,
+          outcome.recovered ? "triage.accept-recovered" : "triage.accept",
+          correlationId,
+        );
+        if (outcome.recovered) {
+          this.diagnostics.record("triage.accept.source-delete.recovered", {
+            correlationId,
+            data: { sourceIssueId: plan.sourceDelete.issueId },
+            level: "warn",
+          });
+        }
+        this.finishCommitted(plan, correlationId);
+        return;
+      case "unchanged":
+        await this.finishFailed(plan, targetPath, outcome.error, correlationId);
+        this.recordOutcome(plan, "unchanged", correlationId);
+        throw this.mapError(outcome.error);
+      case "compensated": {
+        this.reconcileTarget(
+          outcome.target,
+          outcome.recovered
+            ? "triage.accept-compensated-recovered"
+            : "triage.accept-compensated",
+          correlationId,
+        );
+        let source = outcome.source;
+        if (source === undefined) {
+          const latestSource = await this.safeReadSource();
+          if (latestSource !== undefined && latestSource.issues.length === 0) {
+            source = latestSource.contribution;
+          }
+        }
+        if (source !== undefined) {
+          this.reconcileSource(
+            source,
+            outcome.recovered
+              ? "triage.accept-compensated-recovered"
+              : "triage.accept-compensated",
+            correlationId,
+          );
+        }
+        removePendingPlan(this.runtimeStore, plan.commandId);
+        this.diagnostics.record("runtime.optimistic.removed", {
+          correlationId,
+          data: {
+            pendingCount: this.runtimeStore.getState().pendingPlans.length,
+            reason: "compensated",
+          },
+          level: "warn",
+        });
+        this.diagnostics.record("triage.accept.compensation.completed", {
+          correlationId,
+          data: {
+            recovered: outcome.recovered,
+            targetIssueId: plan.targetCreate.issue.id,
+            targetPath,
+          },
+          level: "warn",
+        });
+        this.recordOutcome(plan, "compensated", correlationId);
+        throw new TriageAcceptError(
+          "compensated",
+          "Triage Accept could not remove the source, so the new Workflow target was rolled back safely.",
+          outcome.error,
+        );
+      }
+      case "partial":
+        return this.markPartial(plan, targetPath, outcome.error, correlationId);
+    }
   }
 
   private assertTargetSourceValid(targetPath: string): void {
@@ -585,166 +781,6 @@ export class TrailTriageAcceptService {
       },
     });
     return result.contribution;
-  }
-
-  private async handleTargetWriteFailure(
-    plan: TriageAcceptPlan,
-    targetPath: string,
-    error: unknown,
-    correlationId: string,
-  ): Promise<never> {
-    const latest = await this.safeReadTarget(targetPath);
-    const persisted = latest?.contribution?.issuesById[plan.targetCreate.issue.id];
-    if (
-      latest !== undefined
-      && latest.issues.length === 0
-      && latest.contribution !== undefined
-      && persisted === undefined
-    ) {
-      this.reconcileTarget(latest.contribution, "triage.accept-write-unchanged", correlationId);
-      await this.finishFailed(plan, targetPath, error, correlationId);
-      this.recordOutcome(plan, "unchanged", correlationId);
-      throw this.mapError(error);
-    }
-    if (
-      latest !== undefined
-      && latest.issues.length === 0
-      && latest.contribution !== undefined
-      && persisted !== undefined
-      && sameTrailWorkflowIssue(persisted, plan.targetCreate.issue)
-    ) {
-      return this.compensateTarget(plan, targetPath, error, correlationId);
-    }
-    return this.markPartial(plan, targetPath, error, correlationId);
-  }
-
-  private async handleSourceDeleteFailure(
-    plan: TriageAcceptPlan,
-    targetPath: string,
-    targetContribution: TrailProjectContribution | undefined,
-    error: unknown,
-    correlationId: string,
-  ): Promise<void> {
-    const latestSource = await this.safeReadSource();
-    if (
-      latestSource !== undefined
-      && latestSource.issues.length === 0
-      && latestSource.contribution.issuesById[plan.sourceDelete.issueId] === undefined
-    ) {
-      if (targetContribution !== undefined) {
-        this.reconcileTarget(targetContribution, "triage.accept-recovered", correlationId);
-      } else {
-        await this.reconcileTargetFromPersistence(targetPath, "triage.accept-recovered", correlationId);
-      }
-      this.reconcileSource(latestSource.contribution, "triage.accept-recovered", correlationId);
-      this.diagnostics.record("triage.accept.source-delete.recovered", {
-        correlationId,
-        data: { sourceIssueId: plan.sourceDelete.issueId },
-        level: "warn",
-      });
-      this.finishCommitted(plan, correlationId);
-      return;
-    }
-
-    if (latestSource !== undefined && latestSource.issues.length === 0) {
-      return this.compensateTarget(
-        plan,
-        targetPath,
-        error,
-        correlationId,
-        latestSource,
-      );
-    }
-    return this.markPartial(plan, targetPath, error, correlationId);
-  }
-
-  private async compensateTarget(
-    plan: TriageAcceptPlan,
-    targetPath: string,
-    originalError: unknown,
-    correlationId: string,
-    latestSource?: TrailTriageParseResult,
-  ): Promise<never> {
-    if (!supportsWorkflowIssueDeletion(this.workflowPersistence)) {
-      return this.markPartial(plan, targetPath, originalError, correlationId);
-    }
-    const deletionPersistence = this.workflowPersistence;
-    this.diagnostics.record("triage.accept.compensation.started", {
-      correlationId,
-      data: {
-        targetIssueId: plan.targetCreate.issue.id,
-        targetPath,
-      },
-      level: "warn",
-    });
-
-    try {
-      const result = await deletionPersistence.deleteIssue(
-        targetPath,
-        plan.targetCreate.issue,
-        correlationId,
-      );
-      const contribution = this.verifyCompensationResult(plan, result);
-      this.reconcileTarget(contribution, "triage.accept-compensated", correlationId);
-      const source = latestSource ?? await this.safeReadSource();
-      if (source !== undefined && source.issues.length === 0) {
-        this.reconcileSource(source.contribution, "triage.accept-compensated", correlationId);
-      }
-      removePendingPlan(this.runtimeStore, plan.commandId);
-      this.diagnostics.record("runtime.optimistic.removed", {
-        correlationId,
-        data: {
-          pendingCount: this.runtimeStore.getState().pendingPlans.length,
-          reason: "compensated",
-        },
-        level: "warn",
-      });
-      this.diagnostics.record("triage.accept.compensation.completed", {
-        correlationId,
-        data: { targetIssueId: plan.targetCreate.issue.id, targetPath },
-        level: "warn",
-      });
-      this.recordOutcome(plan, "compensated", correlationId);
-      throw new TriageAcceptError(
-        "compensated",
-        "Triage Accept could not remove the source, so the new Workflow target was rolled back safely.",
-        originalError,
-      );
-    } catch (error: unknown) {
-      if (error instanceof TriageAcceptError && error.code === "compensated") {
-        throw error;
-      }
-      const latestTarget = await this.safeReadTarget(targetPath);
-      if (
-        latestTarget !== undefined
-        && latestTarget.issues.length === 0
-        && latestTarget.contribution !== undefined
-        && latestTarget.contribution.issuesById[plan.targetCreate.issue.id] === undefined
-      ) {
-        this.reconcileTarget(
-          latestTarget.contribution,
-          "triage.accept-compensated-recovered",
-          correlationId,
-        );
-        const source = latestSource ?? await this.safeReadSource();
-        if (source !== undefined && source.issues.length === 0) {
-          this.reconcileSource(source.contribution, "triage.accept-compensated-recovered", correlationId);
-        }
-        removePendingPlan(this.runtimeStore, plan.commandId);
-        this.recordOutcome(plan, "compensated", correlationId);
-        throw new TriageAcceptError(
-          "compensated",
-          "Triage Accept was rolled back to the source after a recoverable target cleanup error.",
-          originalError,
-        );
-      }
-      this.diagnostics.record("triage.accept.compensation.failed", {
-        correlationId,
-        data: { category: errorCategory(error), targetIssueId: plan.targetCreate.issue.id },
-        level: "error",
-      });
-      return this.markPartial(plan, targetPath, error, correlationId);
-    }
   }
 
   private verifyCompensationResult(

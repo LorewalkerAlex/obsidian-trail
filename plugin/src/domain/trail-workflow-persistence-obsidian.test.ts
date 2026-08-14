@@ -111,7 +111,39 @@ const issue: TrailWorkflowIssue = {
 };
 
 describe("Obsidian Workflow persistence", () => {
-  it("allocates the next Project sequence from current direct Project files", async () => {
+  it("keeps Project allocation in the shared physical allocator while persistence creates at the explicit path", async () => {
+    const fixture = createFixture();
+    const existing = new FakeFile(
+      "0007 Existing.md",
+      `${TRAIL_PROJECTS_PATH}/0007 Existing.md`,
+    );
+    fixture.folder.children.push(existing);
+    fixture.markdownByPath.set(existing.path, serializeProjectMarkdown({
+      ...project,
+      id: "existing-project",
+      title: "Existing",
+    }));
+    const persistence = createObsidianWorkflowPersistence(
+      fixture.app,
+      parseYaml,
+      fileKinds,
+    );
+
+    const listed = await persistence.listProjectSources();
+    expect(listed).toContainEqual({
+      kind: "file",
+      name: "0007 Existing.md",
+      path: `${TRAIL_PROJECTS_PATH}/0007 Existing.md`,
+    });
+
+    const explicitPath = `${TRAIL_PROJECTS_PATH}/0042 Workflow Entry.md`;
+    const result = await persistence.createProjectAtPath(explicitPath, project);
+
+    expect(result.contribution?.filePath).toBe(explicitPath);
+    expect(result.contribution?.project).toEqual(project);
+  });
+
+  it("keeps the legacy createProject facade wired through the shared allocator", async () => {
     const fixture = createFixture();
     const existing = new FakeFile(
       "0007 Existing.md",
@@ -134,7 +166,6 @@ describe("Obsidian Workflow persistence", () => {
     expect(result.contribution?.filePath).toBe(
       `${TRAIL_PROJECTS_PATH}/0008 Workflow Entry.md`,
     );
-    expect(result.contribution?.project).toEqual(project);
   });
 
   it("applies Issue append and update to the latest Vault.process snapshot", async () => {
@@ -144,9 +175,9 @@ describe("Obsidian Workflow persistence", () => {
       parseYaml,
       fileKinds,
     );
-    const created = await persistence.createProject(project);
-    const path = created.contribution?.filePath;
-    if (path === undefined) throw new Error("missing created path");
+    const path = `${TRAIL_PROJECTS_PATH}/0001 Workflow Entry.md`;
+    const created = await persistence.createProjectAtPath(path, project);
+    if (created.contribution === undefined) throw new Error("missing created Project");
 
     fixture.markdownByPath.set(
       path,
@@ -183,9 +214,8 @@ describe("Obsidian Workflow persistence", () => {
       parseYaml,
       fileKinds,
     );
-    const created = await persistence.createProject(project);
-    const path = created.contribution?.filePath;
-    if (path === undefined) throw new Error("missing created path");
+    const path = `${TRAIL_PROJECTS_PATH}/0001 Workflow Entry.md`;
+    await persistence.createProjectAtPath(path, project);
     const withIssue = await persistence.appendIssue(path, project, issue);
     const expectedIssue = withIssue.contribution?.issuesById[issue.id];
     if (expectedIssue === undefined) throw new Error("missing appended Issue");

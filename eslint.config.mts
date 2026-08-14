@@ -34,6 +34,38 @@ export default defineConfig(
   },
   ...obsidianmd.configs.recommended,
   {
+    files: ["plugin/src/runtime/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/markdown/**"],
+              message: "Runtime must consume logical source contracts, not Markdown mechanisms.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["plugin/src/mutation/execution/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/markdown/**"],
+              message: "Mutation execution must use persistence capabilities, not Markdown mechanisms.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["eslint.config.mts"],
     rules: {
       "obsidianmd/hardcoded-config-path": "off",

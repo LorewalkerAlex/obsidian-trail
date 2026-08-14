@@ -57,12 +57,12 @@ modular UI
 |---|---|---|
 | Architecture Contract | 固化目标模块、依赖规则、Domain Effects、Source Operations、Read / Write Framework、Testing / Reliability 原则；完成文档 checkpoint、push 后 consistency review | 已完成 |
 | Markdown + Persistence Foundation | 建立共享 Markdown Core、Physical Schema / Registry、Domain Source I/O / Repository 与 Plugin Data I/O / Repository；迁移 Triage / Project physical path | 已完成 |
-| Runtime + Mutation Foundation | 拆分 Runtime ownership；建立共享 projection / physical planning / single- and multi-source execution | 当前 |
-| Existing Formal Migration | 迁移 Quick Capture、Triage Management、Workflow Entry、Triage Accept；删除被共享能力取代的 feature-owned lifecycle | 待开始 |
+| Runtime + Mutation Foundation | 拆分 Runtime ownership；建立共享 projection / physical planning / single- and multi-source execution | 已完成 |
+| Existing Formal Migration | 迁移 Quick Capture、Triage Management、Workflow Entry、Triage Accept；删除被共享能力取代的 feature-owned lifecycle | 当前 |
 | UI + Test Ownership Cleanup | 拆 Formal UI module；提取重复 interaction；按 independent risk 重组测试 | 待开始 |
 | Re-baseline Exit | full check、代表性 real-host 回归、文档校准、commit / push / GitHub 回查 | 待开始 |
 
-Architecture Contract 与 **Markdown + Persistence Foundation** 已完成；当前实现进入 **Runtime + Mutation Foundation**。
+Architecture Contract、**Markdown + Persistence Foundation** 与 **Runtime + Mutation Foundation** 已完成；当前实现进入 **Existing Formal Migration**。
 
 ### 3.2 Re-baseline 原则
 
@@ -122,7 +122,7 @@ Convert to Note 仍属于后续 knowledge action，不阻塞下一步。
 | Workflow Entry | 已完成 | Project / Workflow Issue 基本执行闭环完成 |
 | Formal Workflow | 已完成 | Workflow 可创建、执行并从 Markdown 重建 |
 | Triage Accept | 已完成（迁移输入） | 新 identity、destination-first、optimistic / reconcile 与真实 host evidence 已建立 |
-| **Implementation Architecture Re-baseline** | **当前** | Architecture Contract 与 Markdown + Persistence Foundation 已完成，当前进入 Runtime + Mutation Foundation |
+| **Implementation Architecture Re-baseline** | **当前** | Architecture Contract、Markdown + Persistence Foundation 与 Runtime + Mutation Foundation 已完成，当前进入 Existing Formal Migration |
 | Intake → Workflow | 待继续 | Re-baseline 后以 Convert to Project 作为第一个净新增 Slice |
 | V1 Exit | 待开始 | — |
 

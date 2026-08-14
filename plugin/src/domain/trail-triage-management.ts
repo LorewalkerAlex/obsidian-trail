@@ -2,6 +2,8 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "../diagnostics/trail-diagnostics";
+import { executeTrailSingleTransaction } from "../mutation/execution/trail-single-transaction-executor";
+import { materializeTrailSingleTransactionPlan } from "../mutation/physical/trail-single-transaction-plan";
 import {
   isTrailEpochMilliseconds,
   isValidTrailTitle,
@@ -10,7 +12,6 @@ import {
   type TrailTriageIssue,
 } from "./trail-issue";
 import { TrailMutationQueue } from "./trail-mutation-queue";
-import { TRAIL_TRIAGE_PATH } from "./trail-physical-schema";
 import {
   addPendingPlan,
   reconcileTriageContribution,
@@ -26,9 +27,10 @@ import {
   type TrailTriageParseResult,
 } from "./trail-triage-markdown";
 import type { TrailTriageManagementPersistenceGateway } from "./trail-triage-persistence";
-import type {
-  DeleteTriageIssuePlan,
-  UpdateTriageIssuePlan,
+import {
+  toTrailMutationPlan,
+  type DeleteTriageIssuePlan,
+  type UpdateTriageIssuePlan,
 } from "./trail-triage-plan";
 
 export type TriageManagementActionKind =
@@ -262,8 +264,8 @@ export function planTriageManagement(
 }
 
 /**
- * Runs Triage management mutations through the same optimistic + serial +
- * authoritative-verification path used by Quick Capture.
+ * Runs Triage management through one feature-agnostic logical plan and the shared
+ * dequeue-time single-source physical planner/executor.
  */
 export class TrailTriageManagementService {
   public constructor(
@@ -327,11 +329,12 @@ export class TrailTriageManagementService {
     }
 
     const { plan } = result;
+    const logicalPlan = toTrailMutationPlan(plan);
     this.diagnostics.record("command.planned", {
       correlationId,
       data: { issueId: command.issueId, kind: command.kind },
     });
-    addPendingPlan(this.runtimeStore, plan);
+    addPendingPlan(this.runtimeStore, logicalPlan);
     this.diagnostics.record("runtime.optimistic.applied", {
       correlationId,
       data: {
@@ -342,21 +345,39 @@ export class TrailTriageManagementService {
 
     const completion = this.mutationQueue.enqueue(async () => {
       try {
+        const physicalPlan = await materializeTrailSingleTransactionPlan(
+          logicalPlan,
+          this.runtimeStore.getState().committed,
+        );
+        this.diagnostics.record("mutation.physical.planned", {
+          correlationId,
+          data: {
+            intent: physicalPlan.intent,
+            operation: physicalPlan.operation.kind,
+            sourcePath: physicalPlan.sourcePath,
+            topology: "single",
+          },
+        });
         this.diagnostics.record("triage.persistence.write.started", {
           correlationId,
           data: {
             issueId: command.issueId,
             kind: command.kind,
-            path: TRAIL_TRIAGE_PATH,
+            path: physicalPlan.sourcePath,
           },
         });
-        const persisted = plan.kind === "delete-triage-issue"
-          ? await this.persistence.deleteIssue(plan.expectedIssue, correlationId)
-          : await this.persistence.updateIssue(
-              plan.expectedIssue,
-              plan.issue,
-              correlationId,
-            );
+        const executed = await executeTrailSingleTransaction(
+          physicalPlan,
+          { triageManage: this.persistence },
+          correlationId,
+        );
+        if (executed.kind !== "triage-source") {
+          throw new TriageManagementError(
+            "verification-failed",
+            "Triage management physical execution returned the wrong source kind",
+          );
+        }
+        const persisted = executed.result;
         this.diagnostics.record("triage.persistence.write.completed", {
           correlationId,
           data: {

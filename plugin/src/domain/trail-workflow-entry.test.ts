@@ -61,13 +61,25 @@ function environment(ids: string[], now: number) {
 
 class MemoryWorkflowPersistence implements TrailWorkflowPersistence {
   private readonly markdownByPath = new Map<string, string>();
-  private sequence = 0;
 
-  public async createProject(project: TrailProject): Promise<TrailProjectParseResult> {
-    this.sequence += 1;
-    const path = `Trail/Projects/${String(this.sequence).padStart(4, "0")} ${project.title}.md`;
-    this.markdownByPath.set(path, serializeProjectMarkdown(project));
-    return this.readSource(path);
+  public async createProject(): Promise<TrailProjectParseResult> {
+    throw new Error("Legacy Workflow createProject path must not be used");
+  }
+
+  public async createProjectAtPath(
+    filePath: string,
+    project: TrailProject,
+  ): Promise<TrailProjectParseResult> {
+    this.markdownByPath.set(filePath, serializeProjectMarkdown(project));
+    return this.readSource(filePath);
+  }
+
+  public async listProjectSources() {
+    return [...this.markdownByPath.keys()].sort().map((path) => ({
+      kind: "file" as const,
+      name: path.split("/").pop() ?? path,
+      path,
+    }));
   }
 
   public async appendIssue(
@@ -286,7 +298,7 @@ describe("Workflow Entry planning", () => {
 });
 
 describe("Workflow Entry service", () => {
-  it("projects optimistic creation and reconciles authoritative Project + Issue state", async () => {
+  it("resolves an optimistic Project to its committed path when the queued Issue dequeues", async () => {
     const configuration = createConfiguration();
     const persistence = new MemoryWorkflowPersistence();
     const store = createTrailRuntimeStore();
@@ -309,14 +321,14 @@ describe("Workflow Entry service", () => {
       id: "project-a",
       title: "Trail Workflow",
     });
-    await projectReceipt.completion;
 
     const issueReceipt = service.createIssue("project-a", "Implement workflow");
     expect(selectEffectiveWorkflowIssueById(store.getState(), issueReceipt.entityId)).toMatchObject({
       id: "issue-a",
       statusDefinitionId: configuration.statuses.issue.backlog.defaultId,
     });
-    await issueReceipt.completion;
+
+    await Promise.all([projectReceipt.completion, issueReceipt.completion]);
 
     const issue = store.getState().committed.workflowIssuesById["issue-a"];
     await service.changeIssueStatus(
@@ -329,6 +341,9 @@ describe("Workflow Entry service", () => {
       statusDefinitionId: configuration.statuses.issue.started.defaultId,
     });
     expect(store.getState().committed.sourceByEntityId["project-a"]).toBe(
+      "Trail/Projects/0001 Trail Workflow.md",
+    );
+    expect(store.getState().committed.sourceByEntityId["issue-a"]).toBe(
       "Trail/Projects/0001 Trail Workflow.md",
     );
   });
