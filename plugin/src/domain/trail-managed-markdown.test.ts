@@ -60,9 +60,25 @@ describe("Current Formal managed Markdown validator", () => {
     )).toEqual([]);
   });
 
-  it("rejects wrong container kinds and future records that are not implemented yet", () => {
-    const wrongKind = TRAIL_CYCLES_EMPTY_MARKDOWN.replace("kind: cycles", "kind: triage");
-    const unsupportedProjectlessRecord = `${TRAIL_PROJECTLESS_ISSUES_EMPTY_MARKDOWN}\n## Not supported yet\n`;
+  it("rejects wrong kinds but accepts frozen Projectless and Cycle record grammar", () => {
+    const wrongKind = TRAIL_CYCLES_EMPTY_MARKDOWN.replace(
+      "kind: cycles",
+      "kind: triage",
+    );
+    const projectless = [
+      TRAIL_PROJECTLESS_ISSUES_EMPTY_MARKDOWN.trimEnd(),
+      "",
+      "## Renew passport",
+      '<!-- data {"id":"issue-p","context":"workflow","statusDefinitionId":"status-todo","createdAt":1786464000000} -->',
+      "",
+    ].join("\n");
+    const cycles = [
+      TRAIL_CYCLES_EMPTY_MARKDOWN.trimEnd(),
+      "",
+      "## 2026-08-11",
+      '<!-- data {"id":"cycle-a","startedAt":1786464000000,"plannedEnd":1787500800000,"issueIds":["issue-b","issue-a"]} -->',
+      "",
+    ].join("\n");
 
     expect(validateFormalManagedMarkdown(
       TRAIL_CYCLES_PATH,
@@ -71,12 +87,17 @@ describe("Current Formal managed Markdown validator", () => {
     )).not.toEqual([]);
     expect(validateFormalManagedMarkdown(
       TRAIL_PROJECTLESS_ISSUES_PATH,
-      unsupportedProjectlessRecord,
+      projectless,
       parseYaml,
-    )).not.toEqual([]);
+    )).toEqual([]);
+    expect(validateFormalManagedMarkdown(
+      TRAIL_CYCLES_PATH,
+      cycles,
+      parseYaml,
+    )).toEqual([]);
   });
 
-  it("accepts BOM and CRLF around a currently empty container", () => {
+  it("accepts BOM and CRLF around an empty container", () => {
     const markdown = `\uFEFF${TRAIL_CYCLES_EMPTY_MARKDOWN.replace(/\n/g, "\r\n")}`;
 
     expect(validateFormalManagedMarkdown(

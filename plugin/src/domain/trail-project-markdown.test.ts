@@ -4,6 +4,7 @@ import type { TrailProject } from "./trail-project";
 import {
   appendWorkflowIssueToProjectMarkdown,
   parseProjectMarkdown,
+  serializePhysicalMilestoneRecord,
   serializeProjectMarkdown,
   updateWorkflowIssueInProjectMarkdown,
 } from "./trail-project-markdown";
@@ -163,14 +164,27 @@ describe("Formal Project Markdown", () => {
     expect(externallyEdited).toContain("## External change");
   });
 
-  it("reports unsupported Milestone content instead of guessing its grammar", () => {
+  it("accepts canonical Milestone physical records without adding Milestone behavior", () => {
+    const milestone = serializePhysicalMilestoneRecord({
+      description: "Physical checkpoint.",
+      due: 200,
+      id: "milestone-a",
+      projectId: project.id,
+      title: "Phase 1",
+    });
     const markdown = serializeProjectMarkdown(project).replace(
       "# Milestones\n\n# Issues",
-      "# Milestones\n\n## Phase 1\n<!-- data {\"id\":\"milestone-a\",\"projectId\":\"project-a\"} -->\n\n# Issues",
+      `# Milestones\n\n${milestone}\n\n# Issues`,
     );
+    const result = parse(markdown);
 
-    expect(parse(markdown).issues.map((entry) => entry.code)).toContain(
-      "project.milestones.unsupported",
-    );
+    expect(result.issues).toEqual([]);
+    expect(result.physicalMilestonesById?.["milestone-a"]).toEqual({
+      description: "Physical checkpoint.",
+      due: 200,
+      id: "milestone-a",
+      projectId: project.id,
+      title: "Phase 1",
+    });
   });
 });

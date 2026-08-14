@@ -1,10 +1,13 @@
-import type {
-  App,
-  TAbstractFile,
-  TFile,
-  TFolder,
-} from "obsidian";
-import type { TrailPluginData } from "./trail-configuration";
+import type { App, TFile, TFolder } from "obsidian";
+
+import type { ObsidianFileKinds } from "../adapters/obsidian/trail-obsidian-file-kinds";
+import {
+  createObsidianPluginDataIO,
+  type ObsidianPluginDataHost,
+} from "../adapters/obsidian/trail-plugin-data-io-obsidian";
+import {
+  createTrailPluginDataRepository,
+} from "../persistence/plugin-data/trail-plugin-data-repository";
 import {
   TRAIL_MANAGED_ROOT,
   TRAIL_REQUIRED_SINGLETON_PATHS,
@@ -17,30 +20,14 @@ import type {
   WorkspaceProbe,
 } from "./trail-workspace";
 
-export interface TrailPluginDataHost {
-  readonly loadData: () => Promise<unknown>;
-  readonly saveData: (data: TrailPluginData) => Promise<void>;
-}
+export type TrailPluginDataHost = ObsidianPluginDataHost;
 
 export type FormalMarkdownValidator = (
   path: string,
   markdown: string,
 ) => readonly string[];
 
-/**
- * Obsidian's TFile/TFolder classes are runtime host values, while the npm
- * package is primarily a build/type contract outside Obsidian. The composition
- * root supplies these guards using the real host constructors; tests can supply
- * fake constructors without making Vitest resolve an Obsidian runtime module.
- */
-export interface ObsidianWorkspaceFileKinds {
-  readonly isFile: (
-    file: TAbstractFile | null,
-  ) => file is TFile;
-  readonly isFolder: (
-    file: TAbstractFile | null,
-  ) => file is TFolder;
-}
+export type ObsidianWorkspaceFileKinds = ObsidianFileKinds;
 
 function toManagedRootEntry(
   file: TFile | TFolder,
@@ -53,13 +40,9 @@ function toManagedRootEntry(
 }
 
 /**
- * Adapts the Obsidian Vault and plugin-data APIs to the conservative Formal
- * Workspace bootstrap gateway. Domain and physical validity remain delegated to
- * the caller-supplied current-schema validator rather than being guessed here.
- *
- * This module type-imports Obsidian only. Runtime TFile/TFolder discrimination
- * is injected by the composition root so the adapter remains testable outside
- * the Obsidian host without a fake global runtime module.
+ * Obsidian bootstrap adapter. Bootstrap policy remains owned by trail-workspace;
+ * Markdown validation and plugin-data validation are delegated to their canonical
+ * persistence capabilities without changing bootstrap ordering or rollback.
  */
 export function createObsidianWorkspaceBootstrapGateway(
   app: Pick<App, "fileManager" | "vault">,
@@ -67,11 +50,20 @@ export function createObsidianWorkspaceBootstrapGateway(
   validateFormalMarkdown: FormalMarkdownValidator,
   fileKinds: ObsidianWorkspaceFileKinds,
 ): WorkspaceBootstrapGateway {
+  const pluginDataRepository = createTrailPluginDataRepository(
+    createObsidianPluginDataIO(pluginDataHost),
+  );
+
   async function loadPluginData(): Promise<PluginDataProbe> {
-    const value = await pluginDataHost.loadData();
-    return value === null || value === undefined
-      ? { exists: false }
-      : { exists: true, value };
+    const result = await pluginDataRepository.read();
+    switch (result.kind) {
+      case "absent":
+        return { exists: false };
+      case "valid":
+        return { exists: true, value: result.data };
+      case "invalid":
+        return { exists: true, value: result.value };
+    }
   }
 
   async function probeWorkspace(): Promise<WorkspaceProbe> {
@@ -192,7 +184,7 @@ export function createObsidianWorkspaceBootstrapGateway(
     },
 
     async savePluginData(data): Promise<void> {
-      await pluginDataHost.saveData(data);
+      await pluginDataRepository.save(data);
     },
   };
 }
