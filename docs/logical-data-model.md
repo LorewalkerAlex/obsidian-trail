@@ -1,10 +1,12 @@
 # Trail Logical Data Model
 
 > 状态：Logical Data Model 已收口，并已按 Markdown Physical Model 决策完成时间契约校准
-> 最后更新：2026-08-12
+> 最后更新：2026-08-14
 > 上游 Product Design：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 下游 Physical Model：`docs/markdown-physical-model.md`
+> 下游 Technical Design：`docs/technical-design-baseline.md`
+> 下游 Implementation Architecture：`docs/implementation-architecture.md`
 
 ## 1. 文档定位
 
@@ -31,7 +33,7 @@
 - TypeScript interface / class 细节；
 - parser / writer / mutation queue / optimistic UI / reconciliation 实现。
 
-这些物理与实现决策分别由 `docs/markdown-physical-model.md` 和 `docs/technical-design-baseline.md` 承担。项目当前实现阶段与 checkpoint 只由 `docs/implementation-plan.md` 维护。
+这些职责按层下沉：`docs/markdown-physical-model.md` 决定 persistence physical contract；`docs/technical-design-baseline.md` 决定 conceptual Runtime / mutation / frontend architecture；`docs/implementation-architecture.md` 决定 code-level module ownership、dependency direction、标准 read/write path 与渐进实现 policy。项目当前实现阶段与 checkpoint 只由 `docs/implementation-plan.md` 维护。
 
 ## 2. Persistence Roles
 
@@ -991,8 +993,9 @@ Product Design
 → Logical Data Model
 → Markdown Physical Model
 → Technical Design Baseline
+→ Implementation Architecture
 → Implementation Plan
 → Formal Implementation
 ~~~
 
-具体 runtime / optimistic / physical transaction / frontend architecture 由 `docs/technical-design-baseline.md` 定义；项目当前实现阶段与 checkpoint 统一查看 `docs/implementation-plan.md`。
+具体 persistence physical representation 由 `docs/markdown-physical-model.md` 定义；conceptual runtime / optimistic / mutation / frontend architecture 由 `docs/technical-design-baseline.md` 定义；code-level ownership、dependency、standard read/write path 与 V1 operational policy 由 `docs/implementation-architecture.md` 定义。项目当前实现阶段与 checkpoint 统一查看 `docs/implementation-plan.md`。

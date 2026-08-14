@@ -1,7 +1,7 @@
 # Trail Canonical Domain Model
 
 > 状态：Canonical Domain 已收口
-> 最后更新：2026-08-12
+> 最后更新：2026-08-14
 > 适用对象：个人使用
 > 上游 Product Design：`docs/product-design-baseline.md`
 > Canonical Domain 基线 commit：`ec43eae70b828c7f9888fd71b7d80847ba14624e`
@@ -15,7 +15,11 @@
 1. `docs/product-design-baseline.md`：产品语义 source of truth。
 2. 本文：把产品语义收敛为 Domain objects、relations、field semantics、lifecycle 和 invariants。
 3. `docs/logical-data-model.md`：把本文转换为 logical records、references、constraints、configuration、query 与 mutation contract。
-4. `docs/technical-design-baseline.md`：正式 Technical Design；`docs/technical-design.md` 与 POC 代码只提供技术证据，不反向定义正式 Domain。
+4. `docs/markdown-physical-model.md`：把 Logical Model 映射为正式 Markdown / `data.json` persistence contract。
+5. `docs/technical-design-baseline.md`：定义正式 conceptual Technical Design。
+6. `docs/implementation-architecture.md`：把上述 contracts 投影为 code-level module ownership、dependency 与标准调用路径。
+
+`docs/technical-design.md` 与 POC 代码只提供技术证据，不反向定义正式 Domain。
 
 Markdown 文件、目录、frontmatter、block、source range、fingerprint、parser、writer、runtime cache 等继续位于 Canonical Domain 外。
 
@@ -23,7 +27,7 @@ Markdown 文件、目录、frontmatter、block、source range、fingerprint、pa
 
 Canonical Domain 已收口。本文只维护 Domain Contract，不维护整个项目的当前阶段、近期 Slice 或 implementation checkpoint。
 
-项目实现进度统一由 `docs/implementation-plan.md` 维护；Logical、Physical 与 Technical Design 分别在各自 canonical 文档中承担下游职责。这样 Domain 文档不会因为实现阶段推进而反复产生与 Domain 无关的状态修改。
+项目实现进度统一由 `docs/implementation-plan.md` 维护；Logical、Physical、Technical Design 与 Implementation Architecture 分别承担下游 logical、persistence、conceptual architecture 与 code-level architecture 职责。这样 Domain 文档不会因为实现阶段推进而反复产生与 Domain 无关的状态修改。
 
 ## 3. Canonical Object Classification
 
@@ -404,4 +408,4 @@ Trail 当前不建设完整 Activity / Event Log。Home Activity Heatmap 等可�
 
 Canonical Domain 保持已收口状态。本轮校准记录已经产生明确产品价值的新事实与行为：Workflow Issue `createdAt`、Triage Due contract、Accept 新 identity、StatusDefinition ordering，以及 Heatmap 的 derived-only 边界。
 
-下游 Logical / Physical / Technical contracts 分别由 `docs/logical-data-model.md`、`docs/markdown-physical-model.md` 与 `docs/technical-design-baseline.md` 承担；`docs/technical-design.md` 只作为 POC 技术证据。项目当前实现阶段与 checkpoint 统一查看 `docs/implementation-plan.md`。
+下游 Logical / Physical / Technical / Implementation Architecture contracts 分别由 `docs/logical-data-model.md`、`docs/markdown-physical-model.md`、`docs/technical-design-baseline.md` 与 `docs/implementation-architecture.md` 承担；`docs/technical-design.md` 只作为 POC 技术证据。项目当前实现阶段与 checkpoint 统一查看 `docs/implementation-plan.md`。

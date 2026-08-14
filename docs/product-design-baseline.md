@@ -1,7 +1,7 @@
 # Trail Personal Product Design
 
 > 状态：当前 Product Design canonical baseline
-> 最后更新：2026-08-12
+> 最后更新：2026-08-14
 > 适用对象：个人使用
 > 参考基线：Linear 的成熟产品原语与交互模型
 > POC 技术退出基线：`7a564ff9fada3d0f5af09052c24f1fe51e0ec143`
@@ -16,7 +16,9 @@
 - 本文优先于更早的 `docs/product-domain-hld.md`、Yggdrasil / Workbench 顶层设计和 POC-era 产品假设。
 - `docs/canonical-domain-model.md` 把本文产品语义转换为实现无关的 Domain Contract。
 - `docs/logical-data-model.md` 把当前 Product / Domain Contract 转成 logical records、references、constraints、configuration、query 与 mutation contract；它不决定 Markdown 物理表示。
-- `docs/technical-design-baseline.md` 记录正式 Technical Design；`docs/technical-design.md` 只保留 POC 技术证据。POC schema 不反向约束正式 Product / Domain / Logical / Physical Model。
+- `docs/markdown-physical-model.md` 把 Logical Data Model 映射为正式 Markdown / `data.json` persistence contract。
+- `docs/technical-design-baseline.md` 记录正式 conceptual Technical Design；`docs/implementation-architecture.md` 把它进一步投影为 code-level module ownership、dependency 与标准调用路径。
+- `docs/technical-design.md` 只保留 POC 技术证据。POC schema 不反向约束正式 Product / Domain / Logical / Physical / Technical / Implementation Architecture。
 - 项目当前阶段、近期 Slice 与 Implementation Checkpoints 只由 `docs/implementation-plan.md` 维护；本文不重复维护项目进度。
 - Handoff 只用于跨 Session 交接，不替代上述 canonical 文档。
 - 本文只保存当前结论、必要 rationale 和 superseded decisions，不保存完整讨论过程。
@@ -499,9 +501,11 @@ docs/markdown-physical-model.md
     ↓
 docs/technical-design-baseline.md
     ↓
+docs/implementation-architecture.md
+    ↓
 docs/implementation-plan.md
     ↓
 Formal Implementation
 ```
 
-`docs/technical-design.md` 继续作为 POC 技术证据，不承担正式 Technical Design 权威性。正式 Technical Design 与 implementation 必须保留本文已经确认的产品行为，不为了实现方便重新引入万能 Query DSL、TriageItem、Snooze field、Activity Log 或其他已删除复杂度。
+`docs/technical-design.md` 继续作为 POC 技术证据，不承担正式 Technical Design 权威性。正式 Technical Design、Implementation Architecture 与 implementation 必须保留本文已经确认的产品行为，不为了实现方便重新引入万能 Query DSL、TriageItem、Snooze field、Activity Log 或其他已删除复杂度。
