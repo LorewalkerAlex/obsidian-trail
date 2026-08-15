@@ -2,7 +2,7 @@ import {
   TRAIL_CYCLES_PATH,
   TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
-} from "../schema/trail-physical-schema";
+} from "../schema/trail-paths";
 import type { TrailYamlParser } from "./trail-codec-support";
 import {
   parseCyclesMarkdown,

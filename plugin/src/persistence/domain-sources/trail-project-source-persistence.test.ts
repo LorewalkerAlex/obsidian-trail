@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { TrailWorkflowIssue } from "../../domain/trail-issue";
 import type { TrailProject } from "../../domain/trail-project";
 import { serializeProjectMarkdown } from "../../markdown/codecs/trail-project-codec";
-import { TRAIL_PROJECTS_PATH } from "../../markdown/schema/trail-physical-schema";
+import { TRAIL_PROJECTS_PATH } from "../../markdown/schema/trail-paths";
 import type { TrailSourceEntry, TrailSourceIO } from "../ports/trail-source-io";
 import { createTrailDomainSourceRepository } from "./trail-domain-source-repository";
 import { createProjectSourcePersistence } from "./trail-project-source-persistence";

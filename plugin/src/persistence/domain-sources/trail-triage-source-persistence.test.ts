@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { TRAIL_TRIAGE_EMPTY_MARKDOWN, TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-physical-schema";
+import { TRAIL_TRIAGE_EMPTY_MARKDOWN } from "../../markdown/schema/trail-bootstrap-markdown";
+import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
 import type { TrailSourceIO } from "../ports/trail-source-io";
 import { createTrailDomainSourceRepository } from "./trail-domain-source-repository";
 import { createTriageSourcePersistence } from "./trail-triage-source-persistence";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { TRAIL_TRIAGE_EMPTY_MARKDOWN } from "../schema/trail-physical-schema";
+import { TRAIL_TRIAGE_EMPTY_MARKDOWN } from "../schema/trail-bootstrap-markdown";
 import {
   appendTriageIssueToMarkdown,
   deleteTriageIssueFromMarkdown,

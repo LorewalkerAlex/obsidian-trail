@@ -1,11 +1,14 @@
+import {
+  WorkflowNeedsInputError,
+} from "../../../application/issues/trail-workflow-issue-application";
+import type {
+  TrailEntityMutationReceipt,
+} from "../../../application/trail-application-contracts";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { TrailWorkflowIssue } from "../../../domain/trail-issue";
-import {
-  WorkflowNeedsInputError,
-  type WorkflowEntryReceipt,
-} from "../../../domain/trail-workflow-entry";
+
 import {
   createReadyTrailUiStore,
   seedWorkflowProject,
@@ -29,7 +32,7 @@ function unusedActions(): Omit<TrailProjectsPageProps, "runtimeStore"> {
 describe("TrailProjectsPage", () => {
   it("submits a new Project through the Workflow action", () => {
     const store = createReadyTrailUiStore();
-    const onCreateProject = vi.fn((_title: string): WorkflowEntryReceipt => ({
+    const onCreateProject = vi.fn((_title: string): TrailEntityMutationReceipt => ({
       completion: Promise.resolve(),
       entityId: "project-new",
     }));
@@ -56,7 +59,7 @@ describe("TrailProjectsPage", () => {
     const onCreateWorkflowIssue = vi.fn((
       _projectId: string,
       _title: string,
-    ): WorkflowEntryReceipt => ({
+    ): TrailEntityMutationReceipt => ({
       completion: Promise.resolve(),
       entityId: "workflow-issue-new",
     }));
@@ -90,7 +93,7 @@ describe("TrailProjectsPage", () => {
       expectedIssue: TrailWorkflowIssue,
       targetStatusDefinitionId: string,
       estimate?: number,
-    ): WorkflowEntryReceipt => {
+    ): TrailEntityMutationReceipt => {
       if (targetStatusDefinitionId === completedId && estimate === undefined) {
         throw new WorkflowNeedsInputError(
           "estimate",

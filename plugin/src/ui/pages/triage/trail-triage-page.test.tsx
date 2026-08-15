@@ -8,8 +8,8 @@ import {
 import { addTrailPendingPlan } from "../../../runtime/projection/trail-runtime-projection";
 import { setSourceIssuesForPath } from "../../../runtime/store/trail-runtime-store";
 import type { TrailTriageIssue } from "../../../domain/trail-issue";
-import type { TriageCaptureReceipt } from "../../../domain/trail-triage-intake";
-import type { TriageManagementReceipt } from "../../../domain/trail-triage-management";
+import type { TriageCaptureReceipt } from "../../../application/triage/trail-triage-intake";
+import type { TriageManagementReceipt } from "../../../application/triage/trail-triage-management";
 import {
   createReadyTrailUiStore,
   seedTriageIssue,

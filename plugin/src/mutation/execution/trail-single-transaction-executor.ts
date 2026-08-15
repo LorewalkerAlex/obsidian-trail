@@ -39,7 +39,7 @@ export interface TrailWorkflowMutationPersistence<TResult> {
     issue: TrailWorkflowIssue,
     correlationId?: string,
   ) => Promise<TResult>;
-  readonly deleteIssue?: (
+  readonly deleteIssue: (
     filePath: string,
     expectedIssue: TrailWorkflowIssue,
     correlationId?: string,
@@ -136,8 +136,7 @@ export async function executeTrailSingleTransaction<TResult>(
       };
     }
     case "workflow-delete": {
-      const target = persistence.workflow;
-      if (target?.deleteIssue === undefined) missingCapability("workflow-delete");
+      const target = persistence.workflow ?? missingCapability("workflow-delete");
       return {
         kind: "project-source",
         result: await target.deleteIssue(

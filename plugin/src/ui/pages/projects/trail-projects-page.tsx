@@ -1,4 +1,10 @@
 import {
+  WorkflowNeedsInputError,
+} from "../../../application/issues/trail-workflow-issue-application";
+import type {
+  TrailEntityMutationReceipt,
+} from "../../../application/trail-application-contracts";
+import {
   useState,
   type ChangeEvent,
   type SyntheticEvent,
@@ -25,10 +31,7 @@ import {
   selectWorkflowRootSourceIssues,
   selectWorkflowSourceIssues,
 } from "../../../query/trail-source-health";
-import {
-  WorkflowNeedsInputError,
-  type WorkflowEntryReceipt,
-} from "../../../domain/trail-workflow-entry";
+
 import {
   observeTrailActionCompletion,
   runTrailAction,
@@ -37,16 +40,16 @@ import {
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
 
 export interface TrailProjectsPageActions {
-  readonly onCreateProject: (title: string) => WorkflowEntryReceipt;
+  readonly onCreateProject: (title: string) => TrailEntityMutationReceipt;
   readonly onCreateWorkflowIssue: (
     projectId: string,
     title: string,
-  ) => WorkflowEntryReceipt;
+  ) => TrailEntityMutationReceipt;
   readonly onWorkflowStatusChange: (
     expectedIssue: TrailWorkflowIssue,
     targetStatusDefinitionId: string,
     estimate?: number,
-  ) => WorkflowEntryReceipt;
+  ) => TrailEntityMutationReceipt;
 }
 
 export interface TrailProjectsPageProps extends TrailProjectsPageActions {
@@ -385,7 +388,7 @@ function WorkflowIssueRow({
   );
   const actionsDisabled = isPending || !sourceIsValid;
 
-  const observeReceipt = (receipt: WorkflowEntryReceipt): void => {
+  const observeReceipt = (receipt: TrailEntityMutationReceipt): void => {
     observeTrailActionCompletion(receipt, onError);
   };
 

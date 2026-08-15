@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   TRAIL_CYCLES_EMPTY_MARKDOWN,
-  TRAIL_CYCLES_PATH,
   TRAIL_PROJECTLESS_ISSUES_EMPTY_MARKDOWN,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_EMPTY_MARKDOWN,
+} from "../schema/trail-bootstrap-markdown";
+import {
+  TRAIL_CYCLES_PATH,
+  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
-} from "../schema/trail-physical-schema";
+} from "../schema/trail-paths";
 import { validateFormalManagedMarkdown } from "./trail-managed-codecs";
 
 function parseYaml(yaml: string): unknown {

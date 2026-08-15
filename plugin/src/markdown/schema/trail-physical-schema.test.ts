@@ -1,12 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  createTrailSequencedEntityPath,
-  readTrailEntityFileSequence,
-  TRAIL_PHYSICAL_RECORD_SCHEMAS,
-} from "./trail-physical-schema";
+import { TRAIL_PHYSICAL_RECORD_SCHEMAS } from "./trail-physical-schema";
 
-describe("Formal Physical Schema Registry", () => {
+describe("Trail Physical Schema Registry", () => {
   it("keeps the frozen canonical metadata order for every record kind", () => {
     expect(TRAIL_PHYSICAL_RECORD_SCHEMAS.initiative.metadataOrder).toEqual([
       "priority",
@@ -46,15 +42,5 @@ describe("Formal Physical Schema Registry", () => {
       "endedAt",
       "issueIds",
     ]);
-  });
-
-  it("owns the shared four-digit readable filename projection", () => {
-    expect(readTrailEntityFileSequence("0042 Trail Persistence.md")).toBe(42);
-    expect(readTrailEntityFileSequence("Trail Persistence.md")).toBeUndefined();
-    expect(createTrailSequencedEntityPath(
-      "Trail/Projects",
-      42,
-      'Trail: Persistence / Design?',
-    )).toBe("Trail/Projects/0042 Trail- Persistence - Design-.md");
   });
 });

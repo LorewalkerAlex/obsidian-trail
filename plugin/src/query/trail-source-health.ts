@@ -1,7 +1,8 @@
 import {
+  isTrailProjectsScopePath,
   TRAIL_PROJECTS_PATH,
   TRAIL_TRIAGE_PATH,
-} from "../domain/trail-physical-schema";
+} from "../markdown/schema/trail-paths";
 import {
   selectSourceIssuesForPath,
   type TrailRuntimeState,
@@ -22,10 +23,9 @@ export function selectWorkflowRootSourceIssues(
 export function selectWorkflowSourceIssues(
   state: TrailRuntimeState,
 ) {
-  return state.committed.sourceIssues.filter((issue) => (
-    issue.filePath === TRAIL_PROJECTS_PATH
-    || issue.filePath.startsWith(`${TRAIL_PROJECTS_PATH}/`)
-  ));
+  return state.committed.sourceIssues.filter((issue) =>
+    isTrailProjectsScopePath(issue.filePath)
+  );
 }
 
 export function selectEntitySourceIssues(

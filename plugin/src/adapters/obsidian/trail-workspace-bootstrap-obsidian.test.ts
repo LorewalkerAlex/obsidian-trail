@@ -10,13 +10,13 @@ import { createDefaultTrailPluginData } from "../../domain/trail-configuration";
 import {
   classifyWorkspace,
   executeFreshWorkspaceBootstrap,
-} from "../../domain/trail-workspace";
+} from "../../application/workspace/trail-workspace";
+import { TRAIL_BOOTSTRAP_FILES } from "../../markdown/schema/trail-bootstrap-markdown";
 import {
-  TRAIL_BOOTSTRAP_FILES,
   TRAIL_CYCLES_PATH,
   TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
-} from "../../markdown/schema/trail-physical-schema";
+} from "../../markdown/schema/trail-paths";
 import {
   createObsidianWorkspaceBootstrapGateway,
   type ObsidianWorkspaceFileKinds,

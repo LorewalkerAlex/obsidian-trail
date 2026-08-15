@@ -5,12 +5,12 @@ import type {
   PluginDataProbe,
   WorkspaceBootstrapGateway,
   WorkspaceProbe,
-} from "../../domain/trail-workspace";
+} from "../../application/workspace/trail-workspace";
 import {
   TRAIL_MANAGED_ROOT,
   TRAIL_REQUIRED_SINGLETON_PATHS,
-  TRAIL_TOP_LEVEL_DIRECTORIES,
-} from "../../markdown/schema/trail-physical-schema";
+  TRAIL_TOP_LEVEL_DIRECTORY_PATHS,
+} from "../../markdown/schema/trail-paths";
 import {
   createTrailPluginDataRepository,
 } from "../../persistence/plugin-data/trail-plugin-data-repository";
@@ -102,8 +102,7 @@ export function createObsidianWorkspaceBootstrapGateway(
     const existingPaths: string[] = [];
     const invalidFormalPaths: string[] = [];
 
-    for (const directoryName of TRAIL_TOP_LEVEL_DIRECTORIES) {
-      const path = `${TRAIL_MANAGED_ROOT}/${directoryName}`;
+    for (const path of TRAIL_TOP_LEVEL_DIRECTORY_PATHS) {
       if (app.vault.getAbstractFileByPath(path) !== null) {
         existingPaths.push(path);
       }

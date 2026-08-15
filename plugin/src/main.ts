@@ -9,22 +9,19 @@ import {
   type WorkspaceLeaf,
 } from "obsidian";
 
-import { TrailApplication } from "./domain/trail-application";
-import { createFormalMarkdownValidator } from "./domain/trail-managed-markdown";
-import { TrailMutationQueue } from "./domain/trail-mutation-queue";
+import { TrailApplication } from "./application/trail-application";
+import { createFormalMarkdownValidator } from "./markdown/codecs/trail-managed-codecs";
+import { TrailMutationQueue } from "./mutation/queue/trail-mutation-queue";
+import { isTrailProjectMarkdownPath, TRAIL_PROJECTS_PATH, TRAIL_PROJECTS_PREFIX, TRAIL_TRIAGE_PATH } from "./markdown/schema/trail-paths";
 import {
-  isTrailProjectMarkdownPath,
-  TRAIL_PROJECTS_PATH,
-  TRAIL_PROJECTS_PREFIX,
-  TRAIL_TRIAGE_PATH,
-} from "./domain/trail-physical-schema";
-import { createTrailRuntimeStore } from "./domain/trail-runtime";
-import { createObsidianTriagePersistenceGateway } from "./domain/trail-triage-persistence-obsidian";
-import { createObsidianWorkflowPersistence } from "./domain/trail-workflow-persistence-obsidian";
+  createTrailRuntimeStore,
+} from "./runtime/store/trail-runtime-store";
+import { createObsidianTriagePersistenceGateway } from "./adapters/obsidian/trail-triage-persistence-obsidian";
+import { createObsidianWorkflowPersistence } from "./adapters/obsidian/trail-workflow-persistence-obsidian";
 import {
   createObsidianWorkspaceBootstrapGateway,
   type ObsidianWorkspaceFileKinds,
-} from "./domain/trail-workspace-obsidian";
+} from "./adapters/obsidian/trail-workspace-bootstrap-obsidian";
 import {
   createObsidianDiagnosticPersistence,
 } from "./diagnostics/trail-diagnostics-obsidian";

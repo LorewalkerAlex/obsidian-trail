@@ -2,8 +2,10 @@ import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 
-import type { TrailApplication } from "./domain/trail-application";
-import type { TrailRuntimeStore } from "./domain/trail-runtime";
+import type { TrailApplication } from "./application/trail-application";
+import type {
+  TrailRuntimeStore,
+} from "./runtime/store/trail-runtime-store";
 import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,

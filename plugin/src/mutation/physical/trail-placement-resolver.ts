@@ -2,7 +2,7 @@ import {
   TRAIL_CYCLES_PATH,
   TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
-} from "../../markdown/schema/trail-physical-schema";
+} from "../../markdown/schema/trail-paths";
 import type { TrailCommittedRuntime } from "../../runtime/store/trail-runtime-store";
 import {
   trailMutationEntityId,

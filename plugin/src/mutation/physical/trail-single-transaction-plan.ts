@@ -3,7 +3,7 @@ import type {
   TrailWorkflowIssue,
 } from "../../domain/trail-issue";
 import type { TrailProject } from "../../domain/trail-project";
-import { TRAIL_PROJECTLESS_ISSUES_PATH } from "../../markdown/schema/trail-physical-schema";
+import { TRAIL_PROJECTLESS_ISSUES_PATH } from "../../markdown/schema/trail-paths";
 import type { TrailCommittedRuntime } from "../../runtime/store/trail-runtime-store";
 import {
   type TrailMutationEntity,

@@ -1,7 +1,7 @@
 # Trail Implementation Architecture
 
-> 状态：Implementation Architecture Re-baseline 设计基线
-> 最后更新：2026-08-14
+> 状态：长期 Implementation Architecture 基线
+> 最后更新：2026-08-15
 > 上游 Product：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
@@ -17,7 +17,7 @@
 
 Implementation Plan 只维护阶段、近期 Slice 和 checkpoint；具体实现必须同时满足上游设计与本文 architecture contract。
 
-当前正式实现已经证明 Quick Capture、Triage Management、Workflow Entry、Triage Accept、global serial mutation queue、optimistic runtime、`Vault.process()`、authoritative reread/reconcile 和 Development Diagnostics 等能力可行。Re-baseline 的目标不是丢弃这些业务事实，而是把已经证明可用的逻辑迁移到更清晰、可复用、能够承载完整 Technical Design 的正式结构中。
+当前正式实现已经证明 Quick Capture、Triage Management、Workflow Entry、Triage Accept、global serial mutation queue、optimistic runtime、`Vault.process()`、authoritative reread/reconcile 和 Development Diagnostics 等能力可行。Implementation Architecture Re-baseline 已于 2026-08-15 完成；本文从此作为长期 code ownership 与 dependency authority。Codebase Simplification 的任务是让实际代码完全收敛到本文目标，而不是继续保留迁移期双入口，也不是重新定义已经冻结的上游设计。
 
 ## 2. Architecture Goals
 
@@ -188,9 +188,51 @@ Query       ✕ persistence mutation
 UI          ✕ Vault / plugin data direct write
 ```
 
-## 5. Target Module Ownership
+## 5. Design → Code Mapping / Target Codebase Map
 
-以下是 ownership map，不要求当前立即创建所有空目录。只有出现实际实现内容时才落目录，但 owner 从本 architecture 起已经确定。
+本节是 Trail **代码文件结构、长期 ownership 与未来落点的单一 authority**。`docs/implementation-plan.md` 只记录当前实现离本节目标还有哪些差距，不再复制或重新定义另一棵架构树。
+
+后续 Session 开始实现前，应先读取本节、Implementation Plan 与当前仓库，再比较“目标 owner”与“当前代码”。不能因为某个目标目录暂时不存在，就自行创建 alternate owner、compatibility facade 或第二套 module path。
+
+### 5.1 Design authority → code owner
+
+```text
+Trail design authorities
+│
+├─ Product Design / Interaction Design
+│  ├─ application/              user-facing behaviors / use cases
+│  └─ ui/                       page composition / interaction / presentation
+│
+├─ Canonical Domain + Logical Data Model
+│  └─ domain/                   entities / values / invariants / pure rules / planning
+│
+├─ Markdown Physical Model
+│  ├─ markdown/                 path layout / carrier schema / codecs / structural mechanisms
+│  └─ persistence/              authoritative carrier read/write contracts
+│
+├─ Technical Design: Mutation
+│  └─ mutation/                 logical plans / coordination / queue / physical planning / execution
+│
+├─ Technical Design: Runtime
+│  └─ runtime/                  committed state / pending overlay / indexes / ownership / control
+│
+├─ Technical Design: Synchronization
+│  └─ source-sync/              bootstrap / discovery / refresh / external-change convergence
+│
+├─ Logical Query Contract
+│  └─ query/                    derived read logic / shared selectors / page selectors
+│
+├─ Obsidian Host Boundary
+│  └─ adapters/obsidian/        Vault / plugin data / workspace / file-event adapters
+│
+├─ Development Observability
+│  └─ diagnostics/              development-only structured diagnostics
+│
+└─ Composition Root
+   └─ main.ts                   plugin lifecycle / dependency composition / host registration
+```
+
+### 5.2 Target code tree
 
 ```text
 plugin/src/
@@ -201,15 +243,15 @@ plugin/src/
 │  └─ rules/
 │
 ├─ application/
-│  ├─ initiatives/
-│  ├─ projects/
-│  ├─ milestones/
-│  ├─ issues/
 │  ├─ triage/
-│  ├─ cycles/
+│  ├─ projects/
+│  ├─ issues/
 │  ├─ configuration/
 │  ├─ workspace/
-│  └─ similarity/
+│  ├─ similarity/
+│  ├─ initiatives/              # RESERVED owner; behavior deferred
+│  ├─ milestones/               # RESERVED owner; behavior deferred
+│  └─ cycles/                   # RESERVED owner; behavior deferred
 │
 ├─ mutation/
 │  ├─ plans/
@@ -226,10 +268,10 @@ plugin/src/
 │  ├─ indexes/
 │  └─ control/
 │
-├─ query/
-│  ├─ derived/
-│  ├─ shared/
-│  └─ page-specific selectors
+├─ source-sync/
+│  ├─ bootstrap/
+│  ├─ discovery/
+│  └─ refresh/
 │
 ├─ persistence/
 │  ├─ domain-sources/
@@ -240,12 +282,19 @@ plugin/src/
 ├─ markdown/
 │  ├─ core/
 │  ├─ schema/
+│  │  ├─ trail-paths.ts
+│  │  └─ trail-physical-schema.ts
 │  └─ codecs/
+│     ├─ trail-initiative-codec.ts            # RESERVED carrier owner
+│     ├─ trail-project-codec.ts
+│     ├─ trail-triage-codec.ts
+│     ├─ trail-projectless-issues-codec.ts    # RESERVED behavior owner
+│     └─ trail-cycles-codec.ts                # RESERVED behavior owner
 │
-├─ source-sync/
-│  ├─ bootstrap/
-│  ├─ discovery/
-│  └─ refresh/
+├─ query/
+│  ├─ derived/
+│  ├─ shared/
+│  └─ page-specific selectors
 │
 ├─ ui/
 │  ├─ shell/
@@ -258,12 +307,44 @@ plugin/src/
 │
 ├─ adapters/obsidian/
 ├─ diagnostics/
-├─ migration/
-├─ performance/
-└─ main.ts              # composition root / host registration only
+├─ migration/                   # RESERVED until first real migration
+├─ performance/                 # benchmark / profiling owner
+└─ main.ts                      # composition root / host registration only
 ```
 
+`RESERVED` 表示上游设计已经冻结 owner，但不要求为了“占目录”创建空文件或伪实现。未来行为第一次出现时直接进入这个 owner；如果 contract 已冻结，可以提前存在 type、schema、codec grammar 或 fail-closed validation，但不能提前复制一整套没有 consumer 的 Application / Persistence lifecycle。
+
+### 5.3 Owner mapping rules
+
+| 设计概念 / 事实 | Canonical code owner | 不允许重复的位置 |
+|---|---|---|
+| Core Entity / Value / Configuration business shape | `domain/model` | Markdown、UI、Adapter 自建第二份业务类型 |
+| Domain / reference invariant | `domain/validation` | Codec、UI 或 Feature Service 临时复制业务规则 |
+| Pure semantic planning | `domain/planning` | Application Service 同时承担 persistence orchestration |
+| Trail managed root、目录、singleton path、path predicate | `markdown/schema/trail-paths.ts` | Feature、Workspace、Adapter 再拼 `Trail/...` |
+| Markdown carrier field/schema/order | `markdown/schema/trail-physical-schema.ts` | Domain / Feature 各自维护 metadata 字段表 |
+| Source-specific grammar | `markdown/codecs/*` | Domain、Persistence、Application 重新 parse Markdown |
+| Authoritative source read/write | `persistence/*` | Application / UI 直接 `Vault.process()` |
+| Bootstrap / discovery / external refresh / source-health convergence | `source-sync/*` | `main.ts` 或各 Feature 重复事件路由与 reread/reconcile |
+| Logical mutation lifecycle | `mutation/*` | 每个 Feature 自建 pending / queue / topology executor |
+| Committed / pending / indexes / ownership / control | `runtime/*` | Page 或 Persistence 自建第二份状态 |
+| Page/read selection | `query/*` | UI 自己重建持久化或索引逻辑 |
+| Obsidian API integration | `adapters/obsidian/*` | Domain / Application / Runtime import `obsidian` |
+| Source range / marker offset / parser metadata | Markdown / persistence-side technical types | Domain / Runtime authoritative state |
+| Composition / plugin lifecycle | `main.ts` | `main.ts` 承载业务 planner、persistence 或 reconcile behavior |
+
 Custom View 不拥有独立 query engine。它优先复用系统页面已经存在的 scope / filter / sort / group / derived / presentation capability，通过持久化参数重新组合；只有未来出现无法由现有能力覆盖的真实需求时，才新增 Custom View 专用 selector。
+
+### 5.4 Reserved-owner policy
+
+“待开发位置”由 **Target Codebase Map + frozen contract** 保证，而不是由 compatibility facade 或半套业务链保证：
+
+- 已冻结 Entity / carrier / capability 必须在本节有明确 owner；
+- 已冻结到足以编译的 type / schema 可以提前实现，并由 owner-level test 锁住；
+- 当前无用户 behavior 的模块不要求建立完整 service / repository / executor；
+- 当前未激活的合法 carrier 如果可能出现在 workspace，应有明确 fail-closed reader / validation boundary，而不是被悄悄忽略；
+- 第一次新增未来 behavior 时必须进入已映射 owner；若现有 mapping 无法承载，先修改本 Architecture 并说明上游设计依据，再新增 owner；
+- 不允许用旧路径 re-export、新旧 Plan 双轨、capability duck typing 等方式把迁移 scaffolding 当成“未来预留”。
 
 ## 6. Authoritative State Universe
 
@@ -1053,65 +1134,42 @@ Real Obsidian
 
 V1 正常功能测试需要完整覆盖主链；异常测试覆盖独立 failure boundary，不追求组合爆炸。
 
-## 24. Current Implementation → Target Ownership
+## 24. Architecture Conformance / Anti-drift Rules
 
-现有 Formal code 是 migration input，不是 Target Architecture authority。代表性映射：
+Codebase Simplification 完成后，以下规则属于长期 architecture contract，而不是一次性 cleanup checklist：
+
+1. **One owner, one import path**：共享 capability 只有一个 canonical implementation 与一个正式 import path；production source 不保留 compatibility re-export 作为第二入口。
+2. **No transitional production layer**：`Compatibility`、`Transitional`、`current slice`、`first slice` 等迁移阶段概念不应成为长期 production code 结构或产品错误文案。
+3. **Domain purity**：`domain/` 不依赖 Obsidian、React、Markdown parser、Persistence implementation、Runtime Store 或 UI；source path/range/offset 不属于 Domain fact。
+4. **Application purity**：`application/` 只组织 use case，消费 Domain / Query / Mutation contracts；不直接 parse Markdown、调用 Vault API 或手改 Runtime。
+5. **Path authority**：managed root、目录、singleton paths、prefix/predicate 只由 `markdown/schema/trail-paths.ts` 定义；其他模块只引用，不重新拼接 authoritative `Trail/...` path。
+6. **Source lifecycle ownership**：bootstrap / discovery / external refresh / failure reload 收敛到 `source-sync/`；Feature 只表达业务行为，不能复制 reread / reconcile / host-event lifecycle。
+7. **Runtime final shape**：Runtime 只保存 authoritative logical facts、logical ownership/index、pending intent 与 control；不保存 Markdown parser metadata，不保留旧 flat shape alias 作为第二 API。
+8. **Future skeleton stays explicit**：Initiative / Milestone / Cycle / Projectless Issue 等冻结对象继续拥有 RESERVED owner；清理不得把未来 contract 删除到需要后续重新发明 owner。
+9. **Thin composition root**：`main.ts` 只负责 plugin lifecycle、dependency composition、command/view/file-event registration；业务行为进入已映射 owner。
+10. **Evidence follows owner**：机制测试跟随 canonical capability；Feature 只测试语义与新增独立风险。技术选型 spike 不长期留在 active test suite。
+
+自动化应尽量把这些规则变成 lint/type/test guard；文档不是唯一防线。
+
+### 24.1 New-session orientation
+
+Trail 新 Session 不复制一套新的架构树。开始开发前固定顺序：
 
 ```text
-trail-issue.ts / trail-project.ts
-→ domain/model
-
-trail-configuration.ts
-→ configuration model + plugin-data contracts
-
-trail-triage-plan.ts / trail-workflow-plan.ts
-→ domain/planning + canonical TrailMutationPlan
-
-trail-triage-intake.ts
-trail-triage-management.ts
-trail-workflow-entry.ts
-trail-triage-accept.ts
-→ application use cases + pure planners + shared mutation coordinator/executors
-
-trail-runtime.ts
-→ runtime/store + projection + reconcile + ownership + indexes + control
-
-trail-managed-markdown.ts
-→ markdown/core shared structure
-
-trail-triage-markdown.ts
-trail-project-markdown.ts
-trail-project-issue-delete.ts
-→ explicit codecs using shared Markdown Core / Registry
-
-trail-triage-persistence-obsidian.ts
-trail-workflow-persistence-obsidian.ts
-→ Obsidian SourceIO adapter + DomainSourceRepository
-
-trail-mutation-queue.ts
-→ keep as canonical global serialization capability, migrate ownership without rewriting proven semantics unnecessarily
-
-trail-application.ts
-→ thin application composition / business-area services
-
-trail-app.tsx
-→ page / entity / interaction / primitive split
-
-trail-view.tsx
-→ thin Obsidian view adapter
-
-main.ts
-→ composition root / host lifecycle
-
-diagnostics/*
-→ keep as canonical development observability capability, adapt event taxonomy to new shared lifecycle
+1. 读本节与 §5 Target Codebase Map
+2. 读 docs/implementation-plan.md 当前状态 overlay
+3. 读当前 GitHub HEAD 的相关 owner / tests / guards
+4. 比较 Target Map 与当前实现差距
+5. 只在 canonical owner 内继续工作
 ```
 
-Triage Accept 保留已经验证的业务 mapping、new identity、destination-first order 和 bounded compensation evidence，但旧 feature-specific service/executor shape 可以重写为共享 Source Transition mechanism。
+如果 Handoff 与 GitHub / Architecture 冲突，以 GitHub 当前事实和本 Architecture authority 为准；Handoff 只负责说明最新 checkpoint、已验证事实与当前未完成工作。
 
-## 25. Re-baseline Implementation Sequence
+## 25. Historical Re-baseline Implementation Sequence
 
-Architecture code migration 不按“每个 Feature 再重写一遍底层”推进，而按 capability owner 建立后迁移已经证明的业务逻辑。
+本节记录已经完成的 Re-baseline 历史路径，仅作为设计与验证证据，不再是当前 Implementation Plan。当前执行状态只看 `docs/implementation-plan.md`。
+
+Architecture code migration 当时不按“每个 Feature 再重写一遍底层”推进，而按 capability owner 建立后迁移已经证明的业务逻辑。
 
 ```text
 A. Architecture Contract
@@ -1155,9 +1213,9 @@ Re-baseline 完成前不继续增加 net-new user-facing Feature。完成后重�
 
 第一条适合用于验证新 architecture 的既有业务路径优先选择 Triage Edit / Defer / Delete：它能验证 Entity → Planner → optimistic Replace/Delete → same-source mutation → reread/reconcile，同时没有 create-source / multi-source 独立复杂度。随后迁移 Quick Capture、Workflow single-source path，最后用 Triage Accept 证明共享 Source Transition。
 
-## 26. Architecture Exit Criteria
+## 26. Architecture Baseline Exit Criteria（已满足）
 
-Implementation Architecture Re-baseline 只有同时满足以下条件才退出：
+以下 Re-baseline Exit Criteria 已于 2026-08-15 满足并通过 checkpoint / GitHub review。保留本节用于说明这套长期 Architecture 为什么可以作为后续代码结构 authority：
 
 1. 上游 Product / Domain / Logical / Physical / Technical Design 中已确定的正常 V1 capability 都在 architecture 中有明确 owner / contract / extension point。
 2. 正常 read/write/bootstrap/refresh path 可以贯通，不依赖 Feature-specific persistence stack。

@@ -106,32 +106,99 @@ Re-baseline 的全部 Slice 已完成。实现 checkpoint `9e12e32e870a2299023b6
 
 ## 4. 当前阶段：Codebase Simplification
 
-当前执行一次独立的 **Codebase Simplification**。该轮以全仓库 active code 为范围，审计并删除无真实 consumer 的过渡 facade、重复实现、死代码、重复测试与没有独立 ownership 的过度抽象；同时检查 `archive/poc/` 是否仍有保留在工作树中的价值。清理必须以引用、依赖、测试与 Git 历史证据为依据，不以文件数量或主观观感直接删除。
+当前执行一次独立的 **Codebase Simplification**。目标不是“尽量少写代码”，而是让 active code 一次收敛到 `docs/implementation-architecture.md` §5 的 **Design → Code Mapping / Target Codebase Map**，形成适合长期继续堆功能的干净基线。
 
-重点审计：
+本阶段同时做减法与补正：删除迁移 scaffolding、重复实现和错误 ownership；保留已经冻结的未来 Entity / carrier / capability owner，并把缺失的长期 contract 放回正确位置。未来预留不通过 compatibility facade、双 Plan、旧 import path 或半套 Feature lifecycle 实现。
 
-- 仍留在 `domain/` 或其他旧位置、但只承担 compatibility re-export 的 facade；
-- `trail-triage-plan` / `trail-workflow-plan` 等 transitional adapter 是否仍有真实必要；
-- Markdown / Persistence 是否仍存在 old/new 双入口；
-- 同一底层机制是否仍被旧测试与 canonical owner test 重复验证；
-- 是否存在仅为了匹配 architecture diagram 而拆出的无独立 ownership module；
-- 单 consumer abstraction、无真实 consumer export、死代码和不必要 wrapper；
-- `trail-application.ts`、composition wiring 与其他聚合层是否可以在不损失边界的前提下继续缩减；
-- `archive/poc/` 是否仍需要作为工作树中的完整历史副本，还是 Git 历史已经足以承担证据角色。
+本阶段可以分多轮本地 ZIP 实施和验证，但**任何准备形成 checkpoint 的状态都必须是单一最终 ownership**：同一 capability 不允许为了“迁移方便”在 main 中长期同时保留新旧两套入口。
 
-Codebase Simplification 必须保持现有 Domain invariants、source-transition safety、diagnostics 边界和 regression evidence；完成后重新执行完整自动化与必要 real-host 验证，形成独立 checkpoint。
+### 4.1 Target Map 与状态 Overlay
 
-清理完成后，再进入 Intake → Workflow。
-
-第一个净新增 Slice：
+结构 authority 只来自 `docs/implementation-architecture.md` §5；本文只记录当前收敛状态：
 
 ```text
-Triage Convert to Project
+Design / Architecture authority                 Current cleanup target
+│
+├─ Canonical Domain + Logical Data Model      → domain/          final purity
+├─ Product Behavior                           → application/     establish real owner
+├─ Mutation Technical Design                  → mutation/        remove feature-plan dual track
+├─ Runtime Technical Design                   → runtime/         final committed/pending/ownership shape
+├─ Synchronization Technical Design           → source-sync/     establish real owner
+├─ Persistence / Physical boundary            → persistence/     remove old Domain gateways
+├─ Markdown Physical Model                    → markdown/        single path + schema + codec authority
+├─ Logical Query Contract                     → query/           retain read-side ownership
+├─ Product / Interaction                      → ui/              keep page/action boundary
+├─ Obsidian Host                              → adapters/        absorb host-specific source events
+└─ Composition Root                           → main.ts          lifecycle / wiring only
 ```
 
-它应直接复用新的 Domain Effects、Physical Planner、source transaction executor、Runtime projection / reconcile 和 Markdown / persistence infrastructure，只新增 Triage → Project 的业务 planner / field mapping / UI intent。
+Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace State 等已经冻结的未来结构继续保留长期 owner。不存在实现内容时不强制创建空目录；已冻结 type/schema/codec contract 可以存在，行为仍可 deferred。
 
-Convert to Note 仍属于后续 knowledge action，不阻塞下一步。
+### 4.2 Simplification Slices
+
+| Slice | 目标 | 状态 |
+|---|---|---|
+| Target Codebase Map & Cleanup Contract | 将设计层映射到唯一 code owner，明确 RESERVED future owner、anti-drift 与 Exit 标准 | 已完成 |
+| Path / Layout Authority | 建立唯一 managed-path authority；消除 Feature / Workspace / Adapter 中重复 `Trail/...` 拼接与 path truth | 已完成 |
+| **Domain Purity + Application Ownership** | Domain 只保留 business facts/rules/planning；Use Case 正式进入 `application/`；移出 source/persistence/runtime concern | **当前** |
+| Persistence + Source Sync Finalization | 删除旧 Domain persistence gateways / duck typing；收口 authoritative source lifecycle 与 external refresh owner | 部分完成 |
+| Runtime Final Shape | 收口 authoritative / ownership / indexes / pending / control；删除 compatibility alias 与 parser/source metadata leakage | 部分完成 |
+| Feature Plan / Service Simplification | 移除 Triage/Workflow 双 Plan；复用共享 lifecycle，拆掉超大 Service 中重复 orchestration | 部分完成 |
+| Host / Composition / UI Boundary | `main.ts` 只做 composition/registration；host file events 进入 adapter/source-sync；UI 保持纯 read/intent | 待继续 |
+| Tests / Tooling / Stage-language Cleanup | 删除 active technology spike / duplicate evidence；增加 anti-drift guards；清除 production migration-stage terminology | 待继续 |
+| Simplification Exit | full check、Diagnostics build、代表性 real-host regression、trace review、文档校准、commit/push/GitHub audit | 待开始 |
+
+### 4.3 Long-term cleanup rules
+
+- **不删除未来骨架**：已冻结 Entity / carrier / capability owner 必须保留或补全；没有当前 behavior 不等于没有长期位置。
+- **不保留迁移骨架**：compatibility facade、old/new 双入口、transitional Plan、capability duck typing 不属于未来设计，必须退出 production path。
+- **事实只有一个 authority**：路径、schema、Domain type、source ownership、Runtime index 等不得在多个 Feature 中重复定义或重新拼装。
+- **不要为了树而拆文件**：目录映射代表 ownership，不要求每个框都对应一个微型 wrapper；一个文件只有在拥有独立职责时才存在。
+- **也不要为了少文件合并 owner**：未来明确的 Initiative / Milestone / Cycle / Projectless carrier 不因当前未启用就重新塞回一个万能模块。
+- **生产代码不带阶段身份**：`Formal`、`Compatibility`、`Transitional`、`current slice` 等只允许出现在历史/迁移文档或确有意义的 migration tooling，不成为产品概念或长期 module identity。
+- **本地可以分轮，checkpoint 不留双轨**：同一 cleanup slice 内可以短暂搬迁，但准备提交前必须完成 consumer cutover 并删除旧 owner。
+
+### 4.4 Codebase Simplification Exit Gate
+
+只有以下条件同时满足，本阶段才可以关闭并重新开始净新增 Feature：
+
+- 实际 `plugin/src/` 可以逐项映射回 Architecture §5，当前 active owner 不再与目标树冲突；
+- production source 中不存在仅为迁移保留的 compatibility re-export / transitional adapter / alternate import path；
+- managed root / directories / singleton paths / path predicates 只有一个 canonical path authority，其他模块不重新拼 authoritative `Trail/...`；
+- `domain/` 不含 Markdown range/offset、source diagnostic、Persistence/Obsidian/Runtime orchestration；
+- `application/` 正式承载现有 Triage / Project / Issue / Workspace use cases，并且不直接依赖 raw Markdown / Obsidian；
+- Persistence contract、Source Sync、Runtime final shape 与 Architecture owner 对齐，不依赖 duck typing 或 flat compatibility alias；
+- Initiative / Milestone / Cycle / Projectless Issue 等 RESERVED future owner 与已冻结 type/schema contract 仍然清晰，未为了减 LOC 被抹掉；
+- `main.ts` 只保留 plugin lifecycle、composition 与 host registration；
+- active mechanism tests 跟随 canonical owner，技术选型 spike / 重复 evidence 退出 active suite；
+- lint/type/test guard 能阻止关键反向依赖、旧 owner import 与重复 path authority重新出现；
+- `npm run check`、`npm run build:diagnostics`、`git diff --check` 通过；
+- 代表性真实 Obsidian 主链与 Development Diagnostics trace 继续干净；
+- README、Implementation Architecture、Implementation Plan 与真实代码事实一致；
+- checkpoint commit / push / GitHub review / CI 完成。
+
+### 4.5 当前执行 Slice：Domain Purity + Application Ownership
+
+Codebase Simplification 已完成第一批可独立形成 checkpoint 的结构收敛：
+
+```text
+Path / Layout Authority
+→ canonical trail-paths owner
+
+Application / Domain boundary
+→ Triage / Workspace / Application shell 迁入 application/
+→ Persistence / Obsidian / Runtime compatibility facade 退出 domain/
+
+Mutation / Workflow boundary
+→ TrailMutationPlan 成为唯一 executable plan
+→ Project / Issue Application ownership 拆分
+→ Project Source Sync 建立正式 owner
+→ Workflow Persistence 形成完整静态 contract，不再 duck type capability
+```
+
+上述结构已经通过完整 `npm run check` 与 `git diff --check`。当前继续 **Domain Purity + Application Ownership** 的剩余部分：优先移出 source range / source diagnostic 等非 Domain concern，并继续收敛 Configuration ownership；之后再完成剩余 Runtime、Source Sync、Host / Composition、Tests / Tooling cleanup。
+
+整个 Codebase Simplification 未完成前不新增 `Triage Convert to Project`。`archive/poc/` 暂不作为 active-code 第一轮清理对象；先完成 `plugin/src/` 长期结构收敛，再单独判断 Git 历史是否已经足以替代完整 archive。
 
 ## 5. Implementation Checkpoints
 
@@ -152,7 +219,7 @@ Convert to Note 仍属于后续 knowledge action，不阻塞下一步。
 | Formal Workflow | 已完成 | Workflow 可创建、执行并从 Markdown 重建 |
 | Triage Accept | 已完成 | 新 identity、destination-first、optimistic / reconcile 与真实 host evidence 已建立，并完成新架构迁移 |
 | **Implementation Architecture Re-baseline** | **已完成** | `9e12e32e870a2299023b64804e3070abe138eb0b` 已 push 并通过 GitHub 回查与 CI；full check、Diagnostics build、real-host regression 与 trace review 全部通过 |
-| **Codebase Simplification** | **当前** | 全仓库 active code 审计与瘦身；完成后再开始净新增 Feature |
+| **Codebase Simplification** | **当前** | 已完成 Path / Layout、Application/Domain boundary、Runtime facade、Canonical Mutation Plan 与 Workflow ownership/persistence 第一批收敛；当前继续 Domain Purity |
 | Intake → Workflow | 待继续 | Codebase Simplification 后以 Convert to Project 作为第一个净新增 Slice |
 | V1 Exit | 待开始 | — |
 

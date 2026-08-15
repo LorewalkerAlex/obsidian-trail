@@ -1,9 +1,9 @@
+import type { TrailProject } from "../../domain/trail-project";
 import {
   createTrailSequencedEntityPath,
   readTrailEntityFileSequence,
   TRAIL_PROJECTS_PATH,
-} from "../../markdown/schema/trail-physical-schema";
-import type { TrailProject } from "../../domain/trail-project";
+} from "../../markdown/schema/trail-paths";
 import type { TrailSourceEntry } from "../../persistence/ports/trail-source-io";
 import type { TrailProjectPathAllocator } from "./trail-placement-resolver";
 

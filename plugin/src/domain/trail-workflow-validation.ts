@@ -3,11 +3,18 @@ import {
   type TrailConfiguration,
 } from "./trail-configuration";
 import type { TrailWorkflowIssue } from "./trail-issue";
-import type { TrailProjectContribution } from "./trail-project-markdown";
+import type { TrailProject } from "./trail-project";
 import type { TrailSourceIssue } from "./trail-source-issue";
 
+/** Logical Project aggregate shape required by Domain validation. */
+export interface TrailProjectValidationState {
+  readonly filePath: string;
+  readonly issuesById: Readonly<Record<string, TrailWorkflowIssue>>;
+  readonly project: TrailProject;
+}
+
 function sourceIssue(
-  contribution: TrailProjectContribution,
+  contribution: TrailProjectValidationState,
   code: string,
   message: string,
   objectId?: string,
@@ -33,7 +40,7 @@ export function resolveWorkflowIssueStatus(
 
 /** Validates cross-record and Configuration-dependent Workflow invariants. */
 export function validateProjectContribution(
-  contribution: TrailProjectContribution,
+  contribution: TrailProjectValidationState,
   configuration: TrailConfiguration,
 ): readonly TrailSourceIssue[] {
   const issues: TrailSourceIssue[] = [];
@@ -67,7 +74,7 @@ export function validateProjectContribution(
       issues.push(sourceIssue(
         contribution,
         "workflow-issue.project.mismatch",
-        "Workflow Issue projectId must match its physical Project container",
+        "Workflow Issue projectId must match its Project",
         issue.id,
       ));
     }
@@ -75,7 +82,7 @@ export function validateProjectContribution(
       issues.push(sourceIssue(
         contribution,
         "workflow-issue.milestone.unsupported",
-        "Milestone references are not supported by the current Workflow Entry slice",
+        "Milestone references are not supported by the current Workflow behavior",
         issue.id,
       ));
     }
@@ -110,11 +117,9 @@ export function validateProjectContribution(
   if (projectStatus?.category === "completed") {
     const hasNonTerminalIssue = Object.values(contribution.issuesById).some((issue) => {
       const status = resolveWorkflowIssueStatus(configuration, issue);
-      return (
-        status !== undefined
+      return status !== undefined
         && status.category !== "completed"
-        && status.category !== "canceled"
-      );
+        && status.category !== "canceled";
     });
     if (hasNonTerminalIssue) {
       issues.push(sourceIssue(

@@ -3,7 +3,8 @@ import {
   type TrailDiagnostics,
 } from "../../diagnostics/trail-diagnostics";
 import type { TrailTriageIssue } from "../../domain/trail-issue";
-import type { TrailTriagePersistence } from "../../domain/trail-triage-persistence";
+import type { TrailTriagePersistence } from "./trail-triage-persistence";
+import type { TrailYamlParser } from "../../markdown/codecs/trail-codec-support";
 import {
   appendTriageIssueToMarkdown,
   deleteTriageIssueFromMarkdown,
@@ -11,8 +12,7 @@ import {
   updateTriageIssueInMarkdown,
   type TrailTriageParseResult,
 } from "../../markdown/codecs/trail-triage-codec";
-import type { TrailYamlParser } from "../../markdown/codecs/trail-codec-support";
-import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-physical-schema";
+import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
 import type { TrailDomainSourceRepository } from "./trail-domain-source-repository";
 
 type TriagePhysicalOperation = "append" | "delete" | "update";

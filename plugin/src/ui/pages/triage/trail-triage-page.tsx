@@ -21,9 +21,9 @@ import {
   selectWorkflowRootSourceIssues,
 } from "../../../query/trail-source-health";
 import { formatLocalDateTimeInTimeZone } from "../../../domain/trail-temporal";
-import type { TriageAcceptReceipt } from "../../../domain/trail-triage-accept";
-import type { TriageCaptureReceipt } from "../../../domain/trail-triage-intake";
-import type { TriageManagementReceipt } from "../../../domain/trail-triage-management";
+import type { TriageAcceptReceipt } from "../../../application/triage/trail-triage-accept";
+import type { TriageCaptureReceipt } from "../../../application/triage/trail-triage-intake";
+import type { TriageManagementReceipt } from "../../../application/triage/trail-triage-management";
 import { runTrailAction } from "../../interactions/trail-action";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
 
