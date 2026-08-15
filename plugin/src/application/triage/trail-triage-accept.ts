@@ -2,9 +2,11 @@ import {
   toTrailSourceProblems,
   type TrailProjectSourceResult,
   type TrailSourceProblem,
+  type TrailTriageSourceResult,
 } from "../../persistence/domain-sources/trail-source-result";
 import type {
   TrailProjectSourceSnapshot,
+  TrailTriageSourceSnapshot,
 } from "../../persistence/domain-sources/trail-domain-source-snapshot";
 import {
   NOOP_TRAIL_DIAGNOSTICS,
@@ -42,7 +44,6 @@ import {
 import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
 import { TRAIL_PROJECTS_PATH, TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
 import type { TrailProject } from "../../domain/trail-project";
-
 import {
   selectEffectiveEntityIdSet,
   selectEffectiveProjectById,
@@ -51,7 +52,6 @@ import {
 import {
   reconcileProjectContribution,
   reconcileTriageContribution,
-  setTriageSourceIssues,
 } from "../../runtime/reconcile/trail-runtime-reconciler";
 import {
   selectSourceIssuesForPath,
@@ -59,18 +59,13 @@ import {
   type TrailRuntimeStore,
 } from "../../runtime/store/trail-runtime-store";
 import {
-  TriageMarkdownMutationError,
-  type TrailTriageContribution,
-  type TrailTriageParseResult,
-} from "../../markdown/codecs/trail-triage-codec";
-import type { TrailTriagePersistence } from "../../persistence/domain-sources/trail-triage-persistence";
-
-
+  TrailTriagePersistenceError,
+  type TrailTriagePersistence,
+} from "../../persistence/domain-sources/trail-triage-persistence";
 import {
   type TrailWorkflowPersistence,
   TrailWorkflowPersistenceError,
 } from "../../persistence/domain-sources/trail-workflow-persistence";
-
 import { validateWorkflowProjectState } from "../../domain/validation/trail-workflow-validation";
 
 export interface TriageAcceptReceipt {
@@ -272,7 +267,7 @@ export function planAcceptTriageIssue(
 
 function errorCategory(error: unknown): string {
   if (error instanceof TriageAcceptError) return error.code;
-  if (error instanceof TriageMarkdownMutationError) return error.code;
+  if (error instanceof TrailTriagePersistenceError) return error.code;
   if (error instanceof TrailWorkflowPersistenceError) return error.code;
   if (error instanceof Error) return error.name;
   return "unknown-error";
@@ -343,7 +338,7 @@ export class TrailTriageAcceptService {
       throw new TriageAcceptError("planning-rejected", result.reason);
     }
 
-    const context = {
+    const context: TriageAcceptContext = {
       sourceDelete: {
         expectedIssue: result.sourceIssue,
         issueId: result.sourceIssue.id,
@@ -373,8 +368,6 @@ export class TrailTriageAcceptService {
         mapError: (error) => this.mapError(error),
         onCommitted: () => this.finishCommitted(context, command.commandId),
         onFailed: (error) => {
-          // Safe compensation is an expected cross-source recovery outcome rather
-          // than an additional command-failed diagnostic.
           if (error instanceof TriageAcceptError && error.code === "compensated") {
             return;
           }
@@ -409,7 +402,7 @@ export class TrailTriageAcceptService {
 
     const outcome = await executeTrailSourceTransition<
       TrailProjectSourceSnapshot,
-      TrailTriageContribution
+      TrailTriageSourceSnapshot
     >(physicalPlan, {
       compensateTarget: (compensationPlan: TrailSingleTransactionPlan) =>
         this.executeCompensation(context, compensationPlan, correlationId),
@@ -479,7 +472,7 @@ export class TrailTriageAcceptService {
     context: TriageAcceptContext,
     sourcePlan: TrailSingleTransactionPlan,
     correlationId: string,
-  ): Promise<TrailTriageContribution> {
+  ): Promise<TrailTriageSourceSnapshot> {
     this.diagnostics.record("triage.accept.source-delete.started", {
       correlationId,
       data: {
@@ -559,7 +552,7 @@ export class TrailTriageAcceptService {
 
   private async observeSource(
     context: TriageAcceptContext,
-  ): Promise<TrailTransitionObservation<TrailTriageContribution>> {
+  ): Promise<TrailTransitionObservation<TrailTriageSourceSnapshot>> {
     const latest = await this.safeReadSource();
     if (latest === undefined || latest.issues.length > 0) {
       return { kind: "unsafe" };
@@ -567,8 +560,6 @@ export class TrailTriageAcceptService {
     if (latest.contribution.issuesById[context.sourceDelete.issueId] === undefined) {
       return { kind: "absent", value: latest.contribution };
     }
-    // Any physically valid surviving source makes removal of the just-created
-    // target safe; the source itself is authoritative even if externally edited.
     return { kind: "present", value: latest.contribution };
   }
 
@@ -577,7 +568,7 @@ export class TrailTriageAcceptService {
     targetPath: string,
     outcome: TrailSourceTransitionOutcome<
       TrailProjectSourceSnapshot,
-      TrailTriageContribution
+      TrailTriageSourceSnapshot
     >,
     correlationId: string,
   ): Promise<void> {
@@ -668,7 +659,7 @@ export class TrailTriageAcceptService {
   ): Promise<void> {
     const latest = await this.triagePersistence.readLatest();
     if (latest.issues.length > 0) {
-      setTriageSourceIssues(this.runtimeStore, latest.issues);
+      setSourceIssuesForPath(this.runtimeStore, TRAIL_TRIAGE_PATH, latest.issues);
       throw new TriageAcceptError(
         "source-invalid",
         "Triage source is invalid; review Triage.md before Accept",
@@ -744,11 +735,11 @@ export class TrailTriageAcceptService {
 
   private verifySourceDeleted(
     context: TriageAcceptContext,
-    result: TrailTriageParseResult,
+    result: TrailTriageSourceResult,
     correlationId: string,
-  ): TrailTriageContribution {
+  ): TrailTriageSourceSnapshot {
     if (result.issues.length > 0) {
-      setTriageSourceIssues(this.runtimeStore, result.issues);
+      setSourceIssuesForPath(this.runtimeStore, TRAIL_TRIAGE_PATH, result.issues);
       throw new TriageAcceptError(
         "verification-failed",
         "Triage source failed validation after Accept deletion",
@@ -904,7 +895,7 @@ export class TrailTriageAcceptService {
   }
 
   private reconcileSource(
-    contribution: TrailTriageContribution,
+    contribution: TrailTriageSourceSnapshot,
     reason: string,
     correlationId: string,
   ): void {
@@ -955,7 +946,7 @@ export class TrailTriageAcceptService {
       if (source.issues.length === 0) {
         this.reconcileSource(source.contribution, "triage.accept-failure", correlationId);
       } else {
-        setTriageSourceIssues(this.runtimeStore, source.issues);
+        setSourceIssuesForPath(this.runtimeStore, TRAIL_TRIAGE_PATH, source.issues);
       }
     }
     await this.reconcileTargetFromPersistence(
@@ -965,7 +956,7 @@ export class TrailTriageAcceptService {
     );
   }
 
-  private async safeReadSource(): Promise<TrailTriageParseResult | undefined> {
+  private async safeReadSource(): Promise<TrailTriageSourceResult | undefined> {
     try {
       return await this.triagePersistence.readLatest();
     } catch {
@@ -985,12 +976,14 @@ export class TrailTriageAcceptService {
 
   private mapError(error: unknown): TriageAcceptError {
     if (error instanceof TriageAcceptError) return error;
-    if (error instanceof TriageMarkdownMutationError) {
-      const code = error.code === "conflict" || error.code === "target-missing"
-        ? "conflict"
-        : error.code === "source-invalid"
-          ? "source-invalid"
-          : "verification-failed";
+    if (error instanceof TrailTriagePersistenceError) {
+      const code = error.code === "conflict"
+        || error.code === "target-missing"
+        || error.code === "duplicate-id"
+          ? "conflict"
+          : error.code === "source-invalid"
+            ? "source-invalid"
+            : "verification-failed";
       return new TriageAcceptError(code, error.message, error);
     }
     if (error instanceof TrailWorkflowPersistenceError) {

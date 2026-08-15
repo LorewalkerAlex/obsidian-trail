@@ -4,37 +4,30 @@ import {
   createTrailDiagnostics,
   type TrailDiagnosticPersistence,
 } from "../../diagnostics/trail-diagnostics";
+import {
+  sameTrailTriageIssue,
+  type TrailTriageIssue,
+} from "../../domain/trail-issue";
+import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
 import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
-import { TRAIL_TRIAGE_EMPTY_MARKDOWN } from "../../markdown/schema/trail-bootstrap-markdown";
+import type { TrailTriageSourceResult } from "../../persistence/domain-sources/trail-source-result";
+import {
+  TrailTriagePersistenceError,
+  type TrailTriagePersistence,
+} from "../../persistence/domain-sources/trail-triage-persistence";
 import {
   selectEffectiveTriageIssueById,
   selectEffectiveTriageIssueIds,
 } from "../../runtime/projection/trail-runtime-projection";
-import {
-  reconcileTriageContribution,
-} from "../../runtime/reconcile/trail-runtime-reconciler";
-import {
-  createTrailRuntimeStore,
-} from "../../runtime/store/trail-runtime-store";
-import {
-  appendTriageIssueToMarkdown,
-  deleteTriageIssueFromMarkdown,
-  parseTriageMarkdown,
-  updateTriageIssueInMarkdown,
-  type TrailTriageParseResult,
-  type TrailYamlParser,
-} from "../../markdown/codecs/trail-triage-codec";
+import { createTrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import { TrailTriageSourceSync } from "../../source-sync/triage/trail-triage-source-sync";
 import {
   planTriageManagement,
   TrailTriageManagementService,
   type TriageManagementCommandEnvironment,
 } from "./trail-triage-management";
-import type { TrailTriageManagementPersistenceGateway } from "../../persistence/domain-sources/trail-triage-persistence";
-import type { TrailTriageIssue } from "../../domain/trail-issue";
 
-const FILE_PATH = "Trail/Collections/Triage.md";
 const NOW = 1_786_464_000_000;
-const parseYaml: TrailYamlParser = () => ({ kind: "triage" });
 
 interface Deferred {
   readonly promise: Promise<void>;
@@ -52,61 +45,60 @@ function deferred(): Deferred {
   };
 }
 
-class MemoryManagementPersistence implements TrailTriageManagementPersistenceGateway {
-  public markdown = TRAIL_TRIAGE_EMPTY_MARKDOWN;
+class MemoryManagementPersistence implements TrailTriagePersistence {
+  private readonly issues = new Map<string, TrailTriageIssue>();
   public block?: Promise<void>;
   public readonly deleteCalls: string[] = [];
   public readonly updateCalls: string[] = [];
 
   public seed(issue: TrailTriageIssue): void {
-    this.markdown = appendTriageIssueToMarkdown({
-      filePath: FILE_PATH,
-      issue,
-      markdown: this.markdown,
-      parseYaml,
-    });
+    this.issues.set(issue.id, issue);
+  }
+
+  public appendIssue(issue: TrailTriageIssue): Promise<TrailTriageSourceResult> {
+    this.issues.set(issue.id, issue);
+    return this.readLatest();
   }
 
   public async deleteIssue(
     expectedIssue: TrailTriageIssue,
-  ): Promise<TrailTriageParseResult> {
+  ): Promise<TrailTriageSourceResult> {
     this.deleteCalls.push(expectedIssue.id);
-    if (this.block !== undefined) {
-      await this.block;
+    if (this.block !== undefined) await this.block;
+    const current = this.issues.get(expectedIssue.id);
+    if (current === undefined || !sameTrailTriageIssue(current, expectedIssue)) {
+      throw new TrailTriagePersistenceError("conflict", "external change");
     }
-    this.markdown = deleteTriageIssueFromMarkdown({
-      expectedIssue,
-      filePath: FILE_PATH,
-      markdown: this.markdown,
-      parseYaml,
-    });
+    this.issues.delete(expectedIssue.id);
     return this.readLatest();
   }
 
-  public async readLatest(): Promise<TrailTriageParseResult> {
-    return parseTriageMarkdown({
-      filePath: FILE_PATH,
-      markdown: this.markdown,
-      parseYaml,
-    });
+  public async readLatest(): Promise<TrailTriageSourceResult> {
+    return {
+      contribution: {
+        filePath: TRAIL_TRIAGE_PATH,
+        issuesById: Object.fromEntries(this.issues),
+      },
+      issues: [],
+    };
   }
 
   public async updateIssue(
     expectedIssue: TrailTriageIssue,
     issue: TrailTriageIssue,
-  ): Promise<TrailTriageParseResult> {
+  ): Promise<TrailTriageSourceResult> {
     this.updateCalls.push(issue.id);
-    if (this.block !== undefined) {
-      await this.block;
+    if (this.block !== undefined) await this.block;
+    const current = this.issues.get(expectedIssue.id);
+    if (current === undefined || !sameTrailTriageIssue(current, expectedIssue)) {
+      throw new TrailTriagePersistenceError("conflict", "external change");
     }
-    this.markdown = updateTriageIssueInMarkdown({
-      expectedIssue,
-      filePath: FILE_PATH,
-      issue,
-      markdown: this.markdown,
-      parseYaml,
-    });
+    this.issues.set(issue.id, issue);
     return this.readLatest();
+  }
+
+  public editExternal(issue: TrailTriageIssue): void {
+    this.issues.set(issue.id, issue);
   }
 }
 
@@ -129,19 +121,18 @@ async function createHarness(ids: string[] = ["command-a"]) {
     labelIds: [],
     title: "Original",
   });
-  reconcileTriageContribution(store, await persistence.readLatest().then(
-    (result) => result.contribution,
-  ));
+  const sourceSync = new TrailTriageSourceSync(store, queue, persistence);
+  await sourceSync.initialize();
   const service = new TrailTriageManagementService(
     store,
-    queue,
-    persistence,
+    sourceSync,
     createEnvironment(ids),
   );
-  return { persistence, queue, service, store };
+  return { persistence, queue, service, sourceSync, store };
 }
 
 interface ParsedDiagnosticEvent {
+  readonly correlationId?: string;
   readonly data?: unknown;
   readonly name: string;
 }
@@ -155,10 +146,16 @@ function parseDiagnosticEvent(line: string): ParsedDiagnosticEvent {
   if (typeof record.name !== "string") {
     throw new Error("Diagnostic line is missing a name");
   }
-  return { data: record.data, name: record.name };
+  return {
+    correlationId: typeof record.correlationId === "string"
+      ? record.correlationId
+      : undefined,
+    data: record.data,
+    name: record.name,
+  };
 }
 
-describe("Formal Triage Management", () => {
+describe("Triage Management application", () => {
   it("plans edit/defer/delete from the current Effective Issue", () => {
     const current: TrailTriageIssue = {
       context: "triage",
@@ -225,13 +222,11 @@ describe("Formal Triage Management", () => {
 
     gate.resolve();
     await receipt.completion;
-
     expect(harness.store.getState().pendingPlans).toEqual([]);
     expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toMatchObject({
       due: NOW + 50,
       title: "Edited",
     });
-    expect(harness.persistence.markdown).toContain("## Edited");
     harness.queue.dispose();
   });
 
@@ -243,13 +238,11 @@ describe("Formal Triage Management", () => {
     const receipt = harness.service.delete(
       harness.store.getState().committed.triageIssuesById["issue-a"],
     );
-
     expect(selectEffectiveTriageIssueIds(harness.store.getState())).toEqual([]);
     expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toBeDefined();
 
     gate.resolve();
     await receipt.completion;
-
     expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toBeUndefined();
     expect(harness.store.getState().pendingPlans).toEqual([]);
     harness.queue.dispose();
@@ -257,7 +250,6 @@ describe("Formal Triage Management", () => {
 
   it("rejects defer that does not move Due later", async () => {
     const harness = await createHarness();
-
     expect(() => harness.service.defer({
       due: NOW,
       expectedIssue: harness.store.getState().committed.triageIssuesById["issue-a"],
@@ -269,13 +261,7 @@ describe("Formal Triage Management", () => {
   it("reconciles an external conflict and removes the optimistic edit", async () => {
     const harness = await createHarness();
     const expected = harness.store.getState().committed.triageIssuesById["issue-a"];
-    harness.persistence.markdown = updateTriageIssueInMarkdown({
-      expectedIssue: expected,
-      filePath: FILE_PATH,
-      issue: { ...expected, title: "External" },
-      markdown: harness.persistence.markdown,
-      parseYaml,
-    });
+    harness.persistence.editExternal({ ...expected, title: "External" });
 
     const receipt = harness.service.edit({
       due: expected.due,
@@ -316,27 +302,29 @@ describe("Formal Triage Management", () => {
       labelIds: [],
       title: "Sensitive original",
     });
-    reconcileTriageContribution(store, (await persistence.readLatest()).contribution);
+    const sourceSync = new TrailTriageSourceSync(store, queue, persistence, diagnostics);
+    await sourceSync.initialize();
     const service = new TrailTriageManagementService(
       store,
-      queue,
-      persistence,
+      sourceSync,
       createEnvironment(["command-a"]),
       diagnostics,
     );
 
-    const receipt = service.edit({
+    await service.edit({
       due: NOW + 200,
       expectedIssue: store.getState().committed.triageIssuesById["issue-a"],
       title: "Sensitive edited title",
-    });
-    await receipt.completion;
+    }).completion;
     await diagnostics.flush();
 
     const trace = lines.join("");
     const reconciled = lines
       .map(parseDiagnosticEvent)
-      .find((event) => event.name === "runtime.triage.reconciled");
+      .find((event) =>
+        event.name === "runtime.triage.reconciled"
+        && event.correlationId === "command-a"
+      );
     expect(reconciled?.data).toMatchObject({
       changedFieldsById: { "issue-a": ["due", "title"] },
       changedIds: ["issue-a"],

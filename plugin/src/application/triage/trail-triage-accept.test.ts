@@ -1,5 +1,6 @@
 import type {
   TrailProjectSourceResult,
+  TrailTriageSourceResult,
 } from "../../persistence/domain-sources/trail-source-result";
 import type {
   TrailProjectSourceSnapshot,
@@ -14,11 +15,9 @@ import type {
   TrailTriageIssue,
   TrailWorkflowIssue,
 } from "../../domain/trail-issue";
-import type { TrailRecordSourceRange } from "../../markdown/core/trail-markdown-core";
 import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
 import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
 import type { TrailProject } from "../../domain/trail-project";
-
 import {
   selectEffectiveTriageIssueById,
   selectEffectiveWorkflowIssueById,
@@ -37,19 +36,10 @@ import {
   planAcceptTriageIssue,
   normalizeAcceptTriageCommand,
 } from "./trail-triage-accept";
-import type { TrailTriageParseResult } from "../../markdown/codecs/trail-triage-codec";
 import type { TrailTriagePersistence } from "../../persistence/domain-sources/trail-triage-persistence";
-
 import type { TrailWorkflowPersistence } from "../../persistence/domain-sources/trail-workflow-persistence";
 
 const targetPath = "Trail/Projects/0001 Accept Target.md";
-const range: TrailRecordSourceRange = {
-  endOffset: 10,
-  filePath: targetPath,
-  markerEndOffset: 8,
-  markerStartOffset: 4,
-  startOffset: 0,
-};
 
 function createConfiguration() {
   let next = 0;
@@ -59,14 +49,11 @@ function createConfiguration() {
   }).configuration;
 }
 
-function triageResult(issue?: TrailTriageIssue): TrailTriageParseResult {
+function triageResult(issue?: TrailTriageIssue): TrailTriageSourceResult {
   return {
     contribution: {
       filePath: TRAIL_TRIAGE_PATH,
       issuesById: issue === undefined ? {} : { [issue.id]: issue },
-      sourceByIssueId: issue === undefined ? {} : {
-        [issue.id]: { ...range, filePath: TRAIL_TRIAGE_PATH },
-      },
     },
     issues: [],
   };
@@ -141,33 +128,33 @@ function createFixture(options: {
   };
 
   const workflowPersistence: TrailWorkflowPersistence = {
-      appendIssue: async (_filePath, _expectedProject, issue) => {
-        if (options.appendGate !== undefined) {
-          await options.appendGate.promise;
-        }
-        currentProject = projectResult(project, [issue]);
-        return currentProject;
-      },
-      createProjectAtPath: async () => {
-        throw new Error("not used");
-      },
-      deleteIssue: async (_filePath, expectedIssue) => {
-        if (options.failTargetDelete) throw new Error("target compensation failed");
-        const current = currentProject.contribution?.issuesById[expectedIssue.id];
-        if (current === undefined) throw new Error("target missing");
-        currentProject = projectResult(project);
-        return currentProject;
-      },
-      listProjectSources: async () => [],
-      readAll: async () => ({
-        projectResults: [currentProject],
-        structuralIssues: [],
-      }),
-      readSource: async () => currentProject,
-      updateIssue: async () => {
-        throw new Error("not used");
-      },
-    };
+    appendIssue: async (_filePath, _expectedProject, issue) => {
+      if (options.appendGate !== undefined) {
+        await options.appendGate.promise;
+      }
+      currentProject = projectResult(project, [issue]);
+      return currentProject;
+    },
+    createProjectAtPath: async () => {
+      throw new Error("not used");
+    },
+    deleteIssue: async (_filePath, expectedIssue) => {
+      if (options.failTargetDelete) throw new Error("target compensation failed");
+      const current = currentProject.contribution?.issuesById[expectedIssue.id];
+      if (current === undefined) throw new Error("target missing");
+      currentProject = projectResult(project);
+      return currentProject;
+    },
+    listProjectSources: async () => [],
+    readAll: async () => ({
+      projectResults: [currentProject],
+      structuralIssues: [],
+    }),
+    readSource: async () => currentProject,
+    updateIssue: async () => {
+      throw new Error("not used");
+    },
+  };
 
   const runtimeStore = createTrailRuntimeStore();
   setTrailRuntimeConfiguration(runtimeStore, configuration);

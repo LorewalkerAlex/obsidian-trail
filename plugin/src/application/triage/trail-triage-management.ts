@@ -7,9 +7,6 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "../../diagnostics/trail-diagnostics";
-import { submitTrailMutation } from "../../mutation/coordinator/trail-mutation-coordinator";
-import { executeTrailSingleTransaction } from "../../mutation/execution/trail-single-transaction-executor";
-import { materializeTrailSingleTransactionPlan } from "../../mutation/physical/trail-single-transaction-plan";
 import {
   isTrailEpochMilliseconds,
   isValidTrailTitle,
@@ -17,25 +14,11 @@ import {
   sameTrailTriageIssue,
   type TrailTriageIssue,
 } from "../../domain/trail-issue";
-import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
 import {
   selectEffectiveTriageIssueById,
 } from "../../runtime/projection/trail-runtime-projection";
-import {
-  reconcileTriageContribution,
-  setTriageSourceIssues,
-} from "../../runtime/reconcile/trail-runtime-reconciler";
-import type {
-  TrailRuntimeStore,
-} from "../../runtime/store/trail-runtime-store";
-import {
-  TriageMarkdownMutationError,
-  type TrailTriageContribution,
-  type TrailTriageParseIssue,
-  type TrailTriageParseResult,
-} from "../../markdown/codecs/trail-triage-codec";
-import type { TrailTriageManagementPersistenceGateway } from "../../persistence/domain-sources/trail-triage-persistence";
-
+import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import type { TrailTriageSourceSync } from "../../source-sync/triage/trail-triage-source-sync";
 
 export type TriageManagementActionKind =
   | "triage.defer"
@@ -81,19 +64,8 @@ interface DeleteTriageCommand {
   readonly kind: "triage.delete";
 }
 
-export type TriageManagementErrorCode =
-  | "conflict"
-  | "persistence-failed"
-  | "planning-rejected"
-  | "source-invalid"
-  | "verification-failed";
-
 export class TriageManagementError extends Error {
-  public constructor(
-    readonly code: TriageManagementErrorCode,
-    message: string,
-    readonly cause?: unknown,
-  ) {
+  public constructor(message: string, readonly cause?: unknown) {
     super(message);
     this.name = "TriageManagementError";
   }
@@ -109,34 +81,10 @@ export type TriageManagementPlanResult =
   | { readonly kind: "rejected"; readonly reason: string }
   | { readonly kind: "unchanged"; readonly issueId: string };
 
-function invalidSourceMessage(issues: readonly TrailTriageParseIssue[]): string {
-  return issues.map((issue) => issue.message).join("; ");
-}
-
-function issueCodes(issues: readonly TrailTriageParseIssue[]): readonly string[] {
-  return issues.map((issue) => issue.code);
-}
-
-function errorCategory(error: unknown): string {
-  if (error instanceof TriageManagementError) {
-    return error.code;
-  }
-  if (error instanceof TriageMarkdownMutationError) {
-    return error.code;
-  }
-  if (error instanceof Error) {
-    return error.name;
-  }
-  return "unknown-error";
-}
-
 function normalizeIssueId(issueId: string): string {
   const normalized = issueId.trim();
   if (normalized === "") {
-    throw new TriageManagementError(
-      "planning-rejected",
-      "Triage Issue ID must be non-empty text",
-    );
+    throw new TriageManagementError("Triage Issue ID must be non-empty text");
   }
   return normalized;
 }
@@ -144,10 +92,7 @@ function normalizeIssueId(issueId: string): string {
 function normalizeEffectiveAt(environment: TriageManagementCommandEnvironment): number {
   const effectiveAt = environment.now();
   if (!isTrailEpochMilliseconds(effectiveAt)) {
-    throw new TriageManagementError(
-      "planning-rejected",
-      "Triage management effective timestamp is invalid",
-    );
+    throw new TriageManagementError("Triage management effective timestamp is invalid");
   }
   return effectiveAt;
 }
@@ -158,16 +103,10 @@ export function normalizeTriageEditCommand(
 ): UpdateTriageCommand {
   const title = normalizeTrailTitle(input.title);
   if (!isValidTrailTitle(title)) {
-    throw new TriageManagementError(
-      "planning-rejected",
-      "Triage Issue title must be non-empty single-line text",
-    );
+    throw new TriageManagementError("Triage Issue title must be non-empty single-line text");
   }
   if (!isTrailEpochMilliseconds(input.due)) {
-    throw new TriageManagementError(
-      "planning-rejected",
-      "Triage Issue Due must be a valid timestamp",
-    );
+    throw new TriageManagementError("Triage Issue Due must be a valid timestamp");
   }
 
   return {
@@ -186,10 +125,7 @@ export function normalizeTriageDeferCommand(
   environment: TriageManagementCommandEnvironment,
 ): UpdateTriageCommand {
   if (!isTrailEpochMilliseconds(input.due)) {
-    throw new TriageManagementError(
-      "planning-rejected",
-      "Deferred Triage Due must be a valid timestamp",
-    );
+    throw new TriageManagementError("Deferred Triage Due must be a valid timestamp");
   }
 
   return {
@@ -277,16 +213,11 @@ export function planTriageManagement(
   };
 }
 
-/**
- * Runs Triage management through one feature-agnostic logical plan and the shared
- * mutation coordinator. Feature code keeps only semantic verification, reconcile,
- * recovery, and user-facing error mapping.
- */
+/** User-facing Triage edit/defer/delete use cases; source mechanics stay in Source Sync. */
 export class TrailTriageManagementService {
   public constructor(
     private readonly runtimeStore: TrailRuntimeStore,
-    private readonly mutationQueue: TrailMutationQueue,
-    private readonly persistence: TrailTriageManagementPersistenceGateway,
+    private readonly sourceSync: TrailTriageSourceSync,
     private readonly commandEnvironment: TriageManagementCommandEnvironment,
     private readonly diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
   ) {}
@@ -319,18 +250,20 @@ export class TrailTriageManagementService {
       },
     });
 
-    const currentIssue = selectEffectiveTriageIssueById(
-      this.runtimeStore.getState(),
-      command.issueId,
+    const result = planTriageManagement(
+      selectEffectiveTriageIssueById(
+        this.runtimeStore.getState(),
+        command.issueId,
+      ),
+      command,
     );
-    const result = planTriageManagement(currentIssue, command);
     if (result.kind === "rejected") {
       this.diagnostics.record("command.rejected", {
         correlationId,
         data: { kind: command.kind, reason: "planning-rejected" },
         level: "warn",
       });
-      throw new TriageManagementError("planning-rejected", result.reason);
+      throw new TriageManagementError(result.reason);
     }
     if (result.kind === "unchanged") {
       this.diagnostics.record("command.noop", {
@@ -343,227 +276,17 @@ export class TrailTriageManagementService {
       };
     }
 
-    const { expectedIssue, nextIssue, plan: logicalPlan } = result;
     this.diagnostics.record("command.planned", {
       correlationId,
       data: { issueId: command.issueId, kind: command.kind },
     });
-
-    const completion = submitTrailMutation(
-      this.runtimeStore,
-      this.mutationQueue,
-      {
-        execute: async () => {
-          const physicalPlan = await materializeTrailSingleTransactionPlan(
-            logicalPlan,
-            this.runtimeStore.getState().committed,
-          );
-          this.diagnostics.record("mutation.physical.planned", {
-            correlationId,
-            data: {
-              intent: physicalPlan.intent,
-              operation: physicalPlan.operation.kind,
-              sourcePath: physicalPlan.sourcePath,
-              topology: "single",
-            },
-          });
-          this.diagnostics.record("triage.persistence.write.started", {
-            correlationId,
-            data: {
-              issueId: command.issueId,
-              kind: command.kind,
-              path: physicalPlan.sourcePath,
-            },
-          });
-          const executed = await executeTrailSingleTransaction(
-            physicalPlan,
-            { triageManage: this.persistence },
-            correlationId,
-          );
-          if (executed.kind !== "triage-source") {
-            throw new TriageManagementError(
-              "verification-failed",
-              "Triage management physical execution returned the wrong source kind",
-            );
-          }
-          const persisted = executed.result;
-          this.diagnostics.record("triage.persistence.write.completed", {
-            correlationId,
-            data: {
-              kind: command.kind,
-              parseIssueCount: persisted.issues.length,
-              recordCount: Object.keys(persisted.contribution.issuesById).length,
-            },
-          });
-          return persisted;
-        },
-        mapError: (error) => this.mapMutationError(error),
-        onCommitted: () => {
-          this.diagnostics.record("command.committed", {
-            correlationId,
-            data: { issueId: command.issueId, kind: command.kind },
-          });
-        },
-        onFailed: (error) => {
-          this.diagnostics.record("command.failed", {
-            correlationId,
-            data: {
-              category: errorCategory(error),
-              issueId: command.issueId,
-              kind: command.kind,
-            },
-            level: "error",
-          });
-        },
-        optimisticData: { issueId: command.issueId },
-        plan: logicalPlan,
-        queueKind: command.kind,
-        recover: async () => {
-          await this.reconcileAfterFailure(correlationId);
-        },
-        settle: (persisted) => {
-          this.verifyPersistedResult(expectedIssue, nextIssue, persisted, correlationId, command.kind);
-          this.reconcileContribution(persisted.contribution, command.kind, correlationId);
-        },
-      },
-      this.diagnostics,
-    );
-
-    return { completion, issueId: command.issueId };
-  }
-
-  private verifyPersistedResult(
-    expectedIssue: TrailTriageIssue,
-    nextIssue: TrailTriageIssue | undefined,
-    persisted: TrailTriageParseResult,
-    correlationId: string,
-    kind: TriageManagementActionKind,
-  ): void {
-    if (persisted.issues.length > 0) {
-      setTriageSourceIssues(this.runtimeStore, persisted.issues);
-      this.diagnostics.record("triage.validation.failed", {
-        correlationId,
-        data: {
-          issueCodes: issueCodes(persisted.issues),
-          kind,
-          reason: "post-write",
-        },
-        level: "error",
-      });
-      throw new TriageManagementError(
-        "verification-failed",
-        `Persisted Triage source is invalid: ${invalidSourceMessage(persisted.issues)}`,
-      );
-    }
-
-    const persistedIssue = persisted.contribution.issuesById[expectedIssue.id];
-    const valid = nextIssue === undefined
-      ? persistedIssue === undefined
-      : persistedIssue !== undefined && sameTrailTriageIssue(persistedIssue, nextIssue);
-    if (!valid) {
-      this.diagnostics.record("triage.validation.failed", {
-        correlationId,
-        data: {
-          issueId: expectedIssue.id,
-          kind,
-          reason: "post-write-result-mismatch",
-        },
-        level: "error",
-      });
-      throw new TriageManagementError(
-        "verification-failed",
-        "Persisted Triage mutation did not match the planned result",
-      );
-    }
-
-    this.diagnostics.record("triage.validation.completed", {
+    const receipt = this.sourceSync.submit({
+      actionKind: command.kind,
       correlationId,
-      data: {
-        issueId: expectedIssue.id,
-        kind,
-        reason: "post-write",
-      },
+      entityId: command.issueId,
+      expectedIssue: result.nextIssue,
+      plan: result.plan,
     });
-  }
-
-  private reconcileContribution(
-    contribution: TrailTriageContribution,
-    reason: string,
-    correlationId?: string,
-  ): void {
-    const result = reconcileTriageContribution(this.runtimeStore, contribution);
-    this.diagnostics.record("runtime.triage.reconciled", {
-      correlationId,
-      data: {
-        addedIds: result.diff.addedIds,
-        changedFieldsById: result.diff.changedFieldsById,
-        changedIds: result.diff.changedIds,
-        committedRevision: result.revision,
-        reason,
-        removedIds: result.diff.removedIds,
-        triageCount: result.triageCount,
-      },
-    });
-  }
-
-  private async reconcileAfterFailure(correlationId: string): Promise<void> {
-    this.diagnostics.record("triage.failure-reconcile.started", { correlationId });
-    try {
-      const latest = await this.persistence.readLatest();
-      if (latest.issues.length > 0) {
-        setTriageSourceIssues(this.runtimeStore, latest.issues);
-        this.diagnostics.record("triage.failure-reconcile.invalid", {
-          correlationId,
-          data: { issueCodes: issueCodes(latest.issues) },
-          level: "warn",
-        });
-        return;
-      }
-      this.reconcileContribution(latest.contribution, "failure-reconcile", correlationId);
-      this.diagnostics.record("triage.failure-reconcile.completed", {
-        correlationId,
-        data: {
-          committedRevision: this.runtimeStore.getState().committed.revision,
-        },
-      });
-    } catch (error: unknown) {
-      this.diagnostics.record("triage.failure-reconcile.failed", {
-        correlationId,
-        data: { category: errorCategory(error) },
-        level: "error",
-      });
-    }
-  }
-
-  private mapMutationError(error: unknown): TriageManagementError {
-    if (error instanceof TriageManagementError) {
-      return error;
-    }
-    if (error instanceof TriageMarkdownMutationError) {
-      if (error.code === "conflict" || error.code === "target-missing") {
-        return new TriageManagementError(
-          "conflict",
-          "Triage Issue changed outside Trail. Review the latest state and try again.",
-          error,
-        );
-      }
-      if (error.code === "source-invalid") {
-        return new TriageManagementError(
-          "source-invalid",
-          "Triage.md became invalid before the mutation could be saved",
-          error,
-        );
-      }
-      return new TriageManagementError(
-        "verification-failed",
-        "Triage Markdown mutation failed verification",
-        error,
-      );
-    }
-    return new TriageManagementError(
-      "persistence-failed",
-      "Triage change could not be persisted",
-      error,
-    );
+    return { completion: receipt.completion, issueId: command.issueId };
   }
 }

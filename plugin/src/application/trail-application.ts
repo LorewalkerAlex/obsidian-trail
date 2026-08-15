@@ -2,6 +2,9 @@ import {
   TrailProjectSourceSync,
 } from "../source-sync/projects/trail-project-source-sync";
 import {
+  TrailTriageSourceSync,
+} from "../source-sync/triage/trail-triage-source-sync";
+import {
   TrailWorkflowIssueApplication,
 } from "./issues/trail-workflow-issue-application";
 import {
@@ -47,7 +50,6 @@ import {
   type TriageManagementReceipt,
 } from "./triage/trail-triage-management";
 import type { TrailTriagePersistence } from "../persistence/domain-sources/trail-triage-persistence";
-
 import type { TrailWorkflowPersistence } from "../persistence/domain-sources/trail-workflow-persistence";
 import {
   classifyWorkspace,
@@ -109,6 +111,7 @@ export class TrailApplication {
   private management: TrailTriageManagementService | null = null;
   private issues: TrailWorkflowIssueApplication | null = null;
   private projects: TrailProjectApplication | null = null;
+  private triageSources: TrailTriageSourceSync | null = null;
   private workflowSources: TrailProjectSourceSync | null = null;
   private timezone: string | null = null;
   private readonly diagnostics: TrailDiagnostics;
@@ -180,10 +183,15 @@ export class TrailApplication {
       const timezone = configuration.temporal.timezone;
       setTrailRuntimeConfiguration(runtimeStore, configuration);
 
-      const intake = new TrailTriageIntakeService(
+      const triageSources = new TrailTriageSourceSync(
         runtimeStore,
         mutationQueue,
         triagePersistence,
+        this.diagnostics,
+      );
+      const intake = new TrailTriageIntakeService(
+        runtimeStore,
+        triageSources,
         {
           createId,
           now,
@@ -194,8 +202,7 @@ export class TrailApplication {
       );
       const management = new TrailTriageManagementService(
         runtimeStore,
-        mutationQueue,
-        triagePersistence,
+        triageSources,
         { createId, now },
         this.diagnostics,
       );
@@ -233,7 +240,7 @@ export class TrailApplication {
       this.diagnostics.record("triage.initialize.started", {
         correlationId: operationId,
       });
-      await intake.initialize(operationId);
+      await triageSources.initialize(operationId);
       await workflowSources.initialize(operationId);
 
       this.accept = accept;
@@ -241,6 +248,7 @@ export class TrailApplication {
       this.management = management;
       this.issues = issues;
       this.projects = projects;
+      this.triageSources = triageSources;
       this.workflowSources = workflowSources;
       this.timezone = timezone;
       setTrailRuntimeAvailability(runtimeStore, {
@@ -414,10 +422,10 @@ export class TrailApplication {
   public async refreshTriage(correlationId?: string): Promise<boolean> {
     const operationId = correlationId
       ?? this.diagnostics.createCorrelationId("triage.refresh");
-    if (this.intake === null) {
+    if (this.triageSources === null) {
       this.diagnostics.record("triage.refresh.skipped", {
         correlationId: operationId,
-        data: { reason: "intake-unavailable" },
+        data: { reason: "source-sync-unavailable" },
         level: "warn",
       });
       return false;
@@ -426,13 +434,7 @@ export class TrailApplication {
     this.diagnostics.record("triage.refresh.enqueued", {
       correlationId: operationId,
     });
-    return this.dependencies.mutationQueue.enqueue(
-      () => this.intake?.refreshFromPersistence(operationId) ?? Promise.resolve(false),
-      {
-        correlationId: operationId,
-        kind: "triage.refresh",
-      },
-    );
+    return this.triageSources.refresh(operationId);
   }
 
   public async refreshWorkflowSource(
@@ -486,6 +488,7 @@ export class TrailApplication {
     this.accept = null;
     this.intake = null;
     this.management = null;
+    this.triageSources = null;
     setSourceIssuesForPath(this.dependencies.runtimeStore, TRAIL_TRIAGE_PATH, [{
       code: "triage.required-source.unavailable",
       filePath: TRAIL_TRIAGE_PATH,
@@ -625,6 +628,7 @@ export class TrailApplication {
     this.management = null;
     this.issues = null;
     this.projects = null;
+    this.triageSources = null;
     this.workflowSources = null;
     this.timezone = null;
   }

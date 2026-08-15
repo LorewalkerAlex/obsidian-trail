@@ -1,4 +1,7 @@
-import type { TrailProjectSourceSnapshot } from "./trail-domain-source-snapshot";
+import type {
+  TrailProjectSourceSnapshot,
+  TrailTriageSourceSnapshot,
+} from "./trail-domain-source-snapshot";
 
 /** Logical source problem exposed above Persistence; parser offsets stay below this boundary. */
 export interface TrailSourceProblem {
@@ -7,6 +10,12 @@ export interface TrailSourceProblem {
   readonly message: string;
   readonly objectId?: string;
   readonly scope: "file" | "record";
+}
+
+/** Authoritative Triage-source result without Markdown ranges or parser-only carriers. */
+export interface TrailTriageSourceResult {
+  readonly contribution: TrailTriageSourceSnapshot;
+  readonly issues: readonly TrailSourceProblem[];
 }
 
 /** Authoritative Project-source result without Markdown ranges or parser-only carriers. */

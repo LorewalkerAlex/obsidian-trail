@@ -67,6 +67,24 @@ describe("Triage source persistence", () => {
       "external",
     ]);
     expect(result.contribution.filePath).toBe(TRAIL_TRIAGE_PATH);
+    expect(result.contribution).not.toHaveProperty("sourceByIssueId");
+  });
+
+  it("strips parser offsets from logical source problems", async () => {
+    const fixture = createFixture([
+      "---",
+      "kind: triage",
+      "---",
+      "",
+      "# Issues",
+      "",
+      "orphan content",
+      "",
+    ].join("\n"));
+
+    const result = await fixture.persistence.readLatest();
+    expect(result.issues.length).toBeGreaterThan(0);
+    expect(result.issues[0]).not.toHaveProperty("offset");
   });
 
   it("refuses an invalid latest source before mutation", async () => {

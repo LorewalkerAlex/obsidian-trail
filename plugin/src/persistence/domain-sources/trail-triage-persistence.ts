@@ -1,27 +1,39 @@
 import type { TrailTriageIssue } from "../../domain/trail-issue";
-import type { TrailTriageParseResult } from "../../markdown/codecs/trail-triage-codec";
+import type { TrailTriageSourceResult } from "./trail-source-result";
 
-export interface TrailTriagePersistenceGateway {
+export type TrailTriagePersistenceErrorCode =
+  | "conflict"
+  | "duplicate-id"
+  | "source-invalid"
+  | "target-missing"
+  | "verification-failed";
+
+/** Stable Triage persistence error; Markdown-specific error classes stay below Persistence. */
+export class TrailTriagePersistenceError extends Error {
+  public constructor(
+    readonly code: TrailTriagePersistenceErrorCode,
+    message: string,
+    readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = "TrailTriagePersistenceError";
+  }
+}
+
+/** Complete authoritative contract for the singleton Triage source. */
+export interface TrailTriagePersistence {
   readonly appendIssue: (
     issue: TrailTriageIssue,
     correlationId?: string,
-  ) => Promise<TrailTriageParseResult>;
-  readonly readLatest: () => Promise<TrailTriageParseResult>;
-}
-
-export interface TrailTriageManagementPersistenceGateway {
+  ) => Promise<TrailTriageSourceResult>;
   readonly deleteIssue: (
     expectedIssue: TrailTriageIssue,
     correlationId?: string,
-  ) => Promise<TrailTriageParseResult>;
-  readonly readLatest: () => Promise<TrailTriageParseResult>;
+  ) => Promise<TrailTriageSourceResult>;
+  readonly readLatest: () => Promise<TrailTriageSourceResult>;
   readonly updateIssue: (
     expectedIssue: TrailTriageIssue,
     issue: TrailTriageIssue,
     correlationId?: string,
-  ) => Promise<TrailTriageParseResult>;
+  ) => Promise<TrailTriageSourceResult>;
 }
-
-export type TrailTriagePersistence =
-  & TrailTriagePersistenceGateway
-  & TrailTriageManagementPersistenceGateway;
