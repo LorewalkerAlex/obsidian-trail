@@ -141,8 +141,8 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 | Target Codebase Map & Cleanup Contract | 将设计层映射到唯一 code owner，明确 RESERVED future owner、anti-drift 与 Exit 标准 | 已完成 |
 | Path / Layout Authority | 建立唯一 managed-path authority；消除 Feature / Workspace / Adapter 中重复 `Trail/...` 拼接与 path truth | 已完成 |
 | **Domain Purity + Application Ownership** | Domain 只保留 business facts/rules/planning；Use Case 正式进入 `application/`；移出 source/persistence/runtime concern | 已完成 |
-| **Persistence + Source Sync Finalization** | 删除旧 Domain persistence gateways / duck typing；收口 authoritative source lifecycle 与 external refresh owner | **当前** |
-| Runtime Final Shape | 收口 authoritative / ownership / indexes / pending / control；删除 compatibility alias 与 parser/source metadata leakage | 部分完成 |
+| **Persistence + Source Sync Finalization** | 删除旧 Domain persistence gateways / duck typing；收口 authoritative source lifecycle 与 external refresh owner | **已完成** |
+| **Runtime Final Shape** | 收口 authoritative / ownership / indexes / pending / control；删除 compatibility alias 与 parser/source metadata leakage | **当前** |
 | Feature Plan / Service Simplification | 移除 Triage/Workflow 双 Plan；复用共享 lifecycle，拆掉超大 Service 中重复 orchestration | 部分完成 |
 | Host / Composition / UI Boundary | `main.ts` 只做 composition/registration；host file events 进入 adapter/source-sync；UI 保持纯 read/intent | 待继续 |
 | Tests / Tooling / Stage-language Cleanup | 删除 active technology spike / duplicate evidence；增加 anti-drift guards；清除 production migration-stage terminology | 待继续 |
@@ -177,9 +177,9 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 - README、Implementation Architecture、Implementation Plan 与真实代码事实一致；
 - checkpoint commit / push / GitHub review / CI 完成。
 
-### 4.5 当前执行 Slice：Persistence + Source Sync Finalization
+### 4.5 当前执行 Slice：Runtime Final Shape
 
-Codebase Simplification 已完成第一批可独立形成 checkpoint 的结构收敛：
+Persistence + Source Sync Finalization 已完成以下收敛：
 
 ```text
 Path / Layout Authority
@@ -194,9 +194,18 @@ Mutation / Workflow boundary
 → Project / Issue Application ownership 拆分
 → Project Source Sync 建立正式 owner
 → Workflow Persistence 形成完整静态 contract，不再 duck type capability
+
+Persistence / Source Sync boundary
+→ Triage Source Sync 建立正式 owner
+→ Triage / Project authoritative read / write / refresh / reconcile 各归唯一 owner
+→ Triage / Workflow Persistence 使用静态 contract
+→ Obsidian SourceIO 与 Domain Source Repository 作为共享底层组合一次
+→ Feature-specific Obsidian persistence facade 退出 production path
 ```
 
-上述结构以及随后完成的 Domain Purity 收敛均已通过完整 `npm run check` 与 `git diff --check`。Domain 已不再拥有 source range / source diagnostic 等技术 concern，Workflow validation 已进入 `domain/validation/`，Runtime source health 使用 persistence-side logical source problem。当前进入 **Persistence + Source Sync Finalization**，优先收口 Triage / Project authoritative source lifecycle 与 persistence contract；Configuration ownership 单独在后续 cluster 处理，不与本 checkpoint 混合。
+上述结构、Domain Purity、Triage Persistence + Source Sync 收敛以及 Persistence composition cleanup 均已通过完整 `npm run check` 与 `git diff --check`。当前进入 **Runtime Final Shape**，优先收口 authoritative / ownership / indexes / pending / control，删除 compatibility alias、重复 flat shape 与不属于 Runtime authoritative state 的技术 metadata。
+
+Host file-event 分类、required-source delete / rename 处理和 composition root 变薄属于后续 **Host / Composition / UI Boundary**，不在此处拆成新的中间转发层。Configuration ownership 也继续保留为独立后续 cluster，不与 Runtime cleanup 混合。
 
 整个 Codebase Simplification 未完成前不新增 `Triage Convert to Project`。`archive/poc/` 暂不作为 active-code 第一轮清理对象；先完成 `plugin/src/` 长期结构收敛，再单独判断 Git 历史是否已经足以替代完整 archive。
 
@@ -219,7 +228,7 @@ Mutation / Workflow boundary
 | Formal Workflow | 已完成 | Workflow 可创建、执行并从 Markdown 重建 |
 | Triage Accept | 已完成 | 新 identity、destination-first、optimistic / reconcile 与真实 host evidence 已建立，并完成新架构迁移 |
 | **Implementation Architecture Re-baseline** | **已完成** | `9e12e32e870a2299023b64804e3070abe138eb0b` 已 push 并通过 GitHub 回查与 CI；full check、Diagnostics build、real-host regression 与 trace review 全部通过 |
-| **Codebase Simplification** | **当前** | 已完成 Path / Layout、Application/Domain boundary、Runtime facade、Canonical Mutation Plan、Workflow ownership/persistence 与 Domain Purity；当前进入 Persistence + Source Sync Finalization |
+| **Codebase Simplification** | **当前** | 已完成 Path / Layout、Application/Domain boundary、Canonical Mutation Plan、Workflow ownership/persistence、Domain Purity 与 Persistence + Source Sync Finalization；当前进入 Runtime Final Shape |
 | Intake → Workflow | 待继续 | Codebase Simplification 后以 Convert to Project 作为第一个净新增 Slice |
 | V1 Exit | 待开始 | — |
 

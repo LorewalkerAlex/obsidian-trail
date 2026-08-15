@@ -11,13 +11,15 @@ import {
 
 import { TrailApplication } from "./application/trail-application";
 import { createFormalMarkdownValidator } from "./markdown/codecs/trail-managed-codecs";
+import { createTrailDomainSourceRepository } from "./persistence/domain-sources/trail-domain-source-repository";
+import { createProjectSourcePersistence } from "./persistence/domain-sources/trail-project-source-persistence";
+import { createTriageSourcePersistence } from "./persistence/domain-sources/trail-triage-source-persistence";
 import { TrailMutationQueue } from "./mutation/queue/trail-mutation-queue";
 import { isTrailProjectMarkdownPath, TRAIL_PROJECTS_PATH, TRAIL_PROJECTS_PREFIX, TRAIL_TRIAGE_PATH } from "./markdown/schema/trail-paths";
 import {
   createTrailRuntimeStore,
 } from "./runtime/store/trail-runtime-store";
-import { createObsidianTriagePersistenceGateway } from "./adapters/obsidian/trail-triage-persistence-obsidian";
-import { createObsidianWorkflowPersistence } from "./adapters/obsidian/trail-workflow-persistence-obsidian";
+import { createObsidianSourceIO } from "./adapters/obsidian/trail-source-io-obsidian";
 import {
   createObsidianWorkspaceBootstrapGateway,
   type ObsidianWorkspaceFileKinds,
@@ -66,6 +68,8 @@ export default class TrailPlugin extends Plugin {
     const runtimeStore = createTrailRuntimeStore();
     const mutationQueue = new TrailMutationQueue(diagnostics);
     const parseYamlDocument = (yaml: string): unknown => parseYaml(yaml);
+    const sourceIO = createObsidianSourceIO(this.app, fileKinds);
+    const domainSourceRepository = createTrailDomainSourceRepository(sourceIO);
     const workspaceGateway = createObsidianWorkspaceBootstrapGateway(
       this.app,
       {
@@ -75,16 +79,14 @@ export default class TrailPlugin extends Plugin {
       createFormalMarkdownValidator(parseYamlDocument),
       fileKinds,
     );
-    const triagePersistence = createObsidianTriagePersistenceGateway(
-      this.app,
+    const triagePersistence = createTriageSourcePersistence(
+      domainSourceRepository,
       parseYamlDocument,
-      fileKinds,
       diagnostics,
     );
-    const workflowPersistence = createObsidianWorkflowPersistence(
-      this.app,
+    const workflowPersistence = createProjectSourcePersistence(
+      domainSourceRepository,
       parseYamlDocument,
-      fileKinds,
       diagnostics,
     );
     const application = new TrailApplication({
