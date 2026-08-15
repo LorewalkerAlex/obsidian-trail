@@ -6,7 +6,7 @@ import {
   type TrailWorkflowIssue,
 } from "../../domain/trail-issue";
 import { sameTrailProject, type TrailProject } from "../../domain/trail-project";
-import type { TrailSourceIssue } from "../../domain/trail-source-issue";
+import type { TrailSourceProblem } from "../../persistence/domain-sources/trail-source-result";
 import type {
   TrailProjectSourceSnapshot,
   TrailTriageSourceSnapshot,
@@ -234,7 +234,7 @@ export function reconcileTriageContribution<
 
 export function setTriageSourceIssues(
   store: TrailRuntimeStore,
-  sourceIssues: readonly TrailSourceIssue[],
+  sourceIssues: readonly TrailSourceProblem[],
 ): void {
   const filePath = sourceIssues[0]?.filePath;
   if (filePath === undefined) return;

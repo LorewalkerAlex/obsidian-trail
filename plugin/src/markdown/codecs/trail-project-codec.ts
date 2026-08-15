@@ -4,14 +4,12 @@ import {
   isValidTrailTitle,
   normalizeTrailTitle,
   sameTrailWorkflowIssue,
-  type TrailRecordSourceRange,
   type TrailWorkflowIssue,
 } from "../../domain/trail-issue";
 import {
   validateTrailProjectFields,
   type TrailProject,
 } from "../../domain/trail-project";
-import type { TrailSourceIssue } from "../../domain/trail-source-issue";
 import {
   appendMarkdownBlock,
   collectMarkdownH2Records,
@@ -27,6 +25,7 @@ import {
   requiredMarkdownOffset,
   splitMarkdownFrontmatter,
   type TrailMarkdownRecordSlice,
+  type TrailRecordSourceRange,
   type TrailMarkdownRootChild,
 } from "../core/trail-markdown-core";
 import { TRAIL_PHYSICAL_RECORD_SCHEMAS } from "../schema/trail-physical-schema";
@@ -39,10 +38,11 @@ import {
   parseRequiredString,
   parseWorkflowIssueMetadata,
   recordCodecIssue,
+  type TrailCodecIssue,
   type TrailYamlParser,
 } from "./trail-codec-support";
 
-export type TrailProjectParseIssue = TrailSourceIssue;
+export type TrailProjectParseIssue = TrailCodecIssue;
 
 export interface TrailPhysicalMilestoneRecord {
   readonly description?: string;

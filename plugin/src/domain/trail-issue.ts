@@ -44,14 +44,6 @@ export interface TrailWorkflowIssue {
   readonly title: string;
 }
 
-export interface TrailRecordSourceRange {
-  readonly endOffset: number;
-  readonly filePath: string;
-  readonly markerEndOffset: number;
-  readonly markerStartOffset: number;
-  readonly startOffset: number;
-}
-
 export function isTrailPriority(value: unknown): value is TrailPriority {
   return (
     typeof value === "string"

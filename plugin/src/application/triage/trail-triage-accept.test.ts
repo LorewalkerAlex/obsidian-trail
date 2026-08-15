@@ -11,10 +11,10 @@ import {
   resolveDefaultStatusDefinition,
 } from "../../domain/trail-configuration";
 import type {
-  TrailRecordSourceRange,
   TrailTriageIssue,
   TrailWorkflowIssue,
 } from "../../domain/trail-issue";
+import type { TrailRecordSourceRange } from "../../markdown/core/trail-markdown-core";
 import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
 import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
 import type { TrailProject } from "../../domain/trail-project";

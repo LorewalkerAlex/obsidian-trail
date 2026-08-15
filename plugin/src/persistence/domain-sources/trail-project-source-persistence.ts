@@ -2,7 +2,6 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "../../diagnostics/trail-diagnostics";
-import type { TrailSourceIssue } from "../../domain/trail-source-issue";
 import type { TrailYamlParser } from "../../markdown/codecs/trail-codec-support";
 import {
   appendWorkflowIssueToProjectMarkdown,
@@ -11,6 +10,7 @@ import {
   ProjectMarkdownMutationError,
   serializeProjectMarkdown,
   updateWorkflowIssueInProjectMarkdown,
+  type TrailProjectParseIssue,
   type TrailProjectParseResult,
 } from "../../markdown/codecs/trail-project-codec";
 import {
@@ -32,7 +32,7 @@ type WorkflowPhysicalOperation =
   | "delete-issue"
   | "update-issue";
 
-function sourceProblem(issue: TrailSourceIssue): TrailSourceProblem {
+function sourceProblem(issue: TrailProjectParseIssue): TrailSourceProblem {
   return {
     code: issue.code,
     filePath: issue.filePath,

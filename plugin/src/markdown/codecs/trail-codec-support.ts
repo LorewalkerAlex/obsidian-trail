@@ -5,12 +5,18 @@ import {
   type TrailTriageIssue,
   type TrailWorkflowIssue,
 } from "../../domain/trail-issue";
-import type { TrailSourceIssue } from "../../domain/trail-source-issue";
 import { isRecordObject } from "../core/trail-markdown-core";
 import { TRAIL_PHYSICAL_RECORD_SCHEMAS } from "../schema/trail-physical-schema";
 
 export type TrailYamlParser = (yaml: string) => unknown;
-export type TrailCodecIssue = TrailSourceIssue;
+export interface TrailCodecIssue {
+  readonly code: string;
+  readonly filePath: string;
+  readonly message: string;
+  readonly objectId?: string;
+  readonly offset?: number;
+  readonly scope: "file" | "record";
+}
 
 export function fileCodecIssue(
   code: string,

@@ -8,7 +8,7 @@ import {
   type TrailWorkflowIssue,
 } from "../../domain/trail-issue";
 import { sameTrailProject, type TrailProject } from "../../domain/trail-project";
-import { validateProjectContribution } from "../../domain/trail-workflow-validation";
+import { validateWorkflowProjectState } from "../../domain/validation/trail-workflow-validation";
 import {
   TRAIL_PROJECTS_PATH,
   TRAIL_PROJECTS_PREFIX,
@@ -19,7 +19,10 @@ import { createTrailProjectPathAllocator } from "../../mutation/physical/trail-f
 import { materializeTrailSingleTransactionPlan } from "../../mutation/physical/trail-single-transaction-plan";
 import type { TrailMutationPlan } from "../../mutation/plans/trail-mutation-plan";
 import type { TrailProjectSourceSnapshot } from "../../persistence/domain-sources/trail-domain-source-snapshot";
-import type { TrailProjectSourceResult } from "../../persistence/domain-sources/trail-source-result";
+import {
+  toTrailSourceProblems,
+  type TrailProjectSourceResult,
+} from "../../persistence/domain-sources/trail-source-result";
 import {
   TrailWorkflowPersistenceError,
   type TrailWorkflowPersistence,
@@ -254,7 +257,7 @@ export class TrailProjectSourceSync {
       );
     }
 
-    const domainIssues = validateProjectContribution(
+    const domainIssues = validateWorkflowProjectState(
       persisted.contribution,
       this.configuration,
     );
@@ -262,7 +265,7 @@ export class TrailProjectSourceSync {
       setSourceIssuesForPath(
         this.runtimeStore,
         persisted.contribution.filePath,
-        domainIssues,
+        toTrailSourceProblems(persisted.contribution.filePath, domainIssues),
       );
       this.diagnostics.record("workflow.validation.failed", {
         correlationId,
@@ -322,7 +325,7 @@ export class TrailProjectSourceSync {
       return;
     }
 
-    const domainIssues = validateProjectContribution(
+    const domainIssues = validateWorkflowProjectState(
       result.contribution,
       this.configuration,
     );
@@ -330,7 +333,7 @@ export class TrailProjectSourceSync {
       setSourceIssuesForPath(
         this.runtimeStore,
         result.contribution.filePath,
-        domainIssues,
+        toTrailSourceProblems(result.contribution.filePath, domainIssues),
       );
       this.diagnostics.record("workflow.source.invalid", {
         correlationId,

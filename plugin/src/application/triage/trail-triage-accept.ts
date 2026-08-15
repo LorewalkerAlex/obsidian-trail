@@ -1,5 +1,7 @@
-import type {
-  TrailProjectSourceResult,
+import {
+  toTrailSourceProblems,
+  type TrailProjectSourceResult,
+  type TrailSourceProblem,
 } from "../../persistence/domain-sources/trail-source-result";
 import type {
   TrailProjectSourceSnapshot,
@@ -56,7 +58,6 @@ import {
   setSourceIssuesForPath,
   type TrailRuntimeStore,
 } from "../../runtime/store/trail-runtime-store";
-import type { TrailSourceIssue } from "../../domain/trail-source-issue";
 import {
   TriageMarkdownMutationError,
   type TrailTriageContribution,
@@ -70,7 +71,7 @@ import {
   TrailWorkflowPersistenceError,
 } from "../../persistence/domain-sources/trail-workflow-persistence";
 
-import { validateProjectContribution } from "../../domain/trail-workflow-validation";
+import { validateWorkflowProjectState } from "../../domain/validation/trail-workflow-validation";
 
 export interface TriageAcceptReceipt {
   readonly completion: Promise<void>;
@@ -277,7 +278,7 @@ function errorCategory(error: unknown): string {
   return "unknown-error";
 }
 
-function partialIssue(filePath: string, objectId: string): TrailSourceIssue {
+function partialIssue(filePath: string, objectId: string): TrailSourceProblem {
   return {
     code: "triage-accept.partial",
     filePath,
@@ -539,7 +540,7 @@ export class TrailTriageAcceptService {
     ) {
       return { kind: "unsafe" };
     }
-    const domainIssues = validateProjectContribution(
+    const domainIssues = validateWorkflowProjectState(
       latest.contribution,
       this.configuration,
     );
@@ -708,9 +709,13 @@ export class TrailTriageAcceptService {
         "Accepted Workflow target failed physical validation",
       );
     }
-    const domainIssues = validateProjectContribution(result.contribution, this.configuration);
+    const domainIssues = validateWorkflowProjectState(result.contribution, this.configuration);
     if (domainIssues.length > 0) {
-      setSourceIssuesForPath(this.runtimeStore, result.contribution.filePath, domainIssues);
+      setSourceIssuesForPath(
+        this.runtimeStore,
+        result.contribution.filePath,
+        toTrailSourceProblems(result.contribution.filePath, domainIssues),
+      );
       throw new TriageAcceptError(
         "verification-failed",
         "Accepted Workflow target failed Domain validation",
@@ -775,7 +780,7 @@ export class TrailTriageAcceptService {
         "Compensation left the Workflow target source invalid",
       );
     }
-    const domainIssues = validateProjectContribution(result.contribution, this.configuration);
+    const domainIssues = validateWorkflowProjectState(result.contribution, this.configuration);
     if (domainIssues.length > 0) {
       throw new TriageAcceptError(
         "verification-failed",
@@ -929,9 +934,13 @@ export class TrailTriageAcceptService {
       setSourceIssuesForPath(this.runtimeStore, targetPath, latest.issues);
       return;
     }
-    const domainIssues = validateProjectContribution(latest.contribution, this.configuration);
+    const domainIssues = validateWorkflowProjectState(latest.contribution, this.configuration);
     if (domainIssues.length > 0) {
-      setSourceIssuesForPath(this.runtimeStore, targetPath, domainIssues);
+      setSourceIssuesForPath(
+        this.runtimeStore,
+        targetPath,
+        toTrailSourceProblems(targetPath, domainIssues),
+      );
       return;
     }
     this.reconcileTarget(latest.contribution, reason, correlationId);

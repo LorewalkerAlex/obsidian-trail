@@ -14,3 +14,21 @@ export interface TrailProjectSourceResult {
   readonly contribution?: TrailProjectSourceSnapshot;
   readonly issues: readonly TrailSourceProblem[];
 }
+
+/** Attaches source location only after pure Domain validation has completed. */
+export function toTrailSourceProblems(
+  filePath: string,
+  issues: readonly {
+    readonly code: string;
+    readonly entityId: string;
+    readonly message: string;
+  }[],
+): readonly TrailSourceProblem[] {
+  return issues.map((issue) => ({
+    code: issue.code,
+    filePath,
+    message: issue.message,
+    objectId: issue.entityId,
+    scope: "record",
+  }));
+}

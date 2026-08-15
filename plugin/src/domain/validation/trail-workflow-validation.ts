@@ -1,31 +1,29 @@
 import {
   resolveStatusDefinition,
   type TrailConfiguration,
-} from "./trail-configuration";
-import type { TrailWorkflowIssue } from "./trail-issue";
-import type { TrailProject } from "./trail-project";
-import type { TrailSourceIssue } from "./trail-source-issue";
+} from "../trail-configuration";
+import type { TrailWorkflowIssue } from "../trail-issue";
+import type { TrailProject } from "../trail-project";
 
-/** Logical Project aggregate shape required by Domain validation. */
+/** Logical Project aggregate required by Workflow Domain validation. */
 export interface TrailProjectValidationState {
-  readonly filePath: string;
   readonly issuesById: Readonly<Record<string, TrailWorkflowIssue>>;
   readonly project: TrailProject;
 }
 
-function sourceIssue(
-  contribution: TrailProjectValidationState,
+/** Pure Domain validation result; source location is attached outside Domain. */
+export interface TrailWorkflowValidationIssue {
+  readonly code: string;
+  readonly entityId: string;
+  readonly message: string;
+}
+
+function validationIssue(
   code: string,
+  entityId: string,
   message: string,
-  objectId?: string,
-): TrailSourceIssue {
-  return {
-    code,
-    filePath: contribution.filePath,
-    message,
-    objectId,
-    scope: objectId === undefined ? "file" : "record",
-  };
+): TrailWorkflowValidationIssue {
+  return { code, entityId, message };
 }
 
 export function resolveWorkflowIssueStatus(
@@ -38,95 +36,87 @@ export function resolveWorkflowIssueStatus(
   );
 }
 
-/** Validates cross-record and Configuration-dependent Workflow invariants. */
-export function validateProjectContribution(
-  contribution: TrailProjectValidationState,
+/** Validates cross-entity and Configuration-dependent Workflow invariants. */
+export function validateWorkflowProjectState(
+  state: TrailProjectValidationState,
   configuration: TrailConfiguration,
-): readonly TrailSourceIssue[] {
-  const issues: TrailSourceIssue[] = [];
+): readonly TrailWorkflowValidationIssue[] {
+  const issues: TrailWorkflowValidationIssue[] = [];
   const projectStatus = resolveStatusDefinition(
     configuration.statuses.project,
-    contribution.project.statusDefinitionId,
+    state.project.statusDefinitionId,
   );
 
   if (projectStatus === undefined) {
-    issues.push(sourceIssue(
-      contribution,
+    issues.push(validationIssue(
       "project.status.invalid-reference",
+      state.project.id,
       "Project statusDefinitionId does not reference a Project StatusDefinition",
-      contribution.project.id,
     ));
   }
 
-  for (const issue of Object.values(contribution.issuesById)) {
+  for (const issue of Object.values(state.issuesById)) {
     const status = resolveWorkflowIssueStatus(configuration, issue);
     if (status === undefined) {
-      issues.push(sourceIssue(
-        contribution,
+      issues.push(validationIssue(
         "workflow-issue.status.invalid-reference",
-        "Workflow Issue statusDefinitionId does not reference an Issue StatusDefinition",
         issue.id,
+        "Workflow Issue statusDefinitionId does not reference an Issue StatusDefinition",
       ));
       continue;
     }
 
-    if (issue.projectId !== contribution.project.id) {
-      issues.push(sourceIssue(
-        contribution,
+    if (issue.projectId !== state.project.id) {
+      issues.push(validationIssue(
         "workflow-issue.project.mismatch",
-        "Workflow Issue projectId must match its Project",
         issue.id,
+        "Workflow Issue projectId must match its Project",
       ));
     }
     if (issue.milestoneId !== undefined) {
-      issues.push(sourceIssue(
-        contribution,
+      issues.push(validationIssue(
         "workflow-issue.milestone.unsupported",
-        "Milestone references are not supported by the current Workflow behavior",
         issue.id,
+        "Milestone references are not supported by the current Workflow behavior",
       ));
     }
 
     const terminal = status.category === "completed" || status.category === "canceled";
     if (terminal && issue.terminalAt === undefined) {
-      issues.push(sourceIssue(
-        contribution,
+      issues.push(validationIssue(
         "workflow-issue.terminal-at.required",
-        "Terminal Workflow Issue status requires terminalAt",
         issue.id,
+        "Terminal Workflow Issue status requires terminalAt",
       ));
     }
     if (!terminal && issue.terminalAt !== undefined) {
-      issues.push(sourceIssue(
-        contribution,
+      issues.push(validationIssue(
         "workflow-issue.terminal-at.unexpected",
-        "Non-terminal Workflow Issue status must not retain terminalAt",
         issue.id,
+        "Non-terminal Workflow Issue status must not retain terminalAt",
       ));
     }
     if (status.category === "completed" && issue.estimate === undefined) {
-      issues.push(sourceIssue(
-        contribution,
+      issues.push(validationIssue(
         "workflow-issue.estimate.required",
-        "Completed Workflow Issue requires Estimate",
         issue.id,
+        "Completed Workflow Issue requires Estimate",
       ));
     }
   }
 
   if (projectStatus?.category === "completed") {
-    const hasNonTerminalIssue = Object.values(contribution.issuesById).some((issue) => {
+    const hasNonTerminalIssue = Object.values(state.issuesById).some((issue) => {
       const status = resolveWorkflowIssueStatus(configuration, issue);
       return status !== undefined
         && status.category !== "completed"
         && status.category !== "canceled";
     });
     if (hasNonTerminalIssue) {
-      issues.push(sourceIssue(
-        contribution,
+      issues.push(validationIssue(
         "project.completed.non-terminal-issue",
+        state.project.id,
         "Completed Project cannot contain a current non-terminal Workflow Issue",
-        contribution.project.id,
       ));
     }
   }

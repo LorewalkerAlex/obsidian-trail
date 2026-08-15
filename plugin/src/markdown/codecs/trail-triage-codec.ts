@@ -3,7 +3,6 @@ import {
   isValidTrailTitle,
   normalizeTrailTitle,
   sameTrailTriageIssue,
-  type TrailRecordSourceRange,
   type TrailTriageIssue,
 } from "../../domain/trail-issue";
 import {
@@ -17,6 +16,7 @@ import {
   replaceMarkdownHeadingAndMarker,
   requiredMarkdownOffset,
   splitMarkdownFrontmatter,
+  type TrailRecordSourceRange,
 } from "../core/trail-markdown-core";
 import {
   canonicalTriageIssueMetadata,

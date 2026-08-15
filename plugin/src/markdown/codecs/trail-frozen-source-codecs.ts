@@ -4,10 +4,8 @@ import {
   isValidTrailTitle,
   normalizeTrailTitle,
   type TrailPriority,
-  type TrailRecordSourceRange,
   type TrailWorkflowIssue,
 } from "../../domain/trail-issue";
-import type { TrailSourceIssue } from "../../domain/trail-source-issue";
 import {
   collectMarkdownH2Records,
   isMarkdownHeading,
@@ -17,6 +15,7 @@ import {
   parseMarkdownBody,
   requiredMarkdownOffset,
   splitMarkdownFrontmatter,
+  type TrailRecordSourceRange,
 } from "../core/trail-markdown-core";
 import { TRAIL_PHYSICAL_RECORD_SCHEMAS } from "../schema/trail-physical-schema";
 import {
@@ -28,6 +27,7 @@ import {
   parseRequiredString,
   parseWorkflowIssueMetadata,
   recordCodecIssue,
+  type TrailCodecIssue,
   type TrailYamlParser,
 } from "./trail-codec-support";
 
@@ -51,18 +51,18 @@ export interface TrailPhysicalCycleRecord {
 
 export interface TrailInitiativeParseResult {
   readonly initiative?: TrailPhysicalInitiativeRecord;
-  readonly issues: readonly TrailSourceIssue[];
+  readonly issues: readonly TrailCodecIssue[];
 }
 
 export interface TrailProjectlessIssuesParseResult {
-  readonly issues: readonly TrailSourceIssue[];
+  readonly issues: readonly TrailCodecIssue[];
   readonly issuesById: Readonly<Record<string, TrailWorkflowIssue>>;
   readonly sourceByIssueId: Readonly<Record<string, TrailRecordSourceRange>>;
 }
 
 export interface TrailCyclesParseResult {
   readonly cyclesById: Readonly<Record<string, TrailPhysicalCycleRecord>>;
-  readonly issues: readonly TrailSourceIssue[];
+  readonly issues: readonly TrailCodecIssue[];
 }
 
 function parseJsonObject(raw: string, label: string): {
@@ -126,7 +126,7 @@ export function parseInitiativeMarkdown(input: {
   readonly markdown: string;
   readonly parseYaml: TrailYamlParser;
 }): TrailInitiativeParseResult {
-  const issues: TrailSourceIssue[] = [];
+  const issues: TrailCodecIssue[] = [];
   const frontmatter = splitMarkdownFrontmatter(input.markdown);
   if (frontmatter === null) {
     return {
@@ -263,7 +263,7 @@ function parseIssueContainer(input: {
   readonly markdown: string;
   readonly parseYaml: TrailYamlParser;
 }): TrailProjectlessIssuesParseResult {
-  const issues: TrailSourceIssue[] = [];
+  const issues: TrailCodecIssue[] = [];
   const frontmatter = splitMarkdownFrontmatter(input.markdown);
   if (frontmatter === null) {
     return {
@@ -449,7 +449,7 @@ export function parseCyclesMarkdown(input: {
   readonly markdown: string;
   readonly parseYaml: TrailYamlParser;
 }): TrailCyclesParseResult {
-  const issues: TrailSourceIssue[] = [];
+  const issues: TrailCodecIssue[] = [];
   const frontmatter = splitMarkdownFrontmatter(input.markdown);
   if (frontmatter === null) {
     return {

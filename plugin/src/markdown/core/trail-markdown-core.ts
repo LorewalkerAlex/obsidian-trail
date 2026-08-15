@@ -273,3 +273,12 @@ export function replaceMarkdownHeadingAndMarker(
   ].join("");
   return next;
 }
+
+/** Byte-independent source offsets used only while parsing and rewriting Markdown records. */
+export interface TrailRecordSourceRange {
+  readonly endOffset: number;
+  readonly filePath: string;
+  readonly markerEndOffset: number;
+  readonly markerStartOffset: number;
+  readonly startOffset: number;
+}
