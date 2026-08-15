@@ -13,9 +13,12 @@ import {
 import { createTrailRuntimeStore } from "../store/trail-runtime-store";
 import {
   addTrailPendingPlan,
+  removePendingPlan,
   selectEffectiveCycleById,
   selectEffectiveTriageIssueById,
+  selectEffectiveTriageIssueIds,
   selectEffectiveWorkflowIssueById,
+  selectIsTriageIssuePending,
 } from "./trail-runtime-projection";
 
 const project = {
@@ -43,19 +46,39 @@ const target = {
   title: source.title,
 } as const;
 
+function triageContribution(
+  issues: readonly {
+    due: number;
+    id: string;
+    title: string;
+  }[],
+) {
+  return {
+    filePath: "Trail/Collections/Triage.md",
+    issuesById: Object.fromEntries(issues.map((issue) => [
+      issue.id,
+      {
+        context: "triage" as const,
+        due: issue.due,
+        id: issue.id,
+        labelIds: [],
+        title: issue.title,
+      },
+    ])),
+  };
+}
+
 describe("Trail Runtime logical projection", () => {
   it("publishes a multi-effect source transition through one pending plan", () => {
     const store = createTrailRuntimeStore();
     reconcileTriageContribution(store, {
       filePath: "Trail/Collections/Triage.md",
       issuesById: { [source.id]: source },
-      sourceByIssueId: {},
     });
     reconcileProjectContribution(store, {
       filePath: "Trail/Projects/0001 Project A.md",
       issuesById: {},
       project,
-      sourceByIssueId: {},
     });
 
     const plan = createTrailMutationPlan({
@@ -96,4 +119,100 @@ describe("Trail Runtime logical projection", () => {
       expect(store.getState().committed.cyclesById[cycle.id]).toBeUndefined();
     },
   );
+
+  it("replays later pending creates when an earlier plan is removed", () => {
+    const store = createTrailRuntimeStore();
+    const first = {
+      context: "triage" as const,
+      due: 20,
+      id: "first-issue",
+      labelIds: [],
+      title: "First",
+    };
+    const second = {
+      context: "triage" as const,
+      due: 10,
+      id: "second-issue",
+      labelIds: [],
+      title: "Second",
+    };
+
+    addTrailPendingPlan(store, createTrailMutationPlan({
+      commandId: "first",
+      effects: [{ after: triageIssueMutationEntity(first), kind: "create" }],
+      intent: "triage.issue.create",
+    }));
+    addTrailPendingPlan(store, createTrailMutationPlan({
+      commandId: "second",
+      effects: [{ after: triageIssueMutationEntity(second), kind: "create" }],
+      intent: "triage.issue.create",
+    }));
+
+    removePendingPlan(store, "first");
+
+    expect(selectEffectiveTriageIssueIds(store.getState())).toEqual([
+      "second-issue",
+    ]);
+    expect(store.getState().pendingPlans.map((plan) => plan.commandId)).toEqual([
+      "second",
+    ]);
+  });
+
+  it("projects pending replacement and reorders by optimistic Due", () => {
+    const store = createTrailRuntimeStore();
+    reconcileTriageContribution(store, triageContribution([
+      { due: 10, id: "a", title: "A" },
+      { due: 20, id: "b", title: "B" },
+    ]));
+    const expectedIssue = store.getState().committed.triageIssuesById.b;
+    const nextIssue = {
+      ...expectedIssue,
+      due: 5,
+      title: "B edited",
+    };
+
+    addTrailPendingPlan(store, createTrailMutationPlan({
+      commandId: "edit-b",
+      effects: [{
+        after: triageIssueMutationEntity(nextIssue),
+        before: triageIssueMutationEntity(expectedIssue),
+        kind: "replace",
+      }],
+      intent: "triage.issue.replace",
+    }));
+
+    expect(selectEffectiveTriageIssueIds(store.getState())).toEqual(["b", "a"]);
+    expect(selectEffectiveTriageIssueById(store.getState(), "b")?.title).toBe(
+      "B edited",
+    );
+    expect(selectIsTriageIssuePending(store.getState(), "b")).toBe(true);
+    expect(store.getState().committed.triageIssuesById.b.title).toBe("B");
+
+    removePendingPlan(store, "edit-b");
+    expect(selectEffectiveTriageIssueIds(store.getState())).toEqual(["a", "b"]);
+    expect(selectEffectiveTriageIssueById(store.getState(), "b")?.title).toBe("B");
+  });
+
+  it("projects pending delete and restores the committed entity when removed", () => {
+    const store = createTrailRuntimeStore();
+    reconcileTriageContribution(store, triageContribution([
+      { due: 10, id: "a", title: "A" },
+    ]));
+    const expectedIssue = store.getState().committed.triageIssuesById.a;
+
+    addTrailPendingPlan(store, createTrailMutationPlan({
+      commandId: "delete-a",
+      effects: [{ before: triageIssueMutationEntity(expectedIssue), kind: "delete" }],
+      intent: "triage.issue.delete",
+    }));
+
+    expect(selectEffectiveTriageIssueIds(store.getState())).toEqual([]);
+    expect(selectEffectiveTriageIssueById(store.getState(), "a")).toBeUndefined();
+    expect(selectIsTriageIssuePending(store.getState(), "a")).toBe(true);
+
+    removePendingPlan(store, "delete-a");
+
+    expect(selectEffectiveTriageIssueIds(store.getState())).toEqual(["a"]);
+    expect(selectEffectiveTriageIssueById(store.getState(), "a")?.title).toBe("A");
+  });
 });

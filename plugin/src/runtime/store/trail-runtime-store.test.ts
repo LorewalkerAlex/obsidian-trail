@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createTrailRuntimeStore,
+  selectSourceIssuesForPath,
   setTrailRuntimeWorkspaceState,
 } from "./trail-runtime-store";
 
@@ -30,5 +31,21 @@ describe("Trail Runtime store foundation", () => {
 
     expect(store.getState().committed.workspaceState).toBe(workspaceState);
     expect(store.getState().committed.revision).toBe(1);
+  });
+
+  it("reuses one immutable empty source-issue snapshot for missing paths", () => {
+    const store = createTrailRuntimeStore();
+
+    const first = selectSourceIssuesForPath(
+      store.getState(),
+      "Trail/Collections/Triage.md",
+    );
+
+    expect(first).toEqual([]);
+    expect(selectSourceIssuesForPath(
+      store.getState(),
+      "Trail/Collections/Triage.md",
+    )).toBe(first);
+    expect(selectSourceIssuesForPath(store.getState(), undefined)).toBe(first);
   });
 });

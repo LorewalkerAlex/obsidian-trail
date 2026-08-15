@@ -5,22 +5,23 @@ import type {
   TFolder,
 } from "obsidian";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createDefaultTrailPluginData } from "./trail-configuration";
+
+import { createDefaultTrailPluginData } from "../../domain/trail-configuration";
+import {
+  classifyWorkspace,
+  executeFreshWorkspaceBootstrap,
+} from "../../domain/trail-workspace";
 import {
   TRAIL_BOOTSTRAP_FILES,
   TRAIL_CYCLES_PATH,
   TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
-} from "./trail-physical-schema";
+} from "../../markdown/schema/trail-physical-schema";
 import {
   createObsidianWorkspaceBootstrapGateway,
   type ObsidianWorkspaceFileKinds,
   type TrailPluginDataHost,
-} from "./trail-workspace-obsidian";
-import {
-  classifyWorkspace,
-  executeFreshWorkspaceBootstrap,
-} from "./trail-workspace";
+} from "./trail-workspace-bootstrap-obsidian";
 
 class MockTAbstractFile {
   public constructor(

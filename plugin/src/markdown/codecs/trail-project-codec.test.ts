@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import type { TrailProject } from "./trail-project";
+import type { TrailWorkflowIssue } from "../../domain/trail-issue";
+import type { TrailProject } from "../../domain/trail-project";
 import {
   appendWorkflowIssueToProjectMarkdown,
+  deleteWorkflowIssueFromProjectMarkdown,
   parseProjectMarkdown,
   serializePhysicalMilestoneRecord,
   serializeProjectMarkdown,
   updateWorkflowIssueInProjectMarkdown,
-} from "./trail-project-markdown";
-import type { TrailWorkflowIssue } from "./trail-issue";
+} from "./trail-project-codec";
 
 function parseYaml(yaml: string): unknown {
   const value: Record<string, unknown> = {};
@@ -17,22 +18,18 @@ function parseYaml(yaml: string): unknown {
     if (separator < 0) continue;
     const key = line.slice(0, separator).trim();
     const raw = line.slice(separator + 1).trim();
-    if (key === "id") {
-      value[key] = JSON.parse(raw);
-    } else if (raw !== "") {
-      value[key] = raw;
-    }
+    value[key] = key === "id" ? JSON.parse(raw) : raw;
   }
   return value;
 }
 
+const filePath = "Trail/Projects/0001 Workflow Entry.md";
 const project: TrailProject = {
   id: "project-a",
   labelIds: [],
   statusDefinitionId: "project-planned",
   title: "Workflow Entry",
 };
-
 const issue: TrailWorkflowIssue = {
   context: "workflow",
   createdAt: 100,
@@ -44,15 +41,11 @@ const issue: TrailWorkflowIssue = {
 };
 
 function parse(markdown: string) {
-  return parseProjectMarkdown({
-    filePath: "Trail/Projects/0001 Workflow Entry.md",
-    markdown,
-    parseYaml,
-  });
+  return parseProjectMarkdown({ filePath, markdown, parseYaml });
 }
 
-describe("Formal Project Markdown", () => {
-  it("round-trips a Project with the canonical three-section shape", () => {
+describe("Project Markdown codec", () => {
+  it("round-trips the canonical Project shape", () => {
     const markdown = serializeProjectMarkdown(project);
     const result = parse(markdown);
 
@@ -64,38 +57,21 @@ describe("Formal Project Markdown", () => {
     expect(markdown).toContain("# Issues");
   });
 
-  it("appends a Workflow Issue and preserves the Project canonical facts", () => {
-    const markdown = appendWorkflowIssueToProjectMarkdown({
-      expectedProject: project,
-      filePath: "Trail/Projects/0001 Workflow Entry.md",
-      issue,
-      markdown: serializeProjectMarkdown(project),
-      parseYaml,
-    });
-    const result = parse(markdown);
-
-    expect(result.issues).toEqual([]);
-    expect(result.contribution?.project).toEqual(project);
-    expect(result.contribution?.issuesById[issue.id]).toEqual(issue);
-  });
-
-  it("preserves unrelated external Project edits but rejects a stale lifecycle status", () => {
+  it("appends against the latest Project body and rejects a stale Project snapshot", () => {
     const externallyEdited = serializeProjectMarkdown(project).replace(
       "# Milestones",
       "Project body from an external edit.\n\n# Milestones",
     );
     const withIssue = appendWorkflowIssueToProjectMarkdown({
       expectedProject: project,
-      filePath: "Trail/Projects/0001 Workflow Entry.md",
+      filePath,
       issue,
       markdown: externallyEdited,
       parseYaml,
     });
 
     expect(withIssue).toContain("Project body from an external edit.");
-    expect(parse(withIssue).contribution?.project.description).toBe(
-      "Project body from an external edit.",
-    );
+    expect(parse(withIssue).contribution?.issuesById[issue.id]).toEqual(issue);
 
     const statusChanged = serializeProjectMarkdown({
       ...project,
@@ -103,18 +79,21 @@ describe("Formal Project Markdown", () => {
     });
     expect(() => appendWorkflowIssueToProjectMarkdown({
       expectedProject: project,
-      filePath: "Trail/Projects/0001 Workflow Entry.md",
+      filePath,
       issue,
       markdown: statusChanged,
       parseYaml,
     })).toThrow(expect.objectContaining({ code: "conflict" }));
   });
 
-  it("updates Workflow metadata against the expected snapshot and preserves body bytes", () => {
+  it("updates Issue metadata while preserving body bytes and rejects stale Issue state", () => {
     const withIssue = appendWorkflowIssueToProjectMarkdown({
       expectedProject: project,
-      filePath: "Trail/Projects/0001 Workflow Entry.md",
-      issue: { ...issue, description: "Keep **this** body.\n\n### Notes\n- exact bytes" },
+      filePath,
+      issue: {
+        ...issue,
+        description: "Keep **this** body.\n\n### Notes\n- exact bytes",
+      },
       markdown: serializeProjectMarkdown(project),
       parseYaml,
     });
@@ -123,7 +102,7 @@ describe("Formal Project Markdown", () => {
 
     const next = updateWorkflowIssueInProjectMarkdown({
       expectedIssue: current,
-      filePath: "Trail/Projects/0001 Workflow Entry.md",
+      filePath,
       issue: {
         ...current,
         firstStartedAt: 200,
@@ -138,33 +117,51 @@ describe("Formal Project Markdown", () => {
       firstStartedAt: 200,
       statusDefinitionId: "issue-started",
     });
-  });
-
-  it("rejects a stale expected Issue instead of overwriting an external edit", () => {
-    const withIssue = appendWorkflowIssueToProjectMarkdown({
-      expectedProject: project,
-      filePath: "Trail/Projects/0001 Workflow Entry.md",
-      issue,
-      markdown: serializeProjectMarkdown(project),
-      parseYaml,
-    });
-    const externallyEdited = withIssue.replace(
-      "## Implement workflow",
-      "## External change",
-    );
-
     expect(() => updateWorkflowIssueInProjectMarkdown({
-      expectedIssue: issue,
-      filePath: "Trail/Projects/0001 Workflow Entry.md",
-      issue: { ...issue, statusDefinitionId: "issue-started" },
-      markdown: externallyEdited,
+      expectedIssue: current,
+      filePath,
+      issue: { ...current, statusDefinitionId: "issue-started" },
+      markdown: withIssue.replace("## Implement workflow", "## External change"),
       parseYaml,
     })).toThrow(expect.objectContaining({ code: "conflict" }));
-
-    expect(externallyEdited).toContain("## External change");
   });
 
-  it("accepts canonical Milestone physical records without adding Milestone behavior", () => {
+  it("deletes only the guarded Issue and preserves unrelated latest Project bytes", () => {
+    const base = serializeProjectMarkdown(project).replace(
+      "# Milestones",
+      "External Project note.\n\n# Milestones",
+    );
+    const withIssue = appendWorkflowIssueToProjectMarkdown({
+      expectedProject: project,
+      filePath,
+      issue: {
+        ...issue,
+        description: "Remove this body with the Issue.",
+      },
+      markdown: base,
+      parseYaml,
+    });
+    const expectedIssue = parse(withIssue).contribution?.issuesById[issue.id];
+    if (expectedIssue === undefined) throw new Error("fixture parse failed");
+
+    const next = deleteWorkflowIssueFromProjectMarkdown({
+      expectedIssue,
+      filePath,
+      markdown: withIssue,
+      parseYaml,
+    });
+
+    expect(next).toContain("External Project note.");
+    expect(next).not.toContain("## Implement workflow");
+    expect(() => deleteWorkflowIssueFromProjectMarkdown({
+      expectedIssue,
+      filePath,
+      markdown: withIssue.replace("## Implement workflow", "## External target edit"),
+      parseYaml,
+    })).toThrow(expect.objectContaining({ code: "conflict" }));
+  });
+
+  it("parses canonical Milestone physical records without enabling Milestone behavior", () => {
     const milestone = serializePhysicalMilestoneRecord({
       description: "Physical checkpoint.",
       due: 200,
@@ -176,10 +173,8 @@ describe("Formal Project Markdown", () => {
       "# Milestones\n\n# Issues",
       `# Milestones\n\n${milestone}\n\n# Issues`,
     );
-    const result = parse(markdown);
 
-    expect(result.issues).toEqual([]);
-    expect(result.physicalMilestonesById?.["milestone-a"]).toEqual({
+    expect(parse(markdown).physicalMilestonesById?.["milestone-a"]).toEqual({
       description: "Physical checkpoint.",
       due: 200,
       id: "milestone-a",

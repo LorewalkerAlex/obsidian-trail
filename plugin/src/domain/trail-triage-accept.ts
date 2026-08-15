@@ -2,16 +2,14 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "../diagnostics/trail-diagnostics";
+import { submitTrailMutation } from "../mutation/coordinator/trail-mutation-coordinator";
 import {
   executeTrailSourceTransition,
   type TrailSourceTransitionOutcome,
   type TrailTransitionObservation,
 } from "../mutation/execution/trail-source-transition-executor";
 import { executeTrailSingleTransaction } from "../mutation/execution/trail-single-transaction-executor";
-import {
-  materializeTrailSourceTransitionPlan,
-  type TrailSourceTransitionPlan,
-} from "../mutation/physical/trail-source-transition-plan";
+import { materializeTrailSourceTransitionPlan } from "../mutation/physical/trail-source-transition-plan";
 import type { TrailSingleTransactionPlan } from "../mutation/physical/trail-single-transaction-plan";
 import {
   mergeTrailMutationPlans,
@@ -41,10 +39,8 @@ import {
   type TrailProjectParseResult,
 } from "./trail-project-markdown";
 import {
-  addPendingPlan,
   reconcileProjectContribution,
   reconcileTriageContribution,
-  removePendingPlan,
   selectEffectiveEntityIdSet,
   selectEffectiveProjectById,
   selectEffectiveTriageIssueById,
@@ -336,19 +332,32 @@ export class TrailTriageAcceptService {
         targetIssueId: plan.targetCreate.issue.id,
       },
     });
-    const logicalPlan = this.addOptimisticPlan(plan);
-    this.diagnostics.record("runtime.optimistic.applied", {
-      correlationId: command.commandId,
-      data: {
-        pendingCount: this.runtimeStore.getState().pendingPlans.length,
-        sourceIssueId: plan.sourceDelete.issueId,
-        targetIssueId: plan.targetCreate.issue.id,
+    const logicalPlan = this.createLogicalPlan(plan);
+    const completion = submitTrailMutation(
+      this.runtimeStore,
+      this.mutationQueue,
+      {
+        execute: () =>
+          this.executePersistedAccept(plan, logicalPlan, command.commandId),
+        mapError: (error) => this.mapError(error),
+        onCommitted: () => this.finishCommitted(plan, command.commandId),
+        onFailed: (error) => {
+          // Safe compensation is an expected cross-source recovery outcome rather
+          // than an additional command-failed diagnostic.
+          if (error instanceof TriageAcceptError && error.code === "compensated") {
+            return;
+          }
+          this.recordCommandFailed(plan, error, command.commandId);
+        },
+        optimisticData: {
+          sourceIssueId: plan.sourceDelete.issueId,
+          targetIssueId: plan.targetCreate.issue.id,
+        },
+        plan: logicalPlan,
+        queueKind: command.kind,
+        settle: () => undefined,
       },
-    });
-
-    const completion = this.mutationQueue.enqueue(
-      () => this.executePersistedAccept(plan, logicalPlan, command.commandId),
-      { correlationId: command.commandId, kind: command.kind },
+      this.diagnostics,
     );
     return {
       completion,
@@ -357,8 +366,10 @@ export class TrailTriageAcceptService {
     };
   }
 
-  private addOptimisticPlan(plan: TriageAcceptPlan): TrailMutationPlan {
-    const logicalPlan = mergeTrailMutationPlans({
+  private createLogicalPlan(plan: TriageAcceptPlan): TrailMutationPlan {
+    // Coordinator publishes both effects in one store update, so no view observes
+    // a half-Accept before the cross-source transition starts.
+    return mergeTrailMutationPlans({
       commandId: plan.commandId,
       intent: "triage.accept",
       plans: [
@@ -366,9 +377,6 @@ export class TrailTriageAcceptService {
         toWorkflowMutationPlan(plan.targetCreate),
       ],
     });
-    // Both logical effects publish in one store update; no view observes a half-Accept.
-    addPendingPlan(this.runtimeStore, logicalPlan);
-    return logicalPlan;
   }
 
   private async executePersistedAccept(
@@ -376,34 +384,10 @@ export class TrailTriageAcceptService {
     logicalPlan: TrailMutationPlan,
     correlationId: string,
   ): Promise<void> {
-    let physicalPlan: TrailSourceTransitionPlan;
-    try {
-      physicalPlan = await materializeTrailSourceTransitionPlan(
-        logicalPlan,
-        this.runtimeStore.getState().committed,
-      );
-    } catch (error: unknown) {
-      removePendingPlan(this.runtimeStore, plan.commandId);
-      this.diagnostics.record("runtime.optimistic.removed", {
-        correlationId,
-        data: {
-          pendingCount: this.runtimeStore.getState().pendingPlans.length,
-          reason: "failed",
-        },
-        level: "warn",
-      });
-      this.diagnostics.record("command.failed", {
-        correlationId,
-        data: {
-          category: errorCategory(error),
-          kind: "triage.accept",
-          sourceIssueId: plan.sourceDelete.issueId,
-          targetIssueId: plan.targetCreate.issue.id,
-        },
-        level: "error",
-      });
-      throw this.mapError(error);
-    }
+    const physicalPlan = await materializeTrailSourceTransitionPlan(
+      logicalPlan,
+      this.runtimeStore.getState().committed,
+    );
 
     const compensationDriver = supportsWorkflowIssueDeletion(this.workflowPersistence)
       ? {
@@ -607,12 +591,11 @@ export class TrailTriageAcceptService {
             level: "warn",
           });
         }
-        this.finishCommitted(plan, correlationId);
         return;
       case "unchanged":
-        await this.finishFailed(plan, targetPath, outcome.error, correlationId);
+        await this.finishFailed(targetPath, correlationId);
         this.recordOutcome(plan, "unchanged", correlationId);
-        throw this.mapError(outcome.error);
+        throw outcome.error;
       case "compensated": {
         this.reconcileTarget(
           outcome.target,
@@ -637,15 +620,6 @@ export class TrailTriageAcceptService {
             correlationId,
           );
         }
-        removePendingPlan(this.runtimeStore, plan.commandId);
-        this.diagnostics.record("runtime.optimistic.removed", {
-          correlationId,
-          data: {
-            pendingCount: this.runtimeStore.getState().pendingPlans.length,
-            reason: "compensated",
-          },
-          level: "warn",
-        });
         this.diagnostics.record("triage.accept.compensation.completed", {
           correlationId,
           data: {
@@ -832,25 +806,6 @@ export class TrailTriageAcceptService {
       ...targetExisting,
       partialIssue(targetPath, plan.targetCreate.issue.id),
     ]);
-    removePendingPlan(this.runtimeStore, plan.commandId);
-    this.diagnostics.record("runtime.optimistic.removed", {
-      correlationId,
-      data: {
-        pendingCount: this.runtimeStore.getState().pendingPlans.length,
-        reason: "partial",
-      },
-      level: "error",
-    });
-    this.diagnostics.record("command.failed", {
-      correlationId,
-      data: {
-        category: "partial",
-        kind: "triage.accept",
-        sourceIssueId: plan.sourceDelete.issueId,
-        targetIssueId: plan.targetCreate.issue.id,
-      },
-      level: "error",
-    });
     this.recordOutcome(plan, "partial", correlationId);
     throw new TriageAcceptError(
       "partial",
@@ -860,21 +815,29 @@ export class TrailTriageAcceptService {
   }
 
   private async finishFailed(
-    plan: TriageAcceptPlan,
     targetPath: string,
-    error: unknown,
     correlationId: string,
   ): Promise<void> {
     await this.bestEffortReconcile(targetPath, correlationId);
-    removePendingPlan(this.runtimeStore, plan.commandId);
-    this.diagnostics.record("runtime.optimistic.removed", {
+  }
+
+  private finishCommitted(plan: TriageAcceptPlan, correlationId: string): void {
+    this.diagnostics.record("command.committed", {
       correlationId,
       data: {
-        pendingCount: this.runtimeStore.getState().pendingPlans.length,
-        reason: "failed",
+        kind: "triage.accept",
+        sourceIssueId: plan.sourceDelete.issueId,
+        targetIssueId: plan.targetCreate.issue.id,
       },
-      level: "warn",
     });
+    this.recordOutcome(plan, "committed", correlationId);
+  }
+
+  private recordCommandFailed(
+    plan: TriageAcceptPlan,
+    error: unknown,
+    correlationId: string,
+  ): void {
     this.diagnostics.record("command.failed", {
       correlationId,
       data: {
@@ -885,26 +848,6 @@ export class TrailTriageAcceptService {
       },
       level: "error",
     });
-  }
-
-  private finishCommitted(plan: TriageAcceptPlan, correlationId: string): void {
-    removePendingPlan(this.runtimeStore, plan.commandId);
-    this.diagnostics.record("runtime.optimistic.removed", {
-      correlationId,
-      data: {
-        pendingCount: this.runtimeStore.getState().pendingPlans.length,
-        reason: "committed",
-      },
-    });
-    this.diagnostics.record("command.committed", {
-      correlationId,
-      data: {
-        kind: "triage.accept",
-        sourceIssueId: plan.sourceDelete.issueId,
-        targetIssueId: plan.targetCreate.issue.id,
-      },
-    });
-    this.recordOutcome(plan, "committed", correlationId);
   }
 
   private recordOutcome(

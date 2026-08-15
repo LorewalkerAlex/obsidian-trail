@@ -8,7 +8,7 @@ import {
 import {
   createTrailDiagnostics,
   type TrailDiagnosticPersistence,
-} from "../diagnostics/trail-diagnostics";
+} from "../../diagnostics/trail-diagnostics";
 import {
   TrailMutationQueue,
   TrailMutationQueueError,

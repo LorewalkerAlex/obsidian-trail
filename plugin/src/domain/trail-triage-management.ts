@@ -2,6 +2,7 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "../diagnostics/trail-diagnostics";
+import { submitTrailMutation } from "../mutation/coordinator/trail-mutation-coordinator";
 import { executeTrailSingleTransaction } from "../mutation/execution/trail-single-transaction-executor";
 import { materializeTrailSingleTransactionPlan } from "../mutation/physical/trail-single-transaction-plan";
 import {
@@ -13,9 +14,7 @@ import {
 } from "./trail-issue";
 import { TrailMutationQueue } from "./trail-mutation-queue";
 import {
-  addPendingPlan,
   reconcileTriageContribution,
-  removePendingPlan,
   selectEffectiveTriageIssueById,
   setTriageSourceIssues,
   type TrailRuntimeStore,
@@ -265,7 +264,8 @@ export function planTriageManagement(
 
 /**
  * Runs Triage management through one feature-agnostic logical plan and the shared
- * dequeue-time single-source physical planner/executor.
+ * mutation coordinator. Feature code keeps only semantic verification, reconcile,
+ * recovery, and user-facing error mapping.
  */
 export class TrailTriageManagementService {
   public constructor(
@@ -334,98 +334,86 @@ export class TrailTriageManagementService {
       correlationId,
       data: { issueId: command.issueId, kind: command.kind },
     });
-    addPendingPlan(this.runtimeStore, logicalPlan);
-    this.diagnostics.record("runtime.optimistic.applied", {
-      correlationId,
-      data: {
-        issueId: command.issueId,
-        pendingCount: this.runtimeStore.getState().pendingPlans.length,
-      },
-    });
 
-    const completion = this.mutationQueue.enqueue(async () => {
-      try {
-        const physicalPlan = await materializeTrailSingleTransactionPlan(
-          logicalPlan,
-          this.runtimeStore.getState().committed,
-        );
-        this.diagnostics.record("mutation.physical.planned", {
-          correlationId,
-          data: {
-            intent: physicalPlan.intent,
-            operation: physicalPlan.operation.kind,
-            sourcePath: physicalPlan.sourcePath,
-            topology: "single",
-          },
-        });
-        this.diagnostics.record("triage.persistence.write.started", {
-          correlationId,
-          data: {
-            issueId: command.issueId,
-            kind: command.kind,
-            path: physicalPlan.sourcePath,
-          },
-        });
-        const executed = await executeTrailSingleTransaction(
-          physicalPlan,
-          { triageManage: this.persistence },
-          correlationId,
-        );
-        if (executed.kind !== "triage-source") {
-          throw new TriageManagementError(
-            "verification-failed",
-            "Triage management physical execution returned the wrong source kind",
+    const completion = submitTrailMutation(
+      this.runtimeStore,
+      this.mutationQueue,
+      {
+        execute: async () => {
+          const physicalPlan = await materializeTrailSingleTransactionPlan(
+            logicalPlan,
+            this.runtimeStore.getState().committed,
           );
-        }
-        const persisted = executed.result;
-        this.diagnostics.record("triage.persistence.write.completed", {
-          correlationId,
-          data: {
-            kind: command.kind,
-            parseIssueCount: persisted.issues.length,
-            recordCount: Object.keys(persisted.contribution.issuesById).length,
-          },
-        });
-        this.verifyPersistedResult(plan, persisted, correlationId, command.kind);
-        this.reconcileContribution(persisted.contribution, command.kind, correlationId);
-        removePendingPlan(this.runtimeStore, plan.commandId);
-        this.diagnostics.record("runtime.optimistic.removed", {
-          correlationId,
-          data: {
-            pendingCount: this.runtimeStore.getState().pendingPlans.length,
-            reason: "committed",
-          },
-        });
-        this.diagnostics.record("command.committed", {
-          correlationId,
-          data: { issueId: command.issueId, kind: command.kind },
-        });
-      } catch (error: unknown) {
-        this.diagnostics.record("command.failed", {
-          correlationId,
-          data: {
-            category: errorCategory(error),
-            issueId: command.issueId,
-            kind: command.kind,
-          },
-          level: "error",
-        });
-        await this.reconcileAfterFailure(correlationId);
-        removePendingPlan(this.runtimeStore, plan.commandId);
-        this.diagnostics.record("runtime.optimistic.removed", {
-          correlationId,
-          data: {
-            pendingCount: this.runtimeStore.getState().pendingPlans.length,
-            reason: "failed",
-          },
-          level: "warn",
-        });
-        throw this.mapMutationError(error);
-      }
-    }, {
-      correlationId,
-      kind: command.kind,
-    });
+          this.diagnostics.record("mutation.physical.planned", {
+            correlationId,
+            data: {
+              intent: physicalPlan.intent,
+              operation: physicalPlan.operation.kind,
+              sourcePath: physicalPlan.sourcePath,
+              topology: "single",
+            },
+          });
+          this.diagnostics.record("triage.persistence.write.started", {
+            correlationId,
+            data: {
+              issueId: command.issueId,
+              kind: command.kind,
+              path: physicalPlan.sourcePath,
+            },
+          });
+          const executed = await executeTrailSingleTransaction(
+            physicalPlan,
+            { triageManage: this.persistence },
+            correlationId,
+          );
+          if (executed.kind !== "triage-source") {
+            throw new TriageManagementError(
+              "verification-failed",
+              "Triage management physical execution returned the wrong source kind",
+            );
+          }
+          const persisted = executed.result;
+          this.diagnostics.record("triage.persistence.write.completed", {
+            correlationId,
+            data: {
+              kind: command.kind,
+              parseIssueCount: persisted.issues.length,
+              recordCount: Object.keys(persisted.contribution.issuesById).length,
+            },
+          });
+          return persisted;
+        },
+        mapError: (error) => this.mapMutationError(error),
+        onCommitted: () => {
+          this.diagnostics.record("command.committed", {
+            correlationId,
+            data: { issueId: command.issueId, kind: command.kind },
+          });
+        },
+        onFailed: (error) => {
+          this.diagnostics.record("command.failed", {
+            correlationId,
+            data: {
+              category: errorCategory(error),
+              issueId: command.issueId,
+              kind: command.kind,
+            },
+            level: "error",
+          });
+        },
+        optimisticData: { issueId: command.issueId },
+        plan: logicalPlan,
+        queueKind: command.kind,
+        recover: async () => {
+          await this.reconcileAfterFailure(correlationId);
+        },
+        settle: (persisted) => {
+          this.verifyPersistedResult(plan, persisted, correlationId, command.kind);
+          this.reconcileContribution(persisted.contribution, command.kind, correlationId);
+        },
+      },
+      this.diagnostics,
+    );
 
     return { completion, issueId: command.issueId };
   }

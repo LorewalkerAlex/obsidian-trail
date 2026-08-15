@@ -1,7 +1,7 @@
 # Trail V1 Implementation Plan
 
 > 状态：当前 Implementation Plan baseline
-> 最后更新：2026-08-14
+> 最后更新：2026-08-15
 > 上游 Product：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
@@ -25,8 +25,9 @@
 | Formal Design | Product、Domain、Logical、Physical 与 Technical Design 收口 | 已完成 |
 | Formal Intake | 建立正式运行主链，打通 Quick Capture → Triage，并完善基本 Triage 管理 | 已完成 |
 | Workflow | 建立 Project / Workflow Issue 的基本执行闭环 | 已完成 |
-| **Implementation Architecture Re-baseline** | 固化共享模块与调用框架；把当前 Formal Intake / Workflow / Accept 迁移到新架构 | **当前** |
-| Intake → Workflow | 在新架构上继续 Triage → Workflow / Project 转换能力 | 待继续 |
+| **Implementation Architecture Re-baseline** | 固化共享模块与调用框架；把当前 Formal Intake / Workflow / Accept 迁移到新架构 | **当前（Exit 验证通过，待 checkpoint）** |
+| Codebase Simplification | Re-baseline 验收后进行全仓库代码审计、删除过渡/重复/死代码并简化不必要抽象 | 待开始 |
+| Intake → Workflow | 在稳定且清理后的新架构上继续 Triage → Workflow / Project 转换能力 | 待继续 |
 | Project Organization | Board / List、Move、Milestone、Initiative 等项目组织能力 | 待开始 |
 | Cycles & Views | Cycle、Filter、Custom View、Search、Favorites 等组织与查看能力 | 待开始 |
 | Home & Utilities | Home、Weekly Note 与全局入口 | 待开始 |
@@ -58,11 +59,11 @@ modular UI
 | Architecture Contract | 固化目标模块、依赖规则、Domain Effects、Source Operations、Read / Write Framework、Testing / Reliability 原则；完成文档 checkpoint、push 后 consistency review | 已完成 |
 | Markdown + Persistence Foundation | 建立共享 Markdown Core、Physical Schema / Registry、Domain Source I/O / Repository 与 Plugin Data I/O / Repository；迁移 Triage / Project physical path | 已完成 |
 | Runtime + Mutation Foundation | 拆分 Runtime ownership；建立共享 projection / physical planning / single- and multi-source execution | 已完成 |
-| Existing Formal Migration | 迁移 Quick Capture、Triage Management、Workflow Entry、Triage Accept；删除被共享能力取代的 feature-owned lifecycle | 当前 |
-| UI + Test Ownership Cleanup | 拆 Formal UI module；提取重复 interaction；按 independent risk 重组测试 | 待开始 |
-| Re-baseline Exit | full check、代表性 real-host 回归、文档校准、commit / push / GitHub 回查 | 待开始 |
+| Existing Formal Migration | 迁移 Quick Capture、Triage Management、Workflow Entry、Triage Accept；删除被共享能力取代的 feature-owned lifecycle | 已完成 |
+| UI + Test Ownership Cleanup | 拆 Formal UI module；提取重复 interaction；按 independent risk 重组测试 | 已完成 |
+| Re-baseline Exit | full check、代表性 real-host 回归、文档校准、commit / push / GitHub 回查 | 当前（本地验收通过，待 checkpoint） |
 
-Architecture Contract、**Markdown + Persistence Foundation** 与 **Runtime + Mutation Foundation** 已完成；当前实现进入 **Existing Formal Migration**。
+Architecture Contract、**Markdown + Persistence Foundation**、**Runtime + Mutation Foundation**、**Existing Formal Migration** 与 **UI + Test Ownership Cleanup** 已完成。Re-baseline Exit 的自动化与真实 Obsidian 验收已经通过，当前只剩文档校准后的 commit / push 与 GitHub 回查。
 
 ### 3.2 Re-baseline 原则
 
@@ -88,9 +89,24 @@ Architecture Contract、**Markdown + Persistence Foundation** 与 **Runtime + Mu
 - 只对新增独立 host risk 完成代表性真实 Obsidian 验证；
 - 文档、commit / push、GitHub 回查完成。
 
-## 4. 下一阶段：Intake → Workflow
+### 3.4 当前 Re-baseline Exit 验证结果
 
-Re-baseline 完成后恢复产品路线。
+2026-08-15 已完成本地 Exit 验证：
+
+- `npm run check` 通过；
+- `npm run build:diagnostics` 通过；
+- `git diff --check` 通过；
+- 代表性真实 Obsidian 回归通过：Fresh bootstrap / reload、Quick Capture、Project 创建、Triage Accept、Workflow status mutation、Estimate required input、外部 Project Markdown 修改后的自动 reconcile；
+- Development Diagnostics trace 已检查，测试会话无 `warn` / `error`，Triage Accept 明确以 `committed` 结束，未进入 `compensated` / `partial`；
+- Fresh Workspace 的 Accept 测试前置条件已校准：必须先创建至少一个 Project，避免把“无目标 Project 时不可 Accept”的正确产品约束误判为故障。
+
+因此 Re-baseline 的代码与 real-host 验收 Gate 已满足；checkpoint 仍需完成文档提交、push 与 GitHub 回查后才能正式关闭。
+
+## 4. Re-baseline 后：Codebase Simplification → Intake → Workflow
+
+Re-baseline Exit 验收通过后，先执行一次独立的 **Codebase Simplification**，再恢复产品路线。该轮以全仓库 active code 为范围，审计并删除无真实 consumer 的过渡 facade、重复实现、死代码、重复测试与没有独立 ownership 的过度抽象；同时检查 `archive/poc/` 是否仍有保留在工作树中的价值。清理必须以引用、依赖、测试与 Git 历史证据为依据，不以文件数量或主观观感直接删除。
+
+Codebase Simplification 完成并重新通过完整验证后，再进入 Intake → Workflow。
 
 已存在的 Triage Accept 不重新作为新 Feature 开发；它应已经成为新架构中的稳定 capability consumer。
 
@@ -122,8 +138,9 @@ Convert to Note 仍属于后续 knowledge action，不阻塞下一步。
 | Workflow Entry | 已完成 | Project / Workflow Issue 基本执行闭环完成 |
 | Formal Workflow | 已完成 | Workflow 可创建、执行并从 Markdown 重建 |
 | Triage Accept | 已完成（迁移输入） | 新 identity、destination-first、optimistic / reconcile 与真实 host evidence 已建立 |
-| **Implementation Architecture Re-baseline** | **当前** | Architecture Contract、Markdown + Persistence Foundation 与 Runtime + Mutation Foundation 已完成，当前进入 Existing Formal Migration |
-| Intake → Workflow | 待继续 | Re-baseline 后以 Convert to Project 作为第一个净新增 Slice |
+| **Implementation Architecture Re-baseline** | **当前（Exit 验证通过）** | Architecture Contract、Markdown + Persistence Foundation、Runtime + Mutation Foundation、Existing Formal Migration 与 UI + Test Ownership Cleanup 已完成；full check、Diagnostics build、real-host regression 与 trace review 已通过，待 commit / push / GitHub 回查 |
+| Codebase Simplification | 待开始 | Re-baseline 验收后进行全仓库代码审计与瘦身，再开始净新增 Feature |
+| Intake → Workflow | 待继续 | Codebase Simplification 后以 Convert to Project 作为第一个净新增 Slice |
 | V1 Exit | 待开始 | — |
 
 Checkpoint 只记录稳定阶段边界，不追踪每个内部实现任务。

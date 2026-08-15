@@ -2,6 +2,7 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "../diagnostics/trail-diagnostics";
+import { submitTrailMutation } from "../mutation/coordinator/trail-mutation-coordinator";
 import {
   executeTrailSingleTransaction,
   type TrailProjectCreateAtPathPersistence,
@@ -36,9 +37,7 @@ import {
   type TrailProjectParseResult,
 } from "./trail-project-markdown";
 import {
-  addPendingPlan,
   reconcileProjectContribution,
-  removePendingPlan,
   removeProjectContribution,
   selectEffectiveEntityIdSet,
   selectEffectiveProjectById,
@@ -644,66 +643,57 @@ export class TrailWorkflowEntryService {
 
     const { plan } = result;
     const entityId = plan.kind === "create-project" ? plan.project.id : plan.issue.id;
+    const logicalPlan = toTrailMutationPlan(plan);
     this.diagnostics.record("command.planned", {
       correlationId,
       data: { entityId, kind: command.kind, planKind: plan.kind },
     });
-    addPendingPlan(this.runtimeStore, plan);
-    this.diagnostics.record("runtime.optimistic.applied", {
-      correlationId,
-      data: {
-        entityId,
-        pendingCount: this.runtimeStore.getState().pendingPlans.length,
-      },
-    });
 
-    const completion = this.mutationQueue.enqueue(async () => {
-      let affectedPath: string | undefined;
-      try {
-        const persisted = await this.persistPlan(plan, correlationId);
-        affectedPath = persisted.contribution?.filePath;
-        const contribution = this.verifyPersistedResult(
-          plan,
-          persisted,
-          correlationId,
-          command.kind,
-        );
-        affectedPath = contribution.filePath;
-        this.reconcileContribution(contribution, command.kind, correlationId);
-        removePendingPlan(this.runtimeStore, plan.commandId);
-        this.diagnostics.record("runtime.optimistic.removed", {
-          correlationId,
-          data: {
-            pendingCount: this.runtimeStore.getState().pendingPlans.length,
-            reason: "committed",
-          },
-        });
-        this.diagnostics.record("command.committed", {
-          correlationId,
-          data: { entityId, kind: command.kind },
-        });
-      } catch (error: unknown) {
-        this.diagnostics.record("command.failed", {
-          correlationId,
-          data: { category: errorCategory(error), entityId, kind: command.kind },
-          level: "error",
-        });
-        await this.reconcileAfterFailure(affectedPath, correlationId);
-        removePendingPlan(this.runtimeStore, plan.commandId);
-        this.diagnostics.record("runtime.optimistic.removed", {
-          correlationId,
-          data: {
-            pendingCount: this.runtimeStore.getState().pendingPlans.length,
-            reason: "failed",
-          },
-          level: "warn",
-        });
-        throw this.mapMutationError(error);
-      }
-    }, {
-      correlationId,
-      kind: command.kind,
-    });
+    // Coordinator owns the shared optimistic/pending lifecycle. Workflow keeps
+    // only its semantic persistence verification, reconciliation, and recovery.
+    let affectedPath: string | undefined;
+    const completion = submitTrailMutation(
+      this.runtimeStore,
+      this.mutationQueue,
+      {
+        execute: async () => {
+          const persisted = await this.persistPlan(plan, correlationId);
+          affectedPath = persisted.contribution?.filePath;
+          return persisted;
+        },
+        mapError: (error) => this.mapMutationError(error),
+        onCommitted: () => {
+          this.diagnostics.record("command.committed", {
+            correlationId,
+            data: { entityId, kind: command.kind },
+          });
+        },
+        onFailed: (error) => {
+          this.diagnostics.record("command.failed", {
+            correlationId,
+            data: { category: errorCategory(error), entityId, kind: command.kind },
+            level: "error",
+          });
+        },
+        optimisticData: { entityId },
+        plan: logicalPlan,
+        queueKind: command.kind,
+        recover: async () => {
+          await this.reconcileAfterFailure(affectedPath, correlationId);
+        },
+        settle: (persisted) => {
+          const contribution = this.verifyPersistedResult(
+            plan,
+            persisted,
+            correlationId,
+            command.kind,
+          );
+          affectedPath = contribution.filePath;
+          this.reconcileContribution(contribution, command.kind, correlationId);
+        },
+      },
+      this.diagnostics,
+    );
 
     return { completion, entityId };
   }

@@ -8,7 +8,7 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "./diagnostics/trail-diagnostics";
-import { TrailApp } from "./trail-app";
+import { TrailApp } from "./ui/shell/trail-app";
 
 export const TRAIL_VIEW_TYPE = "trail-view";
 
