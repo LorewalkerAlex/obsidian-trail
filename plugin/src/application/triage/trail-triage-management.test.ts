@@ -102,6 +102,17 @@ class MemoryManagementPersistence implements TrailTriagePersistence {
   }
 }
 
+function requireCommittedTriageIssue(
+  store: ReturnType<typeof createTrailRuntimeStore>,
+  issueId: string,
+): TrailTriageIssue {
+  const issue = store.getState().committed.authoritative.domain.issuesById[issueId];
+  if (issue?.context !== "triage") {
+    throw new Error(`missing committed Triage Issue: ${issueId}`);
+  }
+  return issue;
+}
+
 function createEnvironment(ids: string[]): TriageManagementCommandEnvironment {
   return {
     createId: () => ids.shift() ?? "unexpected-command",
@@ -205,7 +216,7 @@ describe("Triage Management application", () => {
     const gate = deferred();
     harness.persistence.block = gate.promise;
 
-    const expectedIssue = harness.store.getState().committed.triageIssuesById["issue-a"];
+    const expectedIssue = requireCommittedTriageIssue(harness.store, "issue-a");
     const receipt = harness.service.edit({
       due: NOW + 50,
       expectedIssue,
@@ -216,14 +227,14 @@ describe("Triage Management application", () => {
       harness.store.getState(),
       "issue-a",
     )).toMatchObject({ due: NOW + 50, title: "Edited" });
-    expect(harness.store.getState().committed.triageIssuesById["issue-a"].title).toBe(
+    expect(requireCommittedTriageIssue(harness.store, "issue-a").title).toBe(
       "Original",
     );
 
     gate.resolve();
     await receipt.completion;
-    expect(harness.store.getState().pendingPlans).toEqual([]);
-    expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toMatchObject({
+    expect(harness.store.getState().pending).toEqual([]);
+    expect(requireCommittedTriageIssue(harness.store, "issue-a")).toMatchObject({
       due: NOW + 50,
       title: "Edited",
     });
@@ -236,15 +247,15 @@ describe("Triage Management application", () => {
     harness.persistence.block = gate.promise;
 
     const receipt = harness.service.delete(
-      harness.store.getState().committed.triageIssuesById["issue-a"],
+      requireCommittedTriageIssue(harness.store, "issue-a"),
     );
     expect(selectEffectiveTriageIssueIds(harness.store.getState())).toEqual([]);
-    expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toBeDefined();
+    expect(requireCommittedTriageIssue(harness.store, "issue-a")).toBeDefined();
 
     gate.resolve();
     await receipt.completion;
-    expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toBeUndefined();
-    expect(harness.store.getState().pendingPlans).toEqual([]);
+    expect(harness.store.getState().committed.authoritative.domain.issuesById["issue-a"]).toBeUndefined();
+    expect(harness.store.getState().pending).toEqual([]);
     harness.queue.dispose();
   });
 
@@ -252,7 +263,7 @@ describe("Triage Management application", () => {
     const harness = await createHarness();
     expect(() => harness.service.defer({
       due: NOW,
-      expectedIssue: harness.store.getState().committed.triageIssuesById["issue-a"],
+      expectedIssue: requireCommittedTriageIssue(harness.store, "issue-a"),
     })).toThrow("Triage Defer must move Due later");
     expect(harness.persistence.updateCalls).toEqual([]);
     harness.queue.dispose();
@@ -260,7 +271,7 @@ describe("Triage Management application", () => {
 
   it("reconciles an external conflict and removes the optimistic edit", async () => {
     const harness = await createHarness();
-    const expected = harness.store.getState().committed.triageIssuesById["issue-a"];
+    const expected = requireCommittedTriageIssue(harness.store, "issue-a");
     harness.persistence.editExternal({ ...expected, title: "External" });
 
     const receipt = harness.service.edit({
@@ -270,8 +281,8 @@ describe("Triage Management application", () => {
     });
 
     await expect(receipt.completion).rejects.toMatchObject({ code: "conflict" });
-    expect(harness.store.getState().pendingPlans).toEqual([]);
-    expect(harness.store.getState().committed.triageIssuesById["issue-a"].title).toBe(
+    expect(harness.store.getState().pending).toEqual([]);
+    expect(requireCommittedTriageIssue(harness.store, "issue-a").title).toBe(
       "External",
     );
     harness.queue.dispose();
@@ -313,7 +324,7 @@ describe("Triage Management application", () => {
 
     await service.edit({
       due: NOW + 200,
-      expectedIssue: store.getState().committed.triageIssuesById["issue-a"],
+      expectedIssue: requireCommittedTriageIssue(store, "issue-a"),
       title: "Sensitive edited title",
     }).completion;
     await diagnostics.flush();

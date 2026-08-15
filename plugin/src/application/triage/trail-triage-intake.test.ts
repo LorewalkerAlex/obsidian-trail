@@ -125,14 +125,14 @@ describe("Triage Intake application", () => {
     const receipt = harness.service.capture({ title: "Review idea" });
 
     expect(selectEffectiveTriageIssueIds(harness.store.getState())).toEqual(["issue-a"]);
-    expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toBeUndefined();
-    expect(harness.store.getState().pendingPlans).toHaveLength(1);
+    expect(harness.store.getState().committed.authoritative.domain.issuesById["issue-a"]).toBeUndefined();
+    expect(harness.store.getState().pending).toHaveLength(1);
 
     gate.resolve();
     await receipt.completion;
 
-    expect(harness.store.getState().pendingPlans).toEqual([]);
-    expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toMatchObject({
+    expect(harness.store.getState().pending).toEqual([]);
+    expect(harness.store.getState().committed.authoritative.domain.issuesById["issue-a"]).toMatchObject({
       due: NOW + 7,
       title: "Review idea",
     });
@@ -170,7 +170,7 @@ describe("Triage Intake application", () => {
     gate.resolve();
     await Promise.all([first.completion, second.completion]);
     expect(harness.persistence.appendCalls).toEqual(["issue-a", "issue-b"]);
-    expect(harness.store.getState().pendingPlans).toEqual([]);
+    expect(harness.store.getState().pending).toEqual([]);
     harness.queue.dispose();
   });
 
@@ -190,8 +190,8 @@ describe("Triage Intake application", () => {
 
     await expect(second.completion).resolves.toBeUndefined();
     expect(await firstFailure).toMatchObject({ code: "persistence-failed" });
-    expect(harness.store.getState().committed.triageIssuesById["issue-a"]).toBeUndefined();
-    expect(harness.store.getState().committed.triageIssuesById["issue-b"]?.title).toBe(
+    expect(harness.store.getState().committed.authoritative.domain.issuesById["issue-a"]).toBeUndefined();
+    expect(harness.store.getState().committed.authoritative.domain.issuesById["issue-b"]?.title).toBe(
       "Will survive",
     );
     harness.queue.dispose();

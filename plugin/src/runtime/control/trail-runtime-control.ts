@@ -1,23 +1,19 @@
 import type { TrailRuntimeStore } from "../store/trail-runtime-store";
 
 export type TrailRuntimeControl =
-  | { readonly kind: "idle" }
-  | { readonly kind: "initializing" }
+  | { readonly kind: "loading" }
   | { readonly kind: "ready"; readonly timezone: string }
-  | { readonly kind: "blocked"; readonly message: string }
-  | { readonly kind: "error"; readonly message: string };
+  | { readonly kind: "refreshing"; readonly timezone: string }
+  | {
+      readonly kind: "read-only-error";
+      readonly message: string;
+      readonly timezone?: string;
+    };
 
-/** Compatibility alias while existing UI/Application still calls this availability. */
-export type TrailRuntimeAvailability = TrailRuntimeControl;
-
-/** Runtime Control is the canonical owner of readiness / mutation-availability state. */
-export function setTrailRuntimeAvailability(
+/** Publishes Runtime lifecycle control independently from committed facts and pending intent. */
+export function setTrailRuntimeControl(
   store: TrailRuntimeStore,
-  availability: TrailRuntimeAvailability,
+  control: TrailRuntimeControl,
 ): void {
-  store.setState((state) => ({
-    availability,
-    committed: state.committed,
-    pendingPlans: state.pendingPlans,
-  }));
+  store.setState({ control });
 }

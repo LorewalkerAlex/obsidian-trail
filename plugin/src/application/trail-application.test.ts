@@ -8,6 +8,7 @@ import type { TrailProject } from "../domain/trail-project";
 import { TrailApplication } from "./trail-application";
 import {
   createTrailRuntimeStore,
+  selectAllSourceIssues,
   setSourceIssuesForPath,
 } from "../runtime/store/trail-runtime-store";
 import type {
@@ -26,6 +27,17 @@ import {
 import type { TrailTriagePersistence } from "../persistence/domain-sources/trail-triage-persistence";
 
 import type { TrailWorkflowPersistence } from "../persistence/domain-sources/trail-workflow-persistence";
+
+function requireCommittedTriageIssue(
+  store: ReturnType<typeof createTrailRuntimeStore>,
+  issueId: string,
+): TrailTriageIssue {
+  const issue = store.getState().committed.authoritative.domain.issuesById[issueId];
+  if (issue?.context !== "triage") {
+    throw new Error(`missing committed Triage Issue: ${issueId}`);
+  }
+  return issue;
+}
 
 function parseYaml(yaml: string): unknown {
   const value: Record<string, unknown> = {};
@@ -244,7 +256,7 @@ describe("Formal Trail application startup", () => {
     const classification = await application.initialize();
 
     expect(classification.canLoad).toBe(true);
-    expect(runtimeStore.getState().availability).toEqual({
+    expect(runtimeStore.getState().control).toEqual({
       kind: "ready",
       timezone: "Asia/Shanghai",
     });
@@ -283,7 +295,7 @@ describe("Formal Trail application startup", () => {
     const classification = await application.initialize();
 
     expect(classification.mode).toBe("blocked");
-    expect(runtimeStore.getState().availability.kind).toBe("blocked");
+    expect(runtimeStore.getState().control.kind).toBe("read-only-error");
     expect(reads).toBe(0);
   });
 
@@ -312,7 +324,7 @@ describe("Formal Trail application startup", () => {
     const classification = await application.initialize();
 
     expect(classification.canLoad).toBe(true);
-    expect(runtimeStore.getState().availability).toEqual({
+    expect(runtimeStore.getState().control).toEqual({
       kind: "ready",
       timezone: "Asia/Singapore",
     });
@@ -378,7 +390,7 @@ describe("Formal Trail application startup", () => {
     await application.initialize();
 
     const receipt = application.editTriageIssue(
-      runtimeStore.getState().committed.triageIssuesById["issue-a"],
+      requireCommittedTriageIssue(runtimeStore, "issue-a"),
       "Edited",
       "2026-08-13T10:30",
     );
@@ -420,14 +432,14 @@ describe("Formal Trail application startup", () => {
     await application.initialize();
 
     await application.editTriageIssue(
-      runtimeStore.getState().committed.triageIssuesById["issue-a"],
+      requireCommittedTriageIssue(runtimeStore, "issue-a"),
       "Original",
       "2026-08-14T10:30",
     ).completion;
     expect(persistence.updateCalls[0].due).toBe(Date.UTC(2026, 7, 14, 2, 30));
 
     await application.deferTriageIssue(
-      runtimeStore.getState().committed.triageIssuesById["issue-a"],
+      requireCommittedTriageIssue(runtimeStore, "issue-a"),
     ).completion;
     expect(persistence.updateCalls[1].due).toBe(Date.UTC(2026, 7, 21, 2, 30));
   });
@@ -455,8 +467,8 @@ describe("Formal Trail application startup", () => {
 
     application.markRequiredTriageUnavailable("Triage fixture removed");
 
-    expect(runtimeStore.getState().availability.kind).toBe("ready");
-    expect(runtimeStore.getState().committed.sourceIssues).toEqual(
+    expect(runtimeStore.getState().control.kind).toBe("ready");
+    expect(selectAllSourceIssues(runtimeStore.getState())).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: "triage.required-source.unavailable",
@@ -468,8 +480,8 @@ describe("Formal Trail application startup", () => {
     const receipt = application.createProject("Workflow survives");
     await receipt.completion;
 
-    expect(runtimeStore.getState().committed.projectIds).toEqual(["project-a"]);
-    expect(runtimeStore.getState().committed.sourceByEntityId["project-a"]).toBe(
+    expect(Object.keys(runtimeStore.getState().committed.authoritative.domain.projectsById)).toEqual(["project-a"]);
+    expect(runtimeStore.getState().committed.ownership.sourceByEntityId["project-a"]).toBe(
       workflowPersistence.expectedPath,
     );
   });
@@ -502,7 +514,7 @@ describe("Formal Trail application startup", () => {
     await application.initialize();
 
     await application.deleteTriageIssue(
-      runtimeStore.getState().committed.triageIssuesById["issue-a"],
+      requireCommittedTriageIssue(runtimeStore, "issue-a"),
     ).completion;
     expect(persistence.deleteCalls).toEqual(["issue-a"]);
 

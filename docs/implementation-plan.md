@@ -1,7 +1,7 @@
 # Trail V1 Implementation Plan
 
 > 状态：当前 Implementation Plan baseline
-> 最后更新：2026-08-15
+> 最后更新：2026-08-16
 > 上游 Product：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
@@ -122,7 +122,7 @@ Design / Architecture authority                 Current cleanup target
 ├─ Canonical Domain + Logical Data Model      → domain/          final purity
 ├─ Product Behavior                           → application/     establish real owner
 ├─ Mutation Technical Design                  → mutation/        remove feature-plan dual track
-├─ Runtime Technical Design                   → runtime/         final committed/pending/ownership shape
+├─ Runtime Technical Design                   → runtime/         authoritative/ownership/indexes/pending/control/health
 ├─ Synchronization Technical Design           → source-sync/     establish real owner
 ├─ Persistence / Physical boundary            → persistence/     remove old Domain gateways
 ├─ Markdown Physical Model                    → markdown/        single path + schema + codec authority
@@ -142,8 +142,8 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 | Path / Layout Authority | 建立唯一 managed-path authority；消除 Feature / Workspace / Adapter 中重复 `Trail/...` 拼接与 path truth | 已完成 |
 | **Domain Purity + Application Ownership** | Domain 只保留 business facts/rules/planning；Use Case 正式进入 `application/`；移出 source/persistence/runtime concern | 已完成 |
 | **Persistence + Source Sync Finalization** | 删除旧 Domain persistence gateways / duck typing；收口 authoritative source lifecycle 与 external refresh owner | **已完成** |
-| **Runtime Final Shape** | 收口 authoritative / ownership / indexes / pending / control；删除 compatibility alias 与 parser/source metadata leakage | **当前** |
-| Feature Plan / Service Simplification | 移除 Triage/Workflow 双 Plan；复用共享 lifecycle，拆掉超大 Service 中重复 orchestration | 部分完成 |
+| **Runtime Final Shape** | 收口 authoritative / ownership / indexes / pending / control；删除 compatibility alias 与 parser/source metadata leakage | **已完成** |
+| **Feature Plan / Service Simplification** | 复用共享 lifecycle，拆掉 Feature Service 中重复 orchestration；Feature 只保留业务语义与独立风险 | **当前** |
 | Host / Composition / UI Boundary | `main.ts` 只做 composition/registration；host file events 进入 adapter/source-sync；UI 保持纯 read/intent | 待继续 |
 | Tests / Tooling / Stage-language Cleanup | 删除 active technology spike / duplicate evidence；增加 anti-drift guards；清除 production migration-stage terminology | 待继续 |
 | Simplification Exit | full check、Diagnostics build、代表性 real-host regression、trace review、文档校准、commit/push/GitHub audit | 待开始 |
@@ -177,35 +177,42 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 - README、Implementation Architecture、Implementation Plan 与真实代码事实一致；
 - checkpoint commit / push / GitHub review / CI 完成。
 
-### 4.5 当前执行 Slice：Runtime Final Shape
+### 4.5 当前执行 Slice：Feature Plan / Service Simplification
 
-Persistence + Source Sync Finalization 已完成以下收敛：
+**Runtime Final Shape 已完成。** 当前 Runtime 已收敛为单一长期结构：
 
 ```text
-Path / Layout Authority
-→ canonical trail-paths owner
-
-Application / Domain boundary
-→ Triage / Workspace / Application shell 迁入 application/
-→ Persistence / Obsidian / Runtime compatibility facade 退出 domain/
-
-Mutation / Workflow boundary
-→ TrailMutationPlan 成为唯一 executable plan
-→ Project / Issue Application ownership 拆分
-→ Project Source Sync 建立正式 owner
-→ Workflow Persistence 形成完整静态 contract，不再 duck type capability
-
-Persistence / Source Sync boundary
-→ Triage Source Sync 建立正式 owner
-→ Triage / Project authoritative read / write / refresh / reconcile 各归唯一 owner
-→ Triage / Workflow Persistence 使用静态 contract
-→ Obsidian SourceIO 与 Domain Source Repository 作为共享底层组合一次
-→ Feature-specific Obsidian persistence facade 退出 production path
+TrailRuntimeState
+├─ committed
+│  ├─ revision
+│  ├─ authoritative
+│  │  ├─ domain
+│  │  │  └─ single issuesById universe
+│  │  ├─ configuration
+│  │  └─ workspaceState
+│  ├─ ownership
+│  └─ indexes
+├─ pending
+├─ control
+└─ health
 ```
 
-上述结构、Domain Purity、Triage Persistence + Source Sync 收敛以及 Persistence composition cleanup 均已通过完整 `npm run check` 与 `git diff --check`。当前进入 **Runtime Final Shape**，优先收口 authoritative / ownership / indexes / pending / control，删除 compatibility alias、重复 flat shape 与不属于 Runtime authoritative state 的技术 metadata。
+本轮完成的 Runtime 事实：
 
-Host file-event 分类、required-source delete / rename 处理和 composition root 变薄属于后续 **Host / Composition / UI Boundary**，不在此处拆成新的中间转发层。Configuration ownership 也继续保留为独立后续 cluster，不与 Runtime cleanup 混合。
+- `committed` 不再暴露 flat Domain / ownership / index / source-health compatibility fields；
+- Triage / Workflow Issue 统一进入 `authoritative.domain.issuesById`，由 `context` 与关系字段区分语义；
+- 当前只物化真实 consumer 需要的 `issuesByProjectId` index，Project / Triage 展示排序由 selector 从 Effective State 派生；
+- source ownership 独立为 `sourceByEntityId` / `sourceEntityIdsByPath`，不携带 parser range / offset / AST metadata；
+- source Data Issues 独立进入 `health.sourceIssuesByPath`，health 变化不推进 committed revision；
+- optimistic intent 统一使用 ordered `pending: TrailMutationPlan[]`，`pendingPlans` 与其他旧 alias 已退出 production source；
+- Runtime Control 统一为 `loading / ready / refreshing / read-only-error`，旧 `idle / initializing / blocked / error` lifecycle 已退出 canonical path；
+- Application、Mutation、Source Sync、Query 与 UI consumer 已全部切到 final shape，不保留新旧双轨。
+
+三轮 Runtime cutover 的最终累计 scope 为 29 个 production/test 文件；最终状态已通过完整 `npm run check` 与 `git diff --check`，并有 anti-drift guard 确认 legacy flat committed fields、旧 control/pending names 与旧 lifecycle kinds 已退出 `plugin/src/`。
+
+当前转入 **Feature Plan / Service Simplification**。`TrailMutationPlan` 已经是唯一 executable plan，因此这一步不重新设计 Mutation Framework；优先审计仍然过度承载 orchestration 的 Feature service，尤其是 `TrailTriageAcceptService`，把已经属于 shared Source Transition / Source Sync / Persistence lifecycle 的重复流程继续下沉到现有 canonical owner，同时保留 Accept 的业务语义、destination-first 与 bounded compensation contract。只有出现新的独立机制时才新增 capability，不为了“变薄”再造一层 generic facade。
+
+Host file-event 分类、required-source delete / rename 处理和 composition root 变薄仍作为后续 **Host / Composition / UI Boundary** cluster 一次处理，不在 Feature Service cleanup 中制造半搬迁层。Configuration / Workspace State 的未来编辑 ownership 也不在本 Slice 额外扩张。
 
 整个 Codebase Simplification 未完成前不新增 `Triage Convert to Project`。`archive/poc/` 暂不作为 active-code 第一轮清理对象；先完成 `plugin/src/` 长期结构收敛，再单独判断 Git 历史是否已经足以替代完整 archive。
 
@@ -228,7 +235,7 @@ Host file-event 分类、required-source delete / rename 处理和 composition r
 | Formal Workflow | 已完成 | Workflow 可创建、执行并从 Markdown 重建 |
 | Triage Accept | 已完成 | 新 identity、destination-first、optimistic / reconcile 与真实 host evidence 已建立，并完成新架构迁移 |
 | **Implementation Architecture Re-baseline** | **已完成** | `9e12e32e870a2299023b64804e3070abe138eb0b` 已 push 并通过 GitHub 回查与 CI；full check、Diagnostics build、real-host regression 与 trace review 全部通过 |
-| **Codebase Simplification** | **当前** | 已完成 Path / Layout、Application/Domain boundary、Canonical Mutation Plan、Workflow ownership/persistence、Domain Purity 与 Persistence + Source Sync Finalization；当前进入 Runtime Final Shape |
+| **Codebase Simplification** | **当前** | 已完成 Path / Layout、Application/Domain boundary、Canonical Mutation Plan、Workflow ownership/persistence、Domain Purity、Persistence + Source Sync Finalization 与 Runtime Final Shape；当前进入 Feature Plan / Service Simplification |
 | Intake → Workflow | 待继续 | Codebase Simplification 后以 Convert to Project 作为第一个净新增 Slice |
 | V1 Exit | 待开始 | — |
 

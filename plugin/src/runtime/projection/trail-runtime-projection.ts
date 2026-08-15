@@ -1,6 +1,7 @@
 import type {
   TrailCycle,
   TrailInitiative,
+  TrailIssue,
   TrailMilestone,
 } from "../../domain/model/trail-core-entities";
 import type {
@@ -26,10 +27,9 @@ import type {
 interface TrailEffectiveMaps {
   readonly cyclesById: Record<string, TrailCycle>;
   readonly initiativesById: Record<string, TrailInitiative>;
+  readonly issuesById: Record<string, TrailIssue>;
   readonly milestonesById: Record<string, TrailMilestone>;
   readonly projectsById: Record<string, TrailProject>;
-  readonly triageIssuesById: Record<string, TrailTriageIssue>;
-  readonly workflowIssuesById: Record<string, TrailWorkflowIssue>;
 }
 
 export function addTrailPendingPlan(
@@ -37,9 +37,7 @@ export function addTrailPendingPlan(
   plan: TrailMutationPlan,
 ): void {
   store.setState((state) => ({
-    availability: state.availability,
-    committed: state.committed,
-    pendingPlans: [...state.pendingPlans, plan],
+    pending: [...state.pending, plan],
   }));
 }
 
@@ -48,9 +46,7 @@ export function removePendingPlan(
   commandId: string,
 ): void {
   store.setState((state) => ({
-    availability: state.availability,
-    committed: state.committed,
-    pendingPlans: state.pendingPlans.filter(
+    pending: state.pending.filter(
       (plan) => plan.commandId !== commandId,
     ),
   }));
@@ -68,10 +64,8 @@ function assignEntity(maps: TrailEffectiveMaps, entity: TrailMutationEntity): vo
       maps.milestonesById[entity.value.id] = entity.value;
       break;
     case "triage-issue":
-      maps.triageIssuesById[entity.value.id] = entity.value;
-      break;
     case "workflow-issue":
-      maps.workflowIssuesById[entity.value.id] = entity.value;
+      maps.issuesById[entity.value.id] = entity.value;
       break;
     case "cycle":
       maps.cyclesById[entity.value.id] = entity.value;
@@ -91,10 +85,8 @@ function removeEntity(maps: TrailEffectiveMaps, entity: TrailMutationEntity): vo
       delete maps.milestonesById[entity.value.id];
       break;
     case "triage-issue":
-      delete maps.triageIssuesById[entity.value.id];
-      break;
     case "workflow-issue":
-      delete maps.workflowIssuesById[entity.value.id];
+      delete maps.issuesById[entity.value.id];
       break;
     case "cycle":
       delete maps.cyclesById[entity.value.id];
@@ -119,14 +111,13 @@ function applyEffect(maps: TrailEffectiveMaps, effect: TrailStateEffect): void {
 /** Replays ordered logical effects without knowing feature-specific plan kinds. */
 function projectEffectiveMaps(state: TrailRuntimeState): TrailEffectiveMaps {
   const maps: TrailEffectiveMaps = {
-    cyclesById: { ...state.committed.cyclesById },
-    initiativesById: { ...state.committed.initiativesById },
-    milestonesById: { ...state.committed.milestonesById },
-    projectsById: { ...state.committed.projectsById },
-    triageIssuesById: { ...state.committed.triageIssuesById },
-    workflowIssuesById: { ...state.committed.workflowIssuesById },
+    cyclesById: { ...state.committed.authoritative.domain.cyclesById },
+    initiativesById: { ...state.committed.authoritative.domain.initiativesById },
+    issuesById: { ...state.committed.authoritative.domain.issuesById },
+    milestonesById: { ...state.committed.authoritative.domain.milestonesById },
+    projectsById: { ...state.committed.authoritative.domain.projectsById },
   };
-  for (const plan of state.pendingPlans) {
+  for (const plan of state.pending) {
     for (const effect of plan.effects) applyEffect(maps, effect);
   }
   return maps;
@@ -141,6 +132,16 @@ function planAffectsEntity(
     const entity = effect.kind === "create" ? effect.after : effect.before;
     return acceptedKinds.has(entity.kind) && trailMutationEntityId(entity) === entityId;
   });
+}
+
+function triageIssuesById(
+  issuesById: Readonly<Record<string, TrailIssue>>,
+): Readonly<Record<string, TrailTriageIssue>> {
+  return Object.fromEntries(
+    Object.entries(issuesById).filter((entry): entry is [string, TrailTriageIssue] => (
+      entry[1].context === "triage"
+    )),
+  );
 }
 
 const TRIAGE_ENTITY_KINDS = new Set<TrailMutationEntity["kind"]>([
@@ -170,7 +171,7 @@ function workflowIssueSortKey(
   state: TrailRuntimeState,
   issue: TrailWorkflowIssue,
 ): readonly [number, number, number, string] {
-  const definitions = state.committed.configuration?.statuses.issue;
+  const definitions = state.committed.authoritative.configuration?.statuses.issue;
   let categoryIndex: number = STATUS_CATEGORY_ORDER.length;
   if (definitions !== undefined) {
     for (let index = 0; index < STATUS_CATEGORY_ORDER.length; index += 1) {
@@ -217,31 +218,28 @@ export function selectEffectiveTriageIssueById(
   state: TrailRuntimeState,
   issueId: string,
 ): TrailTriageIssue | undefined {
-  return projectEffectiveMaps(state).triageIssuesById[issueId];
+  const issue = projectEffectiveMaps(state).issuesById[issueId];
+  return issue?.context === "triage" ? issue : undefined;
 }
 
 /** Effective Triage ordering is Due-first, then stable identity. */
 export function selectEffectiveTriageIssueIds(
   state: TrailRuntimeState,
 ): readonly string[] {
-  return sortTrailTriageIssueIds(projectEffectiveMaps(state).triageIssuesById);
+  return sortTrailTriageIssueIds(triageIssuesById(projectEffectiveMaps(state).issuesById));
 }
 
 export function selectEffectiveIssueIdSet(
   state: TrailRuntimeState,
 ): ReadonlySet<string> {
-  const effective = projectEffectiveMaps(state);
-  return new Set([
-    ...Object.keys(effective.triageIssuesById),
-    ...Object.keys(effective.workflowIssuesById),
-  ]);
+  return new Set(Object.keys(projectEffectiveMaps(state).issuesById));
 }
 
 export function selectIsTriageIssuePending(
   state: TrailRuntimeState,
   issueId: string,
 ): boolean {
-  return state.pendingPlans.some((plan) => (
+  return state.pending.some((plan) => (
     planAffectsEntity(plan, issueId, TRIAGE_ENTITY_KINDS)
   ));
 }
@@ -256,15 +254,18 @@ export function selectEffectiveWorkflowIssueById(
   state: TrailRuntimeState,
   issueId: string,
 ): TrailWorkflowIssue | undefined {
-  return projectEffectiveMaps(state).workflowIssuesById[issueId];
+  const issue = projectEffectiveMaps(state).issuesById[issueId];
+  return issue?.context === "workflow" ? issue : undefined;
 }
 
 export function selectEffectiveWorkflowIssueIdsByProject(
   state: TrailRuntimeState,
   projectId: string,
 ): readonly string[] {
-  return Object.values(projectEffectiveMaps(state).workflowIssuesById)
-    .filter((issue) => issue.projectId === projectId)
+  return Object.values(projectEffectiveMaps(state).issuesById)
+    .filter((issue): issue is TrailWorkflowIssue => (
+      issue.context === "workflow" && issue.projectId === projectId
+    ))
     .sort((left, right) => {
       const leftKey = workflowIssueSortKey(state, left);
       const rightKey = workflowIssueSortKey(state, right);
@@ -291,7 +292,7 @@ export function selectIsWorkflowEntityPending(
   state: TrailRuntimeState,
   entityId: string,
 ): boolean {
-  return state.pendingPlans.some((plan) => (
+  return state.pending.some((plan) => (
     planAffectsEntity(plan, entityId, WORKFLOW_ENTITY_KINDS)
   ));
 }
@@ -304,8 +305,7 @@ export function selectEffectiveEntityIdSet(
     ...Object.keys(effective.initiativesById),
     ...Object.keys(effective.projectsById),
     ...Object.keys(effective.milestonesById),
-    ...Object.keys(effective.triageIssuesById),
-    ...Object.keys(effective.workflowIssuesById),
+    ...Object.keys(effective.issuesById),
     ...Object.keys(effective.cyclesById),
   ]);
 }

@@ -155,19 +155,20 @@ describe("Project Source Sync integration", () => {
     });
     await Promise.all([projectReceipt.completion, issueReceipt.completion]);
 
-    const issue = store.getState().committed.workflowIssuesById["issue-a"];
+    const issue = selectEffectiveWorkflowIssueById(store.getState(), "issue-a");
+    if (issue === undefined) throw new Error("missing Workflow Issue");
     await issues.changeStatus(
       issue,
       configuration.statuses.issue.started.defaultId,
     ).completion;
-    expect(store.getState().committed.workflowIssuesById["issue-a"]).toMatchObject({
+    expect(store.getState().committed.authoritative.domain.issuesById["issue-a"]).toMatchObject({
       firstStartedAt: 100,
       statusDefinitionId: configuration.statuses.issue.started.defaultId,
     });
-    expect(store.getState().committed.sourceByEntityId["project-a"]).toBe(
+    expect(store.getState().committed.ownership.sourceByEntityId["project-a"]).toBe(
       "Trail/Projects/0001 Trail Workflow.md",
     );
-    expect(store.getState().committed.sourceByEntityId["issue-a"]).toBe(
+    expect(store.getState().committed.ownership.sourceByEntityId["issue-a"]).toBe(
       "Trail/Projects/0001 Trail Workflow.md",
     );
   });
@@ -185,12 +186,13 @@ describe("Project Source Sync integration", () => {
     await sourceSync.initialize();
     await projects.create("Trail Workflow").completion;
     await issues.create("project-a", "Keep me").completion;
-    const sourcePath = store.getState().committed.sourceByEntityId["project-a"];
+    const sourcePath = store.getState().committed.ownership.sourceByEntityId["project-a"];
+    if (sourcePath === undefined) throw new Error("missing Project source");
 
     persistence.makeInvalid(sourcePath);
     await sourceSync.refreshSource(sourcePath);
 
-    expect(store.getState().committed.workflowIssuesById["issue-a"].title).toBe("Keep me");
-    expect(store.getState().committed.sourceIssuesByPath[sourcePath]?.length).toBeGreaterThan(0);
+    expect(store.getState().committed.authoritative.domain.issuesById["issue-a"].title).toBe("Keep me");
+    expect(store.getState().health.sourceIssuesByPath[sourcePath]?.length).toBeGreaterThan(0);
   });
 });

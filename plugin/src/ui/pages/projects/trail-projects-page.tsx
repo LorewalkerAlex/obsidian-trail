@@ -76,7 +76,7 @@ export function TrailProjectsPage({
   const projectIds = useStore(runtimeStore, useShallow(selectEffectiveProjectIds));
   const configuration = useStore(
     runtimeStore,
-    (state) => state.committed.configuration,
+    (state) => state.committed.authoritative.configuration,
   );
   const workflowSourceIssues = useStore(
     runtimeStore,

@@ -1,3 +1,4 @@
+import type { TrailIssue } from "../../domain/model/trail-core-entities";
 import {
   sameTrailStringArray,
   sameTrailTriageIssue,
@@ -11,18 +12,15 @@ import type {
   TrailProjectSourceSnapshot,
   TrailTriageSourceSnapshot,
 } from "../../persistence/domain-sources/trail-domain-source-snapshot";
-import {
-  sortTrailProjectIds,
-  sortTrailTriageIssueIds,
-} from "../indexes/trail-runtime-indexes";
+import { replaceTrailIssueProjectIndex } from "../indexes/trail-runtime-indexes";
 import {
   removeTrailSourceOwnership,
   replaceTrailSourceOwnership,
 } from "../ownership/trail-source-ownership";
 import {
-  aggregateSourceIssues,
-  clearSourceIssuesFromCommitted,
+  clearSourceIssuesFromHealth,
   setSourceIssuesForPath,
+  type TrailCommittedRuntime,
   type TrailRuntimeStore,
 } from "../store/trail-runtime-store";
 
@@ -178,6 +176,34 @@ function buildTriageReconcileDiff(
   };
 }
 
+function triageIssuesForSource(
+  committed: TrailCommittedRuntime,
+  filePath: string,
+): Readonly<Record<string, TrailTriageIssue>> {
+  const issues: Record<string, TrailTriageIssue> = {};
+  for (const id of committed.ownership.sourceEntityIdsByPath[filePath] ?? []) {
+    const issue = committed.authoritative.domain.issuesById[id];
+    if (issue?.context === "triage") issues[id] = issue;
+  }
+  return issues;
+}
+
+function workflowIssuesForSource(
+  committed: TrailCommittedRuntime,
+  filePath: string,
+): Readonly<Record<string, TrailWorkflowIssue>> {
+  const issues: Record<string, TrailWorkflowIssue> = {};
+  for (const id of committed.ownership.sourceEntityIdsByPath[filePath] ?? []) {
+    const issue = committed.authoritative.domain.issuesById[id];
+    if (issue?.context === "workflow") issues[id] = issue;
+  }
+  return issues;
+}
+
+function countWorkflowIssues(issuesById: Readonly<Record<string, TrailIssue>>): number {
+  return Object.values(issuesById).filter((issue) => issue.context === "workflow").length;
+}
+
 /** Replaces the committed contribution from the authoritative Triage source. */
 export function reconcileTriageContribution<
   TSnapshot extends TrailTriageSourceSnapshot,
@@ -185,51 +211,65 @@ export function reconcileTriageContribution<
   store: TrailRuntimeStore,
   contribution: TSnapshot,
 ): TriageReconcileResult {
-  const previous = store.getState().committed.triageIssuesById;
+  const previous = triageIssuesForSource(store.getState().committed, contribution.filePath);
   const diff = buildTriageReconcileDiff(previous, contribution.issuesById);
   let revision = store.getState().committed.revision;
-  let triageCount = 0;
 
   store.setState((state) => {
-    const incomingIds = Object.keys(contribution.issuesById);
-    const ownership = replaceTrailSourceOwnership(
-      state.committed,
-      contribution.filePath,
-      incomingIds,
+    const previousSourceIds = state.committed.ownership.sourceEntityIdsByPath[
+      contribution.filePath
+    ] ?? [];
+    const previousIssues = Object.values(
+      triageIssuesForSource(state.committed, contribution.filePath),
     );
-    const triageIssuesById: Record<string, TrailTriageIssue> = {};
+    const ownership = replaceTrailSourceOwnership(
+      state.committed.ownership,
+      contribution.filePath,
+      Object.keys(contribution.issuesById),
+    );
+    const issuesById = { ...state.committed.authoritative.domain.issuesById };
 
+    for (const id of previousSourceIds) {
+      delete issuesById[id];
+    }
     for (const [id, incoming] of Object.entries(contribution.issuesById)) {
-      const existing = state.committed.triageIssuesById[id];
-      triageIssuesById[id] =
-        existing !== undefined && sameTrailTriageIssue(existing, incoming)
+      const existing = state.committed.authoritative.domain.issuesById[id];
+      issuesById[id] = existing?.context === "triage"
+        && sameTrailTriageIssue(existing, incoming)
           ? existing
           : incoming;
     }
 
-    const triageIssueIds = sortTrailTriageIssueIds(triageIssuesById);
-    const clearedIssues = clearSourceIssuesFromCommitted(
-      state.committed,
-      contribution.filePath,
+    const indexes = replaceTrailIssueProjectIndex(
+      state.committed.indexes,
+      previousIssues,
+      Object.values(contribution.issuesById),
     );
     revision = state.committed.revision + 1;
-    triageCount = triageIssueIds.length;
 
     return {
-      availability: state.availability,
       committed: {
         ...state.committed,
-        ...clearedIssues,
-        ...ownership,
+        authoritative: {
+          ...state.committed.authoritative,
+          domain: {
+            ...state.committed.authoritative.domain,
+            issuesById,
+          },
+        },
+        indexes,
+        ownership,
         revision,
-        triageIssueIds,
-        triageIssuesById,
       },
-      pendingPlans: state.pendingPlans,
+      health: clearSourceIssuesFromHealth(state.health, contribution.filePath),
     };
   });
 
-  return { diff, revision, triageCount };
+  return {
+    diff,
+    revision,
+    triageCount: Object.keys(contribution.issuesById).length,
+  };
 }
 
 export function setTriageSourceIssues(
@@ -284,27 +324,26 @@ export function reconcileProjectContribution<
   let result: ProjectReconcileResult | undefined;
 
   store.setState((state) => {
-    const previousSourceIds = state.committed.sourceEntityIdsByPath[
+    const previousSourceIds = state.committed.ownership.sourceEntityIdsByPath[
       contribution.filePath
     ] ?? [];
     const previousProjectId = previousSourceIds.find(
-      (id) => state.committed.projectsById[id] !== undefined,
+      (id) => state.committed.authoritative.domain.projectsById[id] !== undefined,
     );
     const previousProject = previousProjectId === undefined
       ? undefined
-      : state.committed.projectsById[previousProjectId];
-    const previousIssues: Record<string, TrailWorkflowIssue> = {};
-    for (const id of previousSourceIds) {
-      const issue = state.committed.workflowIssuesById[id];
-      if (issue !== undefined) previousIssues[id] = issue;
-    }
+      : state.committed.authoritative.domain.projectsById[previousProjectId];
+    const previousIssues = workflowIssuesForSource(
+      state.committed,
+      contribution.filePath,
+    );
 
     const incomingIds = [
       contribution.project.id,
       ...Object.keys(contribution.issuesById),
     ];
     const ownership = replaceTrailSourceOwnership(
-      state.committed,
+      state.committed.ownership,
       contribution.filePath,
       incomingIds,
     );
@@ -314,59 +353,58 @@ export function reconcileProjectContribution<
       contribution,
     );
 
-    const projectsById = { ...state.committed.projectsById };
-    const workflowIssuesById = { ...state.committed.workflowIssuesById };
-    const issuesByProjectId = { ...state.committed.issuesByProjectId };
+    const projectsById = { ...state.committed.authoritative.domain.projectsById };
+    const issuesById = { ...state.committed.authoritative.domain.issuesById };
 
     for (const id of previousSourceIds) {
-      delete workflowIssuesById[id];
+      delete issuesById[id];
       if (projectsById[id] !== undefined) delete projectsById[id];
     }
-    if (previousProjectId !== undefined) delete issuesByProjectId[previousProjectId];
 
-    const existingProject = state.committed.projectsById[contribution.project.id];
+    const existingProject = state.committed.authoritative.domain.projectsById[contribution.project.id];
     projectsById[contribution.project.id] =
       existingProject !== undefined
       && sameTrailProject(existingProject, contribution.project)
         ? existingProject
         : contribution.project;
 
-    const issueIds = Object.keys(contribution.issuesById).sort();
-    for (const id of issueIds) {
-      const incoming = contribution.issuesById[id];
-      const existing = state.committed.workflowIssuesById[id];
-      workflowIssuesById[id] =
-        existing !== undefined && sameTrailWorkflowIssue(existing, incoming)
+    for (const [id, incoming] of Object.entries(contribution.issuesById)) {
+      const existing = state.committed.authoritative.domain.issuesById[id];
+      issuesById[id] = existing?.context === "workflow"
+        && sameTrailWorkflowIssue(existing, incoming)
           ? existing
           : incoming;
     }
-    issuesByProjectId[contribution.project.id] = issueIds;
 
-    const clearedIssues = clearSourceIssuesFromCommitted(
-      state.committed,
-      contribution.filePath,
+    const indexes = replaceTrailIssueProjectIndex(
+      state.committed.indexes,
+      Object.values(previousIssues),
+      Object.values(contribution.issuesById),
     );
     const revision = state.committed.revision + 1;
     result = {
       diff,
-      issueCount: Object.keys(workflowIssuesById).length,
+      issueCount: countWorkflowIssues(issuesById),
       projectCount: Object.keys(projectsById).length,
       revision,
     };
 
     return {
-      availability: state.availability,
       committed: {
         ...state.committed,
-        ...clearedIssues,
-        ...ownership,
-        issuesByProjectId,
-        projectIds: sortTrailProjectIds(projectsById),
-        projectsById,
+        authoritative: {
+          ...state.committed.authoritative,
+          domain: {
+            ...state.committed.authoritative.domain,
+            issuesById,
+            projectsById,
+          },
+        },
+        indexes,
+        ownership,
         revision,
-        workflowIssuesById,
       },
-      pendingPlans: state.pendingPlans,
+      health: clearSourceIssuesFromHealth(state.health, contribution.filePath),
     };
   });
 
@@ -382,51 +420,43 @@ export function removeProjectContribution(
   filePath: string,
 ): void {
   store.setState((state) => {
-    const previousSourceIds = state.committed.sourceEntityIdsByPath[filePath] ?? [];
+    const previousSourceIds = state.committed.ownership.sourceEntityIdsByPath[filePath] ?? [];
     if (previousSourceIds.length === 0) {
-      const sourceIssuesByPath = { ...state.committed.sourceIssuesByPath };
-      delete sourceIssuesByPath[filePath];
-      return {
-        availability: state.availability,
-        committed: {
-          ...state.committed,
-          sourceIssues: aggregateSourceIssues(sourceIssuesByPath),
-          sourceIssuesByPath,
-        },
-        pendingPlans: state.pendingPlans,
-      };
+      return { health: clearSourceIssuesFromHealth(state.health, filePath) };
     }
 
-    const projectsById = { ...state.committed.projectsById };
-    const workflowIssuesById = { ...state.committed.workflowIssuesById };
-    const issuesByProjectId = { ...state.committed.issuesByProjectId };
+    const previousIssues = Object.values(workflowIssuesForSource(state.committed, filePath));
+    const projectsById = { ...state.committed.authoritative.domain.projectsById };
+    const issuesById = { ...state.committed.authoritative.domain.issuesById };
 
     for (const id of previousSourceIds) {
-      delete workflowIssuesById[id];
-      if (projectsById[id] !== undefined) {
-        delete projectsById[id];
-        delete issuesByProjectId[id];
-      }
+      delete issuesById[id];
+      if (projectsById[id] !== undefined) delete projectsById[id];
     }
 
-    const ownership = removeTrailSourceOwnership(state.committed, filePath);
-    const sourceIssuesByPath = { ...state.committed.sourceIssuesByPath };
-    delete sourceIssuesByPath[filePath];
+    const ownership = removeTrailSourceOwnership(state.committed.ownership, filePath);
+    const indexes = replaceTrailIssueProjectIndex(
+      state.committed.indexes,
+      previousIssues,
+      [],
+    );
 
     return {
-      availability: state.availability,
       committed: {
         ...state.committed,
-        ...ownership,
-        issuesByProjectId,
-        projectIds: sortTrailProjectIds(projectsById),
-        projectsById,
+        authoritative: {
+          ...state.committed.authoritative,
+          domain: {
+            ...state.committed.authoritative.domain,
+            issuesById,
+            projectsById,
+          },
+        },
+        indexes,
+        ownership,
         revision: state.committed.revision + 1,
-        sourceIssues: aggregateSourceIssues(sourceIssuesByPath),
-        sourceIssuesByPath,
-        workflowIssuesById,
       },
-      pendingPlans: state.pendingPlans,
+      health: clearSourceIssuesFromHealth(state.health, filePath),
     };
   });
 }

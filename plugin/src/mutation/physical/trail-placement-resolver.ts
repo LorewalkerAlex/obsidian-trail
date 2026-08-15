@@ -27,7 +27,7 @@ function requireProjectSource(
   committed: TrailCommittedRuntime,
   label: string,
 ): string {
-  const projectPath = committed.sourceByEntityId[projectId];
+  const projectPath = committed.ownership.sourceByEntityId[projectId];
   if (projectPath === undefined) {
     throw new Error(`${label} Project source is not committed: ${projectId}`);
   }
@@ -40,7 +40,7 @@ export async function resolveTrailEntityPlacement(
   committed: TrailCommittedRuntime,
   environment: TrailPlacementEnvironment = {},
 ): Promise<string> {
-  const existing = committed.sourceByEntityId[trailMutationEntityId(entity)];
+  const existing = committed.ownership.sourceByEntityId[trailMutationEntityId(entity)];
   if (existing !== undefined) return existing;
 
   switch (entity.kind) {

@@ -31,9 +31,9 @@ export function TrailApp({
   onWorkflowStatusChange,
   runtimeStore,
 }: TrailAppProps) {
-  const availability = useStore(
+  const control = useStore(
     runtimeStore,
-    (state) => state.availability,
+    (state) => state.control,
   );
   const [activePage, setActivePage] = useState<TrailPage>("triage");
 
@@ -53,7 +53,7 @@ export function TrailApp({
         </p>
       </header>
 
-      {availability.kind === "ready" ? (
+      {control.kind === "ready" ? (
         <nav className="trail-page-nav" aria-label="Trail pages">
           <button
             aria-current={activePage === "triage" ? "page" : undefined}
@@ -74,30 +74,29 @@ export function TrailApp({
         </nav>
       ) : null}
 
-      {availability.kind === "idle" || availability.kind === "initializing" ? (
+      {control.kind === "loading" ? (
         <TrailStatusPanel
           title="Loading Trail"
           message="Validating the Formal workspace and rebuilding runtime state."
         />
       ) : null}
 
-      {availability.kind === "blocked" ? (
+      {control.kind === "refreshing" ? (
         <TrailStatusPanel
-          title="Trail needs attention"
-          message={availability.message}
-          tone="warning"
+          title="Refreshing Trail"
+          message="Re-reading authoritative sources before Trail accepts more changes."
         />
       ) : null}
 
-      {availability.kind === "error" ? (
+      {control.kind === "read-only-error" ? (
         <TrailStatusPanel
-          title="Trail could not start"
-          message={availability.message}
+          title="Trail needs attention"
+          message={control.message}
           tone="error"
         />
       ) : null}
 
-      {availability.kind === "ready" && activePage === "triage" ? (
+      {control.kind === "ready" && activePage === "triage" ? (
         <TrailTriagePage
           onAccept={onAccept}
           onCapture={onCapture}
@@ -105,11 +104,11 @@ export function TrailApp({
           onDelete={onDelete}
           onEdit={onEdit}
           runtimeStore={runtimeStore}
-          timezone={availability.timezone}
+          timezone={control.timezone}
         />
       ) : null}
 
-      {availability.kind === "ready" && activePage === "projects" ? (
+      {control.kind === "ready" && activePage === "projects" ? (
         <TrailProjectsPage
           onCreateProject={onCreateProject}
           onCreateWorkflowIssue={onCreateWorkflowIssue}

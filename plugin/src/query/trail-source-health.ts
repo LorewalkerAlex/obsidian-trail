@@ -4,6 +4,7 @@ import {
   TRAIL_TRIAGE_PATH,
 } from "../markdown/schema/trail-paths";
 import {
+  selectAllSourceIssues,
   selectSourceIssuesForPath,
   type TrailRuntimeState,
 } from "../runtime/store/trail-runtime-store";
@@ -23,7 +24,7 @@ export function selectWorkflowRootSourceIssues(
 export function selectWorkflowSourceIssues(
   state: TrailRuntimeState,
 ) {
-  return state.committed.sourceIssues.filter((issue) =>
+  return selectAllSourceIssues(state).filter((issue) =>
     isTrailProjectsScopePath(issue.filePath)
   );
 }
@@ -34,6 +35,6 @@ export function selectEntitySourceIssues(
 ) {
   return selectSourceIssuesForPath(
     state,
-    state.committed.sourceByEntityId[entityId],
+    state.committed.ownership.sourceByEntityId[entityId],
   );
 }

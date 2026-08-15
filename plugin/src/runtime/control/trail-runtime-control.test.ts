@@ -1,18 +1,33 @@
 import { describe, expect, it } from "vitest";
 
 import { createTrailRuntimeStore } from "../store/trail-runtime-store";
-import { setTrailRuntimeAvailability } from "./trail-runtime-control";
+import { setTrailRuntimeControl } from "./trail-runtime-control";
 
 describe("Trail Runtime control", () => {
-  it("changes control state without disturbing committed or pending state", () => {
+  it("uses the canonical lifecycle without disturbing committed or pending state", () => {
     const store = createTrailRuntimeStore();
     const committed = store.getState().committed;
-    const pending = store.getState().pendingPlans;
+    const pending = store.getState().pending;
 
-    setTrailRuntimeAvailability(store, { kind: "ready", timezone: "UTC" });
+    expect(store.getState().control).toEqual({ kind: "loading" });
 
-    expect(store.getState().availability).toEqual({ kind: "ready", timezone: "UTC" });
+    setTrailRuntimeControl(store, { kind: "ready", timezone: "UTC" });
+    expect(store.getState().control).toEqual({ kind: "ready", timezone: "UTC" });
+
+    setTrailRuntimeControl(store, { kind: "refreshing", timezone: "UTC" });
+    expect(store.getState().control).toEqual({ kind: "refreshing", timezone: "UTC" });
+
+    setTrailRuntimeControl(store, {
+      kind: "read-only-error",
+      message: "source unavailable",
+      timezone: "UTC",
+    });
+    expect(store.getState().control).toEqual({
+      kind: "read-only-error",
+      message: "source unavailable",
+      timezone: "UTC",
+    });
     expect(store.getState().committed).toBe(committed);
-    expect(store.getState().pendingPlans).toBe(pending);
+    expect(store.getState().pending).toBe(pending);
   });
 });

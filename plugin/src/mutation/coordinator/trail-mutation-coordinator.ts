@@ -71,7 +71,7 @@ export function submitTrailMutation<Result>(
     diagnostics.record("runtime.optimistic.removed", {
       correlationId,
       data: {
-        pendingCount: store.getState().pendingPlans.length,
+        pendingCount: store.getState().pending.length,
         reason,
       },
       level: reason === "committed" ? "info" : "warn",
@@ -83,7 +83,7 @@ export function submitTrailMutation<Result>(
     correlationId,
     data: {
       ...(mutation.optimisticData ?? {}),
-      pendingCount: store.getState().pendingPlans.length,
+      pendingCount: store.getState().pending.length,
     },
   });
 

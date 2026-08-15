@@ -92,11 +92,11 @@ describe("Trail Runtime logical projection", () => {
     addTrailPendingPlan(store, plan);
 
     const optimistic = store.getState();
-    expect(optimistic.pendingPlans).toHaveLength(1);
+    expect(optimistic.pending).toHaveLength(1);
     expect(selectEffectiveTriageIssueById(optimistic, source.id)).toBeUndefined();
     expect(selectEffectiveWorkflowIssueById(optimistic, target.id)).toEqual(target);
-    expect(optimistic.committed.triageIssuesById[source.id]).toEqual(source);
-    expect(optimistic.committed.workflowIssuesById[target.id]).toBeUndefined();
+    expect(optimistic.committed.authoritative.domain.issuesById[source.id]).toEqual(source);
+    expect(optimistic.committed.authoritative.domain.issuesById[target.id]).toBeUndefined();
   });
 
   it(
@@ -116,7 +116,7 @@ describe("Trail Runtime logical projection", () => {
       }));
 
       expect(selectEffectiveCycleById(store.getState(), cycle.id)).toEqual(cycle);
-      expect(store.getState().committed.cyclesById[cycle.id]).toBeUndefined();
+      expect(store.getState().committed.authoritative.domain.cyclesById[cycle.id]).toBeUndefined();
     },
   );
 
@@ -153,7 +153,7 @@ describe("Trail Runtime logical projection", () => {
     expect(selectEffectiveTriageIssueIds(store.getState())).toEqual([
       "second-issue",
     ]);
-    expect(store.getState().pendingPlans.map((plan) => plan.commandId)).toEqual([
+    expect(store.getState().pending.map((plan) => plan.commandId)).toEqual([
       "second",
     ]);
   });
@@ -164,7 +164,8 @@ describe("Trail Runtime logical projection", () => {
       { due: 10, id: "a", title: "A" },
       { due: 20, id: "b", title: "B" },
     ]));
-    const expectedIssue = store.getState().committed.triageIssuesById.b;
+    const expectedIssue = selectEffectiveTriageIssueById(store.getState(), "b");
+    if (expectedIssue === undefined) throw new Error("missing Triage Issue b");
     const nextIssue = {
       ...expectedIssue,
       due: 5,
@@ -186,7 +187,7 @@ describe("Trail Runtime logical projection", () => {
       "B edited",
     );
     expect(selectIsTriageIssuePending(store.getState(), "b")).toBe(true);
-    expect(store.getState().committed.triageIssuesById.b.title).toBe("B");
+    expect(store.getState().committed.authoritative.domain.issuesById.b.title).toBe("B");
 
     removePendingPlan(store, "edit-b");
     expect(selectEffectiveTriageIssueIds(store.getState())).toEqual(["a", "b"]);
@@ -198,7 +199,8 @@ describe("Trail Runtime logical projection", () => {
     reconcileTriageContribution(store, triageContribution([
       { due: 10, id: "a", title: "A" },
     ]));
-    const expectedIssue = store.getState().committed.triageIssuesById.a;
+    const expectedIssue = selectEffectiveTriageIssueById(store.getState(), "a");
+    if (expectedIssue === undefined) throw new Error("missing Triage Issue a");
 
     addTrailPendingPlan(store, createTrailMutationPlan({
       commandId: "delete-a",

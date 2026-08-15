@@ -14,15 +14,16 @@ import { resolveTrailEntityPlacement } from "./trail-placement-resolver";
 function runtimeWithOwnership() {
   const store = createTrailRuntimeStore();
   store.setState((state) => ({
-    ...state,
     committed: {
       ...state.committed,
-      sourceByEntityId: {
-        "project-a": "Trail/Projects/0001 Alpha.md",
-        "workflow-existing": "Trail/Projects/0001 Alpha.md",
-      },
-      sourceEntityIdsByPath: {
-        "Trail/Projects/0001 Alpha.md": ["project-a", "workflow-existing"],
+      ownership: {
+        sourceByEntityId: {
+          "project-a": "Trail/Projects/0001 Alpha.md",
+          "workflow-existing": "Trail/Projects/0001 Alpha.md",
+        },
+        sourceEntityIdsByPath: {
+          "Trail/Projects/0001 Alpha.md": ["project-a", "workflow-existing"],
+        },
       },
     },
   }));

@@ -104,7 +104,7 @@ describe("Triage Source Sync", () => {
       title: "External edit",
     });
     await expect(sourceSync.refresh()).resolves.toBe(true);
-    expect(store.getState().committed.triageIssuesById["issue-a"].title).toBe("External edit");
+    expect(store.getState().committed.authoritative.domain.issuesById["issue-a"].title).toBe("External edit");
     queue.dispose();
   });
 
@@ -123,9 +123,11 @@ describe("Triage Source Sync", () => {
     await sourceSync.initialize();
 
     persistence.setInvalid(true);
+    const revision = store.getState().committed.revision;
     await expect(sourceSync.refresh()).resolves.toBe(false);
 
-    expect(store.getState().committed.triageIssuesById["issue-a"].title).toBe("Keep me");
+    expect(store.getState().committed.authoritative.domain.issuesById["issue-a"].title).toBe("Keep me");
+    expect(store.getState().committed.revision).toBe(revision);
     expect(selectSourceIssuesForPath(store.getState(), TRAIL_TRIAGE_PATH)).toEqual([
       expect.objectContaining({ code: "test.invalid-source" }),
     ]);

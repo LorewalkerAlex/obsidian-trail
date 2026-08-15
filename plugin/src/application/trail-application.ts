@@ -24,7 +24,7 @@ import type {
 import { TrailMutationQueue } from "../mutation/queue/trail-mutation-queue";
 import { TRAIL_PROJECTS_PATH, TRAIL_TRIAGE_PATH } from "../markdown/schema/trail-paths";
 import {
-  setTrailRuntimeAvailability,
+  setTrailRuntimeControl,
 } from "../runtime/control/trail-runtime-control";
 import {
   selectSourceIssuesForPath,
@@ -138,7 +138,7 @@ export class TrailApplication {
     this.diagnostics.record("application.initialize.started", {
       correlationId: operationId,
     });
-    setTrailRuntimeAvailability(runtimeStore, { kind: "initializing" });
+    setTrailRuntimeControl(runtimeStore, { kind: "loading" });
 
     try {
       let classification = classifyWorkspace(await workspace.probeWorkspace());
@@ -164,8 +164,8 @@ export class TrailApplication {
       if (!classification.canLoad || classification.pluginData.kind !== "valid") {
         this.clearServices();
         const message = blockerMessage(classification);
-        setTrailRuntimeAvailability(runtimeStore, {
-          kind: "blocked",
+        setTrailRuntimeControl(runtimeStore, {
+          kind: "read-only-error",
           message: `Trail cannot load the Formal workspace: ${message}`,
         });
         this.diagnostics.record("application.initialize.blocked", {
@@ -251,7 +251,7 @@ export class TrailApplication {
       this.triageSources = triageSources;
       this.workflowSources = workflowSources;
       this.timezone = timezone;
-      setTrailRuntimeAvailability(runtimeStore, {
+      setTrailRuntimeControl(runtimeStore, {
         kind: "ready",
         timezone,
       });
@@ -259,19 +259,23 @@ export class TrailApplication {
         correlationId: operationId,
         data: {
           committedRevision: runtimeStore.getState().committed.revision,
-          projectCount: runtimeStore.getState().committed.projectIds.length,
-          timezone,
-          triageCount: runtimeStore.getState().committed.triageIssueIds.length,
-          workflowIssueCount: Object.keys(
-            runtimeStore.getState().committed.workflowIssuesById,
+          projectCount: Object.keys(
+            runtimeStore.getState().committed.authoritative.domain.projectsById,
           ).length,
+          timezone,
+          triageCount: Object.values(
+            runtimeStore.getState().committed.authoritative.domain.issuesById,
+          ).filter((issue) => issue.context === "triage").length,
+          workflowIssueCount: Object.values(
+            runtimeStore.getState().committed.authoritative.domain.issuesById,
+          ).filter((issue) => issue.context === "workflow").length,
         },
       });
       return classification;
     } catch (error: unknown) {
       this.clearServices();
-      setTrailRuntimeAvailability(runtimeStore, {
-        kind: "error",
+      setTrailRuntimeControl(runtimeStore, {
+        kind: "read-only-error",
         message: error instanceof Error
           ? error.message
           : "Trail initialization failed",
@@ -289,12 +293,12 @@ export class TrailApplication {
     const state = this.dependencies.runtimeStore.getState();
     this.diagnostics.record("application.capture.requested", {
       data: {
-        availability: state.availability.kind,
+        control: state.control.kind,
         titleLength: title.length,
       },
     });
 
-    if (state.availability.kind !== "ready" || this.intake === null) {
+    if (state.control.kind !== "ready" || this.intake === null) {
       this.diagnostics.record("application.capture.rejected", {
         data: { reason: "not-ready" },
         level: "warn",
@@ -532,7 +536,7 @@ export class TrailApplication {
     projectId: string,
   ): TrailTriageAcceptService {
     const state = this.dependencies.runtimeStore.getState();
-    if (state.availability.kind !== "ready" || this.accept === null) {
+    if (state.control.kind !== "ready" || this.accept === null) {
       this.diagnostics.record("application.triage.accept.rejected", {
         data: { projectId, reason: "not-ready", sourceIssueId },
         level: "warn",
@@ -545,7 +549,7 @@ export class TrailApplication {
 
     this.assertTriageSourceValid("application.triage.accept.rejected");
     const rootIssues = selectSourceIssuesForPath(state, TRAIL_PROJECTS_PATH);
-    const targetPath = state.committed.sourceByEntityId[projectId];
+    const targetPath = state.committed.ownership.sourceByEntityId[projectId];
     const targetIssues = selectSourceIssuesForPath(state, targetPath);
     if (rootIssues.length > 0 || targetIssues.length > 0) {
       this.diagnostics.record("application.triage.accept.rejected", {
@@ -571,7 +575,7 @@ export class TrailApplication {
   ): ReadyTriageManagement {
     const state = this.dependencies.runtimeStore.getState();
     if (
-      state.availability.kind !== "ready"
+      state.control.kind !== "ready"
       || this.management === null
       || this.timezone === null
     ) {
@@ -594,7 +598,7 @@ export class TrailApplication {
     entityId?: string,
   ): T {
     const state = this.dependencies.runtimeStore.getState();
-    if (state.availability.kind === "ready" && service !== null) {
+    if (state.control.kind === "ready" && service !== null) {
       const rootIssues = selectSourceIssuesForPath(state, TRAIL_PROJECTS_PATH);
       if (rootIssues.length === 0) {
         return service;

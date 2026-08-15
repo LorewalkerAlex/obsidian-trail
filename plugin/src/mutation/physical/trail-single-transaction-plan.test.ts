@@ -12,12 +12,13 @@ import { materializeTrailSingleTransactionPlan } from "./trail-single-transactio
 function committed() {
   const store = createTrailRuntimeStore();
   store.setState((state) => ({
-    ...state,
     committed: {
       ...state.committed,
-      sourceByEntityId: { "project-a": "Trail/Projects/0001 Alpha.md" },
-      sourceEntityIdsByPath: {
-        "Trail/Projects/0001 Alpha.md": ["project-a"],
+      ownership: {
+        sourceByEntityId: { "project-a": "Trail/Projects/0001 Alpha.md" },
+        sourceEntityIdsByPath: {
+          "Trail/Projects/0001 Alpha.md": ["project-a"],
+        },
       },
     },
   }));

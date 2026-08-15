@@ -4,7 +4,7 @@ import type {
   TrailWorkflowIssue,
 } from "../../domain/trail-issue";
 import type { TrailProject } from "../../domain/trail-project";
-import { setTrailRuntimeAvailability } from "../../runtime/control/trail-runtime-control";
+import { setTrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
 import {
   reconcileProjectContribution,
   reconcileTriageContribution,
@@ -21,7 +21,7 @@ export function createReadyTrailUiStore() {
     createId: () => `status-${id += 1}`,
     timezone: "UTC",
   }).configuration);
-  setTrailRuntimeAvailability(store, {
+  setTrailRuntimeControl(store, {
     kind: "ready",
     timezone: "UTC",
   });
@@ -60,7 +60,7 @@ export function seedWorkflowProject(
   readonly issue: TrailWorkflowIssue;
   readonly project: TrailProject;
 } {
-  const configuration = store.getState().committed.configuration;
+  const configuration = store.getState().committed.authoritative.configuration;
   if (configuration === null) throw new Error("missing configuration");
 
   const project: TrailProject = {

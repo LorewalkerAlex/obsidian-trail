@@ -7,72 +7,86 @@ import type {
 import type {
   TrailCycle,
   TrailInitiative,
+  TrailIssue,
   TrailMilestone,
 } from "../../domain/model/trail-core-entities";
-import type {
-  TrailTriageIssue,
-  TrailWorkflowIssue,
-} from "../../domain/trail-issue";
 import type { TrailProject } from "../../domain/trail-project";
 import type { TrailSourceProblem } from "../../persistence/domain-sources/trail-source-result";
 import type { TrailMutationPlan } from "../../mutation/plans/trail-mutation-plan";
-import type { TrailRuntimeAvailability } from "../control/trail-runtime-control";
+import type { TrailRuntimeControl } from "../control/trail-runtime-control";
+import type { TrailRuntimeIndexes } from "../indexes/trail-runtime-indexes";
+import type { TrailSourceOwnership } from "../ownership/trail-source-ownership";
 
 const EMPTY_SOURCE_ISSUES: readonly TrailSourceProblem[] = Object.freeze([]);
 
-export interface TrailCommittedRuntime {
-  readonly configuration: TrailConfiguration | null;
+export interface TrailDomainState {
   readonly cyclesById: Readonly<Record<string, TrailCycle>>;
   readonly initiativesById: Readonly<Record<string, TrailInitiative>>;
-  readonly issuesByProjectId: Readonly<Record<string, readonly string[]>>;
+  readonly issuesById: Readonly<Record<string, TrailIssue>>;
   readonly milestonesById: Readonly<Record<string, TrailMilestone>>;
-  readonly projectIds: readonly string[];
   readonly projectsById: Readonly<Record<string, TrailProject>>;
-  readonly revision: number;
-  readonly sourceByEntityId: Readonly<Record<string, string>>;
-  readonly sourceEntityIdsByPath: Readonly<Record<string, readonly string[]>>;
-  readonly sourceIssues: readonly TrailSourceProblem[];
-  readonly sourceIssuesByPath: Readonly<Record<string, readonly TrailSourceProblem[]>>;
-  readonly triageIssueIds: readonly string[];
-  readonly triageIssuesById: Readonly<Record<string, TrailTriageIssue>>;
-  readonly workflowIssuesById: Readonly<Record<string, TrailWorkflowIssue>>;
+}
+
+export interface TrailAuthoritativeState {
+  readonly configuration: TrailConfiguration | null;
+  readonly domain: TrailDomainState;
   readonly workspaceState: TrailWorkspaceState | null;
 }
 
+export interface TrailCommittedRuntime {
+  readonly authoritative: TrailAuthoritativeState;
+  readonly indexes: TrailRuntimeIndexes;
+  readonly ownership: TrailSourceOwnership;
+  readonly revision: number;
+}
+
+export interface TrailRuntimeHealth {
+  readonly sourceIssuesByPath: Readonly<Record<string, readonly TrailSourceProblem[]>>;
+}
+
 export interface TrailRuntimeState {
-  readonly availability: TrailRuntimeAvailability;
   readonly committed: TrailCommittedRuntime;
-  readonly pendingPlans: readonly TrailMutationPlan[];
+  readonly control: TrailRuntimeControl;
+  readonly health: TrailRuntimeHealth;
+  readonly pending: readonly TrailMutationPlan[];
 }
 
 export type TrailRuntimeStore = StoreApi<TrailRuntimeState>;
 
-function createEmptyCommittedRuntime(): TrailCommittedRuntime {
+function createEmptyAuthoritativeState(): TrailAuthoritativeState {
   return {
     configuration: null,
-    cyclesById: {},
-    initiativesById: {},
-    issuesByProjectId: {},
-    milestonesById: {},
-    projectIds: [],
-    projectsById: {},
-    revision: 0,
-    sourceByEntityId: {},
-    sourceEntityIdsByPath: {},
-    sourceIssues: [],
-    sourceIssuesByPath: {},
-    triageIssueIds: [],
-    triageIssuesById: {},
-    workflowIssuesById: {},
+    domain: {
+      cyclesById: {},
+      initiativesById: {},
+      issuesById: {},
+      milestonesById: {},
+      projectsById: {},
+    },
     workspaceState: null,
+  };
+}
+
+function createEmptyCommittedRuntime(): TrailCommittedRuntime {
+  return {
+    authoritative: createEmptyAuthoritativeState(),
+    indexes: {
+      issuesByProjectId: {},
+    },
+    ownership: {
+      sourceByEntityId: {},
+      sourceEntityIdsByPath: {},
+    },
+    revision: 0,
   };
 }
 
 export function createTrailRuntimeStore(): TrailRuntimeStore {
   return createStore<TrailRuntimeState>()(() => ({
-    availability: { kind: "idle" },
     committed: createEmptyCommittedRuntime(),
-    pendingPlans: [],
+    control: { kind: "loading" },
+    health: { sourceIssuesByPath: {} },
+    pending: [],
   }));
 }
 
@@ -81,13 +95,14 @@ export function setTrailRuntimeConfiguration(
   configuration: TrailConfiguration,
 ): void {
   store.setState((state) => ({
-    availability: state.availability,
     committed: {
       ...state.committed,
-      configuration,
+      authoritative: {
+        ...state.committed.authoritative,
+        configuration,
+      },
       revision: state.committed.revision + 1,
     },
-    pendingPlans: state.pendingPlans,
   }));
 }
 
@@ -97,13 +112,14 @@ export function setTrailRuntimeWorkspaceState(
   workspaceState: TrailWorkspaceState,
 ): void {
   store.setState((state) => ({
-    availability: state.availability,
     committed: {
       ...state.committed,
+      authoritative: {
+        ...state.committed.authoritative,
+        workspaceState,
+      },
       revision: state.committed.revision + 1,
-      workspaceState,
     },
-    pendingPlans: state.pendingPlans,
   }));
 }
 
@@ -115,16 +131,13 @@ export function aggregateSourceIssues(
     .flatMap((path) => sourceIssuesByPath[path] ?? []);
 }
 
-export function clearSourceIssuesFromCommitted(
-  committed: TrailCommittedRuntime,
+export function clearSourceIssuesFromHealth(
+  health: TrailRuntimeHealth,
   filePath: string,
-): Pick<TrailCommittedRuntime, "sourceIssues" | "sourceIssuesByPath"> {
-  const sourceIssuesByPath = { ...committed.sourceIssuesByPath };
+): TrailRuntimeHealth {
+  const sourceIssuesByPath = { ...health.sourceIssuesByPath };
   delete sourceIssuesByPath[filePath];
-  return {
-    sourceIssues: aggregateSourceIssues(sourceIssuesByPath),
-    sourceIssuesByPath,
-  };
+  return { sourceIssuesByPath };
 }
 
 export function setSourceIssuesForPath(
@@ -133,11 +146,11 @@ export function setSourceIssuesForPath(
   issues: readonly TrailSourceProblem[],
 ): void {
   store.setState((state) => {
-    const sourceIssuesByPath = { ...state.committed.sourceIssuesByPath };
+    const sourceIssuesByPath = { ...state.health.sourceIssuesByPath };
     if (issues.length === 0) {
       delete sourceIssuesByPath[filePath];
     } else {
-      // Runtime keeps only the stable logical source-problem shape; parser offsets stay below Persistence.
+      // Runtime health keeps only stable logical source problems; parser offsets stay below Persistence.
       sourceIssuesByPath[filePath] = issues.map((issue) => ({
         code: issue.code,
         filePath,
@@ -146,17 +159,14 @@ export function setSourceIssuesForPath(
         scope: issue.scope,
       }));
     }
-    return {
-      availability: state.availability,
-      committed: {
-        ...state.committed,
-        revision: state.committed.revision + 1,
-        sourceIssues: aggregateSourceIssues(sourceIssuesByPath),
-        sourceIssuesByPath,
-      },
-      pendingPlans: state.pendingPlans,
-    };
+    return { health: { sourceIssuesByPath } };
   });
+}
+
+export function selectAllSourceIssues(
+  state: TrailRuntimeState,
+): readonly TrailSourceProblem[] {
+  return aggregateSourceIssues(state.health.sourceIssuesByPath);
 }
 
 export function selectSourceIssuesForPath(
@@ -164,5 +174,5 @@ export function selectSourceIssuesForPath(
   filePath: string | undefined,
 ): readonly TrailSourceProblem[] {
   if (filePath === undefined) return EMPTY_SOURCE_ISSUES;
-  return state.committed.sourceIssuesByPath[filePath] ?? EMPTY_SOURCE_ISSUES;
+  return state.health.sourceIssuesByPath[filePath] ?? EMPTY_SOURCE_ISSUES;
 }

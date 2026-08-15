@@ -236,18 +236,18 @@ describe("Triage Accept service", () => {
     expect(selectEffectiveWorkflowIssueById(optimistic, receipt.targetIssueId)).toMatchObject({
       title: fixture.source.title,
     });
-    expect(optimistic.committed.triageIssuesById[fixture.source.id]).toBe(fixture.source);
-    expect(optimistic.committed.workflowIssuesById[receipt.targetIssueId]).toBeUndefined();
+    expect(optimistic.committed.authoritative.domain.issuesById[fixture.source.id]).toBe(fixture.source);
+    expect(optimistic.committed.authoritative.domain.issuesById[receipt.targetIssueId]).toBeUndefined();
 
     gate.resolve();
     await receipt.completion;
 
     const committed = fixture.runtimeStore.getState();
-    expect(committed.committed.triageIssuesById[fixture.source.id]).toBeUndefined();
-    expect(committed.committed.workflowIssuesById[receipt.targetIssueId]).toMatchObject({
+    expect(committed.committed.authoritative.domain.issuesById[fixture.source.id]).toBeUndefined();
+    expect(committed.committed.authoritative.domain.issuesById[receipt.targetIssueId]).toMatchObject({
       title: fixture.source.title,
     });
-    expect(committed.pendingPlans).toHaveLength(0);
+    expect(committed.pending).toHaveLength(0);
   });
 
   it("compensates the new Workflow target when deleting the Triage source fails", async () => {
@@ -257,9 +257,9 @@ describe("Triage Accept service", () => {
     await expect(receipt.completion).rejects.toMatchObject({ code: "compensated" });
 
     const state = fixture.runtimeStore.getState();
-    expect(state.committed.triageIssuesById[fixture.source.id]).toEqual(fixture.source);
-    expect(state.committed.workflowIssuesById[receipt.targetIssueId]).toBeUndefined();
-    expect(state.pendingPlans).toHaveLength(0);
+    expect(state.committed.authoritative.domain.issuesById[fixture.source.id]).toEqual(fixture.source);
+    expect(state.committed.authoritative.domain.issuesById[receipt.targetIssueId]).toBeUndefined();
+    expect(state.pending).toHaveLength(0);
   });
 
   it("surfaces an explicit partial state when source deletion and target compensation both fail", async () => {
@@ -272,14 +272,14 @@ describe("Triage Accept service", () => {
     await expect(receipt.completion).rejects.toMatchObject({ code: "partial" });
 
     const state = fixture.runtimeStore.getState();
-    expect(state.committed.triageIssuesById[fixture.source.id]).toEqual(fixture.source);
-    expect(state.committed.workflowIssuesById[receipt.targetIssueId]).toBeDefined();
+    expect(state.committed.authoritative.domain.issuesById[fixture.source.id]).toEqual(fixture.source);
+    expect(state.committed.authoritative.domain.issuesById[receipt.targetIssueId]).toBeDefined();
     expect(selectSourceIssuesForPath(state, TRAIL_TRIAGE_PATH)).toEqual(
       expect.arrayContaining([expect.objectContaining({ code: "triage-accept.partial" })]),
     );
     expect(selectSourceIssuesForPath(state, targetPath)).toEqual(
       expect.arrayContaining([expect.objectContaining({ code: "triage-accept.partial" })]),
     );
-    expect(state.pendingPlans).toHaveLength(0);
+    expect(state.pending).toHaveLength(0);
   });
 });

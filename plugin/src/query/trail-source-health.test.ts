@@ -60,12 +60,14 @@ describe("Trail source health queries", () => {
   it("resolves an entity source through Runtime ownership", () => {
     const store = createTrailRuntimeStore();
     store.setState((state) => ({
-      ...state,
       committed: {
         ...state.committed,
-        sourceByEntityId: {
-          ...state.committed.sourceByEntityId,
-          "project-a": "Trail/Projects/0001 A.md",
+        ownership: {
+          ...state.committed.ownership,
+          sourceByEntityId: {
+            ...state.committed.ownership.sourceByEntityId,
+            "project-a": "Trail/Projects/0001 A.md",
+          },
         },
       },
     }));

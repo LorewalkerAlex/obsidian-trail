@@ -42,10 +42,10 @@ describe("Trail Mutation Coordinator", () => {
       settle: () => undefined,
     });
 
-    expect(store.getState().pendingPlans).toHaveLength(1);
+    expect(store.getState().pending).toHaveLength(1);
     release();
     await completion;
-    expect(store.getState().pendingPlans).toEqual([]);
+    expect(store.getState().pending).toEqual([]);
     queue.dispose();
   });
 
@@ -66,14 +66,14 @@ describe("Trail Mutation Coordinator", () => {
       plan: plan(),
       queueKind: "project.create",
       recover: async () => {
-        order.push(`recover:${store.getState().pendingPlans.length}`);
+        order.push(`recover:${store.getState().pending.length}`);
       },
       settle: () => undefined,
     });
 
     await expect(completion).rejects.toThrow("mapped");
     expect(order).toEqual(["execute", "failed", "recover:1"]);
-    expect(store.getState().pendingPlans).toEqual([]);
+    expect(store.getState().pending).toEqual([]);
     queue.dispose();
   });
 
@@ -89,8 +89,8 @@ describe("Trail Mutation Coordinator", () => {
       settle: () => undefined,
     });
 
-    expect(store.getState().pendingPlans).toHaveLength(1);
+    expect(store.getState().pending).toHaveLength(1);
     await expect(completion).rejects.toMatchObject({ code: "queue-disposed" });
-    expect(store.getState().pendingPlans).toEqual([]);
+    expect(store.getState().pending).toEqual([]);
   });
 });

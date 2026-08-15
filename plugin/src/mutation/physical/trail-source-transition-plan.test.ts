@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import type { TrailCommittedRuntime } from "../../runtime/store/trail-runtime-store";
 import {
   createTrailMutationPlan,
   projectMutationEntity,
   triageIssueMutationEntity,
   workflowIssueMutationEntity,
 } from "../plans/trail-mutation-plan";
+import { createTrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { materializeTrailSourceTransitionPlan } from "./trail-source-transition-plan";
 
 const project = {
@@ -32,28 +32,33 @@ const target = {
   title: "Source",
 };
 
-function committed(): TrailCommittedRuntime {
-  return {
-    configuration: null,
-    cyclesById: {},
-    initiativesById: {},
-    issuesByProjectId: {},
-    milestonesById: {},
-    projectIds: [project.id],
-    projectsById: { [project.id]: project },
-    revision: 1,
-    sourceByEntityId: {
-      [project.id]: "Trail/Projects/0001 Project.md",
-      [source.id]: "Trail/Collections/Triage.md",
+function committed() {
+  const store = createTrailRuntimeStore();
+  store.setState((state) => ({
+    committed: {
+      ...state.committed,
+      authoritative: {
+        ...state.committed.authoritative,
+        domain: {
+          ...state.committed.authoritative.domain,
+          issuesById: { [source.id]: source },
+          projectsById: { [project.id]: project },
+        },
+      },
+      ownership: {
+        sourceByEntityId: {
+          [project.id]: "Trail/Projects/0001 Project.md",
+          [source.id]: "Trail/Collections/Triage.md",
+        },
+        sourceEntityIdsByPath: {
+          "Trail/Collections/Triage.md": [source.id],
+          "Trail/Projects/0001 Project.md": [project.id],
+        },
+      },
+      revision: 1,
     },
-    sourceEntityIdsByPath: {},
-    sourceIssues: [],
-    sourceIssuesByPath: {},
-    triageIssueIds: [source.id],
-    triageIssuesById: { [source.id]: source },
-    workflowIssuesById: {},
-    workspaceState: null,
-  };
+  }));
+  return store.getState().committed;
 }
 
 describe("Trail Source Transition physical plan", () => {

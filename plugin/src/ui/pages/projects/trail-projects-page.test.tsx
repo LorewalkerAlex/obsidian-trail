@@ -86,7 +86,7 @@ describe("TrailProjectsPage", () => {
   it("uses NeedsInput to request Estimate before Completed", () => {
     const store = createReadyTrailUiStore();
     const { issue } = seedWorkflowProject(store);
-    const configuration = store.getState().committed.configuration;
+    const configuration = store.getState().committed.authoritative.configuration;
     if (configuration === null) throw new Error("missing configuration");
     const completedId = configuration.statuses.issue.completed.defaultId;
     const onWorkflowStatusChange = vi.fn((

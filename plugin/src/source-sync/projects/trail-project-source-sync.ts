@@ -33,6 +33,7 @@ import {
   removeProjectContribution,
 } from "../../runtime/reconcile/trail-runtime-reconciler";
 import {
+  selectAllSourceIssues,
   selectSourceIssuesForPath,
   setSourceIssuesForPath,
   type TrailRuntimeStore,
@@ -79,6 +80,11 @@ function validationIssueCodes(issues: readonly { readonly code: string }[]): rea
   return issues.map((issue) => issue.code);
 }
 
+function workflowIssueCount(store: TrailRuntimeStore): number {
+  return Object.values(store.getState().committed.authoritative.domain.issuesById)
+    .filter((issue) => issue.context === "workflow").length;
+}
+
 /** Owns authoritative Project-source refresh, persistence verification, and Runtime reconciliation. */
 export class TrailProjectSourceSync {
   public constructor(
@@ -93,14 +99,13 @@ export class TrailProjectSourceSync {
     this.diagnostics.record("workflow.initialize.started", { correlationId });
     const snapshot = await this.persistence.readAll();
     this.applySnapshot(snapshot, "initialize", correlationId, false);
+    const state = this.runtimeStore.getState();
     this.diagnostics.record("workflow.initialize.completed", {
       correlationId,
       data: {
-        projectCount: this.runtimeStore.getState().committed.projectIds.length,
-        sourceIssueCount: this.runtimeStore.getState().committed.sourceIssues.length,
-        workflowIssueCount: Object.keys(
-          this.runtimeStore.getState().committed.workflowIssuesById,
-        ).length,
+        projectCount: Object.keys(state.committed.authoritative.domain.projectsById).length,
+        sourceIssueCount: selectAllSourceIssues(state).length,
+        workflowIssueCount: workflowIssueCount(this.runtimeStore),
       },
     });
   }
@@ -382,13 +387,13 @@ export class TrailProjectSourceSync {
     }
 
     if (removeMissingSources) {
-      const committed = this.runtimeStore.getState().committed;
-      for (const filePath of Object.keys(committed.sourceEntityIdsByPath)) {
+      const state = this.runtimeStore.getState();
+      for (const filePath of Object.keys(state.committed.ownership.sourceEntityIdsByPath)) {
         if (filePath.startsWith(TRAIL_PROJECTS_PREFIX) && !resultPaths.has(filePath)) {
           removeProjectContribution(this.runtimeStore, filePath);
         }
       }
-      for (const filePath of Object.keys(committed.sourceIssuesByPath)) {
+      for (const filePath of Object.keys(state.health.sourceIssuesByPath)) {
         if (
           filePath === TRAIL_PROJECTS_PATH
           || filePath.startsWith(TRAIL_PROJECTS_PREFIX)

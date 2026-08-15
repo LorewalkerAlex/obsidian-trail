@@ -1,7 +1,7 @@
 # Trail Implementation Architecture
 
 > 状态：长期 Implementation Architecture 基线
-> 最后更新：2026-08-15
+> 最后更新：2026-08-16
 > 上游 Product：`docs/product-design-baseline.md`
 > 上游 Canonical Domain：`docs/canonical-domain-model.md`
 > 上游 Logical Data Model：`docs/logical-data-model.md`
@@ -214,7 +214,7 @@ Trail design authorities
 │  └─ mutation/                 logical plans / coordination / queue / physical planning / execution
 │
 ├─ Technical Design: Runtime
-│  └─ runtime/                  committed state / pending overlay / indexes / ownership / control
+│  └─ runtime/                  committed authoritative state / pending / indexes / ownership / control / source health
 │
 ├─ Technical Design: Synchronization
 │  └─ source-sync/              bootstrap / discovery / refresh / external-change convergence
@@ -327,7 +327,7 @@ plugin/src/
 | Authoritative source read/write | `persistence/*` | Application / UI 直接 `Vault.process()` |
 | Bootstrap / discovery / external refresh / source-health convergence | `source-sync/*` | `main.ts` 或各 Feature 重复事件路由与 reread/reconcile |
 | Logical mutation lifecycle | `mutation/*` | 每个 Feature 自建 pending / queue / topology executor |
-| Committed / pending / indexes / ownership / control | `runtime/*` | Page 或 Persistence 自建第二份状态 |
+| Committed / pending / indexes / ownership / control / source health | `runtime/*` | Page 或 Persistence 自建第二份状态 |
 | Page/read selection | `query/*` | UI 自己重建持久化或索引逻辑 |
 | Obsidian API integration | `adapters/obsidian/*` | Domain / Application / Runtime import `obsidian` |
 | Source range / marker offset / parser metadata | Markdown / persistence-side technical types | Domain / Runtime authoritative state |
@@ -348,13 +348,13 @@ Custom View 不拥有独立 query engine。它优先复用系统页面已经存�
 
 ## 6. Authoritative State Universe
 
-Trail 的 authoritative persistence 分成三类：Domain Data、Configuration、Workspace State。
+Trail 的 authoritative persistence 分成三类：Domain Data、Configuration、Workspace State。Runtime 在 `loading` 期间使用结构完整但尚未加载的 empty authoritative container；`null` Configuration / Workspace State 表示尚未获得对应 authoritative snapshot，而不是一个有效的空 Workspace。
 
 ```ts
 interface TrailAuthoritativeState {
   readonly domain: TrailDomainState;
-  readonly configuration: TrailConfigurationState;
-  readonly workspaceState: TrailWorkspaceState;
+  readonly configuration: TrailConfiguration | null;
+  readonly workspaceState: TrailWorkspaceState | null;
 }
 ```
 
@@ -370,7 +370,7 @@ interface TrailDomainState {
 }
 ```
 
-不建立 bloated `BaseEntity`。Core Entity 真正共享的只有 stable ID；generic dispatch 使用 implementation wrapper，而不是向 persisted record 强加 `kind` / `type` 字段。
+不建立 bloated `BaseEntity`。Core Entity 真正共享的只有 stable ID；generic dispatch 使用 implementation wrapper，而不是向 persisted record 强加 `kind` / `type` 字段。Triage / Workflow 共享一个 canonical `issuesById` universe；`context` 与关系字段决定 Issue 的业务语义，Runtime 不再维护两套 Issue map。
 
 概念：
 
@@ -412,13 +412,14 @@ CustomView / Favorites 已冻结的 logical shape 应与 Configuration 一样在
 
 ## 7. Runtime Architecture
 
-Runtime 分成 Committed、Indexes/Ownership、Pending Overlay、Control 四个职责。
+Runtime 顶层只保留四类状态：Committed、ordered Pending Overlay、Control 与 Source Health。Committed 再由 authoritative facts、logical source ownership 与 materialized indexes 三块组成；这些层次是长期 API，不保留旧 flat shape alias。
 
 ```ts
-interface TrailRuntime {
-  readonly committed: TrailCommittedRuntime | null;
-  readonly pending: readonly TrailPendingMutation[];
+interface TrailRuntimeState {
+  readonly committed: TrailCommittedRuntime;
+  readonly pending: readonly TrailMutationPlan[];
   readonly control: TrailRuntimeControl;
+  readonly health: TrailRuntimeHealth;
 }
 
 interface TrailCommittedRuntime {
@@ -427,7 +428,13 @@ interface TrailCommittedRuntime {
   readonly ownership: TrailSourceOwnership;
   readonly indexes: TrailRuntimeIndexes;
 }
+
+interface TrailRuntimeHealth {
+  readonly sourceIssuesByPath: Readonly<Record<string, readonly TrailSourceProblem[]>>;
+}
 ```
+
+`TrailRuntimeHealth` 是 Runtime 当前对 source trust / Data Issues 的逻辑视图，不是 authoritative Domain fact，也不携带 parser range、offset、AST node 或 persistence fingerprint。Source Sync 负责收敛它，Query/UI 只通过 selector 消费；单纯 health 变化不推进 committed revision。
 
 ### 7.1 Committed vs Effective
 
@@ -437,11 +444,13 @@ Effective State
 + ordered Pending TrailMutationPlans
 ```
 
-Committed 只表示已经由 authoritative persistence 确认的事实。Pending 是 ordered optimistic intent。hover、drag pointer、modal draft、selection 等 local UI state 不进入 Runtime。
+Committed 只表示已经由 authoritative persistence 确认的事实及其 ownership/index 投影。Pending 是 ordered optimistic intent。hover、drag pointer、modal draft、selection 等 local UI state 不进入 Runtime。
+
+Runtime store 在进程启动时立即存在一个 revision `0` 的 empty committed container，以保持 Store shape 稳定；是否已经获得可用 authoritative snapshot 由 `control` 决定。初始化失败时可以继续保持结构上的 empty committed container，但 UI / Application 必须依据 `read-only-error` 拒绝把它当作可操作 Workspace。已有 last-known-good snapshot 的 refresh 失败则保留该 committed state 用于查看。
 
 ### 7.2 Structural / Reference Indexes
 
-Architecture 从一开始允许完整高价值 index：
+Architecture 允许完整高价值 index，例如：
 
 ```text
 projectsByInitiativeId
@@ -458,7 +467,7 @@ statusDefinitionsByCategory
 labelGroupsByEntityType
 ```
 
-只为稳定关系、referential integrity 或已证明的查询热点建立 index；不因字段存在就预建 index。
+只为稳定关系、referential integrity 或已证明的查询热点建立 index；不因字段存在就预建 index。当前 active Runtime 只物化已经有真实 consumer 的 `issuesByProjectId`；Project/Triage 的展示排序由 selector 基于 effective state 计算，不再把 `projectIds`、`triageIssueIds` 等展示 cache 混入 Committed。
 
 ### 7.3 Source Ownership
 
@@ -469,11 +478,11 @@ entity → authoritative source path
 source path → entity refs
 ```
 
-不把 H2 offset、marker range、AST node 或 persistence fingerprint 泄漏进 Runtime。
+Ownership 与 Authoritative State、Indexes 分开维护。它只表达逻辑 source identity，不把 H2 offset、marker range、AST node 或 persistence fingerprint 泄漏进 Runtime。
 
 ### 7.4 Runtime Control
 
-概念状态：
+Canonical lifecycle：
 
 ```text
 loading
@@ -482,7 +491,13 @@ refreshing
 read-only-error
 ```
 
-refreshing 时可显示 last-known-good committed state，但暂停 mutation。首次加载失败时 committed 可以为空。read-only-error 不伪造空 Workspace。
+`loading` 覆盖初始 discovery/bootstrap/rebuild；`ready` 才开放正常 user mutation；`refreshing` 保留 last-known-good committed state 供查看，同时暂停 mutation；`read-only-error` 表示当前不能安全写入，并携带可展示错误信息，已有可信 snapshot 时继续允许查看。旧的 `idle / initializing / blocked / error` 只属于迁移期命名，不作为长期 Runtime API。
+
+### 7.5 Source Health and Mutation Gating
+
+Source Health 与 Runtime Control 分工不同：Control 表达全局生命周期/可写状态；Health 表达具体 source 的 Data Issues。当前 active behavior 已能在 ownership 可判定时做 source-scoped gating：Triage source issue 暂停 Triage action，Project root/source issue 暂停对应 Workflow mutation，同时继续展示 last-known-good committed data；只有启动/全局 refresh 无法建立可靠状态时才进入 `read-only-error`。
+
+这保留 Technical Design 的 granular fault-scope 能力，同时不把 source diagnostic 伪装成 authoritative fact。未来若 MutationAvailabilityPolicy 继续细化，应基于同一 `health + ownership + control` 主干增强，不引入第二套 availability state。
 
 ## 8. Validation Architecture
 
@@ -503,7 +518,7 @@ Physical Validation
 
 统一 issue 至少保留 stage、severity、code、message 与 scope。scope 能表达 workspace、configuration、source、entity，以便未来细化 fault isolation。
 
-V1 mutation availability policy 可以粗粒度：出现 blocking validation error 时全局暂停 mutation。Technical Design 的更细 source / record isolation 不从 architecture 删除；未来只需细化 availability / refresh policy，而不重构 Validator、Repository、Runtime 或 UI 主链。
+Mutation availability 不再与 Data Issue 的存储结构耦合：source-level issue 进入 Runtime Health，由 Query/Application 根据 ownership 做当前可支持的 source-scoped gating；无法建立全局可信状态的错误进入 Runtime Control `read-only-error`。未来只需细化 availability / refresh policy，而不重构 Validator、Repository、Runtime 或 UI 主链。
 
 ## 9. Persistence Carrier Architecture
 
@@ -635,7 +650,7 @@ type DomainSourceReadResult =
     };
 ```
 
-`accepted` 可以包含局部 issue；只有 file identity / core structure 已经不可信时才 rejected。未来细粒度 isolation 可以利用这些结构，V1 可以将任何 blocking issue 交给全局 mutation gate。
+`accepted` 可以包含局部 issue；只有 file identity / core structure 已经不可信时才 rejected。未来细粒度 isolation 可以利用这些结构，V1 可以将 blocking issue 映射到 Runtime Health，并由当前 source ownership / mutation policy 决定影响范围。
 
 Runtime Reconciler 拥有：
 
@@ -738,7 +753,7 @@ Committed
 → Effective Planning State
 ```
 
-前序 plan 失败时，可从最新 committed state 重新规划尚未执行的 prepared commands。effectiveAt、ID 和用户输入已经固定，因此 replan deterministic；不建设复杂 dependency graph。
+当前 Runtime 的 pending container 只保留 ordered `TrailMutationPlan[]`，不再维护 Feature-specific pending shape 或 `pendingPlans` compatibility alias。前序 plan commit → committed advance 并移除该 plan；前序 plan fail → 移除失败 plan，剩余 optimistic effects 从最新 committed state 重新 replay。需要重新运行 semantic planning 的 future case 仍使用已经 normalized 的 command input，不建立 dependency graph。
 
 ### 11.7 Global Serial Queue
 
@@ -1144,7 +1159,7 @@ Codebase Simplification 完成后，以下规则属于长期 architecture contra
 4. **Application purity**：`application/` 只组织 use case，消费 Domain / Query / Mutation contracts；不直接 parse Markdown、调用 Vault API 或手改 Runtime。
 5. **Path authority**：managed root、目录、singleton paths、prefix/predicate 只由 `markdown/schema/trail-paths.ts` 定义；其他模块只引用，不重新拼接 authoritative `Trail/...` path。
 6. **Source lifecycle ownership**：bootstrap / discovery / external refresh / failure reload 收敛到 `source-sync/`；Feature 只表达业务行为，不能复制 reread / reconcile / host-event lifecycle。
-7. **Runtime final shape**：Runtime 只保存 authoritative logical facts、logical ownership/index、pending intent 与 control；不保存 Markdown parser metadata，不保留旧 flat shape alias 作为第二 API。
+7. **Runtime final shape**：Runtime 顶层只保留 `committed / pending / control / health`；Committed 内只保留 `revision / authoritative / ownership / indexes`。Authoritative Domain 使用单一 `issuesById`；Health 只保存稳定逻辑 source issues，不推进 committed revision；production 不保存 Markdown parser metadata，也不保留旧 flat shape、旧 lifecycle 或 compatibility alias 作为第二 API。
 8. **Future skeleton stays explicit**：Initiative / Milestone / Cycle / Projectless Issue 等冻结对象继续拥有 RESERVED owner；清理不得把未来 contract 删除到需要后续重新发明 owner。
 9. **Thin composition root**：`main.ts` 只负责 plugin lifecycle、dependency composition、command/view/file-event registration；业务行为进入已映射 owner。
 10. **Evidence follows owner**：机制测试跟随 canonical capability；Feature 只测试语义与新增独立风险。技术选型 spike 不长期留在 active test suite。
