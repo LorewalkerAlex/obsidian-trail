@@ -4,9 +4,9 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, and basic Workflow stages. The active implementation has now completed the **Implementation Architecture Re-baseline** locally and passed the Re-baseline Exit verification; the public checkpoint is pending commit / push and GitHub verification.
+Trail has completed its POC exit and the formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, and **Implementation Architecture Re-baseline** stages. The public Re-baseline implementation checkpoint is `9e12e32e870a2299023b64804e3070abe138eb0b`; post-push GitHub verification and CI both passed. The current engineering stage is **Codebase Simplification** before net-new Intake → Workflow work resumes.
 
-The migrated Formal Quick Capture / Triage path, Triage Management actions, Workflow Entry path, Development Diagnostics, and Triage Accept cross-source flow now run on shared Markdown / Physical, Runtime, Mutation, Persistence and modular UI capabilities. Full `npm run check`, the Diagnostics-enabled build, representative real-Obsidian regression, and Development Diagnostics trace review all passed on 2026-08-15.
+The migrated Formal Quick Capture / Triage path, Triage Management actions, Workflow Entry path, Development Diagnostics, and Triage Accept cross-source flow now run on shared Markdown / Physical, Runtime, Mutation, Persistence and modular UI capabilities. Full `npm run check`, the Diagnostics-enabled build, representative real-Obsidian regression, Development Diagnostics trace review, and the GitHub Actions `check` job all passed on 2026-08-15.
 
 The current design and implementation chain is:
 
@@ -28,7 +28,7 @@ docs/implementation-plan.md
 
 `docs/implementation-architecture.md` defines the Formal code module map, dependency direction, shared Domain Effects, Physical / Markdown operations, standard read/write framework, Runtime ownership, proportional reliability, and independent-risk testing rules. `docs/implementation-plan.md` remains the single source of truth for project progress and implementation checkpoints.
 
-The Re-baseline was intentionally placed **before further Intake → Workflow feature work**. After the public Re-baseline checkpoint is verified, the next engineering stage is **Codebase Simplification**: a full active-code audit to remove transitional, duplicate, dead, or unnecessarily abstract code while preserving verified behavior. Only after that cleanup checkpoint does net-new Intake → Workflow work resume, beginning with **Triage Convert to Project**.
+The Re-baseline was intentionally placed **before further Intake → Workflow feature work**. The current **Codebase Simplification** stage performs a full active-code audit to remove transitional, duplicate, dead, or unnecessarily abstract code while preserving verified behavior. Only after that cleanup checkpoint does net-new Intake → Workflow work resume, beginning with **Triage Convert to Project**.
 
 The exact POC implementation / fixture / style baseline remains preserved under `archive/poc/` as technical evidence. POC-era Area / Task / Fleeting Note code is not part of the active runtime, lint, or test path and is not a target of the Re-baseline.
 
