@@ -33,6 +33,7 @@ export const TRAIL_REQUIRED_SINGLETON_PATHS = [
 
 export const TRAIL_INITIATIVES_PREFIX = `${TRAIL_INITIATIVES_PATH}/` as const;
 export const TRAIL_PROJECTS_PREFIX = `${TRAIL_PROJECTS_PATH}/` as const;
+const TRAIL_MANAGED_PREFIX = `${TRAIL_MANAGED_ROOT}/` as const;
 const SEQUENCED_ENTITY_FILENAME = /^(\d{4}) (.+)\.md$/;
 
 function isDirectMarkdownChild(path: string, prefix: string): boolean {
@@ -41,6 +42,11 @@ function isDirectMarkdownChild(path: string, prefix: string): boolean {
     && path.endsWith(".md")
     && !path.slice(prefix.length).includes("/")
   );
+}
+
+/** Returns whether the path is the managed Trail root or one of its descendants. */
+export function isTrailManagedPath(path: string): boolean {
+  return path === TRAIL_MANAGED_ROOT || path.startsWith(TRAIL_MANAGED_PREFIX);
 }
 
 /** Returns whether the path is a direct Initiative Markdown source. */

@@ -51,6 +51,11 @@ export interface TrailRuntimeState {
   readonly pending: readonly TrailMutationPlan[];
 }
 
+export interface TrailReloadCandidate {
+  readonly committed: TrailCommittedRuntime;
+  readonly health: TrailRuntimeHealth;
+}
+
 export type TrailRuntimeStore = StoreApi<TrailRuntimeState>;
 
 function createEmptyAuthoritativeState(): TrailAuthoritativeState {
@@ -120,6 +125,35 @@ export function setTrailRuntimeWorkspaceState(
       },
       revision: state.committed.revision + 1,
     },
+  }));
+}
+
+/** Captures only the reloadable authoritative/health portion of a staging Runtime. */
+export function createTrailReloadCandidate(
+  state: TrailRuntimeState,
+): TrailReloadCandidate {
+  return {
+    committed: state.committed,
+    health: state.health,
+  };
+}
+
+/**
+ * Atomically replaces the live authoritative snapshot after a complete reload.
+ * Live revision remains monotonic and pending optimistic intent is left untouched.
+ */
+export function publishTrailReloadCandidate(
+  store: TrailRuntimeStore,
+  candidate: TrailReloadCandidate,
+  timezone: string,
+): void {
+  store.setState((state) => ({
+    committed: {
+      ...candidate.committed,
+      revision: state.committed.revision + 1,
+    },
+    control: { kind: "ready", timezone },
+    health: candidate.health,
   }));
 }
 

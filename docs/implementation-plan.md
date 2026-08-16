@@ -123,13 +123,13 @@ Design / Architecture authority                 Current cleanup target
 ├─ Product Behavior                           → application/     feature semantics only
 ├─ Mutation Technical Design                  → mutation/        remove feature-plan dual track
 ├─ Runtime Technical Design                   → runtime/         authoritative/ownership/indexes/pending/control/health
-├─ Synchronization Technical Design           → source-sync/     authoritative source lifecycle
-├─ Persistence / Physical boundary            → persistence/     remove old Domain gateways
+├─ Synchronization Technical Design           → source-sync/     authoritative source lifecycle / full refresh
+├─ Persistence / Physical boundary            → persistence/     authoritative carrier read/write
 ├─ Markdown Physical Model                    → markdown/        single path + schema + codec authority
 ├─ Logical Query Contract                     → query/           retain read-side ownership
 ├─ Product / Interaction                      → ui/              keep page/action boundary
-├─ Obsidian Host                              → adapters/        current host-event cutover
-└─ Composition Root                           → main.ts          current thinning to lifecycle / wiring
+├─ Obsidian Host                              → adapters/        Vault / plugin-data / managed-event adapters
+└─ Composition Root                           → main.ts          lifecycle / composition / host registration
 ```
 
 Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace State 等已经冻结的未来结构继续保留长期 owner。不存在实现内容时不强制创建空目录；已冻结 type/schema/codec contract 可以存在，行为仍可 deferred。
@@ -144,8 +144,8 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 | **Persistence + Source Sync Finalization** | 删除旧 Domain persistence gateways / duck typing；收口 authoritative source lifecycle 与 external refresh owner | **已完成** |
 | **Runtime Final Shape** | 收口 authoritative / ownership / indexes / pending / control；删除 compatibility alias 与 parser/source metadata leakage | **已完成** |
 | **Feature Plan / Service Simplification** | 复用共享 lifecycle，拆掉 Feature Service 中重复 orchestration；Feature 只保留业务语义与独立风险 | **已完成** |
-| **Host / Composition / UI Boundary** | `main.ts` 只做 composition/registration；host file events 进入 adapter/source-sync；UI 保持纯 read/intent | **当前** |
-| Tests / Tooling / Stage-language Cleanup | 删除 active technology spike / duplicate evidence；增加 anti-drift guards；清除 production migration-stage terminology | 待继续 |
+| **Host / Composition / UI Boundary** | `main.ts` 只做 composition/registration；host file events 进入 adapter/source-sync；UI 保持纯 read/intent | **已完成** |
+| **Tests / Tooling / Stage-language Cleanup** | 删除 active technology spike / duplicate evidence；增加 anti-drift guards；清除 production migration-stage terminology | **当前** |
 | Simplification Exit | full check、Diagnostics build、代表性 real-host regression、trace review、文档校准、commit/push/GitHub audit | 待开始 |
 
 ### 4.3 Long-term cleanup rules
@@ -177,25 +177,25 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 - README、Implementation Architecture、Implementation Plan 与真实代码事实一致；
 - checkpoint commit / push / GitHub review / CI 完成。
 
-### 4.5 当前执行 Slice：Host / Composition / UI Boundary
+### 4.5 当前执行 Slice：Tests / Tooling / Stage-language Cleanup
 
-**Feature Plan / Service Simplification 已完成。** 当前 Application Feature 已收敛到“业务语义 + 共享 capability 组合”：
+**Host / Composition / UI Boundary 已完成。** 当前边界已经收敛为：
 
-- `TrailTriageAcceptService` 不再直接依赖 raw Persistence、Domain-source validation、single-transaction execution 或 Runtime reconcile；它保留 Accept planning、destination-first Source Transition 组合，以及 `committed / compensated / partial` 的业务 outcome 语义；
-- Triage / Project Source Sync 统一承接 source-specific transition execute / observe、authoritative verification、Runtime reconcile、source health 与 failure convergence；没有新增 generic transition facade；
-- Quick Capture 的 normalization / planner 已并回 Intake，旧 `trail-triage-command.ts` 与对应测试删除；Triage Intake / Management / Accept 统一复用 `trail-command.ts` 的 command ID / time / title normalization；
-- 对 Application 现有 Feature owner 的审计未发现其他 Feature 继续复制 persistence / reread / reconcile lifecycle。Workspace 继续通过专用 Gateway 隔离 host mechanics；顶层 `TrailApplication` 仍承担部分 dependency composition，这属于下一 Slice，而不是 Feature ownership 回退。
+- `main.ts` 只保留 plugin lifecycle、dependency composition、command/view/Vault-event registration；managed path/event policy 进入 Obsidian adapter，并复用 canonical path authority；
+- `TrailRefreshController` 成为 startup / unexpected external change 的统一 full-refresh owner：候选状态在 staging Runtime 完整加载与校验，成功后原子发布；失败保留 live LKG 并进入 `read-only-error`；external refresh 与 mutation 共用全局 serial queue，refresh 中再次到达的 managed event 会在 publish 前重新读取；
+- Trail-owned Vault event 使用 active-write token 精确抑制，不使用 TTL；晚到事件按 external change 安全 full refresh；
+- `TrailApplication` 收窄为 UI-facing use-case facade，Feature service graph 通过 validated Application Session 注入；raw Persistence、Source Sync lifecycle、startup/refresh ingress 已退出 facade；`TrailView` 只依赖 `TrailApplicationActions`；
+- Workspace bootstrap / classification 从旧 `application/workspace` 迁入 `source-sync/bootstrap`，`workspaceState` 与 Configuration 一起进入 authoritative Runtime reload candidate。
 
-本 Slice 最终代码 scope 为 12 个路径（10 modified + 2 deleted）；受影响 Feature / Source Sync / Source Transition tests、完整 `npm run check` 与 `git diff --check` 已通过。
+本 Slice 最终代码 scope 为 22 个路径；Host / Refresh / Application focused tests、Refresh 并发边界测试、完整 `npm run check` 与 `git diff --check` 已通过。
 
-当前进入 **Host / Composition / UI Boundary**。这一 Slice 只处理 host / wiring ownership，不增加新产品能力：
+当前进入 **Tests / Tooling / Stage-language Cleanup**。这一 Slice 只做 Simplification 的证据与防回退收口：
 
-- 让 `main.ts` 收敛为 plugin lifecycle、dependency composition、command/view/file-event registration；
-- 把 managed-source create / modify / delete / rename 的 host event 分类与 refresh routing 收敛到 Obsidian adapter + Source Sync owner，避免 `main.ts` 或 Application 复制路径判断和 source-event behavior；
-- 继续缩小 `TrailApplication` 的 composition 责任，让它保持 UI-facing Application facade，而不是 raw Persistence / host wiring owner；
-- UI 继续只读 Runtime / 发 Application intent；本 Slice 不做视觉重设计，也不把 Host cleanup 扩张成页面重构。
+- 审计 active tests，删除仅服务旧 owner / technology spike / 重复机制证明的 evidence，保留 canonical owner 与独立 failure boundary；
+- 把关键 anti-drift contract 尽量落成 lint / type / test guard，重点防止旧 owner import、反向依赖、重复 path authority 和 host/source lifecycle 再次回流；
+- 清理 production source 中仅表示迁移阶段的 terminology，不改 Product / Domain 术语，也不借机重构业务行为。
 
-Host Boundary 完成后再进入 **Tests / Tooling / Stage-language Cleanup**，最后执行 Simplification Exit 的 Diagnostics build、代表性真实 Obsidian regression、trace review、文档校准与 checkpoint。整个 Codebase Simplification 完成前仍不新增 `Triage Convert to Project`。
+完成后进入 **Simplification Exit**：`npm run check`、`npm run build:diagnostics`、`git diff --check`、代表性真实 Obsidian regression、Diagnostics trace review、最终文档校准与 checkpoint。整个 Codebase Simplification 完成前仍不新增 `Triage Convert to Project`。
 
 ## 5. Implementation Checkpoints
 
@@ -216,7 +216,7 @@ Host Boundary 完成后再进入 **Tests / Tooling / Stage-language Cleanup**，
 | Formal Workflow | 已完成 | Workflow 可创建、执行并从 Markdown 重建 |
 | Triage Accept | 已完成 | 新 identity、destination-first、optimistic / reconcile 与真实 host evidence 已建立，并完成新架构迁移 |
 | **Implementation Architecture Re-baseline** | **已完成** | `9e12e32e870a2299023b64804e3070abe138eb0b` 已 push 并通过 GitHub 回查与 CI；full check、Diagnostics build、real-host regression 与 trace review 全部通过 |
-| **Codebase Simplification** | **当前** | 已完成 Path / Layout、Application/Domain boundary、Canonical Mutation Plan、Workflow ownership/persistence、Domain Purity、Persistence + Source Sync Finalization、Runtime Final Shape 与 Feature Plan / Service Simplification；当前进入 Host / Composition / UI Boundary |
+| **Codebase Simplification** | **当前** | 已完成 Path / Layout、Application/Domain boundary、Canonical Mutation Plan、Workflow ownership/persistence、Domain Purity、Persistence + Source Sync Finalization、Runtime Final Shape、Feature Plan / Service Simplification 与 Host / Composition / UI Boundary；当前进入 Tests / Tooling / Stage-language Cleanup |
 | Intake → Workflow | 待继续 | Codebase Simplification 后以 Convert to Project 作为第一个净新增 Slice |
 | V1 Exit | 待开始 | — |
 

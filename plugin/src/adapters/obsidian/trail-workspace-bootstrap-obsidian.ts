@@ -1,11 +1,5 @@
 import type { App, TFile, TFolder } from "obsidian";
 
-import type {
-  ManagedRootEntry,
-  PluginDataProbe,
-  WorkspaceBootstrapGateway,
-  WorkspaceProbe,
-} from "../../application/workspace/trail-workspace";
 import {
   TRAIL_MANAGED_ROOT,
   TRAIL_REQUIRED_SINGLETON_PATHS,
@@ -14,6 +8,12 @@ import {
 import {
   createTrailPluginDataRepository,
 } from "../../persistence/plugin-data/trail-plugin-data-repository";
+import type {
+  ManagedRootEntry,
+  PluginDataProbe,
+  WorkspaceBootstrapGateway,
+  WorkspaceProbe,
+} from "../../source-sync/bootstrap/trail-workspace-bootstrap";
 import type { ObsidianFileKinds } from "./trail-obsidian-file-kinds";
 import {
   createObsidianPluginDataIO,
@@ -40,7 +40,7 @@ function toManagedRootEntry(
 }
 
 /**
- * Obsidian bootstrap adapter. Bootstrap policy remains owned by trail-workspace;
+ * Obsidian bootstrap adapter. Bootstrap policy remains owned by Source Sync;
  * Markdown validation and plugin-data validation are delegated to their canonical
  * persistence capabilities without changing bootstrap ordering or rollback.
  */

@@ -2,6 +2,10 @@ import type { App, TFile, TFolder } from "obsidian";
 
 import type { TrailSourceIO } from "../../persistence/ports/trail-source-io";
 import type { ObsidianFileKinds } from "./trail-obsidian-file-kinds";
+import type {
+  TrailHostWriteGuard,
+  TrailVaultEvent,
+} from "./trail-vault-events-obsidian";
 
 function requireFile(
   app: Pick<App, "vault">,
@@ -27,14 +31,38 @@ function requireFolder(
   return folder;
 }
 
+async function withTrailOwnedEvent<Result>(
+  writeGuard: TrailHostWriteGuard | undefined,
+  event: TrailVaultEvent,
+  operation: () => Promise<Result>,
+): Promise<Result> {
+  if (writeGuard === undefined) {
+    return operation();
+  }
+
+  const token = writeGuard.begin(event);
+  try {
+    return await operation();
+  } finally {
+    writeGuard.end(token);
+  }
+}
+
 /** Obsidian adapter for the generic authoritative Markdown SourceIO port. */
 export function createObsidianSourceIO(
   app: Pick<App, "vault"> & Partial<Pick<App, "fileManager">>,
   fileKinds: ObsidianFileKinds,
+  writeGuard?: TrailHostWriteGuard,
 ): TrailSourceIO {
   return {
     async create(path, content): Promise<void> {
-      await app.vault.create(path, content);
+      await withTrailOwnedEvent(
+        writeGuard,
+        { kind: "create", path },
+        async () => {
+          await app.vault.create(path, content);
+        },
+      );
     },
 
     async delete(path): Promise<void> {
@@ -42,10 +70,17 @@ export function createObsidianSourceIO(
       if (target === null) {
         throw new Error(`Expected source is missing: ${path}`);
       }
-      if (app.fileManager === undefined) {
+      const fileManager = app.fileManager;
+      if (fileManager === undefined) {
         throw new Error("Obsidian fileManager is required to delete a source");
       }
-      await app.fileManager.trashFile(target);
+      await withTrailOwnedEvent(
+        writeGuard,
+        { kind: "delete", path },
+        async () => {
+          await fileManager.trashFile(target);
+        },
+      );
     },
 
     async list(path) {
@@ -61,7 +96,13 @@ export function createObsidianSourceIO(
 
     async process(path, transform): Promise<void> {
       const file = requireFile(app, fileKinds, path);
-      await app.vault.process(file, transform);
+      await withTrailOwnedEvent(
+        writeGuard,
+        { kind: "modify", path },
+        async () => {
+          await app.vault.process(file, transform);
+        },
+      );
     },
 
     async read(path): Promise<string> {
@@ -73,10 +114,17 @@ export function createObsidianSourceIO(
       if (target === null) {
         throw new Error(`Expected source is missing: ${from}`);
       }
-      if (app.fileManager === undefined) {
+      const fileManager = app.fileManager;
+      if (fileManager === undefined) {
         throw new Error("Obsidian fileManager is required to rename a source");
       }
-      await app.fileManager.renameFile(target, to);
+      await withTrailOwnedEvent(
+        writeGuard,
+        { kind: "rename", oldPath: from, path: to },
+        async () => {
+          await fileManager.renameFile(target, to);
+        },
+      );
     },
   };
 }

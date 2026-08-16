@@ -7,16 +7,16 @@ import type {
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createDefaultTrailPluginData } from "../../domain/trail-configuration";
-import {
-  classifyWorkspace,
-  executeFreshWorkspaceBootstrap,
-} from "../../application/workspace/trail-workspace";
 import { TRAIL_BOOTSTRAP_FILES } from "../../markdown/schema/trail-bootstrap-markdown";
 import {
   TRAIL_CYCLES_PATH,
   TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
 } from "../../markdown/schema/trail-paths";
+import {
+  classifyWorkspace,
+  executeFreshWorkspaceBootstrap,
+} from "../../source-sync/bootstrap/trail-workspace-bootstrap";
 import {
   createObsidianWorkspaceBootstrapGateway,
   type ObsidianWorkspaceFileKinds,

@@ -10,15 +10,14 @@ import {
 } from "obsidian";
 
 import { TrailApplication } from "./application/trail-application";
-import { createFormalMarkdownValidator } from "./markdown/codecs/trail-managed-codecs";
-import { createTrailDomainSourceRepository } from "./persistence/domain-sources/trail-domain-source-repository";
-import { createProjectSourcePersistence } from "./persistence/domain-sources/trail-project-source-persistence";
-import { createTriageSourcePersistence } from "./persistence/domain-sources/trail-triage-source-persistence";
-import { TrailMutationQueue } from "./mutation/queue/trail-mutation-queue";
-import { isTrailProjectMarkdownPath, TRAIL_PROJECTS_PATH, TRAIL_PROJECTS_PREFIX, TRAIL_TRIAGE_PATH } from "./markdown/schema/trail-paths";
 import {
-  createTrailRuntimeStore,
-} from "./runtime/store/trail-runtime-store";
+  createTrailApplicationSession,
+  createTrailApplicationSessionRegistry,
+} from "./application/trail-application-session";
+import {
+  createObsidianVaultEventAdapter,
+  createTrailHostWriteGuard,
+} from "./adapters/obsidian/trail-vault-events-obsidian";
 import { createObsidianSourceIO } from "./adapters/obsidian/trail-source-io-obsidian";
 import {
   createObsidianWorkspaceBootstrapGateway,
@@ -32,6 +31,19 @@ import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "./diagnostics/trail-diagnostics";
+import type { TrailConfiguration } from "./domain/trail-configuration";
+import { createFormalMarkdownValidator } from "./markdown/codecs/trail-managed-codecs";
+import { TrailMutationQueue } from "./mutation/queue/trail-mutation-queue";
+import { createTrailDomainSourceRepository } from "./persistence/domain-sources/trail-domain-source-repository";
+import { createProjectSourcePersistence } from "./persistence/domain-sources/trail-project-source-persistence";
+import { createTriageSourcePersistence } from "./persistence/domain-sources/trail-triage-source-persistence";
+import { createTrailRuntimeStore } from "./runtime/store/trail-runtime-store";
+import { TrailProjectSourceSync } from "./source-sync/projects/trail-project-source-sync";
+import {
+  createTrailRefreshController,
+  type TrailRefreshController,
+} from "./source-sync/refresh/trail-refresh-controller";
+import { TrailTriageSourceSync } from "./source-sync/triage/trail-triage-source-sync";
 import {
   TRAIL_VIEW_TYPE,
   TrailView,
@@ -46,6 +58,11 @@ function errorName(error: unknown): string {
   return error instanceof Error ? error.name : "UnknownError";
 }
 
+interface TrailActiveSourceSyncs {
+  readonly triage: TrailTriageSourceSync;
+  readonly workflow: TrailProjectSourceSync;
+}
+
 const fileKinds: ObsidianWorkspaceFileKinds = {
   isFile: (file: TAbstractFile | null): file is TFile => file instanceof TFile,
   isFolder: (file: TAbstractFile | null): file is TFolder => file instanceof TFolder,
@@ -54,6 +71,8 @@ const fileKinds: ObsidianWorkspaceFileKinds = {
 export default class TrailPlugin extends Plugin {
   private application: TrailApplication | null = null;
   private diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS;
+  private disposeComposition: (() => void) | null = null;
+  private refreshController: TrailRefreshController | null = null;
 
   public onload(): void {
     const diagnostics = this.createDiagnostics();
@@ -68,7 +87,8 @@ export default class TrailPlugin extends Plugin {
     const runtimeStore = createTrailRuntimeStore();
     const mutationQueue = new TrailMutationQueue(diagnostics);
     const parseYamlDocument = (yaml: string): unknown => parseYaml(yaml);
-    const sourceIO = createObsidianSourceIO(this.app, fileKinds);
+    const writeGuard = createTrailHostWriteGuard();
+    const sourceIO = createObsidianSourceIO(this.app, fileKinds, writeGuard);
     const domainSourceRepository = createTrailDomainSourceRepository(sourceIO);
     const workspaceGateway = createObsidianWorkspaceBootstrapGateway(
       this.app,
@@ -89,19 +109,67 @@ export default class TrailPlugin extends Plugin {
       parseYamlDocument,
       diagnostics,
     );
+    const sessionRegistry = createTrailApplicationSessionRegistry();
+    const createId = () => crypto.randomUUID();
+    const now = () => Date.now();
     const application = new TrailApplication({
-      createId: () => crypto.randomUUID(),
+      diagnostics,
+      runtimeStore,
+      session: sessionRegistry,
+    });
+    const createSourceSyncs = (
+      store: typeof runtimeStore,
+      configuration: TrailConfiguration,
+    ): TrailActiveSourceSyncs => ({
+      triage: new TrailTriageSourceSync(
+        store,
+        mutationQueue,
+        triagePersistence,
+        diagnostics,
+      ),
+      workflow: new TrailProjectSourceSync(
+        store,
+        mutationQueue,
+        workflowPersistence,
+        configuration,
+        diagnostics,
+      ),
+    });
+    const refreshController = createTrailRefreshController<TrailActiveSourceSyncs>({
+      activateSources: (configuration, sources) => {
+        sessionRegistry.replace(createTrailApplicationSession({
+          configuration,
+          createId,
+          diagnostics,
+          mutationQueue,
+          now,
+          runtimeStore,
+          triageSources: sources.triage,
+          workflowSources: sources.workflow,
+        }));
+      },
+      clearSources: () => sessionRegistry.clear(),
+      createId,
+      createSourceSyncs,
       diagnostics,
       mutationQueue,
-      now: () => Date.now(),
       resolveHostTimezone,
       runtimeStore,
-      triagePersistence,
-      workflowPersistence,
       workspace: workspaceGateway,
+    });
+    const vaultEvents = createObsidianVaultEventAdapter({
+      diagnostics,
+      refresh: refreshController,
+      writeGuard,
     });
 
     this.application = application;
+    this.refreshController = refreshController;
+    this.disposeComposition = () => {
+      refreshController.dispose();
+      sessionRegistry.clear();
+      mutationQueue.dispose();
+    };
 
     this.registerView(
       TRAIL_VIEW_TYPE,
@@ -115,10 +183,13 @@ export default class TrailPlugin extends Plugin {
 
     this.app.workspace.onLayoutReady(() => {
       diagnostics.record("host.layout.ready");
-      if (this.application !== application) {
+      if (
+        this.application !== application
+        || this.refreshController !== refreshController
+      ) {
         return;
       }
-      void this.initializeAfterLayout(application);
+      void this.initializeAfterLayout(refreshController, vaultEvents);
     });
 
     this.addRibbonIcon("route", "Open trail", () => {
@@ -146,7 +217,9 @@ export default class TrailPlugin extends Plugin {
 
   public onunload(): void {
     this.diagnostics.record("plugin.unloading");
-    this.application?.dispose();
+    this.disposeComposition?.();
+    this.disposeComposition = null;
+    this.refreshController = null;
     this.application = null;
     void this.diagnostics.dispose();
     this.diagnostics = NOOP_TRAIL_DIAGNOSTICS;
@@ -198,14 +271,22 @@ export default class TrailPlugin extends Plugin {
   }
 
   private async initializeAfterLayout(
-    application: TrailApplication,
+    refreshController: TrailRefreshController,
+    vaultEvents: ReturnType<typeof createObsidianVaultEventAdapter>,
   ): Promise<void> {
     try {
-      const classification = await application.initialize();
-      if (!classification.canLoad || this.application !== application) {
+      const classification = await refreshController.initialize();
+      if (
+        !classification.canLoad
+        || this.refreshController !== refreshController
+      ) {
         return;
       }
-      this.registerFormalEvents(application);
+
+      this.registerEvent(this.app.vault.on("create", vaultEvents.create));
+      this.registerEvent(this.app.vault.on("modify", vaultEvents.modify));
+      this.registerEvent(this.app.vault.on("delete", vaultEvents.delete));
+      this.registerEvent(this.app.vault.on("rename", vaultEvents.rename));
       this.diagnostics.record("host.formal-events.registered");
     } catch (error: unknown) {
       this.diagnostics.record("plugin.initialization.failed", {
@@ -214,197 +295,6 @@ export default class TrailPlugin extends Plugin {
       });
       console.error("Trail Formal initialization failed", error);
     }
-  }
-
-  private registerFormalEvents(application: TrailApplication): void {
-    this.registerEvent(
-      this.app.vault.on("modify", (file: TAbstractFile) => {
-        if (file.path === TRAIL_TRIAGE_PATH) {
-          const correlationId = this.diagnostics.createCorrelationId("vault.modify");
-          this.diagnostics.record("host.vault.modify", {
-            correlationId,
-            data: { path: file.path },
-          });
-          void application.refreshTriage(correlationId).catch((error: unknown) => {
-            this.diagnostics.record("host.vault.modify.reconcile-failed", {
-              correlationId,
-              data: { errorName: errorName(error) },
-              level: "error",
-            });
-            console.error("Trail Triage reconciliation failed", error);
-          });
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("delete", (file: TAbstractFile) => {
-        if (file.path === TRAIL_TRIAGE_PATH) {
-          const correlationId = this.diagnostics.createCorrelationId("vault.delete");
-          this.diagnostics.record("host.vault.delete", {
-            correlationId,
-            data: { path: file.path },
-            level: "warn",
-          });
-          application.markRequiredTriageUnavailable(
-            `Required Formal Triage file was removed: ${TRAIL_TRIAGE_PATH}. Restore it and reload Trail; it will not be silently recreated.`,
-            correlationId,
-          );
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("rename", (file: TAbstractFile, oldPath: string) => {
-        if (oldPath === TRAIL_TRIAGE_PATH || file.path === TRAIL_TRIAGE_PATH) {
-          const correlationId = this.diagnostics.createCorrelationId("vault.rename");
-          this.diagnostics.record("host.vault.rename", {
-            correlationId,
-            data: {
-              newPath: file.path,
-              oldPath,
-            },
-            level: "warn",
-          });
-          application.markRequiredTriageUnavailable(
-            `Required Formal Triage path changed. Restore ${TRAIL_TRIAGE_PATH} and reload Trail.`,
-            correlationId,
-          );
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("create", (file: TAbstractFile) => {
-        if (isTrailProjectMarkdownPath(file.path)) {
-          this.refreshWorkflowSource(application, file.path, "vault.create");
-          return;
-        }
-        if (this.isWithinProjects(file.path)) {
-          this.refreshWorkflow(application, "vault.create-structure");
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("modify", (file: TAbstractFile) => {
-        if (isTrailProjectMarkdownPath(file.path)) {
-          this.refreshWorkflowSource(application, file.path, "vault.modify");
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("delete", (file: TAbstractFile) => {
-        if (file.path === TRAIL_PROJECTS_PATH) {
-          const correlationId = this.diagnostics.createCorrelationId(
-            "vault.delete-projects-root",
-          );
-          application.markWorkflowRootUnavailable(
-            `Required Formal Projects directory was removed: ${TRAIL_PROJECTS_PATH}. Restore it and reload Trail; it will not be silently recreated.`,
-            correlationId,
-          );
-          return;
-        }
-        if (isTrailProjectMarkdownPath(file.path)) {
-          const correlationId = this.diagnostics.createCorrelationId(
-            "vault.delete-project",
-          );
-          this.diagnostics.record("host.vault.delete", {
-            correlationId,
-            data: { path: file.path },
-            level: "warn",
-          });
-          void application.removeWorkflowSource(file.path, correlationId).catch(
-            (error: unknown) => this.recordWorkflowReconcileFailure(
-              correlationId,
-              error,
-              "delete",
-            ),
-          );
-          return;
-        }
-        if (this.isWithinProjects(file.path)) {
-          this.refreshWorkflow(application, "vault.delete-structure");
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("rename", (file: TAbstractFile, oldPath: string) => {
-        if (oldPath === TRAIL_PROJECTS_PATH && file.path !== TRAIL_PROJECTS_PATH) {
-          const correlationId = this.diagnostics.createCorrelationId(
-            "vault.rename-projects-root",
-          );
-          application.markWorkflowRootUnavailable(
-            `Required Formal Projects directory moved away from ${TRAIL_PROJECTS_PATH}. Restore it before changing Workflow data.`,
-            correlationId,
-          );
-          return;
-        }
-        if (
-          file.path === TRAIL_PROJECTS_PATH
-          || this.isWithinProjects(oldPath)
-          || this.isWithinProjects(file.path)
-        ) {
-          this.refreshWorkflow(application, "vault.rename-projects");
-        }
-      }),
-    );
-  }
-
-  private isWithinProjects(path: string): boolean {
-    return path === TRAIL_PROJECTS_PATH || path.startsWith(TRAIL_PROJECTS_PREFIX);
-  }
-
-  private refreshWorkflowSource(
-    application: TrailApplication,
-    filePath: string,
-    event: string,
-  ): void {
-    const correlationId = this.diagnostics.createCorrelationId(event);
-    this.diagnostics.record("host.vault.workflow-source-change", {
-      correlationId,
-      data: { event, path: filePath },
-    });
-    void application.refreshWorkflowSource(filePath, correlationId).catch(
-      (error: unknown) => this.recordWorkflowReconcileFailure(
-        correlationId,
-        error,
-        event,
-      ),
-    );
-  }
-
-  private refreshWorkflow(
-    application: TrailApplication,
-    event: string,
-  ): void {
-    const correlationId = this.diagnostics.createCorrelationId(event);
-    this.diagnostics.record("host.vault.workflow-structure-change", {
-      correlationId,
-      data: { event },
-    });
-    void application.refreshWorkflow(correlationId).catch(
-      (error: unknown) => this.recordWorkflowReconcileFailure(
-        correlationId,
-        error,
-        event,
-      ),
-    );
-  }
-
-  private recordWorkflowReconcileFailure(
-    correlationId: string,
-    error: unknown,
-    event: string,
-  ): void {
-    this.diagnostics.record("host.vault.workflow-reconcile-failed", {
-      correlationId,
-      data: { errorName: errorName(error), event },
-      level: "error",
-    });
-    console.error("Trail Workflow reconciliation failed", error);
   }
 
   private async activateView(trigger: "command" | "ribbon"): Promise<void> {

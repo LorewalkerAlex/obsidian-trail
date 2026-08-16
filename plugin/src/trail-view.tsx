@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 
-import type { TrailApplication } from "./application/trail-application";
+import type { TrailApplicationActions } from "./application/trail-application-contracts";
 import type {
   TrailRuntimeStore,
 } from "./runtime/store/trail-runtime-store";
@@ -25,7 +25,7 @@ export class TrailView extends ItemView {
   public constructor(
     leaf: WorkspaceLeaf,
     private readonly runtimeStore: TrailRuntimeStore,
-    private readonly application: TrailApplication,
+    private readonly application: TrailApplicationActions,
     private readonly diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
   ) {
     super(leaf);

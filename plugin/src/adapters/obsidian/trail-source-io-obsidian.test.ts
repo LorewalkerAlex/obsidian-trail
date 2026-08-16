@@ -2,6 +2,7 @@ import type { App, TAbstractFile, TFile, TFolder } from "obsidian";
 import { describe, expect, it, vi } from "vitest";
 
 import { createObsidianSourceIO } from "./trail-source-io-obsidian";
+import { createTrailHostWriteGuard } from "./trail-vault-events-obsidian";
 
 class FakeFile {
   public constructor(
@@ -63,6 +64,30 @@ describe("Obsidian SourceIO", () => {
     }]);
     await sourceIO.process(path, (latest) => `${latest}\nupdated`);
     expect(await sourceIO.read(path)).toBe("initial\nupdated");
+  });
+
+  it("keeps a precise Trail-owned event guard active only for the host write Promise", async () => {
+    const file = new FakeFile("Triage.md", "Trail/Collections/Triage.md");
+    const writeGuard = createTrailHostWriteGuard();
+    let consumedDuringWrite = false;
+    const sourceIO = createObsidianSourceIO({
+      vault: {
+        getAbstractFileByPath: () => file,
+        process: async (_file: TFile, transform: (latest: string) => string) => {
+          consumedDuringWrite = writeGuard.consume({
+            kind: "modify",
+            path: file.path,
+          });
+          return transform("before");
+        },
+        read: async () => "before",
+      },
+    } as unknown as Pick<App, "vault">, fileKinds, writeGuard);
+
+    await sourceIO.process(file.path, () => "after");
+
+    expect(consumedDuringWrite).toBe(true);
+    expect(writeGuard.consume({ kind: "modify", path: file.path })).toBe(false);
   });
 
   it("delegates source rename and delete to Obsidian fileManager", async () => {

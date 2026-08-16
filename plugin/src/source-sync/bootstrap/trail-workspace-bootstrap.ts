@@ -3,7 +3,11 @@ import {
   type TrailPluginData,
   validateTrailPluginData,
 } from "../../domain/trail-configuration";
-import { TRAIL_BOOTSTRAP_DIRECTORIES, TRAIL_REQUIRED_SINGLETON_PATHS, TRAIL_TOP_LEVEL_DIRECTORIES } from "../../markdown/schema/trail-paths";
+import {
+  TRAIL_BOOTSTRAP_DIRECTORIES,
+  TRAIL_REQUIRED_SINGLETON_PATHS,
+  TRAIL_TOP_LEVEL_DIRECTORIES,
+} from "../../markdown/schema/trail-paths";
 import { TRAIL_BOOTSTRAP_FILES } from "../../markdown/schema/trail-bootstrap-markdown";
 
 export interface ManagedRootEntry {
@@ -30,12 +34,8 @@ export interface WorkspaceProbe {
 }
 
 export type ManagedMarkdownClassification =
-  | {
-      readonly kind: "absent";
-    }
-  | {
-      readonly kind: "formal-valid";
-    }
+  | { readonly kind: "absent" }
+  | { readonly kind: "formal-valid" }
   | {
       readonly kind: "formal-incomplete";
       readonly missingPaths: readonly string[];
@@ -50,9 +50,7 @@ export type ManagedMarkdownClassification =
     };
 
 export type PluginDataClassification =
-  | {
-      readonly kind: "absent";
-    }
+  | { readonly kind: "absent" }
   | {
       readonly data: TrailPluginData;
       readonly kind: "valid";
@@ -115,9 +113,9 @@ export class WorkspaceBootstrapError extends Error {
 }
 
 /**
- * Implements the conservative two-footprint safety policy derived from the
- * canonical contracts. It is an implementation classification, not canonical
- * persisted Domain state.
+ * Classifies the managed Markdown footprint without inventing missing Formal
+ * sources. Existing workspaces fail closed; only a completely fresh footprint
+ * may bootstrap.
  */
 export function classifyManagedMarkdown(
   probe: ManagedMarkdownProbe,
@@ -305,10 +303,9 @@ async function rollbackBootstrapMarkdown(
 }
 
 /**
- * Executes only an already-reconfirmed Fresh bootstrap. Markdown is created and
- * re-read before plugin data is saved. Once plugin-data save starts, failures are
- * left as explicit incomplete initialization rather than deleting authoritative
- * Markdown and guessing whether plugin data was persisted.
+ * Executes only an already-reconfirmed Fresh bootstrap. Markdown is verified
+ * before plugin data is saved; after plugin-data persistence begins, failures are
+ * left explicit rather than guessing whether authoritative data was committed.
  */
 export async function executeFreshWorkspaceBootstrap(
   gateway: WorkspaceBootstrapGateway,

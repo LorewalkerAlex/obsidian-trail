@@ -860,7 +860,7 @@ Trail mutation
 
 ### 14.2 Unexpected External Change
 
-当前个人场景中，用户正常不会手工修改 managed data；主要潜在来源是 Sync，且真实冲突窗口极小。因此 V1 可以：
+当前个人场景中，用户正常不会手工修改 managed data；主要潜在来源是 Sync，且真实冲突窗口极小。因此 V1 采用：
 
 ```text
 unexpected managed persistence event
@@ -874,13 +874,15 @@ unexpected managed persistence event
 
 不为每个 field / record 提前实现 stale comparison、fingerprint、version vector 或复杂 merge。
 
+当前 `TrailRefreshController` 使用 staging Runtime 构建完整候选：Configuration、Workspace State 与 managed Domain sources 全部加载 / 校验成功后才一次性 publish 到 live Runtime；失败不覆盖 live committed LKG。External refresh 与正常 mutation 共用 global serial Mutation Queue；refresh 期间再次到达 managed event 时，当前候选会在 publish 前重新读取，避免发布已经过期的 snapshot。
+
 未来如果真实运行证明 full reload 太慢或局部 external changes 高频，只需替换 / 细化 `RefreshStrategy` 与 `MutationAvailabilityPolicy`，复用现有 source scope、ownership、repository、validator、reconciler；主架构不变。
 
 ### 14.3 Trail-owned Host Events
 
-Mutation execution scope 记录当前 Trail 正在修改的 affected paths。由这些写入触发的 Obsidian host events 不作为 unexpected external change 触发 full refresh，因为 executor 已负责 authoritative reread/reconcile。
+Trail-controlled SourceIO 在 host write Promise 活跃期间注册精确 event token；对应 create / modify / delete / rename event 只消费一次，不进入 unexpected external refresh。Token 随 write Promise 结束立即清除，不使用 TTL，因此晚到事件宁可执行一次安全 full refresh，也不会被时间窗口错误吞掉。
 
-不建设 causal event graph；如果后续真实 host 行为需要更细 suppression，再基于证据增加。
+不建设 causal event graph；如果后续真实 host 行为证明需要更细关联，再基于 Diagnostics / real-host evidence 增强。
 
 ## 15. Query / Selector Architecture
 
@@ -947,7 +949,7 @@ Use Case 负责：normalize input → invoke pure Logic / Planner → submit to 
 
 对于 Source Transition，Feature 可以组合 canonical Mutation topology executor，并把业务 outcome 映射为自己的语义；source-specific execute / observe / authoritative verification / reconcile / health 由对应 `source-sync/*` capability 提供。Feature 不再直接依赖 raw Persistence result、Domain-source validator 或 Runtime Reconciler，也不自行复制 destination/source write mechanics。
 
-允许一个薄的 composition facade 暴露各业务 service，但不把所有行为重新包进巨大 `TrailApplication` switch。
+允许一个薄的 Application facade 暴露 UI-facing use cases，但不把 startup、raw Persistence、Source Sync lifecycle 或 host refresh ingress 重新包进巨大 `TrailApplication`。当前 UI 通过窄 `TrailApplicationActions` contract 发 intent；validated Feature service graph 由 Composition Root 构建 Application Session 后注入 facade。
 
 Create-time Similarity Guard 是可选 soft guard：在最终 create plan 前复用当前 Runtime 的 title/text/relation signals 提示少量候选；用户可以继续创建；不保存 duplicate relation，不进入 Domain invariant。
 
@@ -1038,7 +1040,7 @@ Fresh installation 与 initialized workspace missing required singleton 必须�
 
 ### 18.2 Refresh Strategy
 
-Architecture 对 host create/modify/delete/rename 提供统一 RefreshController。V1 external path 使用 FullWorkspaceRefreshStrategy；未来可以替换为 affected-source refresh，不改变上层。
+Architecture 对 host create/modify/delete/rename 提供统一 RefreshController。Obsidian Vault-event adapter 只做 canonical managed-path classification、Trail-owned event suppression 与 event forwarding；refresh policy 不留在 `main.ts`。V1 external path 使用 FullWorkspaceRefreshStrategy；未来可以替换为 affected-source refresh，不改变上层。
 
 ### 18.3 Obsidian Adapter
 
@@ -1046,7 +1048,7 @@ Obsidian 只通过 ports 暴露：Vault I/O、plugin data、workspace/layout lif
 
 Related Notes 继续使用普通 Obsidian wikilinks / backlinks，不升级为 Canonical Domain relation。需要 link/backlink 数据的 Query / UI 通过一个薄的 Obsidian link-index adapter（例如封装 MetadataCache 的稳定读取能力）消费；React page 不直接到处调用 MetadataCache，也不把 link index 混进 Trail authoritative Runtime。
 
-`main.ts` 最终只承担 composition root 与 host registration，不承载 Domain / persistence / page behavior。
+`main.ts` 只承担 plugin lifecycle、dependency composition 与 host registration，不承载 Domain / source refresh policy / page behavior。React host bridge 只依赖 UI-facing Application action contract 与 Runtime Store。
 
 ## 19. Weekly Note Utility
 

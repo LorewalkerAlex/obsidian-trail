@@ -3,7 +3,12 @@ import {
   createDefaultTrailPluginData,
   type TrailPluginData,
 } from "../../domain/trail-configuration";
-import { TRAIL_BOOTSTRAP_DIRECTORIES, TRAIL_CYCLES_PATH, TRAIL_PROJECTLESS_ISSUES_PATH, TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
+import {
+  TRAIL_BOOTSTRAP_DIRECTORIES,
+  TRAIL_CYCLES_PATH,
+  TRAIL_PROJECTLESS_ISSUES_PATH,
+  TRAIL_TRIAGE_PATH,
+} from "../../markdown/schema/trail-paths";
 import { TRAIL_BOOTSTRAP_FILES } from "../../markdown/schema/trail-bootstrap-markdown";
 import {
   classifyManagedMarkdown,
@@ -13,7 +18,7 @@ import {
   type PluginDataProbe,
   type WorkspaceBootstrapGateway,
   type WorkspaceProbe,
-} from "./trail-workspace";
+} from "./trail-workspace-bootstrap";
 
 function createOpaqueIdFactory(): () => string {
   let next = 0;

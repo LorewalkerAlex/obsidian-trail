@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createTrailSequencedEntityPath,
   isTrailInitiativeMarkdownPath,
+  isTrailManagedPath,
   isTrailProjectMarkdownPath,
   isTrailProjectsScopePath,
   readTrailEntityFileSequence,
@@ -45,6 +46,14 @@ describe("Trail path authority", () => {
       "Trail/Collections/Projectless Issues.md",
     );
     expect(TRAIL_CYCLES_PATH).toBe("Trail/Collections/Cycles.md");
+  });
+
+  it("classifies the managed root without matching adjacent names", () => {
+    expect(isTrailManagedPath("Trail")).toBe(true);
+    expect(isTrailManagedPath("Trail/Projects/0001 Alpha.md")).toBe(true);
+    expect(isTrailManagedPath("Trail/Collections/Triage.md")).toBe(true);
+    expect(isTrailManagedPath("Trailblazer/Notes.md")).toBe(false);
+    expect(isTrailManagedPath("Notes/Trail.md")).toBe(false);
   });
 
   it("classifies managed file-backed source paths without accepting nested files", () => {
