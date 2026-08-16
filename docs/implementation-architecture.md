@@ -217,7 +217,7 @@ Trail design authorities
 │  └─ runtime/                  committed authoritative state / pending / indexes / ownership / control / source health
 │
 ├─ Technical Design: Synchronization
-│  └─ source-sync/              bootstrap / discovery / refresh / external-change convergence
+│  └─ source-sync/              authoritative source lifecycle / refresh / convergence
 │
 ├─ Logical Query Contract
 │  └─ query/                    derived read logic / shared selectors / page selectors
@@ -325,7 +325,7 @@ plugin/src/
 | Markdown carrier field/schema/order | `markdown/schema/trail-physical-schema.ts` | Domain / Feature 各自维护 metadata 字段表 |
 | Source-specific grammar | `markdown/codecs/*` | Domain、Persistence、Application 重新 parse Markdown |
 | Authoritative source read/write | `persistence/*` | Application / UI 直接 `Vault.process()` |
-| Bootstrap / discovery / external refresh / source-health convergence | `source-sync/*` | `main.ts` 或各 Feature 重复事件路由与 reread/reconcile |
+| Authoritative source operation verification / reconcile、bootstrap / discovery / external refresh / source-health convergence | `source-sync/*` | `main.ts` 或各 Feature 重复 source-specific reread / validation / reconcile / health lifecycle |
 | Logical mutation lifecycle | `mutation/*` | 每个 Feature 自建 pending / queue / topology executor |
 | Committed / pending / indexes / ownership / control / source health | `runtime/*` | Page 或 Persistence 自建第二份状态 |
 | Page/read selection | `query/*` | UI 自己重建持久化或索引逻辑 |
@@ -945,6 +945,8 @@ similarity
 
 Use Case 负责：normalize input → invoke pure Logic / Planner → submit to Mutation Coordinator。Application 不直接使用 Markdown、Vault API 或手工修改 Runtime。
 
+对于 Source Transition，Feature 可以组合 canonical Mutation topology executor，并把业务 outcome 映射为自己的语义；source-specific execute / observe / authoritative verification / reconcile / health 由对应 `source-sync/*` capability 提供。Feature 不再直接依赖 raw Persistence result、Domain-source validator 或 Runtime Reconciler，也不自行复制 destination/source write mechanics。
+
 允许一个薄的 composition facade 暴露各业务 service，但不把所有行为重新包进巨大 `TrailApplication` switch。
 
 Create-time Similarity Guard 是可选 soft guard：在最终 create plan 前复用当前 Runtime 的 title/text/relation signals 提示少量候选；用户可以继续创建；不保存 duplicate relation，不进入 Domain invariant。
@@ -1158,7 +1160,7 @@ Codebase Simplification 完成后，以下规则属于长期 architecture contra
 3. **Domain purity**：`domain/` 不依赖 Obsidian、React、Markdown parser、Persistence implementation、Runtime Store 或 UI；source path/range/offset 不属于 Domain fact。
 4. **Application purity**：`application/` 只组织 use case，消费 Domain / Query / Mutation contracts；不直接 parse Markdown、调用 Vault API 或手改 Runtime。
 5. **Path authority**：managed root、目录、singleton paths、prefix/predicate 只由 `markdown/schema/trail-paths.ts` 定义；其他模块只引用，不重新拼接 authoritative `Trail/...` path。
-6. **Source lifecycle ownership**：bootstrap / discovery / external refresh / failure reload 收敛到 `source-sync/`；Feature 只表达业务行为，不能复制 reread / reconcile / host-event lifecycle。
+6. **Source lifecycle ownership**：Trail-controlled source operation 的 authoritative verification / reconcile / failure reread，以及 bootstrap / discovery / external refresh / source-health convergence 收敛到 `source-sync/`；Feature 只表达业务行为与独立 outcome 语义，不能复制 source-specific reread / validation / reconcile / health / host-event lifecycle。
 7. **Runtime final shape**：Runtime 顶层只保留 `committed / pending / control / health`；Committed 内只保留 `revision / authoritative / ownership / indexes`。Authoritative Domain 使用单一 `issuesById`；Health 只保存稳定逻辑 source issues，不推进 committed revision；production 不保存 Markdown parser metadata，也不保留旧 flat shape、旧 lifecycle 或 compatibility alias 作为第二 API。
 8. **Future skeleton stays explicit**：Initiative / Milestone / Cycle / Projectless Issue 等冻结对象继续拥有 RESERVED owner；清理不得把未来 contract 删除到需要后续重新发明 owner。
 9. **Thin composition root**：`main.ts` 只负责 plugin lifecycle、dependency composition、command/view/file-event registration；业务行为进入已映射 owner。

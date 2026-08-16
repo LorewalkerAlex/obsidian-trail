@@ -31,6 +31,8 @@ import {
   selectSourceIssuesForPath,
   setTrailRuntimeConfiguration,
 } from "../../runtime/store/trail-runtime-store";
+import { TrailProjectSourceSync } from "../../source-sync/projects/trail-project-source-sync";
+import { TrailTriageSourceSync } from "../../source-sync/triage/trail-triage-source-sync";
 import {
   TrailTriageAcceptService,
   planAcceptTriageIssue,
@@ -164,12 +166,23 @@ function createFixture(options: {
     currentProject.contribution as TrailProjectSourceSnapshot,
   );
   const queue = new TrailMutationQueue();
+  const triageSources = new TrailTriageSourceSync(
+    runtimeStore,
+    queue,
+    triagePersistence,
+  );
+  const workflowSources = new TrailProjectSourceSync(
+    runtimeStore,
+    queue,
+    workflowPersistence,
+    configuration,
+  );
   let idIndex = 0;
   const service = new TrailTriageAcceptService(
     runtimeStore,
     queue,
-    triagePersistence,
-    workflowPersistence,
+    triageSources,
+    workflowSources,
     configuration,
     {
       createId: () => ["accept-command", "workflow-b"][idIndex++] ?? `extra-${idIndex}`,

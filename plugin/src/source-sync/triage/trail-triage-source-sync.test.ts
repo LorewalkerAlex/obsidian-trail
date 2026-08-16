@@ -4,6 +4,8 @@ import {
   sameTrailTriageIssue,
   type TrailTriageIssue,
 } from "../../domain/trail-issue";
+import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
+import type { TrailSingleTransactionPlan } from "../../mutation/physical/trail-single-transaction-plan";
 import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
 import type { TrailTriageSourceResult } from "../../persistence/domain-sources/trail-source-result";
 import {
@@ -17,7 +19,6 @@ import {
   createTrailRuntimeStore,
   selectSourceIssuesForPath,
 } from "../../runtime/store/trail-runtime-store";
-import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
 import { TrailTriageSourceSync } from "./trail-triage-source-sync";
 
 class MemoryTriagePersistence implements TrailTriagePersistence {
@@ -131,6 +132,43 @@ describe("Triage Source Sync", () => {
     expect(selectSourceIssuesForPath(store.getState(), TRAIL_TRIAGE_PATH)).toEqual([
       expect.objectContaining({ code: "test.invalid-source" }),
     ]);
+    queue.dispose();
+  });
+
+  it("owns transition preflight, execution, observation, and reconciliation", async () => {
+    const source: TrailTriageIssue = {
+      context: "triage",
+      due: 100,
+      id: "issue-a",
+      labelIds: [],
+      title: "Accept me",
+    };
+    const persistence = new MemoryTriagePersistence();
+    persistence.setExternal(source);
+    const store = createTrailRuntimeStore();
+    const queue = new TrailMutationQueue();
+    const sourceSync = new TrailTriageSourceSync(store, queue, persistence);
+    await sourceSync.initialize();
+
+    const plan: TrailSingleTransactionPlan = {
+      commandId: "accept-a",
+      intent: "triage.accept",
+      operation: {
+        expectedIssue: source,
+        kind: "triage-delete",
+      },
+      sourcePath: TRAIL_TRIAGE_PATH,
+    };
+
+    await expect(sourceSync.preflightTransitionPlan(plan, "accept-a")).resolves.toBeUndefined();
+    const persisted = await sourceSync.executeTransitionPlan(plan, "accept-a");
+    expect(persisted.issuesById["issue-a"]).toBeUndefined();
+    await expect(sourceSync.observeTransitionPlan(plan)).resolves.toMatchObject({
+      kind: "absent",
+    });
+
+    sourceSync.reconcileTransitionSnapshot(persisted, "triage.accept", "accept-a");
+    expect(store.getState().committed.authoritative.domain.issuesById["issue-a"]).toBeUndefined();
     queue.dispose();
   });
 });

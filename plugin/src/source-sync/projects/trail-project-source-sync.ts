@@ -15,13 +15,18 @@ import {
 } from "../../markdown/schema/trail-paths";
 import { submitTrailMutation } from "../../mutation/coordinator/trail-mutation-coordinator";
 import { executeTrailSingleTransaction } from "../../mutation/execution/trail-single-transaction-executor";
+import type { TrailTransitionObservation } from "../../mutation/execution/trail-source-transition-executor";
 import { createTrailProjectPathAllocator } from "../../mutation/physical/trail-file-backed-entity-path-allocator";
-import { materializeTrailSingleTransactionPlan } from "../../mutation/physical/trail-single-transaction-plan";
+import {
+  materializeTrailSingleTransactionPlan,
+  type TrailSingleTransactionPlan,
+} from "../../mutation/physical/trail-single-transaction-plan";
 import type { TrailMutationPlan } from "../../mutation/plans/trail-mutation-plan";
 import type { TrailProjectSourceSnapshot } from "../../persistence/domain-sources/trail-domain-source-snapshot";
 import {
   toTrailSourceProblems,
   type TrailProjectSourceResult,
+  type TrailSourceProblem,
 } from "../../persistence/domain-sources/trail-source-result";
 import {
   TrailWorkflowPersistenceError,
@@ -184,6 +189,132 @@ export class TrailProjectSourceSync {
     return { completion, entityId };
   }
 
+  public assertTransitionSourceValid(filePath: string): void {
+    if (!filePath.startsWith(TRAIL_PROJECTS_PREFIX)) {
+      throw new TrailProjectSourceMutationError(
+        "verification-failed",
+        "Workflow source transition target is outside Projects",
+      );
+    }
+    const state = this.runtimeStore.getState();
+    const rootIssues = selectSourceIssuesForPath(state, TRAIL_PROJECTS_PATH);
+    const sourceIssues = selectSourceIssuesForPath(state, filePath);
+    if (rootIssues.length > 0 || sourceIssues.length > 0) {
+      throw new TrailProjectSourceMutationError(
+        "source-invalid",
+        "Project source is invalid; review the source before retrying",
+      );
+    }
+  }
+
+  /** Executes and verifies one already-materialized Project transition operation. */
+  public async executeTransitionPlan(
+    plan: TrailSingleTransactionPlan,
+    correlationId: string,
+  ): Promise<TrailProjectSourceSnapshot> {
+    this.assertTransitionPlan(plan);
+    try {
+      const executed = await executeTrailSingleTransaction(
+        plan,
+        { workflow: this.persistence },
+        correlationId,
+      );
+      if (executed.kind !== "project-source") {
+        throw new TrailProjectSourceMutationError(
+          "verification-failed",
+          "Workflow transition returned a non-Project source result",
+        );
+      }
+      return this.verifyTransitionResult(plan, executed.result, correlationId);
+    } catch (error: unknown) {
+      throw this.mapMutationError(error);
+    }
+  }
+
+  /** Observes whether the transition target Issue is authoritatively present or absent. */
+  public async observeTransitionPlan(
+    plan: TrailSingleTransactionPlan,
+  ): Promise<TrailTransitionObservation<TrailProjectSourceSnapshot>> {
+    this.assertTransitionPlan(plan);
+    let latest: TrailProjectSourceResult;
+    try {
+      latest = await this.persistence.readSource(plan.sourcePath);
+    } catch {
+      return { kind: "unsafe" };
+    }
+    const contribution = this.validTransitionContribution(latest);
+    if (contribution === undefined) {
+      return { kind: "unsafe" };
+    }
+
+    switch (plan.operation.kind) {
+      case "workflow-create": {
+        if (!sameTrailProject(contribution.project, plan.operation.expectedProject)) {
+          return { kind: "unsafe" };
+        }
+        const current = contribution.issuesById[plan.operation.issue.id];
+        if (current === undefined) {
+          return { kind: "absent", value: contribution };
+        }
+        if (sameTrailWorkflowIssue(current, plan.operation.issue)) {
+          return { kind: "present", value: contribution };
+        }
+        return { kind: "unsafe" };
+      }
+      case "workflow-delete": {
+        const current = contribution.issuesById[plan.operation.expectedIssue.id];
+        if (current === undefined) {
+          return { kind: "absent", value: contribution };
+        }
+        if (sameTrailWorkflowIssue(current, plan.operation.expectedIssue)) {
+          return { kind: "present", value: contribution };
+        }
+        return { kind: "unsafe" };
+      }
+      default:
+        return { kind: "unsafe" };
+    }
+  }
+
+  public reconcileTransitionSnapshot(
+    contribution: TrailProjectSourceSnapshot,
+    reason: string,
+    correlationId?: string,
+  ): void {
+    this.reconcileContribution(contribution, reason, correlationId);
+  }
+
+  public async reconcileSourceForTransition(
+    filePath: string,
+    reason: string,
+    correlationId: string,
+  ): Promise<void> {
+    try {
+      this.consumeReadResult(
+        await this.persistence.readSource(filePath),
+        reason,
+        correlationId,
+      );
+    } catch (error: unknown) {
+      this.diagnostics.record("workflow.failure-reconcile.failed", {
+        correlationId,
+        data: { category: errorCategory(error), filePath },
+        level: "error",
+      });
+    }
+  }
+
+  public addSourceProblem(filePath: string, problem: TrailSourceProblem): void {
+    if (problem.filePath !== filePath || !filePath.startsWith(TRAIL_PROJECTS_PREFIX)) {
+      throw new TrailProjectSourceMutationError(
+        "verification-failed",
+        "Workflow source problem used an invalid Project source path",
+      );
+    }
+    const existing = selectSourceIssuesForPath(this.runtimeStore.getState(), filePath);
+    setSourceIssuesForPath(this.runtimeStore, filePath, [...existing, problem]);
+  }
+
   private async persistPlan(
     plan: TrailMutationPlan,
     entity: TrailProject | TrailWorkflowIssue,
@@ -234,6 +365,105 @@ export class TrailProjectSourceSync {
       );
     }
     return executed.result;
+  }
+
+  private assertTransitionPlan(plan: TrailSingleTransactionPlan): void {
+    if (!plan.sourcePath.startsWith(TRAIL_PROJECTS_PREFIX)) {
+      throw new TrailProjectSourceMutationError(
+        "verification-failed",
+        "Workflow source transition materialized outside Projects",
+      );
+    }
+    if (
+      plan.operation.kind !== "workflow-create"
+      && plan.operation.kind !== "workflow-delete"
+    ) {
+      throw new TrailProjectSourceMutationError(
+        "verification-failed",
+        "Workflow source transition only supports create/delete operations",
+      );
+    }
+  }
+
+  private validTransitionContribution(
+    result: TrailProjectSourceResult,
+  ): TrailProjectSourceSnapshot | undefined {
+    const filePath = result.contribution?.filePath ?? result.issues[0]?.filePath;
+    if (result.issues.length > 0 || result.contribution === undefined) {
+      if (filePath !== undefined) {
+        setSourceIssuesForPath(this.runtimeStore, filePath, result.issues);
+      }
+      return undefined;
+    }
+    const domainIssues = validateWorkflowProjectState(
+      result.contribution,
+      this.configuration,
+    );
+    if (domainIssues.length > 0) {
+      setSourceIssuesForPath(
+        this.runtimeStore,
+        result.contribution.filePath,
+        toTrailSourceProblems(result.contribution.filePath, domainIssues),
+      );
+      return undefined;
+    }
+    return result.contribution;
+  }
+
+  private verifyTransitionResult(
+    plan: TrailSingleTransactionPlan,
+    persisted: TrailProjectSourceResult,
+    correlationId: string,
+  ): TrailProjectSourceSnapshot {
+    const contribution = this.validTransitionContribution(persisted);
+    if (contribution === undefined) {
+      throw new TrailProjectSourceMutationError(
+        "verification-failed",
+        "Persisted Workflow transition failed source or Domain validation",
+      );
+    }
+    if (contribution.filePath !== plan.sourcePath) {
+      throw new TrailProjectSourceMutationError(
+        "verification-failed",
+        "Persisted Workflow transition returned the wrong Project source",
+      );
+    }
+
+    switch (plan.operation.kind) {
+      case "workflow-create": {
+        const persistedIssue = contribution.issuesById[plan.operation.issue.id];
+        if (
+          !sameTrailProject(contribution.project, plan.operation.expectedProject)
+          || persistedIssue === undefined
+          || !sameTrailWorkflowIssue(persistedIssue, plan.operation.issue)
+        ) {
+          throw new TrailProjectSourceMutationError(
+            "verification-failed",
+            "Persisted Workflow transition did not create the planned Issue",
+          );
+        }
+        break;
+      }
+      case "workflow-delete":
+        if (contribution.issuesById[plan.operation.expectedIssue.id] !== undefined) {
+          throw new TrailProjectSourceMutationError(
+            "verification-failed",
+            "Persisted Workflow transition did not remove the planned Issue",
+          );
+        }
+        break;
+      default:
+        throw new TrailProjectSourceMutationError(
+          "verification-failed",
+          "Unsupported Workflow transition operation",
+        );
+    }
+
+    this.diagnostics.record("workflow.validation.completed", {
+      correlationId,
+      data: { filePath: contribution.filePath, kind: "source-transition" },
+    });
+    return contribution;
   }
 
   private verifyPersistedResult(

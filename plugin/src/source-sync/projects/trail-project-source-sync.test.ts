@@ -8,6 +8,7 @@ import {
   type TrailWorkflowIssue,
 } from "../../domain/trail-issue";
 import { sameTrailProject, type TrailProject } from "../../domain/trail-project";
+import type { TrailSingleTransactionPlan } from "../../mutation/physical/trail-single-transaction-plan";
 import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
 import type { TrailProjectSourceResult } from "../../persistence/domain-sources/trail-source-result";
 import type {
@@ -194,5 +195,76 @@ describe("Project Source Sync integration", () => {
 
     expect(store.getState().committed.authoritative.domain.issuesById["issue-a"].title).toBe("Keep me");
     expect(store.getState().health.sourceIssuesByPath[sourcePath]?.length).toBeGreaterThan(0);
+  });
+
+  it("owns transition execution, observation, compensation verification, and reconciliation", async () => {
+    const configuration = createConfiguration();
+    const persistence = new MemoryWorkflowPersistence();
+    const store = createTrailRuntimeStore();
+    const queue = new TrailMutationQueue();
+    const environment = {
+      createId: (() => {
+        const ids = ["command-project", "project-a"];
+        return () => ids.shift() ?? "unexpected";
+      })(),
+      now: () => 100,
+    };
+    const sourceSync = new TrailProjectSourceSync(store, queue, persistence, configuration);
+    const projects = new TrailProjectApplication(store, sourceSync, configuration, environment);
+    await sourceSync.initialize();
+    await projects.create("Transition Target").completion;
+
+    const project = selectEffectiveProjectById(store.getState(), "project-a");
+    const sourcePath = store.getState().committed.ownership.sourceByEntityId["project-a"];
+    if (project === undefined || sourcePath === undefined) {
+      throw new Error("missing Project transition fixture");
+    }
+    const issue: TrailWorkflowIssue = {
+      context: "workflow",
+      createdAt: 200,
+      id: "issue-transition",
+      labelIds: [],
+      projectId: project.id,
+      statusDefinitionId: configuration.statuses.issue.backlog.defaultId,
+      title: "Accepted work",
+    };
+    const createPlan: TrailSingleTransactionPlan = {
+      commandId: "accept-a",
+      intent: "triage.accept",
+      operation: {
+        expectedProject: project,
+        issue,
+        kind: "workflow-create",
+      },
+      sourcePath,
+    };
+
+    sourceSync.assertTransitionSourceValid(sourcePath);
+    const created = await sourceSync.executeTransitionPlan(createPlan, "accept-a");
+    await expect(sourceSync.observeTransitionPlan(createPlan)).resolves.toMatchObject({
+      kind: "present",
+    });
+
+    const deletePlan: TrailSingleTransactionPlan = {
+      ...createPlan,
+      operation: {
+        expectedIssue: issue,
+        kind: "workflow-delete",
+      },
+    };
+    const compensated = await sourceSync.executeTransitionPlan(deletePlan, "accept-a");
+    await expect(sourceSync.observeTransitionPlan(createPlan)).resolves.toMatchObject({
+      kind: "absent",
+    });
+
+    sourceSync.reconcileTransitionSnapshot(created, "triage.accept", "accept-a");
+    expect(store.getState().committed.authoritative.domain.issuesById[issue.id]).toEqual(issue);
+    sourceSync.reconcileTransitionSnapshot(
+      compensated,
+      "triage.accept-compensated",
+      "accept-a",
+    );
+    expect(store.getState().committed.authoritative.domain.issuesById[issue.id]).toBeUndefined();
+    queue.dispose();
   });
 });

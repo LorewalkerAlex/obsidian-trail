@@ -8,12 +8,23 @@ import {
 } from "../../domain/trail-issue";
 import { TRAIL_TRIAGE_PATH } from "../../markdown/schema/trail-paths";
 import { submitTrailMutation } from "../../mutation/coordinator/trail-mutation-coordinator";
-import { executeTrailSingleTransaction } from "../../mutation/execution/trail-single-transaction-executor";
-import { materializeTrailSingleTransactionPlan } from "../../mutation/physical/trail-single-transaction-plan";
+import {
+  executeTrailSingleTransaction,
+} from "../../mutation/execution/trail-single-transaction-executor";
+import type {
+  TrailTransitionObservation,
+} from "../../mutation/execution/trail-source-transition-executor";
+import {
+  materializeTrailSingleTransactionPlan,
+  type TrailSingleTransactionPlan,
+} from "../../mutation/physical/trail-single-transaction-plan";
 import type { TrailMutationPlan } from "../../mutation/plans/trail-mutation-plan";
 import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
 import type { TrailTriageSourceSnapshot } from "../../persistence/domain-sources/trail-domain-source-snapshot";
-import type { TrailTriageSourceResult } from "../../persistence/domain-sources/trail-source-result";
+import type {
+  TrailSourceProblem,
+  TrailTriageSourceResult,
+} from "../../persistence/domain-sources/trail-source-result";
 import {
   TrailTriagePersistenceError,
   type TrailTriagePersistence,
@@ -221,6 +232,245 @@ export class TrailTriageSourceSync {
       this.diagnostics,
     );
     return { completion, entityId };
+  }
+
+  /** Re-reads Triage and verifies the transition's source precondition in the queue. */
+  public async preflightTransitionPlan(
+    plan: TrailSingleTransactionPlan,
+    correlationId: string,
+  ): Promise<void> {
+    this.assertTransitionPlan(plan);
+    const latest = await this.persistence.readLatest();
+    this.recordReadCompleted(latest, "transition-preflight", correlationId);
+    if (!this.consumeReadResult(
+      latest,
+      "transition-preflight",
+      correlationId,
+      "warn",
+    )) {
+      throw new TrailTriageSourceMutationError(
+        "source-invalid",
+        "Triage source is invalid; review Triage.md before retrying",
+      );
+    }
+
+    switch (plan.operation.kind) {
+      case "triage-delete": {
+        const current = latest.contribution.issuesById[plan.operation.expectedIssue.id];
+        if (
+          current === undefined
+          || !sameTrailTriageIssue(current, plan.operation.expectedIssue)
+        ) {
+          throw new TrailTriageSourceMutationError(
+            "conflict",
+            "Triage Issue changed before the source transition",
+          );
+        }
+        return;
+      }
+      case "triage-create":
+        if (latest.contribution.issuesById[plan.operation.issue.id] !== undefined) {
+          throw new TrailTriageSourceMutationError(
+            "conflict",
+            "Triage transition target already exists",
+          );
+        }
+        return;
+      default:
+        throw new TrailTriageSourceMutationError(
+          "verification-failed",
+          "Triage source transition only supports create/delete operations",
+        );
+    }
+  }
+
+  /** Executes and verifies one already-materialized Triage transition operation. */
+  public async executeTransitionPlan(
+    plan: TrailSingleTransactionPlan,
+    correlationId: string,
+  ): Promise<TrailTriageSourceSnapshot> {
+    this.assertTransitionPlan(plan);
+    try {
+      const executed = await executeTrailSingleTransaction(
+        plan,
+        {
+          triageCreate: this.persistence,
+          triageManage: this.persistence,
+        },
+        correlationId,
+      );
+      if (executed.kind !== "triage-source") {
+        throw new TrailTriageSourceMutationError(
+          "verification-failed",
+          "Triage transition returned the wrong source kind",
+        );
+      }
+      return this.verifyTransitionResult(plan, executed.result, correlationId);
+    } catch (error: unknown) {
+      throw this.mapMutationError(error);
+    }
+  }
+
+  /** Observes whether a create/delete transition is authoritatively present or absent. */
+  public async observeTransitionPlan(
+    plan: TrailSingleTransactionPlan,
+  ): Promise<TrailTransitionObservation<TrailTriageSourceSnapshot>> {
+    this.assertTransitionPlan(plan);
+    let latest: TrailTriageSourceResult;
+    try {
+      latest = await this.persistence.readLatest();
+    } catch {
+      return { kind: "unsafe" };
+    }
+    if (latest.issues.length > 0 || latest.contribution.filePath !== TRAIL_TRIAGE_PATH) {
+      if (latest.issues.length > 0) {
+        setSourceIssuesForPath(this.runtimeStore, TRAIL_TRIAGE_PATH, latest.issues);
+      }
+      return { kind: "unsafe" };
+    }
+
+    switch (plan.operation.kind) {
+      case "triage-create": {
+        const current = latest.contribution.issuesById[plan.operation.issue.id];
+        if (current === undefined) {
+          return { kind: "absent", value: latest.contribution };
+        }
+        if (sameTrailTriageIssue(current, plan.operation.issue)) {
+          return { kind: "present", value: latest.contribution };
+        }
+        return { kind: "unsafe" };
+      }
+      case "triage-delete": {
+        const current = latest.contribution.issuesById[plan.operation.expectedIssue.id];
+        if (current === undefined) {
+          return { kind: "absent", value: latest.contribution };
+        }
+        if (sameTrailTriageIssue(current, plan.operation.expectedIssue)) {
+          return { kind: "present", value: latest.contribution };
+        }
+        return { kind: "unsafe" };
+      }
+      default:
+        return { kind: "unsafe" };
+    }
+  }
+
+  public reconcileTransitionSnapshot(
+    contribution: TrailTriageSourceSnapshot,
+    reason: string,
+    correlationId?: string,
+  ): void {
+    this.reconcileContribution(contribution, reason, correlationId);
+  }
+
+  public async reconcileLatestForTransition(
+    reason: string,
+    correlationId: string,
+  ): Promise<void> {
+    try {
+      const latest = await this.persistence.readLatest();
+      this.recordReadCompleted(latest, reason, correlationId);
+      this.consumeReadResult(latest, reason, correlationId, "warn");
+    } catch (error: unknown) {
+      this.diagnostics.record("triage.failure-reconcile.failed", {
+        correlationId,
+        data: { category: errorCategory(error) },
+        level: "error",
+      });
+    }
+  }
+
+  public addSourceProblem(problem: TrailSourceProblem): void {
+    if (problem.filePath !== TRAIL_TRIAGE_PATH) {
+      throw new TrailTriageSourceMutationError(
+        "verification-failed",
+        "Triage source problem used a non-canonical path",
+      );
+    }
+    const existing = selectSourceIssuesForPath(
+      this.runtimeStore.getState(),
+      TRAIL_TRIAGE_PATH,
+    );
+    setSourceIssuesForPath(this.runtimeStore, TRAIL_TRIAGE_PATH, [
+      ...existing,
+      problem,
+    ]);
+  }
+
+  private assertTransitionPlan(plan: TrailSingleTransactionPlan): void {
+    if (plan.sourcePath !== TRAIL_TRIAGE_PATH) {
+      throw new TrailTriageSourceMutationError(
+        "verification-failed",
+        "Triage source transition materialized outside the canonical source",
+      );
+    }
+    if (
+      plan.operation.kind !== "triage-create"
+      && plan.operation.kind !== "triage-delete"
+    ) {
+      throw new TrailTriageSourceMutationError(
+        "verification-failed",
+        "Triage source transition only supports create/delete operations",
+      );
+    }
+  }
+
+  private verifyTransitionResult(
+    plan: TrailSingleTransactionPlan,
+    persisted: TrailTriageSourceResult,
+    correlationId: string,
+  ): TrailTriageSourceSnapshot {
+    if (persisted.issues.length > 0) {
+      setSourceIssuesForPath(this.runtimeStore, TRAIL_TRIAGE_PATH, persisted.issues);
+      throw new TrailTriageSourceMutationError(
+        "verification-failed",
+        `Persisted Triage source is invalid: ${invalidSourceMessage(persisted)}`,
+      );
+    }
+    if (persisted.contribution.filePath !== TRAIL_TRIAGE_PATH) {
+      throw new TrailTriageSourceMutationError(
+        "verification-failed",
+        "Persisted Triage transition used a non-canonical source path",
+      );
+    }
+
+    switch (plan.operation.kind) {
+      case "triage-create": {
+        const current = persisted.contribution.issuesById[plan.operation.issue.id];
+        if (
+          current === undefined
+          || !sameTrailTriageIssue(current, plan.operation.issue)
+        ) {
+          throw new TrailTriageSourceMutationError(
+            "verification-failed",
+            "Persisted Triage transition did not create the planned Issue",
+          );
+        }
+        break;
+      }
+      case "triage-delete":
+        if (persisted.contribution.issuesById[plan.operation.expectedIssue.id] !== undefined) {
+          throw new TrailTriageSourceMutationError(
+            "verification-failed",
+            "Persisted Triage transition did not remove the planned Issue",
+          );
+        }
+        break;
+      default:
+        throw new TrailTriageSourceMutationError(
+          "verification-failed",
+          "Unsupported Triage transition operation",
+        );
+    }
+
+    this.diagnostics.record("triage.validation.completed", {
+      correlationId,
+      data: {
+        kind: "source-transition",
+        reason: "post-write",
+      },
+    });
+    return persisted.contribution;
   }
 
   private verifyPersistedResult(

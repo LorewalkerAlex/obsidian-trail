@@ -14,7 +14,12 @@ import {
 } from "../../runtime/projection/trail-runtime-projection";
 import { createTrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TrailTriageSourceSync } from "../../source-sync/triage/trail-triage-source-sync";
-import { TrailTriageIntakeService } from "./trail-triage-intake";
+import {
+  normalizeQuickCaptureCommand,
+  planCreateTriageIssue,
+  QuickCaptureCommandError,
+  TrailTriageIntakeService,
+} from "./trail-triage-intake";
 
 const NOW = 1_786_464_000_000;
 
@@ -113,6 +118,82 @@ function parseDiagnosticEvent(line: string): ParsedDiagnosticEvent {
   }
   return { name: record.name };
 }
+
+describe("Quick Capture planning", () => {
+  it("freezes IDs, effective time, normalized title, and injected Due policy", () => {
+    const ids = ["command-a", "issue-a"];
+    const command = normalizeQuickCaptureCommand(
+      { title: "  Review new idea  " },
+      {
+        createId: () => ids.shift()!,
+        now: () => NOW,
+        resolveDefaultDue: (effectiveAt) => effectiveAt + 7,
+      },
+    );
+
+    expect(command).toEqual({
+      commandId: "command-a",
+      effectiveAt: NOW,
+      issueId: "issue-a",
+      resolvedDue: NOW + 7,
+      title: "Review new idea",
+    });
+  });
+
+  it("rejects empty or multiline capture titles before planning", () => {
+    const environment = {
+      createId: () => "id",
+      now: () => NOW,
+      resolveDefaultDue: () => NOW + 1,
+    };
+
+    expect(() => normalizeQuickCaptureCommand(
+      { title: "   " },
+      environment,
+    )).toThrow(QuickCaptureCommandError);
+    expect(() => normalizeQuickCaptureCommand(
+      { title: "line one\nline two" },
+      environment,
+    )).toThrow(QuickCaptureCommandError);
+  });
+
+  it("plans a new Triage identity and rejects an effective-state collision", () => {
+    const command = {
+      commandId: "command-a",
+      effectiveAt: NOW,
+      issueId: "issue-a",
+      resolvedDue: NOW + 7,
+      title: "Review",
+    };
+
+    expect(planCreateTriageIssue(new Set(), command)).toMatchObject({
+      issue: {
+        context: "triage",
+        due: NOW + 7,
+        id: "issue-a",
+        labelIds: [],
+        title: "Review",
+      },
+      kind: "ready",
+      plan: {
+        affectedScope: { entityIds: ["issue-a"] },
+        commandId: "command-a",
+        effects: [{
+          after: {
+            kind: "triage-issue",
+            value: { id: "issue-a", title: "Review" },
+          },
+          kind: "create",
+        }],
+        intent: "triage.issue.create",
+      },
+    });
+    expect(planCreateTriageIssue(new Set(["issue-a"]), command)).toEqual({
+      kind: "rejected",
+      reason: "Issue ID already exists: issue-a",
+    });
+  });
+});
 
 describe("Triage Intake application", () => {
   it("publishes Quick Capture optimistically before persistence completes", async () => {

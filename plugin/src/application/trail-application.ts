@@ -230,8 +230,8 @@ export class TrailApplication {
       const accept = new TrailTriageAcceptService(
         runtimeStore,
         mutationQueue,
-        triagePersistence,
-        workflowPersistence,
+        triageSources,
+        workflowSources,
         configuration,
         { createId, now },
         this.diagnostics,

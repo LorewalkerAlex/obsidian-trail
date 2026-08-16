@@ -1,24 +1,29 @@
 import {
-  createTrailMutationPlan,
-  triageIssueMutationEntity,
-  type TrailMutationPlan,
-} from "../../mutation/plans/trail-mutation-plan";
-import {
   NOOP_TRAIL_DIAGNOSTICS,
   type TrailDiagnostics,
 } from "../../diagnostics/trail-diagnostics";
 import {
   isTrailEpochMilliseconds,
-  isValidTrailTitle,
-  normalizeTrailTitle,
   sameTrailTriageIssue,
   type TrailTriageIssue,
 } from "../../domain/trail-issue";
+import {
+  createTrailMutationPlan,
+  triageIssueMutationEntity,
+  type TrailMutationPlan,
+} from "../../mutation/plans/trail-mutation-plan";
 import {
   selectEffectiveTriageIssueById,
 } from "../../runtime/projection/trail-runtime-projection";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import type { TrailTriageSourceSync } from "../../source-sync/triage/trail-triage-source-sync";
+import {
+  normalizeTrailCommandId,
+  normalizeTrailCommandTime,
+  normalizeTrailCommandTitle,
+  TrailCommandValidationError,
+  type TrailCommandEnvironment,
+} from "../trail-command";
 
 export type TriageManagementActionKind =
   | "triage.defer"
@@ -41,10 +46,7 @@ export interface TriageManagementReceipt {
   readonly issueId: string;
 }
 
-export interface TriageManagementCommandEnvironment {
-  readonly createId: () => string;
-  readonly now: () => number;
-}
+export type TriageManagementCommandEnvironment = TrailCommandEnvironment;
 
 interface UpdateTriageCommand {
   readonly commandId: string;
@@ -81,43 +83,37 @@ export type TriageManagementPlanResult =
   | { readonly kind: "rejected"; readonly reason: string }
   | { readonly kind: "unchanged"; readonly issueId: string };
 
-function normalizeIssueId(issueId: string): string {
-  const normalized = issueId.trim();
-  if (normalized === "") {
-    throw new TriageManagementError("Triage Issue ID must be non-empty text");
+function normalizeCommand<T>(factory: () => T): T {
+  try {
+    return factory();
+  } catch (error: unknown) {
+    if (error instanceof TrailCommandValidationError) {
+      throw new TriageManagementError(error.message, error);
+    }
+    throw error;
   }
-  return normalized;
-}
-
-function normalizeEffectiveAt(environment: TriageManagementCommandEnvironment): number {
-  const effectiveAt = environment.now();
-  if (!isTrailEpochMilliseconds(effectiveAt)) {
-    throw new TriageManagementError("Triage management effective timestamp is invalid");
-  }
-  return effectiveAt;
 }
 
 export function normalizeTriageEditCommand(
   input: TriageEditInput,
   environment: TriageManagementCommandEnvironment,
 ): UpdateTriageCommand {
-  const title = normalizeTrailTitle(input.title);
-  if (!isValidTrailTitle(title)) {
-    throw new TriageManagementError("Triage Issue title must be non-empty single-line text");
-  }
   if (!isTrailEpochMilliseconds(input.due)) {
     throw new TriageManagementError("Triage Issue Due must be a valid timestamp");
   }
 
-  return {
-    commandId: environment.createId(),
+  const title = normalizeCommand(() =>
+    normalizeTrailCommandTitle(input.title, "Triage Issue")
+  );
+  return normalizeCommand(() => ({
+    commandId: normalizeTrailCommandId(environment.createId(), "Command ID"),
     due: input.due,
-    effectiveAt: normalizeEffectiveAt(environment),
+    effectiveAt: normalizeTrailCommandTime(environment),
     expectedIssue: input.expectedIssue,
-    issueId: normalizeIssueId(input.expectedIssue.id),
-    kind: "triage.edit",
+    issueId: normalizeTrailCommandId(input.expectedIssue.id, "Triage Issue ID"),
+    kind: "triage.edit" as const,
     title,
-  };
+  }));
 }
 
 export function normalizeTriageDeferCommand(
@@ -128,27 +124,27 @@ export function normalizeTriageDeferCommand(
     throw new TriageManagementError("Deferred Triage Due must be a valid timestamp");
   }
 
-  return {
-    commandId: environment.createId(),
+  return normalizeCommand(() => ({
+    commandId: normalizeTrailCommandId(environment.createId(), "Command ID"),
     due: input.due,
-    effectiveAt: normalizeEffectiveAt(environment),
+    effectiveAt: normalizeTrailCommandTime(environment),
     expectedIssue: input.expectedIssue,
-    issueId: normalizeIssueId(input.expectedIssue.id),
-    kind: "triage.defer",
-  };
+    issueId: normalizeTrailCommandId(input.expectedIssue.id, "Triage Issue ID"),
+    kind: "triage.defer" as const,
+  }));
 }
 
 export function normalizeTriageDeleteCommand(
   expectedIssue: TrailTriageIssue,
   environment: TriageManagementCommandEnvironment,
 ): DeleteTriageCommand {
-  return {
-    commandId: environment.createId(),
-    effectiveAt: normalizeEffectiveAt(environment),
+  return normalizeCommand(() => ({
+    commandId: normalizeTrailCommandId(environment.createId(), "Command ID"),
+    effectiveAt: normalizeTrailCommandTime(environment),
     expectedIssue,
-    issueId: normalizeIssueId(expectedIssue.id),
-    kind: "triage.delete",
-  };
+    issueId: normalizeTrailCommandId(expectedIssue.id, "Triage Issue ID"),
+    kind: "triage.delete" as const,
+  }));
 }
 
 /** Plans a legal identity-preserving edit/defer or an identity-removing delete. */
