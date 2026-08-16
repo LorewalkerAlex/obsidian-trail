@@ -3,6 +3,29 @@ import { describe, expect, it } from "vitest";
 import { TrailMutationQueue, TrailMutationQueueDisposedError } from "./trail-mutation-queue";
 
 describe("TrailMutationQueue", () => {
+  it("inserts an authoritative refresh barrier after current work and before queued mutations", async () => {
+    const queue = new TrailMutationQueue();
+    const events: string[] = [];
+    let releaseCurrent!: () => void;
+    const currentGate = new Promise<void>((resolve) => { releaseCurrent = resolve; });
+
+    const current = queue.enqueue(async () => {
+      events.push("current:start");
+      await currentGate;
+      events.push("current:end");
+    });
+    const queued = queue.enqueue(async () => {
+      events.push("queued");
+    });
+    const refresh = queue.enqueueAfterCurrent(async () => {
+      events.push("refresh");
+    });
+
+    releaseCurrent();
+    await Promise.all([current, queued, refresh]);
+    expect(events).toEqual(["current:start", "current:end", "refresh", "queued"]);
+  });
+
   it("executes persistence work in strict FIFO order", async () => {
     const queue = new TrailMutationQueue();
     const events: string[] = [];

@@ -54,6 +54,11 @@ export function submitTrailMutation<TResult>(
   addTrailPendingPlan(store, plan);
   const queued = queue.enqueue(async () => {
     started = true;
+    const dequeueControl = store.getState().control;
+    if (!isTrailRuntimeWritable(dequeueControl)) {
+      finalize();
+      throw new TrailMutationGateClosedError(dequeueControl.kind);
+    }
     try {
       const physical = await driver.materialize(plan, store.getState().committed);
       const result = await driver.execute(physical);
@@ -61,6 +66,8 @@ export function submitTrailMutation<TResult>(
       await driver.settle(result);
       return result;
     } catch (error: unknown) {
+      // Failed optimistic state must disappear before authoritative recovery starts.
+      finalize();
       if (driver.recover !== undefined) {
         try {
           await driver.recover(error);

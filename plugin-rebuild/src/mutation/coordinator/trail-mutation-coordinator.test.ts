@@ -79,7 +79,10 @@ describe("Trail mutation coordinator", () => {
   it("removes optimistic state when execution fails and invokes recovery once", async () => {
     const store = createTrailRuntimeStore();
     setTrailRuntimeControl(store, { kind: "ready" });
-    const recover = vi.fn(async () => undefined);
+    const recoveredPendingCounts: number[] = [];
+    const recover = vi.fn(async () => {
+      recoveredPendingCounts.push(store.getState().pending.length);
+    });
     await expect(submitTrailMutation(store, new TrailMutationQueue(), plan(), {
       execute: async () => { throw new Error("boom"); },
       materialize: async (logical) => ({
@@ -92,7 +95,36 @@ describe("Trail mutation coordinator", () => {
       settle: async () => undefined,
     })).rejects.toThrow("boom");
     expect(recover).toHaveBeenCalledTimes(1);
+    expect(recoveredPendingCounts).toEqual([0]);
     expect(store.getState().pending).toHaveLength(0);
+  });
+
+  it("rejects already-queued optimistic work if the gate closes before dequeue", async () => {
+    const store = createTrailRuntimeStore();
+    setTrailRuntimeControl(store, { kind: "ready" });
+    const queue = new TrailMutationQueue();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const blocker = queue.enqueue(async () => { await gate; });
+    const recover = vi.fn(async () => undefined);
+    const submitted = submitTrailMutation(store, queue, plan("queued"), {
+      execute: async () => undefined,
+      materialize: async (logical) => ({
+        commandId: logical.commandId,
+        intent: logical.intent,
+        kind: "single",
+        operations: [],
+      }),
+      recover,
+      settle: async () => undefined,
+    });
+    expect(store.getState().pending).toHaveLength(1);
+    setTrailRuntimeControl(store, { kind: "refreshing" });
+    release();
+    await blocker;
+    await expect(submitted).rejects.toBeInstanceOf(TrailMutationGateClosedError);
+    expect(recover).not.toHaveBeenCalled();
+    expect(store.getState().pending).toEqual([]);
   });
 
   it("does not create pending optimistic state while the mutation gate is closed", async () => {

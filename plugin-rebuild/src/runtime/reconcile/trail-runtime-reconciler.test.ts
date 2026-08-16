@@ -4,6 +4,7 @@ import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../
 import { createTrailRuntimeStore } from "../store/trail-runtime-store";
 import {
   buildTrailCommittedRuntimeCandidate,
+  buildTrailRuntimeCandidateAfterChanges,
   removeTrailDomainSource,
   replaceTrailDomainSource,
   replaceTrailPluginData,
@@ -46,6 +47,35 @@ describe("Trail runtime reconciler", () => {
     expect(state.committed.revision).toBe(2);
     expect(state.committed.authoritative.domain.projectsById.size).toBe(0);
     expect(state.committed.authoritative.domain.issuesById.size).toBe(0);
+  });
+
+  it("preserves unchanged entity object references within a reconciled source", () => {
+    const store = createTrailRuntimeStore();
+    const secondIssue = { ...issue, id: "issue-b", title: "Issue B" };
+    const sourcePath = "Trail/Projects/0001 Project A.md";
+    replaceTrailDomainSource(store, {
+      issues: [issue, secondIssue],
+      kind: "project",
+      milestones: [],
+      project,
+      sourcePath,
+    });
+    const projectBefore = store.getState().committed.authoritative.domain.projectsById.get(project.id);
+    const secondBefore = store.getState().committed.authoritative.domain.issuesById.get(secondIssue.id);
+
+    replaceTrailDomainSource(store, {
+      issues: [{ ...issue, title: "Issue A changed" }, { ...secondIssue }],
+      kind: "project",
+      milestones: [],
+      project: { ...project },
+      sourcePath,
+    });
+
+    const domain = store.getState().committed.authoritative.domain;
+    expect(domain.projectsById.get(project.id)).toBe(projectBefore);
+    expect(domain.issuesById.get(secondIssue.id)).toBe(secondBefore);
+    expect(domain.issuesById.get(issue.id)).not.toBe(issue);
+    expect(domain.issuesById.get(issue.id)?.title).toBe("Issue A changed");
   });
 
   it("reconciles plugin data separately from source health", () => {
@@ -103,4 +133,40 @@ describe("Trail runtime reconciler", () => {
     expect(candidate.authoritative.domain.issuesById.size).toBe(3);
     expect(candidate.authoritative.domain.cyclesById.size).toBe(1);
   });
+});
+
+it("builds a multi-source post-write candidate without publishing intermediate state", () => {
+  const store = createTrailRuntimeStore();
+  const pluginData = {
+    configuration: createTrailTestConfiguration(),
+    workspaceState: createTrailTestWorkspaceState(),
+  };
+  replaceTrailPluginData(store, pluginData);
+  replaceTrailDomainSource(store, {
+    issues: [{ context: "triage", due: 10, id: "triage-a", labelIds: [], title: "T" }],
+    kind: "triage",
+    sourcePath: "Trail/Collections/Triage.md",
+  });
+  const before = store.getState().committed;
+  const candidate = buildTrailRuntimeCandidateAfterChanges({
+    changes: [
+      { kind: "remove-domain-source", sourcePath: "Trail/Collections/Triage.md" },
+      {
+        kind: "replace-domain-source",
+        snapshot: {
+          issues: [issue],
+          kind: "project",
+          milestones: [],
+          project,
+          sourcePath: "Trail/Projects/0001 Project A.md",
+        },
+      },
+    ],
+    committed: before,
+    health: store.getState().health,
+  });
+
+  expect(store.getState().committed).toBe(before);
+  expect(candidate.committed.authoritative.domain.issuesById.has("triage-a")).toBe(false);
+  expect(candidate.committed.authoritative.domain.issuesById.has("issue-a")).toBe(true);
 });

@@ -44,6 +44,8 @@ export interface TrailDomainSourceRepository {
   /** Creates a file-backed Domain source without exposing Markdown above Persistence. */
   readonly createSource: (source: TrailNewDomainSource) => Promise<TrailDomainSourceReadResult>;
   readonly deleteSource: (path: string) => Promise<void>;
+  /** Deletes bootstrap bytes only when an exact reread still matches the scaffold. */
+  readonly deleteSourceIfUnchanged: (path: string, expectedMarkdown: string) => Promise<boolean>;
   readonly list: (path: string) => Promise<readonly TrailSourceEntry[]>;
   /** Applies an entity-level mutation against the latest authoritative bytes, then rereads. */
   readonly mutate: (
@@ -133,6 +135,12 @@ export function createTrailDomainSourceRepository(
       return read(source.kind, source.path);
     },
     deleteSource: (path: string) => sourceIO.delete(path),
+    async deleteSourceIfUnchanged(path, expectedMarkdown): Promise<boolean> {
+      const latest = await sourceIO.read(path);
+      if (latest !== expectedMarkdown) return false;
+      await sourceIO.delete(path);
+      return true;
+    },
     list: (path: string) => sourceIO.list(path),
     async mutate(kind, path, mutation, options): Promise<TrailDomainSourceReadResult> {
       await sourceIO.process(path, (latest) => applyTrailDomainSourceMutation({

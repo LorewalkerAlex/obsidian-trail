@@ -1,4 +1,5 @@
 import type { TrailDomainEntity } from "../../domain/model/trail-entities";
+import { sameTrailDomainEntity } from "../../domain/rules/trail-domain-equality";
 import type { TrailDomainSourceSnapshot } from "../../persistence/domain-sources/trail-domain-source-snapshot";
 import type { TrailSourceProblem } from "../../persistence/domain-sources/trail-source-result";
 import type { TrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
@@ -11,11 +12,26 @@ import {
 } from "../ownership/trail-source-ownership";
 import {
   createEmptyTrailDomainState,
+  findTrailDomainEntity,
   type TrailCommittedRuntime,
   type TrailDomainState,
   type TrailRuntimeHealth,
   type TrailRuntimeStore,
 } from "../store/trail-runtime-store";
+
+export type TrailRuntimeAuthoritativeChange =
+  | {
+      readonly issues?: readonly TrailSourceProblem[];
+      readonly kind: "replace-domain-source";
+      readonly snapshot: TrailDomainSourceSnapshot;
+    }
+  | { readonly kind: "remove-domain-source"; readonly sourcePath: string }
+  | { readonly kind: "replace-plugin-data"; readonly snapshot: TrailPluginDataSnapshot };
+
+export interface TrailRuntimeCandidate {
+  readonly committed: Omit<TrailCommittedRuntime, "revision">;
+  readonly health: TrailRuntimeHealth;
+}
 
 function entitiesForSource(snapshot: TrailDomainSourceSnapshot): readonly TrailDomainEntity[] {
   switch (snapshot.kind) {
@@ -85,7 +101,13 @@ function replaceContribution(
   for (const entityId of ownershipState.sourceEntityIdsByPath.get(snapshot.sourcePath) ?? []) {
     deleteEntity(domain, entityId);
   }
-  for (const entity of incoming) assignEntity(domain, entity);
+  for (const entity of incoming) {
+    const previous = findTrailDomainEntity(domainState, entity.value.id);
+    assignEntity(
+      domain,
+      previous !== undefined && sameTrailDomainEntity(previous, entity) ? previous : entity,
+    );
+  }
   return { domain, ownership };
 }
 
@@ -200,4 +222,56 @@ export function publishTrailCommittedRuntime(
     committed: { ...candidate, revision: state.committed.revision + 1 },
     health,
   }));
+}
+
+/** Builds a post-write candidate without exposing partially reconciled committed state. */
+export function buildTrailRuntimeCandidateAfterChanges(input: {
+  readonly changes: readonly TrailRuntimeAuthoritativeChange[];
+  readonly committed: TrailCommittedRuntime;
+  readonly health: TrailRuntimeHealth;
+}): TrailRuntimeCandidate {
+  let domain = input.committed.authoritative.domain;
+  let ownership = input.committed.ownership;
+  let configuration = input.committed.authoritative.configuration;
+  let workspaceState = input.committed.authoritative.workspaceState;
+  let health = input.health;
+
+  for (const change of input.changes) {
+    switch (change.kind) {
+      case "replace-domain-source": {
+        const replaced = replaceContribution(domain, ownership, change.snapshot);
+        domain = replaced.domain;
+        ownership = replaced.ownership;
+        health = healthWithSourceIssues(
+          health,
+          change.snapshot.sourcePath,
+          change.issues ?? [],
+        );
+        break;
+      }
+      case "remove-domain-source": {
+        const mutable = mutableDomain(domain);
+        for (const entityId of ownership.sourceEntityIdsByPath.get(change.sourcePath) ?? []) {
+          deleteEntity(mutable, entityId);
+        }
+        domain = mutable;
+        ownership = removeTrailSourceOwnership(ownership, change.sourcePath);
+        health = healthWithSourceIssues(health, change.sourcePath, []);
+        break;
+      }
+      case "replace-plugin-data":
+        configuration = change.snapshot.configuration;
+        workspaceState = change.snapshot.workspaceState;
+        break;
+    }
+  }
+
+  return {
+    committed: {
+      authoritative: { configuration, domain, workspaceState },
+      indexes: buildTrailRuntimeIndexes(domain),
+      ownership,
+    },
+    health,
+  };
 }

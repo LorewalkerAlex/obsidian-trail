@@ -109,3 +109,32 @@ it("applies logical entity mutations without exposing Markdown to Mutation", asy
   }
   expect(updated.snapshot.issues[0]?.title).toBe("Updated");
 });
+
+it("deletes bootstrap Markdown only when the exact authoritative bytes are unchanged", async () => {
+  let persisted: string | undefined = TRAIL_TRIAGE_EMPTY_MARKDOWN;
+  const io: TrailSourceIO = {
+    create: async (_path, content) => { persisted = content; },
+    delete: async () => { persisted = undefined; },
+    list: async () => [],
+    process: async () => undefined,
+    read: async () => {
+      if (persisted === undefined) throw new Error("missing");
+      return persisted;
+    },
+    rename: async () => undefined,
+  };
+  const repository = createTrailDomainSourceRepository(io, parseTrailTestYaml);
+
+  expect(await repository.deleteSourceIfUnchanged(
+    "Trail/Collections/Triage.md",
+    TRAIL_TRIAGE_EMPTY_MARKDOWN,
+  )).toBe(true);
+  expect(persisted).toBeUndefined();
+
+  persisted = `${TRAIL_TRIAGE_EMPTY_MARKDOWN}\nuser edit`;
+  expect(await repository.deleteSourceIfUnchanged(
+    "Trail/Collections/Triage.md",
+    TRAIL_TRIAGE_EMPTY_MARKDOWN,
+  )).toBe(false);
+  expect(persisted).toContain("user edit");
+});

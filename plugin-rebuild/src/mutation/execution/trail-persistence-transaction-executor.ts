@@ -1,7 +1,10 @@
+import type { TrailDomainEntity } from "../../domain/model/trail-entities";
 import {
   sameTrailConfiguration,
+  sameTrailDomainEntity,
   sameTrailWorkspaceState,
 } from "../../domain/rules/trail-domain-equality";
+import type { TrailDomainSourceSnapshot } from "../../persistence/domain-sources/trail-domain-source-snapshot";
 import type { TrailDomainSourceReadResult } from "../../persistence/domain-sources/trail-source-result";
 import type { TrailDomainSourceRepository } from "../../persistence/domain-sources/trail-domain-source-repository";
 import type {
@@ -26,11 +29,21 @@ export type TrailPersistenceOperationResult =
   | { readonly kind: "domain-source-deleted"; readonly sourcePath: string }
   | { readonly kind: "plugin-data"; readonly snapshot: TrailPluginDataSnapshot };
 
-export interface TrailPersistenceExecutionResult {
+interface TrailPersistenceExecutionResultBase {
   readonly commandId: string;
+  /** Results in physical execution order; useful for diagnostics and audit evidence. */
   readonly operations: readonly TrailPersistenceOperationResult[];
-  readonly topology: TrailPersistenceTransactionPlan["kind"];
 }
+
+export type TrailPersistenceExecutionResult =
+  | (TrailPersistenceExecutionResultBase & { readonly topology: "single" })
+  | (TrailPersistenceExecutionResultBase & {
+      readonly sourceOperations: readonly TrailPersistenceOperationResult[];
+      readonly sourceRecovered: boolean;
+      readonly targetOperations: readonly TrailPersistenceOperationResult[];
+      readonly topology: "source-transition";
+    })
+  | (TrailPersistenceExecutionResultBase & { readonly topology: "integrity-batch" });
 
 export interface TrailPersistenceExecutionEnvironment {
   readonly domainSources: TrailDomainSourceRepository;
@@ -63,6 +76,11 @@ function requireAccepted(
   if (result.kind === "rejected") {
     throw new TrailPersistenceOperationError(
       `Authoritative reread rejected after ${operation.kind}: ${result.sourcePath}`,
+    );
+  }
+  if (result.issues.length > 0) {
+    throw new TrailPersistenceOperationError(
+      `Authoritative reread reported source issues after ${operation.kind}: ${result.snapshot.sourcePath}`,
     );
   }
   return result;
@@ -121,6 +139,137 @@ async function executeOperation(
   }
 }
 
+function entitiesInSourceSnapshot(snapshot: TrailDomainSourceSnapshot): readonly TrailDomainEntity[] {
+  switch (snapshot.kind) {
+    case "initiative":
+      return [{ kind: "initiative", value: snapshot.initiative }];
+    case "project":
+      return [
+        { kind: "project", value: snapshot.project },
+        ...snapshot.milestones.map((value) => ({ kind: "milestone" as const, value })),
+        ...snapshot.issues.map((value) => ({ kind: "issue" as const, value })),
+      ];
+    case "triage":
+    case "projectless-issues":
+      return snapshot.issues.map((value) => ({ kind: "issue" as const, value }));
+    case "cycles":
+      return snapshot.cycles.map((value) => ({ kind: "cycle" as const, value }));
+  }
+}
+
+type TrailSourceFailureObservation =
+  | { readonly kind: "ambiguous" }
+  | { readonly kind: "committed"; readonly result: TrailPersistenceOperationResult }
+  | { readonly kind: "unchanged" };
+
+function sameTrailDomainSourceSnapshot(
+  left: TrailDomainSourceSnapshot,
+  right: TrailDomainSourceSnapshot,
+): boolean {
+  if (left.kind !== right.kind || left.sourcePath !== right.sourcePath) return false;
+  const leftEntities = entitiesInSourceSnapshot(left);
+  const rightEntities = entitiesInSourceSnapshot(right);
+  return leftEntities.length === rightEntities.length
+    && leftEntities.every((entity, index) => {
+      const candidate = rightEntities[index];
+      return candidate !== undefined && sameTrailDomainEntity(entity, candidate);
+    });
+}
+
+/**
+ * A newly created file target may be deleted as compensation only while a clean
+ * latest reread still matches the target snapshot that Trail just verified.
+ */
+async function canSafelyRunTargetCompensation(
+  targetOperations: readonly TrailPersistenceOperation[],
+  targetResults: readonly TrailPersistenceOperationResult[],
+  compensation: readonly TrailPersistenceOperation[],
+  environment: TrailPersistenceExecutionEnvironment,
+): Promise<boolean> {
+  const fileDeletes = compensation.filter((operation) => operation.kind === "delete-domain-source");
+  if (fileDeletes.length === 0) return true;
+  if (
+    fileDeletes.length !== 1
+    || compensation.length !== 1
+    || targetOperations.length !== 1
+    || targetResults.length !== 1
+  ) {
+    return false;
+  }
+
+  const target = targetOperations[0];
+  const result = targetResults[0];
+  const deletion = fileDeletes[0];
+  if (
+    target === undefined
+    || target.kind !== "create-domain-source"
+    || result === undefined
+    || result.kind !== "domain-source"
+    || deletion === undefined
+    || deletion.path !== target.source.path
+  ) {
+    return false;
+  }
+
+  try {
+    const latest = await environment.domainSources.read(target.source.kind, target.source.path);
+    return latest.kind === "accepted"
+      && latest.issues.length === 0
+      && sameTrailDomainSourceSnapshot(latest.snapshot, result.result.snapshot);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Compensation is safe only when a clean authoritative reread proves the source
+ * still equals the destructive operation's pre-image. If the intended delete is
+ * already visible, the source step is recovered instead of rolling back target.
+ */
+async function observeFailedSourceStage(
+  operations: readonly TrailPersistenceOperation[],
+  environment: TrailPersistenceExecutionEnvironment,
+): Promise<TrailSourceFailureObservation> {
+  if (operations.length !== 1) return { kind: "ambiguous" };
+  const operation = operations[0];
+  if (
+    operation === undefined
+    || operation.kind !== "mutate-domain-source"
+    || operation.mutation.kind !== "delete"
+  ) {
+    return { kind: "ambiguous" };
+  }
+
+  let reread: TrailDomainSourceReadResult;
+  try {
+    reread = await environment.domainSources.read(operation.sourceKind, operation.path);
+  } catch {
+    return { kind: "ambiguous" };
+  }
+  if (reread.kind !== "accepted" || reread.issues.length > 0) {
+    return { kind: "ambiguous" };
+  }
+
+  const expected = operation.mutation.before;
+  const matches = entitiesInSourceSnapshot(reread.snapshot).filter((entity) => (
+    entity.value.id === expected.value.id
+  ));
+  if (matches.length === 0) {
+    return {
+      kind: "committed",
+      result: {
+        change: { kind: "mutated" },
+        kind: "domain-source",
+        result: reread,
+      },
+    };
+  }
+  if (matches.length === 1 && sameTrailDomainEntity(matches[0], expected)) {
+    return { kind: "unchanged" };
+  }
+  return { kind: "ambiguous" };
+}
+
 async function executeOperations(
   operations: readonly TrailPersistenceOperation[],
   environment: TrailPersistenceExecutionEnvironment,
@@ -174,9 +323,43 @@ export async function executeTrailPersistenceTransaction(
         return {
           commandId: plan.commandId,
           operations: [...targetResults, ...sourceResults],
+          sourceOperations: sourceResults,
+          sourceRecovered: false,
+          targetOperations: targetResults,
           topology: plan.kind,
         };
       } catch (error: unknown) {
+        const observation = await observeFailedSourceStage(plan.source, environment);
+        if (observation.kind === "committed") {
+          return {
+            commandId: plan.commandId,
+            operations: [...targetResults, observation.result],
+            sourceOperations: [observation.result],
+            sourceRecovered: true,
+            targetOperations: targetResults,
+            topology: plan.kind,
+          };
+        }
+        if (observation.kind === "ambiguous") {
+          throw new TrailSourceTransitionExecutionError(
+            "Source Transition source step failed; safe target compensation could not be proven",
+            false,
+            error,
+          );
+        }
+        if (!await canSafelyRunTargetCompensation(
+          plan.target,
+          targetResults,
+          plan.compensation,
+          environment,
+        )) {
+          throw new TrailSourceTransitionExecutionError(
+            "Source Transition source step failed; target changed before safe compensation",
+            false,
+            error,
+          );
+        }
+
         try {
           await executeOperations(plan.compensation, environment);
           throw new TrailSourceTransitionExecutionError(

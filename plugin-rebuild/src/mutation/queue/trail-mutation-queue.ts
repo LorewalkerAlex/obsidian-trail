@@ -19,12 +19,26 @@ export class TrailMutationQueue {
   private disposed = false;
 
   public enqueue<TResult>(command: TrailMutationQueueCommand<TResult>): Promise<TResult> {
+    return this.enqueueInternal(command, "tail");
+  }
+
+  /** Inserts recovery/refresh work immediately after the currently running command. */
+  public enqueueAfterCurrent<TResult>(command: TrailMutationQueueCommand<TResult>): Promise<TResult> {
+    return this.enqueueInternal(command, "front");
+  }
+
+  private enqueueInternal<TResult>(
+    command: TrailMutationQueueCommand<TResult>,
+    position: "front" | "tail",
+  ): Promise<TResult> {
     if (this.disposed) return Promise.reject(new TrailMutationQueueDisposedError());
     return new Promise<TResult>((resolve, reject) => {
-      this.queued.push({
+      const mutation: QueuedMutation = {
         reject,
         run: async () => { resolve(await command()); },
-      });
+      };
+      if (position === "front") this.queued.unshift(mutation);
+      else this.queued.push(mutation);
       void this.drain();
     });
   }

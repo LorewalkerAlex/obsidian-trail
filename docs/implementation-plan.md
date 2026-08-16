@@ -29,7 +29,8 @@ Product / Domain / Logical / Physical / Technical Design 继续记录各自 cont
 | Workflow | Project / Workflow Issue 基本执行闭环 | 已完成 |
 | Implementation Architecture Re-baseline | 建立共享模块与调用框架并迁移既有 Formal 行为 | 已完成 |
 | Codebase Simplification | 审计并清理旧实现中的过渡/重复/死代码 | 已完成 |
-| **Clean Plugin Rebuild** | 在独立目录按最终 Architecture 重建 production implementation，并完成一次 Cutover | **当前** |
+| Rebuild Source Sync + Application | 已完成 | 统一 bootstrap/discovery/full refresh、Source Health、refresh barrier、authoritative mutation settlement 与既有 Formal Application 行为已建立 |
+| **Clean Plugin Rebuild** | **当前** | 当前进入 Query + UI + Host Composition；通过 Cutover Gate 后替换 legacy `plugin/` |
 | Intake → Workflow | 继续 Triage → Workflow / Project 转换；首个净新增 Slice 为 `Triage Convert to Project` | Rebuild 后继续 |
 | Project Organization | Board / List、Move、Milestone、Initiative 等 | 待开始 |
 | Cycles & Views | Cycle、Filter、Custom View、Search、Favorites 等 | 待开始 |
@@ -79,8 +80,8 @@ Rebuild 期间：
 | Boundary + Domain Foundation | 独立工具链、legacy-import guard、冻结 Core Entity / Configuration / Workspace State contract | 已完成 |
 | Markdown + Persistence Foundation | canonical paths/schema/core/explicit codecs、Plugin Data 与 authoritative source repository | 已完成 |
 | Runtime + Mutation Foundation | final committed/pending/control/health Runtime、semantic planning、global serial mutation、physical execution | 已完成 |
-| **Source Sync + Application** | bootstrap/discovery/full external refresh、thin use cases、existing Triage/Project/Issue/Accept 行为迁移 | **当前** |
-| Query + UI + Host Composition | selectors、UI modules、Obsidian adapters、thin `main.ts` | 待开始 |
+| Source Sync + Application | bootstrap/discovery/full external refresh、thin use cases、existing Triage/Project/Issue/Accept 行为迁移 | 已完成 |
+| **Query + UI + Host Composition** | selectors、UI modules、Obsidian adapters、thin `main.ts` | **当前** |
 | Parity + Independent-risk Validation | existing Formal behavior parity、targeted risk tests、Diagnostics 与必要 real-host regression | 待开始 |
 | Architecture Audit + Cutover | 全量 Design → Code audit；删除旧 `plugin/`，`plugin-rebuild/` 切换为正式 `plugin/` | 待开始 |
 
@@ -117,14 +118,13 @@ Cutover 本身是一次结构替换，而不是第二轮重构：删除或归档
 
 ## 5. 当前近期计划
 
-当前推进 **Source Sync + Application**：
+当前推进 **Query + UI + Host Composition**：
 
-- 建立统一 bootstrap / discovery：加载 Plugin Data，发现并读取 managed Domain sources，完成 parse / validate / ownership / indexes 后发布 authoritative Runtime；
-- 建立 unexpected managed-file change 的唯一 V1 ingress：进入 `refreshing`、关闭 mutation gate、full authoritative reload、成功后原子 publish，失败时保留可信 last-known-good 并进入只读错误；
-- Source Sync 负责 authoritative verification / reconcile / source health 收敛，Application 不直接依赖 raw Persistence、Markdown 或 host adapter；
-- 把已有 Triage、Project、Workflow Issue、Triage Accept 行为迁入 thin Application use cases，统一为 normalize input → pure planner → Mutation Coordinator；
-- 本 Slice 不提前建立 Query / UI / Obsidian Host Composition；现有 runnable `plugin/` 继续保持不变；
-- 本 checkpoint 验证并 push 后，再进入 Query + UI + Host Composition。
+- 建立页面级 Query selectors，直接消费 effective Runtime，并只抽取已有页面真实复用的 filter / sort / group helper；不提前建设 generic Query DSL；
+- 建立共享 UI shell、modules 与 entity components，优先迁移已有 Triage、Project、Workflow Issue 基本交互，并继续通过 Application 发出正式 mutation；
+- 建立 Obsidian host adapters 与 composition root，把 SourceIO、Plugin Data、workspace/bootstrap、managed file events 接到 rebuild 主链；`main.ts` 只负责 lifecycle、composition 与 host registration；
+- 同步覆盖 loading、empty、read-only/error 与窄 pane 响应式边界；本 Slice 不增加净新 Product Feature，也不提前 Cutover；
+- 本 checkpoint 验证并 push 后，再进入 Parity + Independent-risk Validation。
 
 ## 6. Implementation Checkpoints
 
@@ -144,7 +144,8 @@ Cutover 本身是一次结构替换，而不是第二轮重构：删除或归档
 | Rebuild Boundary + Domain Foundation | 已完成 | `501a09a5...` 建立独立 rebuild 工具链、Domain contract 与双向 legacy-import guard |
 | Rebuild Markdown + Persistence Foundation | 已完成 | 五类 explicit codec、Physical Schema Registry、DomainSourceRepository、Plugin Data physical ↔ logical boundary 与 owner guards 已建立 |
 | Rebuild Runtime + Mutation Foundation | 已完成 | final Runtime shape、logical Plan、ordered pending replay、global serial queue、dequeue-time physical topology 与 Persistence-only execution 已建立 |
-| **Clean Plugin Rebuild** | **当前** | 当前进入 Source Sync + Application；通过 Cutover Gate 后替换 legacy `plugin/` |
+| Rebuild Source Sync + Application | 已完成 | 统一 bootstrap/discovery/full refresh、Source Health、refresh barrier、authoritative mutation settlement 与既有 Formal Application 行为已建立 |
+| **Clean Plugin Rebuild** | **当前** | 当前进入 Query + UI + Host Composition；通过 Cutover Gate 后替换 legacy `plugin/` |
 | Intake → Workflow | Rebuild 后继续 | 首个净新增 Slice：`Triage Convert to Project` |
 | V1 Exit | 待开始 | — |
 
