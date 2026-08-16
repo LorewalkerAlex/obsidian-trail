@@ -180,8 +180,13 @@ export function collectMarkdownH2Records(
 }
 
 export function appendMarkdownBlock(markdown: string, block: string): string {
+  const lineEnding = markdown.includes("\r\n") ? "\r\n" : "\n";
   const base = markdown.replace(/[\r\n]+$/, "");
-  return `${base}\n\n${block}\n`;
+  const normalizedBlock = block
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\n/g, lineEnding);
+  return `${base}${lineEnding}${lineEnding}${normalizedBlock}${lineEnding}`;
 }
 
 export function removeMarkdownRange(markdown: string, startOffset: number, endOffset: number): string {
@@ -207,4 +212,40 @@ export function replaceMarkdownHeadingAndMarker(
     + input.heading
     + next.slice(headingLine.endOffset);
   return next;
+}
+
+function markdownLineEnding(markdown: string): "\r\n" | "\n" {
+  const firstNewline = markdown.indexOf("\n");
+  return firstNewline > 0 && markdown[firstNewline - 1] === "\r" ? "\r\n" : "\n";
+}
+
+function withMarkdownLineEnding(block: string, lineEnding: "\r\n" | "\n"): string {
+  return block.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n/g, lineEnding);
+}
+
+/** Replaces one complete record while preserving unrelated source bytes and the source line-ending convention. */
+export function replaceMarkdownRecordRange(
+  markdown: string,
+  range: Pick<TrailRecordSourceRange, "endOffset" | "startOffset">,
+  block: string,
+): string {
+  const lineEnding = markdownLineEnding(markdown);
+  const existing = markdown.slice(range.startOffset, range.endOffset);
+  const trailingBreaks = existing.match(/(?:\r\n|\r|\n)+$/)?.[0] ?? lineEnding;
+  return markdown.slice(0, range.startOffset)
+    + withMarkdownLineEnding(block, lineEnding)
+    + trailingBreaks
+    + markdown.slice(range.endOffset);
+}
+
+/** Inserts a complete H2 record before a known structural boundary without rewriting either side. */
+export function insertMarkdownRecordBefore(
+  markdown: string,
+  offset: number,
+  block: string,
+): string {
+  const lineEnding = markdownLineEnding(markdown);
+  const prefix = markdown.slice(0, offset).replace(/[\r\n]+$/, "");
+  const suffix = markdown.slice(offset).replace(/^[\r\n]+/, "");
+  return `${prefix}${lineEnding}${lineEnding}${withMarkdownLineEnding(block, lineEnding)}${lineEnding}${lineEnding}${suffix}`;
 }

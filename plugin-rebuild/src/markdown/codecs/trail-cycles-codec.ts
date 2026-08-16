@@ -9,6 +9,7 @@ import {
   parseMarkdownBody,
   requiredMarkdownOffset,
   splitMarkdownFrontmatter,
+  type TrailRecordSourceRange,
 } from "../core/trail-markdown-core";
 import {
   TRAIL_PHYSICAL_RECORD_SCHEMAS,
@@ -34,6 +35,7 @@ import {
 
 export interface TrailCyclesSourceDocument {
   readonly cycles: readonly TrailCycle[];
+  readonly locationsByCycleId: Readonly<Record<string, TrailRecordSourceRange>>;
   readonly sourcePath: string;
 }
 
@@ -79,7 +81,7 @@ export function parseCyclesMarkdown(input: {
     ));
   }
 
-  const accepted: TrailCycle[] = [];
+  const accepted: Array<{ readonly cycle: TrailCycle; readonly source: TrailRecordSourceRange }> = [];
   for (const record of region.records) {
     if (!validateRecordEnvelope(record, {
       bodyStartOffset: frontmatter.bodyStartOffset,
@@ -129,11 +131,20 @@ export function parseCyclesMarkdown(input: {
       }
       continue;
     }
-    accepted.push(cycle);
+    accepted.push({
+      cycle,
+      source: {
+        endOffset: frontmatter.bodyStartOffset + record.endOffset,
+        filePath: input.sourcePath,
+        markerEndOffset: frontmatter.bodyStartOffset + markerEnd,
+        markerStartOffset: frontmatter.bodyStartOffset + requiredMarkdownOffset(record.immediateMarker!, "start"),
+        startOffset: frontmatter.bodyStartOffset + record.startOffset,
+      },
+    });
   }
 
   const counts = new Map<string, number>();
-  for (const cycle of accepted) counts.set(cycle.id, (counts.get(cycle.id) ?? 0) + 1);
+  for (const { cycle } of accepted) counts.set(cycle.id, (counts.get(cycle.id) ?? 0) + 1);
   const duplicateIds = new Set([...counts.entries()].filter(([, count]) => count > 1).map(([id]) => id));
   for (const id of duplicateIds) {
     issues.push(entityCodecIssue("cycles.record.id-duplicate", input.sourcePath, "cycle", `Duplicate Cycle ID: ${id}`, { entityId: id }));
@@ -141,7 +152,12 @@ export function parseCyclesMarkdown(input: {
 
   return {
     document: {
-      cycles: accepted.filter((cycle) => !duplicateIds.has(cycle.id)),
+      cycles: accepted.filter(({ cycle }) => !duplicateIds.has(cycle.id)).map(({ cycle }) => cycle),
+      locationsByCycleId: Object.fromEntries(
+        accepted
+          .filter(({ cycle }) => !duplicateIds.has(cycle.id))
+          .map(({ cycle, source }) => [cycle.id, source]),
+      ),
       sourcePath: input.sourcePath,
     },
     issues,

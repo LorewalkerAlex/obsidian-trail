@@ -3,6 +3,7 @@ import {
   collectMarkdownH2Records,
   parseMarkdownBody,
   replaceMarkdownHeadingAndMarker,
+  replaceMarkdownRecordRange,
   requiredMarkdownOffset,
   splitMarkdownFrontmatter,
 } from "./trail-markdown-core";
@@ -59,5 +60,22 @@ describe("Trail Markdown Core", () => {
     });
     expect(next).toContain("## New\n<!-- data {\"id\":\"a\",\"due\":1} -->");
     expect(next).toContain("### Keep\nBody stays byte-identical.");
+  });
+
+  it("replaces one complete CRLF record without normalizing neighboring bytes", () => {
+    const markdown = "# Issues\r\n\r\n## A\r\n<!-- data {\"id\":\"a\"} -->\r\n\r\nbody-a\r\n\r\n## B\r\n<!-- data {\"id\":\"b\"} -->\r\n\r\nbody-b\r\n";
+    const children = parseMarkdownBody(markdown).children;
+    const record = collectMarkdownH2Records(markdown, children, 1).records[0];
+    const next = replaceMarkdownRecordRange(
+      markdown,
+      record,
+      "## A2\n<!-- data {\"id\":\"a\"} -->\n\nbody-a2",
+    );
+    expect(next).toContain(
+      "## A2\r\n<!-- data {\"id\":\"a\"} -->\r\n\r\nbody-a2\r\n\r\n## B",
+    );
+    expect(next).toContain(
+      "## B\r\n<!-- data {\"id\":\"b\"} -->\r\n\r\nbody-b\r\n",
+    );
   });
 });

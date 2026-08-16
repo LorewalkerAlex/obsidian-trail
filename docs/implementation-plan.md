@@ -78,8 +78,8 @@ Rebuild 期间：
 |---|---|---|
 | Boundary + Domain Foundation | 独立工具链、legacy-import guard、冻结 Core Entity / Configuration / Workspace State contract | 已完成 |
 | Markdown + Persistence Foundation | canonical paths/schema/core/explicit codecs、Plugin Data 与 authoritative source repository | 已完成 |
-| **Runtime + Mutation Foundation** | final committed/pending/control/health Runtime、semantic planning、global serial mutation、physical execution | **当前** |
-| Source Sync + Application | bootstrap/discovery/full external refresh、thin use cases、existing Triage/Project/Issue/Accept 行为迁移 | 待开始 |
+| Runtime + Mutation Foundation | final committed/pending/control/health Runtime、semantic planning、global serial mutation、physical execution | 已完成 |
+| **Source Sync + Application** | bootstrap/discovery/full external refresh、thin use cases、existing Triage/Project/Issue/Accept 行为迁移 | **当前** |
 | Query + UI + Host Composition | selectors、UI modules、Obsidian adapters、thin `main.ts` | 待开始 |
 | Parity + Independent-risk Validation | existing Formal behavior parity、targeted risk tests、Diagnostics 与必要 real-host regression | 待开始 |
 | Architecture Audit + Cutover | 全量 Design → Code audit；删除旧 `plugin/`，`plugin-rebuild/` 切换为正式 `plugin/` | 待开始 |
@@ -117,14 +117,14 @@ Cutover 本身是一次结构替换，而不是第二轮重构：删除或归档
 
 ## 5. 当前近期计划
 
-当前推进 **Runtime + Mutation Foundation**：
+当前推进 **Source Sync + Application**：
 
-- 建立 `mutation/plans` 的 canonical logical plan contract，并让 pure semantic planning 落在 `domain/planning/`；
-- 建立最终 `committed / pending / control / health` Runtime shape、authoritative state、ownership 与当前必要 indexes；
-- 建立 ordered pending replay 与 effective state，不引入 Feature-specific pending shape；
-- 建立 global serial mutation queue、physical planning / execution，并只通过 Persistence capability 落盘，不直接依赖 Markdown；
-- 本 Slice 不提前迁移 Source Sync / Application use cases；现有 runnable `plugin/` 继续保持不变；
-- 本 checkpoint 验证并 push 后，再进入 Source Sync + Application。
+- 建立统一 bootstrap / discovery：加载 Plugin Data，发现并读取 managed Domain sources，完成 parse / validate / ownership / indexes 后发布 authoritative Runtime；
+- 建立 unexpected managed-file change 的唯一 V1 ingress：进入 `refreshing`、关闭 mutation gate、full authoritative reload、成功后原子 publish，失败时保留可信 last-known-good 并进入只读错误；
+- Source Sync 负责 authoritative verification / reconcile / source health 收敛，Application 不直接依赖 raw Persistence、Markdown 或 host adapter；
+- 把已有 Triage、Project、Workflow Issue、Triage Accept 行为迁入 thin Application use cases，统一为 normalize input → pure planner → Mutation Coordinator；
+- 本 Slice 不提前建立 Query / UI / Obsidian Host Composition；现有 runnable `plugin/` 继续保持不变；
+- 本 checkpoint 验证并 push 后，再进入 Query + UI + Host Composition。
 
 ## 6. Implementation Checkpoints
 
@@ -143,7 +143,8 @@ Cutover 本身是一次结构替换，而不是第二轮重构：删除或归档
 | Codebase Simplification | 已完成 | `6061ca45...` 为当前 legacy reference baseline；行为/技术 evidence 保留 |
 | Rebuild Boundary + Domain Foundation | 已完成 | `501a09a5...` 建立独立 rebuild 工具链、Domain contract 与双向 legacy-import guard |
 | Rebuild Markdown + Persistence Foundation | 已完成 | 五类 explicit codec、Physical Schema Registry、DomainSourceRepository、Plugin Data physical ↔ logical boundary 与 owner guards 已建立 |
-| **Clean Plugin Rebuild** | **当前** | 当前进入 Runtime + Mutation Foundation；通过 Cutover Gate 后替换 legacy `plugin/` |
+| Rebuild Runtime + Mutation Foundation | 已完成 | final Runtime shape、logical Plan、ordered pending replay、global serial queue、dequeue-time physical topology 与 Persistence-only execution 已建立 |
+| **Clean Plugin Rebuild** | **当前** | 当前进入 Source Sync + Application；通过 Cutover Gate 后替换 legacy `plugin/` |
 | Intake → Workflow | Rebuild 后继续 | 首个净新增 Slice：`Triage Convert to Project` |
 | V1 Exit | 待开始 | — |
 

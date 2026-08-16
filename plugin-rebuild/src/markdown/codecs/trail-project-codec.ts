@@ -51,6 +51,7 @@ export interface TrailProjectSourceDocument {
   readonly locationsByMilestoneId: Readonly<Record<string, TrailRecordSourceRange>>;
   readonly milestones: readonly TrailMilestone[];
   readonly project: TrailProject;
+  readonly projectLocation: TrailRecordSourceRange;
   readonly sourcePath: string;
 }
 
@@ -338,13 +339,14 @@ export function parseProjectMarkdown(input: {
       locationsByMilestoneId: Object.fromEntries(milestones.map(({ entity, source }) => [entity.id, source])),
       milestones: milestones.map(({ entity }) => entity),
       project: parsedProject.project,
+      projectLocation: recordSource(input.sourcePath, frontmatter.bodyStartOffset, projectRecord),
       sourcePath: input.sourcePath,
     },
     issues,
   };
 }
 
-function serializeMilestone(milestone: TrailMilestone, projectId: string): string {
+export function serializeProjectMilestone(milestone: TrailMilestone, projectId: string): string {
   const validation = validateTrailMilestone(milestone);
   if (validation.length > 0 || milestone.projectId !== projectId) {
     throw new Error("Cannot serialize invalid Project Milestone");
@@ -362,7 +364,7 @@ function serializeMilestone(milestone: TrailMilestone, projectId: string): strin
   return lines.join("\n");
 }
 
-function serializeProjectIssue(issue: TrailWorkflowIssue, projectId: string): string {
+export function serializeProjectWorkflowIssue(issue: TrailWorkflowIssue, projectId: string): string {
   const validation = validateTrailIssue(issue);
   if (validation.length > 0 || issue.projectId !== projectId) {
     throw new Error("Cannot serialize invalid Project Workflow Issue");
@@ -376,20 +378,33 @@ function serializeProjectIssue(issue: TrailWorkflowIssue, projectId: string): st
   return lines.join("\n");
 }
 
+export function serializeProjectRecord(project: TrailProject): string {
+  const validation = validateTrailProject(project);
+  if (validation.length > 0) {
+    throw new Error(`Cannot serialize invalid Project: ${validation.map((item) => item.message).join("; ")}`);
+  }
+  const lines = [
+    `## ${normalizeTrailTitle(project.title)}`,
+    serializeDataMarker(TRAIL_PHYSICAL_RECORD_SCHEMAS.project.metadataOrder, {
+      statusDefinitionId: project.statusDefinitionId,
+      initiativeId: project.initiativeId,
+      priority: project.priority,
+      due: project.due,
+      labelIds: canonicalIdSet(project.labelIds),
+    }),
+  ];
+  const description = project.description === undefined
+    ? undefined
+    : normalizeMarkdownRecordBody(project.description);
+  if (description !== undefined) lines.push("", description);
+  return lines.join("\n");
+}
+
 export function serializeProjectMarkdown(input: {
   readonly issues: readonly TrailWorkflowIssue[];
   readonly milestones: readonly TrailMilestone[];
   readonly project: TrailProject;
 }): string {
-  const validation = validateTrailProject(input.project);
-  if (validation.length > 0) throw new Error(`Cannot serialize invalid Project: ${validation.map((item) => item.message).join("; ")}`);
-  const projectMarker = serializeDataMarker(TRAIL_PHYSICAL_RECORD_SCHEMAS.project.metadataOrder, {
-    statusDefinitionId: input.project.statusDefinitionId,
-    initiativeId: input.project.initiativeId,
-    priority: input.project.priority,
-    due: input.project.due,
-    labelIds: canonicalIdSet(input.project.labelIds),
-  });
   const lines = [
     "---",
     `kind: ${TRAIL_PHYSICAL_SOURCE_SCHEMAS.project.frontmatterKind}`,
@@ -398,15 +413,12 @@ export function serializeProjectMarkdown(input: {
     "",
     `# ${TRAIL_PHYSICAL_SOURCE_SCHEMAS.project.rootSections[0]}`,
     "",
-    `## ${normalizeTrailTitle(input.project.title)}`,
-    projectMarker,
+    serializeProjectRecord(input.project),
   ];
-  const description = input.project.description === undefined ? undefined : normalizeMarkdownRecordBody(input.project.description);
-  if (description !== undefined) lines.push("", description);
   lines.push("", `# ${TRAIL_PHYSICAL_SOURCE_SCHEMAS.project.rootSections[1]}`);
-  for (const milestone of input.milestones) lines.push("", serializeMilestone(milestone, input.project.id));
+  for (const milestone of input.milestones) lines.push("", serializeProjectMilestone(milestone, input.project.id));
   lines.push("", `# ${TRAIL_PHYSICAL_SOURCE_SCHEMAS.project.rootSections[2]}`);
-  for (const issue of input.issues) lines.push("", serializeProjectIssue(issue, input.project.id));
+  for (const issue of input.issues) lines.push("", serializeProjectWorkflowIssue(issue, input.project.id));
   lines.push("");
   return lines.join("\n");
 }
