@@ -10,7 +10,7 @@ import {
 } from "./trail-frozen-source-codecs";
 import { parseTriageMarkdown } from "./trail-triage-codec";
 
-export function validateFormalManagedMarkdown(
+export function validateManagedSingletonMarkdown(
   path: string,
   markdown: string,
   parseYaml: TrailYamlParser,
@@ -39,12 +39,12 @@ export function validateFormalManagedMarkdown(
     }).issues.map((issue) => issue.message);
   }
 
-  return [`unsupported Formal singleton path: ${path}`];
+  return [`unsupported managed singleton path: ${path}`];
 }
 
-export function createFormalMarkdownValidator(
+export function createManagedSingletonMarkdownValidator(
   parseYaml: TrailYamlParser,
 ): (path: string, markdown: string) => readonly string[] {
   return (path, markdown) =>
-    validateFormalManagedMarkdown(path, markdown, parseYaml);
+    validateManagedSingletonMarkdown(path, markdown, parseYaml);
 }

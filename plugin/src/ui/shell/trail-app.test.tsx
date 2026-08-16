@@ -21,7 +21,7 @@ function unusedActions(): Omit<TrailAppProps, "runtimeStore"> {
 }
 
 describe("TrailApp shell", () => {
-  it("shows initialization state before the Formal application is ready", () => {
+  it("shows initialization state before the application is ready", () => {
     render(
       <TrailApp
         {...unusedActions()}

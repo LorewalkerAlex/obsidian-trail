@@ -127,7 +127,7 @@ export function createTrailRefreshController<
     if (!classification.canLoad || classification.pluginData.kind !== "valid") {
       throw new TrailRefreshError(
         "blocked",
-        `Trail cannot load the Formal workspace: ${blockerMessage(classification)}`,
+        `Trail cannot load the workspace: ${blockerMessage(classification)}`,
       );
     }
 
@@ -146,7 +146,7 @@ export function createTrailRefreshController<
     if (sourceIssues.length > 0) {
       throw new TrailRefreshError(
         "source-invalid",
-        `Formal sources failed validation: ${sourceIssues.map((issue) => issue.code).join(", ")}`,
+        `Managed sources failed validation: ${sourceIssues.map((issue) => issue.code).join(", ")}`,
       );
     }
 
@@ -217,7 +217,7 @@ export function createTrailRefreshController<
         const message = blockerMessage(classification);
         setTrailRuntimeControl(dependencies.runtimeStore, {
           kind: "read-only-error",
-          message: `Trail cannot load the Formal workspace: ${message}`,
+          message: `Trail cannot load the workspace: ${message}`,
         });
         diagnostics.record("refresh.initialize.blocked", {
           correlationId,

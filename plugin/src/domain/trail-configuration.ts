@@ -379,8 +379,8 @@ function validateLabels(value: unknown, issues: string[]): void {
 }
 
 /**
- * Validates one current Formal plugin-data shape. Existing unknown/POC-shaped data
- * is deliberately rejected instead of being interpreted as an empty Formal config.
+ * Validates the current Trail plugin-data shape. Unknown or unsupported persisted data
+ * is deliberately rejected instead of being interpreted as empty configuration.
  */
 export function validateTrailPluginData(
   value: unknown,

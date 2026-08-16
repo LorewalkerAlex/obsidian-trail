@@ -7,6 +7,7 @@ import {
   TRAIL_BOOTSTRAP_DIRECTORIES,
   TRAIL_REQUIRED_SINGLETON_PATHS,
   TRAIL_TOP_LEVEL_DIRECTORIES,
+  TRAIL_TOP_LEVEL_DIRECTORY_PATHS,
 } from "../../markdown/schema/trail-paths";
 import { TRAIL_BOOTSTRAP_FILES } from "../../markdown/schema/trail-bootstrap-markdown";
 
@@ -17,7 +18,7 @@ export interface ManagedRootEntry {
 
 export interface ManagedMarkdownProbe {
   readonly existingPaths: readonly string[];
-  readonly invalidFormalPaths?: readonly string[];
+  readonly invalidManagedPaths?: readonly string[];
   readonly rootKind?: "directory" | "file";
   readonly topLevelEntries: readonly ManagedRootEntry[];
   readonly trailExists: boolean;
@@ -35,14 +36,14 @@ export interface WorkspaceProbe {
 
 export type ManagedMarkdownClassification =
   | { readonly kind: "absent" }
-  | { readonly kind: "formal-valid" }
+  | { readonly kind: "managed-valid" }
   | {
-      readonly kind: "formal-incomplete";
+      readonly kind: "managed-incomplete";
       readonly missingPaths: readonly string[];
     }
   | {
       readonly invalidPaths: readonly string[];
-      readonly kind: "formal-invalid";
+      readonly kind: "managed-invalid";
     }
   | {
       readonly conflicts: readonly string[];
@@ -62,8 +63,8 @@ export type PluginDataClassification =
 
 export type WorkspaceBlocker =
   | "configuration-missing"
-  | "formal-markdown-incomplete"
-  | "formal-markdown-invalid"
+  | "managed-markdown-incomplete"
+  | "managed-markdown-invalid"
   | "invalid-configuration"
   | "managed-markdown-missing"
   | "managed-root-conflict";
@@ -113,7 +114,7 @@ export class WorkspaceBootstrapError extends Error {
 }
 
 /**
- * Classifies the managed Markdown footprint without inventing missing Formal
+ * Classifies the managed Markdown footprint without inventing missing managed
  * sources. Existing workspaces fail closed; only a completely fresh footprint
  * may bootstrap.
  */
@@ -145,9 +146,7 @@ export function classifyManagedMarkdown(
   }
 
   const existingPaths = new Set(probe.existingPaths);
-  const requiredDirectoryPaths = TRAIL_TOP_LEVEL_DIRECTORIES.map(
-    (name) => `Trail/${name}`,
-  );
+  const requiredDirectoryPaths = TRAIL_TOP_LEVEL_DIRECTORY_PATHS;
   const missingPaths = [
     ...requiredDirectoryPaths,
     ...TRAIL_REQUIRED_SINGLETON_PATHS,
@@ -155,20 +154,20 @@ export function classifyManagedMarkdown(
 
   if (missingPaths.length > 0) {
     return {
-      kind: "formal-incomplete",
+      kind: "managed-incomplete",
       missingPaths,
     };
   }
 
-  const invalidPaths = [...(probe.invalidFormalPaths ?? [])].sort();
+  const invalidPaths = [...(probe.invalidManagedPaths ?? [])].sort();
   if (invalidPaths.length > 0) {
     return {
-      kind: "formal-invalid",
+      kind: "managed-invalid",
       invalidPaths,
     };
   }
 
-  return { kind: "formal-valid" };
+  return { kind: "managed-valid" };
 }
 
 export function classifyPluginData(
@@ -209,7 +208,7 @@ export function classifyWorkspace(
     };
   }
 
-  if (markdown.kind === "formal-valid" && pluginData.kind === "valid") {
+  if (markdown.kind === "managed-valid" && pluginData.kind === "valid") {
     return {
       blockers: [],
       canBootstrap: false,
@@ -228,16 +227,16 @@ export function classifyWorkspace(
         blockers.push("managed-markdown-missing");
       }
       break;
-    case "formal-incomplete":
-      blockers.push("formal-markdown-incomplete");
+    case "managed-incomplete":
+      blockers.push("managed-markdown-incomplete");
       break;
-    case "formal-invalid":
-      blockers.push("formal-markdown-invalid");
+    case "managed-invalid":
+      blockers.push("managed-markdown-invalid");
       break;
     case "managed-root-conflict":
       blockers.push("managed-root-conflict");
       break;
-    case "formal-valid":
+    case "managed-valid":
       break;
   }
 
@@ -356,7 +355,7 @@ export async function executeFreshWorkspaceBootstrap(
     const finalClassification = classifyWorkspace(await gateway.probeWorkspace());
     if (!finalClassification.canLoad) {
       throw new WorkspaceBootstrapError(
-        "Workspace did not classify as a valid existing Formal workspace after bootstrap",
+        "Workspace did not classify as loadable after bootstrap",
       );
     }
 

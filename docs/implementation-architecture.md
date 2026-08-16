@@ -1170,6 +1170,8 @@ Codebase Simplification 完成后，以下规则属于长期 architecture contra
 
 自动化应尽量把这些规则变成 lint/type/test guard；文档不是唯一防线。
 
+当前实现已经把其中一部分长期 contract 固化为 executable guard：ESLint 约束 Domain / Application / Runtime / Mutation 等关键层的反向依赖；`trail-architecture-guard.test.ts` 检查 retired owner、active technology spike / benchmark、重复 managed-path literal 与 production migration-stage terminology。Guard 自身只验证 architecture conformance，不替代 capability owner 的 correctness test；例如 RefreshController 的并发、queue ordering 与 reread 风险仍由 `source-sync/refresh` 自己的测试证明。
+
 ### 24.1 New-session orientation
 
 Trail 新 Session 不复制一套新的架构树。开始开发前固定顺序：

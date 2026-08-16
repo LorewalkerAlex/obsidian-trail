@@ -32,7 +32,7 @@ import {
   type TrailDiagnostics,
 } from "./diagnostics/trail-diagnostics";
 import type { TrailConfiguration } from "./domain/trail-configuration";
-import { createFormalMarkdownValidator } from "./markdown/codecs/trail-managed-codecs";
+import { createManagedSingletonMarkdownValidator } from "./markdown/codecs/trail-managed-codecs";
 import { TrailMutationQueue } from "./mutation/queue/trail-mutation-queue";
 import { createTrailDomainSourceRepository } from "./persistence/domain-sources/trail-domain-source-repository";
 import { createProjectSourcePersistence } from "./persistence/domain-sources/trail-project-source-persistence";
@@ -96,7 +96,7 @@ export default class TrailPlugin extends Plugin {
         loadData: () => this.loadData(),
         saveData: (data) => this.saveData(data),
       },
-      createFormalMarkdownValidator(parseYamlDocument),
+      createManagedSingletonMarkdownValidator(parseYamlDocument),
       fileKinds,
     );
     const triagePersistence = createTriageSourcePersistence(
@@ -287,13 +287,13 @@ export default class TrailPlugin extends Plugin {
       this.registerEvent(this.app.vault.on("modify", vaultEvents.modify));
       this.registerEvent(this.app.vault.on("delete", vaultEvents.delete));
       this.registerEvent(this.app.vault.on("rename", vaultEvents.rename));
-      this.diagnostics.record("host.formal-events.registered");
+      this.diagnostics.record("host.managed-events.registered");
     } catch (error: unknown) {
       this.diagnostics.record("plugin.initialization.failed", {
         data: { errorName: errorName(error) },
         level: "error",
       });
-      console.error("Trail Formal initialization failed", error);
+      console.error("Trail initialization failed", error);
     }
   }
 

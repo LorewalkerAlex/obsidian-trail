@@ -77,7 +77,7 @@ export function TrailApp({
       {control.kind === "loading" ? (
         <TrailStatusPanel
           title="Loading Trail"
-          message="Validating the Formal workspace and rebuilding runtime state."
+          message="Validating managed Trail data and rebuilding runtime state."
         />
       ) : null}
 

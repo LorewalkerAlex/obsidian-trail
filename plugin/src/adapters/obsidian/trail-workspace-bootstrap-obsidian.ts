@@ -22,7 +22,7 @@ import {
 
 export type TrailPluginDataHost = ObsidianPluginDataHost;
 
-export type FormalMarkdownValidator = (
+export type ManagedMarkdownValidator = (
   path: string,
   markdown: string,
 ) => readonly string[];
@@ -47,7 +47,7 @@ function toManagedRootEntry(
 export function createObsidianWorkspaceBootstrapGateway(
   app: Pick<App, "fileManager" | "vault">,
   pluginDataHost: TrailPluginDataHost,
-  validateFormalMarkdown: FormalMarkdownValidator,
+  validateManagedMarkdown: ManagedMarkdownValidator,
   fileKinds: ObsidianWorkspaceFileKinds,
 ): WorkspaceBootstrapGateway {
   const pluginDataRepository = createTrailPluginDataRepository(
@@ -100,7 +100,7 @@ export function createObsidianWorkspaceBootstrapGateway(
       .map((child) => toManagedRootEntry(child, fileKinds));
 
     const existingPaths: string[] = [];
-    const invalidFormalPaths: string[] = [];
+    const invalidManagedPaths: string[] = [];
 
     for (const path of TRAIL_TOP_LEVEL_DIRECTORY_PATHS) {
       if (app.vault.getAbstractFileByPath(path) !== null) {
@@ -116,18 +116,18 @@ export function createObsidianWorkspaceBootstrapGateway(
 
       existingPaths.push(path);
       if (!fileKinds.isFile(file)) {
-        invalidFormalPaths.push(path);
+        invalidManagedPaths.push(path);
         continue;
       }
 
       try {
         const markdown = await app.vault.read(file);
-        const issues = validateFormalMarkdown(path, markdown);
+        const issues = validateManagedMarkdown(path, markdown);
         if (issues.length > 0) {
-          invalidFormalPaths.push(path);
+          invalidManagedPaths.push(path);
         }
       } catch {
-        invalidFormalPaths.push(path);
+        invalidManagedPaths.push(path);
       }
     }
 
@@ -137,7 +137,7 @@ export function createObsidianWorkspaceBootstrapGateway(
         rootKind: "directory",
         topLevelEntries,
         existingPaths,
-        invalidFormalPaths,
+        invalidManagedPaths,
       },
       pluginData,
     };
@@ -166,7 +166,7 @@ export function createObsidianWorkspaceBootstrapGateway(
     async readFile(path): Promise<string> {
       const file = app.vault.getAbstractFileByPath(path);
       if (!fileKinds.isFile(file)) {
-        throw new Error(`Expected Formal file is missing: ${path}`);
+        throw new Error(`Expected managed file is missing: ${path}`);
       }
       return app.vault.read(file);
     },

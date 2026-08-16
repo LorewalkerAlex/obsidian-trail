@@ -164,14 +164,14 @@ function createGateway(
   );
 }
 
-describe("Obsidian Formal Workspace bootstrap gateway", () => {
+describe("Obsidian Workspace bootstrap gateway", () => {
   let host: FakeObsidianHost;
 
   beforeEach(() => {
     host = new FakeObsidianHost();
   });
 
-  it("maps missing plugin data and the POC Areas root to a blocked conflict", async () => {
+  it("maps missing plugin data and the legacy Areas root to a blocked conflict", async () => {
     host.addFolder("Trail");
     host.addFolder("Trail/Areas");
 
@@ -194,7 +194,7 @@ describe("Obsidian Formal Workspace bootstrap gateway", () => {
     });
   });
 
-  it("classifies existing Formal persistence only after singleton validation", async () => {
+  it("classifies existing managed persistence only after singleton validation", async () => {
     host.addFolder("Trail");
     host.addFolder("Trail/Initiatives");
     host.addFolder("Trail/Projects");
@@ -217,7 +217,7 @@ describe("Obsidian Formal Workspace bootstrap gateway", () => {
     );
     const invalid = classifyWorkspace(await invalidGateway.probeWorkspace());
     expect(invalid.mode).toBe("blocked");
-    expect(invalid.blockers).toContain("formal-markdown-invalid");
+    expect(invalid.blockers).toContain("managed-markdown-invalid");
   });
 
   it("executes Fresh bootstrap through Vault and plugin-data APIs", async () => {

@@ -32,7 +32,7 @@ function createValidPluginData(): TrailPluginData {
   });
 }
 
-function formalMarkdownProbe(overrides: Partial<WorkspaceProbe["markdown"]> = {}) {
+function managedMarkdownProbe(overrides: Partial<WorkspaceProbe["markdown"]> = {}) {
   return {
     trailExists: true,
     topLevelEntries: [
@@ -144,7 +144,7 @@ class FakeBootstrapGateway implements WorkspaceBootstrapGateway {
   }
 }
 
-describe("Formal Workspace safety classification", () => {
+describe("Workspace safety classification", () => {
   it("allows Fresh only when both authoritative footprints are absent", () => {
     const result = classifyWorkspace({
       markdown: {
@@ -162,7 +162,7 @@ describe("Formal Workspace safety classification", () => {
 
   it("loads an existing workspace only when both footprints validate", () => {
     const result = classifyWorkspace({
-      markdown: formalMarkdownProbe(),
+      markdown: managedMarkdownProbe(),
       pluginData: { exists: true, value: createValidPluginData() },
     });
 
@@ -185,7 +185,7 @@ describe("Formal Workspace safety classification", () => {
     });
   });
 
-  it("classifies the current POC Areas footprint as a managed-root conflict", () => {
+  it("classifies the legacy Areas footprint as a managed-root conflict", () => {
     const markdown = classifyManagedMarkdown({
       trailExists: true,
       topLevelEntries: [{ kind: "directory", name: "Areas" }],
@@ -198,9 +198,9 @@ describe("Formal Workspace safety classification", () => {
     });
   });
 
-  it("does not tolerate a residual POC root beside an otherwise Formal tree", () => {
+  it("does not tolerate an unexpected legacy root beside an otherwise valid managed tree", () => {
     const result = classifyWorkspace({
-      markdown: formalMarkdownProbe({
+      markdown: managedMarkdownProbe({
         topLevelEntries: [
           { kind: "directory", name: "Collections" },
           { kind: "directory", name: "Initiatives" },
@@ -217,7 +217,7 @@ describe("Formal Workspace safety classification", () => {
 
   it("reports missing required singleton containers without recreating them", () => {
     const result = classifyWorkspace({
-      markdown: formalMarkdownProbe({
+      markdown: managedMarkdownProbe({
         existingPaths: [
           "Trail/Collections",
           "Trail/Initiatives",
@@ -230,21 +230,21 @@ describe("Formal Workspace safety classification", () => {
     });
 
     expect(result.mode).toBe("blocked");
-    expect(result.blockers).toContain("formal-markdown-incomplete");
+    expect(result.blockers).toContain("managed-markdown-incomplete");
     expect(result.markdown).toMatchObject({
-      kind: "formal-incomplete",
+      kind: "managed-incomplete",
       missingPaths: [TRAIL_TRIAGE_PATH],
     });
   });
 
   it("keeps missing or invalid plugin data distinct from Fresh", () => {
     const missing = classifyWorkspace({
-      markdown: formalMarkdownProbe(),
+      markdown: managedMarkdownProbe(),
       pluginData: { exists: false },
     });
     const invalid = classifyWorkspace({
-      markdown: formalMarkdownProbe(),
-      pluginData: { exists: true, value: { oldPocSettings: true } },
+      markdown: managedMarkdownProbe(),
+      pluginData: { exists: true, value: { legacySettings: true } },
     });
 
     expect(missing.mode).toBe("blocked");
@@ -269,7 +269,7 @@ describe("Formal Workspace safety classification", () => {
   });
 });
 
-describe("Formal Fresh Workspace bootstrap", () => {
+describe("Fresh Workspace bootstrap", () => {
   it("plans the complete managed scaffold and a valid plugin-data payload", () => {
     const plan = createFreshWorkspaceBootstrapPlan({
       createId: createOpaqueIdFactory(),
@@ -340,7 +340,7 @@ describe("Formal Fresh Workspace bootstrap", () => {
     expect(gateway.events.some((event) => event.startsWith("delete:"))).toBe(false);
   });
 
-  it("refuses bootstrap before writes when the POC managed-root footprint exists", async () => {
+  it("refuses bootstrap before writes when the legacy managed-root footprint exists", async () => {
     const gateway = new FakeBootstrapGateway();
     gateway.directories.add("Trail");
     gateway.directories.add("Trail/Areas");

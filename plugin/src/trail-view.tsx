@@ -17,7 +17,7 @@ export const TRAIL_VIEW_TYPE = "trail-view";
 /**
  * Obsidian host view. React mounts once; Zustand selectors inside TrailApp own
  * incremental rendering instead of manually re-rendering the root on every store
- * notification as the POC shell did.
+ * notification through the host view.
  */
 export class TrailView extends ItemView {
   private root: Root | null = null;

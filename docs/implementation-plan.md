@@ -8,7 +8,7 @@
 > 上游 Physical Model：`docs/markdown-physical-model.md`
 > 上游 Technical Design：`docs/technical-design-baseline.md`
 > Implementation Architecture：`docs/implementation-architecture.md`
-> 当前阶段：Codebase Simplification
+> 当前阶段：Intake → Workflow
 
 ## 1. 文档定位
 
@@ -26,8 +26,8 @@
 | Formal Intake | 建立正式运行主链，打通 Quick Capture → Triage，并完善基本 Triage 管理 | 已完成 |
 | Workflow | 建立 Project / Workflow Issue 的基本执行闭环 | 已完成 |
 | **Implementation Architecture Re-baseline** | 固化共享模块与调用框架；把当前 Formal Intake / Workflow / Accept 迁移到新架构 | **已完成** |
-| **Codebase Simplification** | Re-baseline 验收后进行全仓库代码审计、删除过渡/重复/死代码并简化不必要抽象 | **当前** |
-| Intake → Workflow | 在稳定且清理后的新架构上继续 Triage → Workflow / Project 转换能力 | 待继续 |
+| **Codebase Simplification** | Re-baseline 验收后进行全仓库代码审计、删除过渡/重复/死代码并简化不必要抽象 | **已完成** |
+| **Intake → Workflow** | 在稳定且清理后的新架构上继续 Triage → Workflow / Project 转换能力 | **当前** |
 | Project Organization | Board / List、Move、Milestone、Initiative 等项目组织能力 | 待开始 |
 | Cycles & Views | Cycle、Filter、Custom View、Search、Favorites 等组织与查看能力 | 待开始 |
 | Home & Utilities | Home、Weekly Note 与全局入口 | 待开始 |
@@ -104,9 +104,9 @@ Re-baseline 的全部 Slice 已完成。实现 checkpoint `9e12e32e870a2299023b6
 
 因此 Re-baseline Exit Gate 已全部满足，**Implementation Architecture Re-baseline 正式关闭**。
 
-## 4. 当前阶段：Codebase Simplification
+## 4. 已完成阶段：Codebase Simplification
 
-当前执行一次独立的 **Codebase Simplification**。目标不是“尽量少写代码”，而是让 active code 一次收敛到 `docs/implementation-architecture.md` §5 的 **Design → Code Mapping / Target Codebase Map**，形成适合长期继续堆功能的干净基线。
+本阶段执行了一次独立的 **Codebase Simplification**。目标不是“尽量少写代码”，而是让 active code 一次收敛到 `docs/implementation-architecture.md` §5 的 **Design → Code Mapping / Target Codebase Map**，形成适合长期继续堆功能的干净基线。
 
 本阶段同时做减法与补正：删除迁移 scaffolding、重复实现和错误 ownership；保留已经冻结的未来 Entity / carrier / capability owner，并把缺失的长期 contract 放回正确位置。未来预留不通过 compatibility facade、双 Plan、旧 import path 或半套 Feature lifecycle 实现。
 
@@ -145,8 +145,8 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 | **Runtime Final Shape** | 收口 authoritative / ownership / indexes / pending / control；删除 compatibility alias 与 parser/source metadata leakage | **已完成** |
 | **Feature Plan / Service Simplification** | 复用共享 lifecycle，拆掉 Feature Service 中重复 orchestration；Feature 只保留业务语义与独立风险 | **已完成** |
 | **Host / Composition / UI Boundary** | `main.ts` 只做 composition/registration；host file events 进入 adapter/source-sync；UI 保持纯 read/intent | **已完成** |
-| **Tests / Tooling / Stage-language Cleanup** | 删除 active technology spike / duplicate evidence；增加 anti-drift guards；清除 production migration-stage terminology | **当前** |
-| Simplification Exit | full check、Diagnostics build、代表性 real-host regression、trace review、文档校准、commit/push/GitHub audit | 待开始 |
+| **Tests / Tooling / Stage-language Cleanup** | 删除 active technology spike / duplicate evidence；增加 anti-drift guards；清除 production migration-stage terminology | **已完成** |
+| Simplification Exit | full check、Diagnostics build、代表性 real-host regression、trace review、文档校准、commit/push/GitHub audit | **已完成** |
 
 ### 4.3 Long-term cleanup rules
 
@@ -177,25 +177,20 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 - README、Implementation Architecture、Implementation Plan 与真实代码事实一致；
 - checkpoint commit / push / GitHub review / CI 完成。
 
-### 4.5 当前执行 Slice：Tests / Tooling / Stage-language Cleanup
+### 4.5 最终 Slice：Simplification Exit
 
-**Host / Composition / UI Boundary 已完成。** 当前边界已经收敛为：
+**Tests / Tooling / Stage-language Cleanup 已完成。** 本轮完成的长期收口包括：
 
-- `main.ts` 只保留 plugin lifecycle、dependency composition、command/view/Vault-event registration；managed path/event policy 进入 Obsidian adapter，并复用 canonical path authority；
-- `TrailRefreshController` 成为 startup / unexpected external change 的统一 full-refresh owner：候选状态在 staging Runtime 完整加载与校验，成功后原子发布；失败保留 live LKG 并进入 `read-only-error`；external refresh 与 mutation 共用全局 serial queue，refresh 中再次到达的 managed event 会在 publish 前重新读取；
-- Trail-owned Vault event 使用 active-write token 精确抑制，不使用 TTL；晚到事件按 external change 安全 full refresh；
-- `TrailApplication` 收窄为 UI-facing use-case facade，Feature service graph 通过 validated Application Session 注入；raw Persistence、Source Sync lifecycle、startup/refresh ingress 已退出 facade；`TrailView` 只依赖 `TrailApplicationActions`；
-- Workspace bootstrap / classification 从旧 `application/workspace` 迁入 `source-sync/bootstrap`，`workspaceState` 与 Configuration 一起进入 authoritative Runtime reload candidate。
+- active technology-selection evidence 退出测试主链；`mdast-util-from-markdown` 与 Zustand 继续由正式 Markdown Core / Runtime Store consumer 使用，不以独立 spike test 证明库本身；
+- ESLint 增加关键 dependency-direction guard，Architecture Guard 测试锁住 retired owner、active spike/benchmark、重复 managed-path authority 与 production migration-stage terminology；
+- production source 的 `Formal` / `current slice` 等迁移阶段命名收敛为长期 `managed` / canonical owner 语义；Projects root 的生产文案也统一复用 `TRAIL_PROJECTS_PATH`；
+- Exit audit 保留并恢复 `TrailRefreshController` 的两条独立并发风险证据：refresh 期间再次收到 managed event 必须重读，以及 external refresh 必须排在正在执行的 mutation 后面。
 
-本 Slice 最终代码 scope 为 22 个路径；Host / Refresh / Application focused tests、Refresh 并发边界测试、完整 `npm run check` 与 `git diff --check` 已通过。
+代码侧最终验证已通过：ESLint `--max-warnings 0`，49 个 test files / 191 tests，TypeScript typecheck、production build 与 `git diff --check` 全部成功。
 
-当前进入 **Tests / Tooling / Stage-language Cleanup**。这一 Slice 只做 Simplification 的证据与防回退收口：
+代表性真实 Obsidian Exit 回归也已通过：Diagnostics build 下 Workspace 正常初始化；Quick Capture 的 Trail-controlled `Triage.md` 写入由 exact active-write token 抑制 host refresh；随后从外部修改 `Trail/Collections/Triage.md` 能进入 `refresh.external.enqueued` 并完成 `refresh.published`，UI 自动收敛。测试 Session 共 88 个已汇总事件，`warn/error = 0`；完整 trace 同时确认 Quick Capture 经过 optimistic → persistence verify → reconcile → `command.committed`。
 
-- 审计 active tests，删除仅服务旧 owner / technology spike / 重复机制证明的 evidence，保留 canonical owner 与独立 failure boundary；
-- 把关键 anti-drift contract 尽量落成 lint / type / test guard，重点防止旧 owner import、反向依赖、重复 path authority 和 host/source lifecycle 再次回流；
-- 清理 production source 中仅表示迁移阶段的 terminology，不改 Product / Domain 术语，也不借机重构业务行为。
-
-完成后进入 **Simplification Exit**：`npm run check`、`npm run build:diagnostics`、`git diff --check`、代表性真实 Obsidian regression、Diagnostics trace review、最终文档校准与 checkpoint。整个 Codebase Simplification 完成前仍不新增 `Triage Convert to Project`。
+Simplification Exit 本地与真实宿主验证已经完成；本 checkpoint 提交并推送后进行 GitHub / CI 终验。Codebase Simplification 至此关闭，下一净新增 Slice 进入 **Intake → Workflow / Triage Convert to Project**。
 
 ## 5. Implementation Checkpoints
 
@@ -216,8 +211,8 @@ Initiative、Milestone、Cycle、Projectless Issue、Configuration、Workspace S
 | Formal Workflow | 已完成 | Workflow 可创建、执行并从 Markdown 重建 |
 | Triage Accept | 已完成 | 新 identity、destination-first、optimistic / reconcile 与真实 host evidence 已建立，并完成新架构迁移 |
 | **Implementation Architecture Re-baseline** | **已完成** | `9e12e32e870a2299023b64804e3070abe138eb0b` 已 push 并通过 GitHub 回查与 CI；full check、Diagnostics build、real-host regression 与 trace review 全部通过 |
-| **Codebase Simplification** | **当前** | 已完成 Path / Layout、Application/Domain boundary、Canonical Mutation Plan、Workflow ownership/persistence、Domain Purity、Persistence + Source Sync Finalization、Runtime Final Shape、Feature Plan / Service Simplification 与 Host / Composition / UI Boundary；当前进入 Tests / Tooling / Stage-language Cleanup |
-| Intake → Workflow | 待继续 | Codebase Simplification 后以 Convert to Project 作为第一个净新增 Slice |
+| **Codebase Simplification** | **已完成** | 所有内部 Slice 与 Simplification Exit 验证已完成；49 test files / 191 tests、lint 0 warnings、production/Diagnostics build、real-host external refresh 与 clean Diagnostics trace 已验证；本 checkpoint push 后只做 GitHub / CI 终验 |
+| **Intake → Workflow** | **当前** | 以 Triage Convert to Project 作为 Codebase Simplification 后的第一个净新增 Slice |
 | V1 Exit | 待开始 | — |
 
 Checkpoint 只记录稳定阶段边界，不追踪每个内部实现任务。

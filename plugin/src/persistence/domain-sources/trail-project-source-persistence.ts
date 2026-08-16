@@ -222,7 +222,7 @@ export function createProjectSourcePersistence(
           structuralIssues.push(structuralIssue(
             entry.path,
             "workflow.projects.child-directory",
-            "Nested directories are not supported under Trail/Projects",
+            `Nested directories are not supported under ${TRAIL_PROJECTS_PATH}`,
           ));
           continue;
         }
@@ -230,7 +230,7 @@ export function createProjectSourcePersistence(
           structuralIssues.push(structuralIssue(
             entry.path,
             "workflow.projects.non-markdown",
-            "Trail/Projects may only contain direct Project Markdown files",
+            `${TRAIL_PROJECTS_PATH} may only contain direct Project Markdown files`,
           ));
           continue;
         }

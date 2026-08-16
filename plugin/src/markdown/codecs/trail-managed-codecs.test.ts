@@ -10,7 +10,7 @@ import {
   TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
 } from "../schema/trail-paths";
-import { validateFormalManagedMarkdown } from "./trail-managed-codecs";
+import { validateManagedSingletonMarkdown } from "./trail-managed-codecs";
 
 function parseYaml(yaml: string): unknown {
   const line = yaml.trim();
@@ -23,19 +23,19 @@ function parseYaml(yaml: string): unknown {
   };
 }
 
-describe("Formal managed Markdown validator", () => {
+describe("Managed singleton Markdown validator", () => {
   it("accepts the three canonical singleton bootstrap files", () => {
-    expect(validateFormalManagedMarkdown(
+    expect(validateManagedSingletonMarkdown(
       TRAIL_TRIAGE_PATH,
       TRAIL_TRIAGE_EMPTY_MARKDOWN,
       parseYaml,
     )).toEqual([]);
-    expect(validateFormalManagedMarkdown(
+    expect(validateManagedSingletonMarkdown(
       TRAIL_PROJECTLESS_ISSUES_PATH,
       TRAIL_PROJECTLESS_ISSUES_EMPTY_MARKDOWN,
       parseYaml,
     )).toEqual([]);
-    expect(validateFormalManagedMarkdown(
+    expect(validateManagedSingletonMarkdown(
       TRAIL_CYCLES_PATH,
       TRAIL_CYCLES_EMPTY_MARKDOWN,
       parseYaml,
@@ -59,12 +59,12 @@ describe("Formal managed Markdown validator", () => {
       "kind: triage",
     );
 
-    expect(validateFormalManagedMarkdown(
+    expect(validateManagedSingletonMarkdown(
       TRAIL_TRIAGE_PATH,
       triage,
       parseYaml,
     )).toEqual([]);
-    expect(validateFormalManagedMarkdown(
+    expect(validateManagedSingletonMarkdown(
       TRAIL_CYCLES_PATH,
       wrongKind,
       parseYaml,
@@ -74,17 +74,17 @@ describe("Formal managed Markdown validator", () => {
   it("accepts BOM and CRLF and fails closed for unsupported singleton paths", () => {
     const markdown = `\uFEFF${TRAIL_CYCLES_EMPTY_MARKDOWN.replace(/\n/g, "\r\n")}`;
 
-    expect(validateFormalManagedMarkdown(
+    expect(validateManagedSingletonMarkdown(
       TRAIL_CYCLES_PATH,
       markdown,
       parseYaml,
     )).toEqual([]);
-    expect(validateFormalManagedMarkdown(
+    expect(validateManagedSingletonMarkdown(
       "Trail/Collections/Unknown.md",
       markdown,
       parseYaml,
     )).toEqual([
-      "unsupported Formal singleton path: Trail/Collections/Unknown.md",
+      "unsupported managed singleton path: Trail/Collections/Unknown.md",
     ]);
   });
 });

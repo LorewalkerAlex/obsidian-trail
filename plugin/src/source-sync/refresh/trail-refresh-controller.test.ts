@@ -17,7 +17,6 @@ import type {
 } from "../bootstrap/trail-workspace-bootstrap";
 import { createTrailRefreshController } from "./trail-refresh-controller";
 
-
 function createDeferred(): {
   readonly promise: Promise<void>;
   readonly resolve: () => void;
@@ -48,7 +47,7 @@ function existingProbe(pluginData: TrailPluginData): WorkspaceProbe {
         "Trail/Collections/Projectless Issues.md",
         "Trail/Collections/Cycles.md",
       ],
-      invalidFormalPaths: [],
+      invalidManagedPaths: [],
       rootKind: "directory",
       topLevelEntries: [
         { kind: "directory", name: "Collections" },
@@ -226,7 +225,7 @@ describe("Trail full refresh controller", () => {
     await expect(harness.controller.requestExternalRefresh({
       kind: "modify",
       path: "Trail/Projects/0001 Project.md",
-    })).rejects.toThrow("Formal sources failed validation");
+    })).rejects.toThrow("Managed sources failed validation");
 
     expect(harness.runtimeStore.getState().committed).toBe(committedBefore);
     expect(harness.runtimeStore.getState().health.sourceIssuesByPath).toEqual({});
@@ -250,7 +249,6 @@ describe("Trail full refresh controller", () => {
     expect(state.control).toEqual({ kind: "ready", timezone: "Asia/Tokyo" });
     expect(harness.activateSources).toHaveBeenCalledTimes(2);
   });
-
 
   it("re-reads before publish when another managed event arrives during refresh", async () => {
     const harness = createHarness(createPluginData("Asia/Singapore"));
