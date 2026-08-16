@@ -259,6 +259,61 @@ export default defineConfig(
     },
   },
   {
+    files: ["plugin-rebuild/src/markdown/**/*.ts"],
+    ignores: ["plugin-rebuild/src/markdown/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/diagnostics/**",
+                "**/mutation/**",
+                "**/persistence/**",
+                "**/query/**",
+                "**/runtime/**",
+                "**/source-sync/**",
+                "**/ui/**",
+                "**/plugin/src/**",
+              ],
+              message: "Rebuild Markdown owns physical grammar and must not depend on persistence or higher layers.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["plugin-rebuild/src/persistence/**/*.ts"],
+    ignores: ["plugin-rebuild/src/persistence/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/diagnostics/**",
+                "**/mutation/**",
+                "**/query/**",
+                "**/runtime/**",
+                "**/source-sync/**",
+                "**/ui/**",
+                "**/plugin/src/**",
+              ],
+              message: "Rebuild Persistence owns authoritative carriers and must not depend on higher layers or host adapters.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["plugin-rebuild/src/runtime/**/*.ts"],
     ignores: ["plugin-rebuild/src/runtime/**/*.test.ts"],
     rules: {
