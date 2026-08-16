@@ -6,7 +6,7 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 Trail has completed its POC exit, formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, Implementation Architecture Re-baseline, and Codebase Simplification checkpoints.
 
-The current engineering stage is **Clean Plugin Rebuild**. An independent Architecture Implementation Audit after the Simplification checkpoint found that the existing implementation still carries several Design-to-Code ownership drifts even though its validated user behavior and technical evidence remain useful. Net-new Intake → Workflow work is therefore paused until the clean rebuild is cut over.
+The current engineering stage is **Clean Plugin Rebuild**. The rebuild has completed Boundary + Domain, Markdown + Persistence, Runtime + Mutation, Source Sync + Application, and Query + UI + Host Composition. The current step is **Parity + Independent-risk Validation** before the final Architecture Audit and directory Cutover. Net-new Intake → Workflow work remains paused until that cutover.
 
 The current design and implementation chain is:
 
@@ -35,18 +35,18 @@ The 2026-08-16 legacy reference checkpoint is `6061ca45569fe7664e0b37ed279928c95
 The rebuild happens on the current `main` branch and in the current working directory. No separate rebuild worktree or branch is required.
 
 ~~~text
-plugin/                 Existing runnable reference implementation
-plugin-rebuild/         Clean Formal implementation under rebuild
+plugin/                 Existing reference implementation retained during rebuild
+plugin-rebuild/         Clean Formal implementation and current Obsidian build target
 ~~~
 
 During the rebuild:
 
-- `plugin/` stays available for live comparison, behavior reference, and proven technical evidence.
+- `plugin/` stays available for behavior comparison and proven technical evidence.
 - `plugin-rebuild/` must not import production code from `plugin/`.
 - Capabilities copied or rewritten from the reference implementation land directly in the canonical owner defined by `docs/implementation-architecture.md`.
 - Legacy tests are evidence, not compatibility requirements. Relevant behavior/risk tests are re-established under the new owner.
 - No compatibility facade, old/new import bridge, dual mutation plan, or temporary wrong owner is introduced just to ease migration.
-- Obsidian production/Diagnostics builds continue to use `plugin/` until the rebuild passes its Cutover Gate.
+- The Obsidian build entry now targets `plugin-rebuild/` for host/parity validation. This is not the final directory Cutover: legacy `plugin/` remains present only as reference/evidence until the Cutover Gate passes.
 
 After parity, full architecture audit, automated checks, and necessary real-host regression, the cutover removes or archives the old `plugin/` and promotes `plugin-rebuild/` to the formal `plugin/` path. `Triage Convert to Project` resumes only after that cutover.
 
@@ -64,9 +64,9 @@ obsidian-trail-active/
 |-- archive/
 |   `-- poc/                  Exact POC implementation / fixture / style baseline
 |-- plugin/
-|   `-- src/                  Current runnable reference implementation during rebuild
+|   `-- src/                  Retained reference implementation during rebuild
 |-- plugin-rebuild/
-|   `-- src/                  Clean Formal implementation under rebuild
+|   `-- src/                  Clean Formal implementation and active build target
 |-- Trail/                    Local Domain Markdown created at runtime; ignored by Git
 `-- docs/                     Product, design and implementation documents
 ~~~
@@ -104,16 +104,16 @@ npm ci
 
 ## Development workflow
 
-The current runnable plugin still builds from:
-
-~~~text
-plugin/
-~~~
-
-The clean replacement is developed independently under:
+The current Obsidian build target is:
 
 ~~~text
 plugin-rebuild/
+~~~
+
+The legacy implementation remains available under:
+
+~~~text
+plugin/
 ~~~
 
 Generated Obsidian plugin files remain under:
@@ -140,26 +140,26 @@ npm run build:diagnostics
 npm run check
 ~~~
 
-- `npm run dev` watches/builds the current runnable `plugin/` reference implementation.
+- `npm run dev` watches/builds the current rebuild Obsidian entry.
 - `npm run lint` checks the repository source, including rebuild architecture rules.
 - `npm run lint:rebuild` checks only the rebuild source/config surface.
-- `npm run test:run` runs the current runnable plugin test suite once.
+- `npm run test:run` runs the retained legacy reference test suite once.
 - `npm run test:run:rebuild` runs only the rebuild test suite.
-- `npm run typecheck` checks the current runnable plugin.
+- `npm run typecheck` checks the retained legacy reference implementation.
 - `npm run typecheck:rebuild` checks only `plugin-rebuild/`.
 - `npm run check:rebuild` runs rebuild lint, typecheck and tests without building an Obsidian artifact.
-- `npm run build` and `npm run build:diagnostics` still produce the current runnable plugin until cutover.
-- `npm run check` validates both the legacy reference and the clean rebuild, then performs the current production build.
+- `npm run build` and `npm run build:diagnostics` build the rebuild composition root; the Diagnostics variant enables development-only validation evidence.
+- `npm run check` validates both the legacy reference and the clean rebuild, then performs the rebuild production build.
 
 During a rebuild slice, use focused owner tests first. Run the full root `npm run check` once when a coherent checkpoint is ready. A green legacy suite does not make legacy ownership authoritative; a green rebuild suite does not replace the need for final architecture and real-host gates.
 
 ## Testing in Obsidian
 
-Until cutover, real Obsidian regression exercises the current runnable `plugin/` unless a rebuild slice explicitly adds a safe temporary rebuild build path for an independent host risk. Do not make `plugin-rebuild/` the active Obsidian plugin merely to test a compile-time or pure-domain checkpoint.
+Real Obsidian regression now exercises the rebuild bundle generated under `.obsidian/plugins/trail/`. Representative validation covers the Host boundary rather than repeating every pure planner/query rule already owned by automated tests.
 
-Every real-host test that is actually needed begins with an explicit protocol covering repository/build state, starting Trail Vault state, required reload, exact actions, expected UI and authoritative-disk result, Diagnostics hooks, cleanup, and final Vault state. Host-state resets operate only on the Trail Vault under test, not unrelated Obsidian windows.
+Diagnostics builds expose `Trail: Copy validation evidence`, which exports recent structured diagnostics together with the current Runtime snapshot, plugin data, and raw managed Trail Markdown. This is development verification infrastructure only: it must not participate in product correctness or ship in the production bundle.
 
-Development Diagnostics remain development observability only, not Product Activity / Domain history.
+Real-host test data is cleaned after review so the local `Trail/` persistence does not accumulate stale QA fixtures. Host-state resets operate only on the Trail Vault under test, not unrelated Obsidian windows.
 
 ## Continuous integration
 
@@ -169,7 +169,7 @@ GitHub Actions uses the Node.js version from `.nvmrc`, installs dependencies wit
 npm run check
 ~~~
 
-During the rebuild this command validates both trees while the production build still targets `plugin/`. After cutover, the temporary rebuild scripts/config are removed or folded back into the normal `plugin/` toolchain.
+During the remaining rebuild validation this command checks both trees while the production build targets `plugin-rebuild/`. After final Cutover, the temporary rebuild scripts/config are removed or folded back into the normal `plugin/` toolchain.
 
 ## Design documents
 

@@ -1,6 +1,6 @@
 import { isTrailTimestamp } from "../validation/trail-value-validation";
 
-interface ZonedParts {
+export interface TrailZonedDateTimeParts {
   readonly day: number;
   readonly hour: number;
   readonly millisecond: number;
@@ -29,7 +29,10 @@ function formatterFor(timezone: string): Intl.DateTimeFormat {
   return formatter;
 }
 
-function zonedParts(epochMilliseconds: number, timezone: string): ZonedParts {
+function zonedPartsUnchecked(
+  epochMilliseconds: number,
+  timezone: string,
+): TrailZonedDateTimeParts {
   const values = new Map<string, string>();
   for (const part of formatterFor(timezone).formatToParts(new Date(epochMilliseconds))) {
     if (part.type !== "literal") values.set(part.type, part.value);
@@ -50,7 +53,18 @@ function zonedParts(epochMilliseconds: number, timezone: string): ZonedParts {
   };
 }
 
-function asUtcEpoch(parts: ZonedParts): number {
+/** Reads one Trail Timestamp as calendar fields in the configured IANA timezone. */
+export function readTrailZonedDateTimeParts(
+  epochMilliseconds: number,
+  timezone: string,
+): TrailZonedDateTimeParts {
+  if (!isTrailTimestamp(epochMilliseconds)) {
+    throw new Error("Zoned date-time timestamp is invalid");
+  }
+  return zonedPartsUnchecked(epochMilliseconds, timezone);
+}
+
+function asUtcEpoch(parts: TrailZonedDateTimeParts): number {
   return Date.UTC(
     parts.year,
     parts.month - 1,
@@ -63,11 +77,18 @@ function asUtcEpoch(parts: ZonedParts): number {
 }
 
 function offsetAt(epochMilliseconds: number, timezone: string): number {
-  return asUtcEpoch(zonedParts(epochMilliseconds, timezone)) - epochMilliseconds;
+  return asUtcEpoch(zonedPartsUnchecked(epochMilliseconds, timezone)) - epochMilliseconds;
 }
 
-/** Resolves ambiguous/nonexistent local times using compatible calendar semantics. */
-function localPartsToEpochCompatible(desired: ZonedParts, timezone: string): number {
+/**
+ * Resolves local calendar fields with compatible overlap/gap semantics: choose
+ * the earlier instant in an overlap and the first compatible later wall time in
+ * a DST gap.
+ */
+export function resolveTrailZonedDateTimeParts(
+  desired: TrailZonedDateTimeParts,
+  timezone: string,
+): number {
   const desiredAsUtc = asUtcEpoch(desired);
   const offsets = new Set<number>();
   for (const hours of [-36, -12, 0, 12, 36] as const) {
@@ -77,7 +98,7 @@ function localPartsToEpochCompatible(desired: ZonedParts, timezone: string): num
   const later: Array<{ readonly delta: number; readonly epoch: number }> = [];
   for (const offset of offsets) {
     const candidate = desiredAsUtc - offset;
-    const delta = asUtcEpoch(zonedParts(candidate, timezone)) - desiredAsUtc;
+    const delta = asUtcEpoch(zonedPartsUnchecked(candidate, timezone)) - desiredAsUtc;
     if (delta === 0) exact.push(candidate);
     else if (delta > 0) later.push({ delta, epoch: candidate });
   }
@@ -98,7 +119,7 @@ export function addTrailCalendarDays(
   if (!isTrailTimestamp(epochMilliseconds)) throw new Error("Calendar-day timestamp is invalid");
   if (!Number.isSafeInteger(days)) throw new Error("Calendar-day offset must be an integer");
 
-  const source = zonedParts(epochMilliseconds, timezone);
+  const source = readTrailZonedDateTimeParts(epochMilliseconds, timezone);
   const normalized = new Date(Date.UTC(
     source.year,
     source.month - 1,
@@ -108,7 +129,7 @@ export function addTrailCalendarDays(
     source.second,
     source.millisecond,
   ));
-  return localPartsToEpochCompatible({
+  return resolveTrailZonedDateTimeParts({
     day: normalized.getUTCDate(),
     hour: normalized.getUTCHours(),
     millisecond: normalized.getUTCMilliseconds(),

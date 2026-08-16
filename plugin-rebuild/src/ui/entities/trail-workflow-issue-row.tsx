@@ -1,0 +1,188 @@
+import {
+  useState,
+  type ChangeEvent,
+  type SyntheticEvent,
+} from "react";
+import { useStore } from "zustand";
+
+import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
+import {
+  TRAIL_STATUS_CATEGORIES,
+  type TrailStatusCategory,
+} from "../../domain/model/trail-values";
+import {
+  selectIsTrailEntityPending,
+  selectTrailReadableWorkflowIssueById,
+} from "../../query/shared/trail-effective-query";
+import {
+  selectTrailStatusDefinition,
+  selectTrailStatusOptionGroups,
+} from "../../query/shared/trail-status-query";
+import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import { runTrailMutationAction } from "../interactions/trail-action";
+import type { TrailUiActions } from "../shell/trail-ui-actions";
+import type { TrailConfiguration } from "../../domain/model/trail-configuration";
+
+interface TrailWorkflowIssueRowProps {
+  readonly actions: TrailUiActions["issues"];
+  readonly configuration: TrailConfiguration;
+  readonly issueId: string;
+  readonly onError: (message: string | undefined) => void;
+  readonly runtimeStore: TrailRuntimeStore;
+  readonly sourceIsHealthy: boolean;
+  readonly writable: boolean;
+}
+
+function statusCategoryLabel(category: TrailStatusCategory): string {
+  switch (category) {
+    case "backlog": return "Backlog";
+    case "unstarted": return "Unstarted";
+    case "started": return "Started";
+    case "completed": return "Completed";
+    case "canceled": return "Canceled";
+  }
+}
+
+export function TrailWorkflowIssueRow({
+  actions,
+  configuration,
+  issueId,
+  onError,
+  runtimeStore,
+  sourceIsHealthy,
+  writable,
+}: TrailWorkflowIssueRowProps) {
+  const issue = useStore(
+    runtimeStore,
+    (state) => selectTrailReadableWorkflowIssueById(state, issueId),
+  );
+  const pending = useStore(
+    runtimeStore,
+    (state) => selectIsTrailEntityPending(state, issueId),
+  );
+  const [completionBaseline, setCompletionBaseline] = useState<TrailWorkflowIssue>();
+  const [completionTargetId, setCompletionTargetId] = useState<string>();
+  const [estimateDraft, setEstimateDraft] = useState("");
+
+  if (issue === undefined) return null;
+  const status = selectTrailStatusDefinition(
+    configuration,
+    "issue",
+    issue.statusDefinitionId,
+  );
+  const groups = selectTrailStatusOptionGroups(configuration, "issue");
+  const actionsDisabled = !writable || pending || !sourceIsHealthy;
+
+  const requestStatus = (targetStatusDefinitionId: string): void => {
+    if (actionsDisabled || targetStatusDefinitionId === issue.statusDefinitionId) return;
+    runTrailMutationAction(
+      () => actions.changeStatus(issue, targetStatusDefinitionId),
+      {
+        onError,
+        onNeedsInput: (request) => {
+          if (request.code !== "estimate-required") {
+            onError(request.message);
+            return;
+          }
+          setCompletionBaseline(issue);
+          setCompletionTargetId(targetStatusDefinitionId);
+          setEstimateDraft(issue.estimate?.toString() ?? "");
+        },
+      },
+    );
+  };
+
+  const submitEstimate = (event: SyntheticEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    if (
+      completionBaseline === undefined
+      || completionTargetId === undefined
+      || estimateDraft.trim() === ""
+      || actionsDisabled
+    ) return;
+
+    const estimate = Number(estimateDraft);
+    runTrailMutationAction(
+      () => actions.changeStatus(completionBaseline, completionTargetId, estimate),
+      {
+        onError,
+        onNeedsInput: (request) => onError(request.message),
+        onSettled: () => {
+          setCompletionBaseline(undefined);
+          setCompletionTargetId(undefined);
+          setEstimateDraft("");
+        },
+      },
+    );
+  };
+
+  return (
+    <li
+      className="trail-workflow-issue-row"
+      data-pending={pending ? "true" : undefined}
+    >
+      <div className="trail-workflow-issue-row__main">
+        <strong>{issue.title}</strong>
+        <span>
+          {status?.name ?? "Invalid status"}
+          {issue.estimate !== undefined ? ` · Estimate ${issue.estimate}` : ""}
+        </span>
+      </div>
+      <label className="trail-status-picker">
+        <span className="screen-reader-text">Status for {issue.title}</span>
+        <select
+          disabled={actionsDisabled}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => requestStatus(event.target.value)}
+          value={issue.statusDefinitionId}
+        >
+          {TRAIL_STATUS_CATEGORIES.map((category) => {
+            const group = groups.find((candidate) => candidate.category === category);
+            return (
+              <optgroup key={category} label={statusCategoryLabel(category)}>
+                {(group?.definitions ?? []).map((definition) => (
+                  <option key={definition.id} value={definition.id}>{definition.name}</option>
+                ))}
+              </optgroup>
+            );
+          })}
+        </select>
+      </label>
+
+      {completionBaseline !== undefined && completionTargetId !== undefined ? (
+        <form className="trail-estimate-gate" onSubmit={submitEstimate}>
+          <label>
+            <span>Estimate required to complete</span>
+            <input
+              autoFocus
+              disabled={actionsDisabled}
+              min="0"
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setEstimateDraft(event.target.value)}
+              step="1"
+              type="number"
+              value={estimateDraft}
+            />
+          </label>
+          <div className="trail-issue-editor__actions">
+            <button
+              className="mod-cta"
+              disabled={actionsDisabled || estimateDraft.trim() === ""}
+              type="submit"
+            >
+              Complete
+            </button>
+            <button
+              onClick={() => {
+                setCompletionBaseline(undefined);
+                setCompletionTargetId(undefined);
+                setEstimateDraft("");
+              }}
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : null}
+    </li>
+  );
+}

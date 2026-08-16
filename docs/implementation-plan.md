@@ -18,7 +18,7 @@ Product / Domain / Logical / Physical / Technical Design 继续记录各自 cont
 
 2026-08-16 的独立 Architecture Implementation Audit 发现：现有 `plugin/` 的已验证用户行为和技术机制仍然有价值，但实际 Design → Code Mapping 仍存在 planner ownership、future carrier owner、Workspace State contract、external refresh 双轨和 guard coverage 等结构偏差。继续在旧目录上逐项修补容易再次把迁移历史带入最终结构，因此暂停 `Triage Convert to Project`，改为在**当前 main、当前工作目录**中并行建立 clean `plugin-rebuild/`。
 
-这次 Rebuild 不重做已经收口的 Product / Domain / Logical / Physical / Technical Design。旧 `plugin/` 在 Rebuild 期间继续作为可运行 reference implementation 与已验证 evidence source；新 `plugin-rebuild/` 从第一天只接受正式 Architecture owner，不依赖旧 production code。完成 parity、Architecture Audit 与 real-host gate 后一次性 Cutover。
+这次 Rebuild 不重做已经收口的 Product / Domain / Logical / Physical / Technical Design。旧 `plugin/` 在 Rebuild 期间继续作为 reference implementation 与已验证 evidence source；新 `plugin-rebuild/` 从第一天只接受正式 Architecture owner，不依赖旧 production code。完成 parity、Architecture Audit 与 real-host gate 后一次性 Cutover。
 
 ## 2. V1 Implementation Roadmap
 
@@ -29,8 +29,8 @@ Product / Domain / Logical / Physical / Technical Design 继续记录各自 cont
 | Workflow | Project / Workflow Issue 基本执行闭环 | 已完成 |
 | Implementation Architecture Re-baseline | 建立共享模块与调用框架并迁移既有 Formal 行为 | 已完成 |
 | Codebase Simplification | 审计并清理旧实现中的过渡/重复/死代码 | 已完成 |
-| Rebuild Source Sync + Application | 已完成 | 统一 bootstrap/discovery/full refresh、Source Health、refresh barrier、authoritative mutation settlement 与既有 Formal Application 行为已建立 |
-| **Clean Plugin Rebuild** | **当前** | 当前进入 Query + UI + Host Composition；通过 Cutover Gate 后替换 legacy `plugin/` |
+| Rebuild Source Sync + Application | 统一 bootstrap/discovery/full refresh、Source Health、refresh barrier、authoritative mutation settlement 与既有 Formal Application 行为 | 已完成 |
+| **Clean Plugin Rebuild** | Query + UI + Host Composition 已完成；当前进入 Parity + Independent-risk Validation，随后完成 Architecture Audit 与目录 Cutover | **当前** |
 | Intake → Workflow | 继续 Triage → Workflow / Project 转换；首个净新增 Slice 为 `Triage Convert to Project` | Rebuild 后继续 |
 | Project Organization | Board / List、Move、Milestone、Initiative 等 | 待开始 |
 | Cycles & Views | Cycle、Filter、Custom View、Search、Favorites 等 | 待开始 |
@@ -57,8 +57,8 @@ Codebase Simplification checkpoint `6061ca45569fe7664e0b37ed279928c9559e8592` �
 整个 Rebuild 在当前 `main` 与当前工作目录内完成：
 
 ```text
-plugin/                 existing runnable reference implementation
-plugin-rebuild/         clean Formal implementation under rebuild
+plugin/                 existing reference implementation
+plugin-rebuild/         clean Formal implementation and current Obsidian build target
 ```
 
 Rebuild 期间：
@@ -71,7 +71,7 @@ Rebuild 期间：
 - 不为了填满 Architecture tree 创建无 consumer 的空 service / repository；已冻结 type/schema/codec/fail-closed boundary 则应在对应 owner 出现；
 - Rebuild checkpoint 可以逐阶段提交，但每个已建立 capability 都必须已经是其最终 ownership。
 
-在 Cutover 前，Obsidian production / Diagnostics build 仍从 `plugin/` 生成；`plugin-rebuild/` 使用独立 typecheck/test/lint boundary。根 `npm run check` 同时验证 legacy reference 与 rebuild，确保并行阶段没有把现有可运行基线弄坏。
+Query + UI + Host Composition 完成后，Obsidian build entry 已临时切到 `plugin-rebuild/src/main.ts`，用于 parity / real-host / Cutover Gate 验证；legacy `plugin/` 仍保留为 reference/evidence，并由根检查继续覆盖。这不是最终目录 Cutover，最终 Cutover 仍要求删除或归档旧目录并把 rebuild 恢复为正式 `plugin/` path。
 
 ### 4.2 Rebuild 阶段
 
@@ -81,8 +81,8 @@ Rebuild 期间：
 | Markdown + Persistence Foundation | canonical paths/schema/core/explicit codecs、Plugin Data 与 authoritative source repository | 已完成 |
 | Runtime + Mutation Foundation | final committed/pending/control/health Runtime、semantic planning、global serial mutation、physical execution | 已完成 |
 | Source Sync + Application | bootstrap/discovery/full external refresh、thin use cases、existing Triage/Project/Issue/Accept 行为迁移 | 已完成 |
-| **Query + UI + Host Composition** | selectors、UI modules、Obsidian adapters、thin `main.ts` | **当前** |
-| Parity + Independent-risk Validation | existing Formal behavior parity、targeted risk tests、Diagnostics 与必要 real-host regression | 待开始 |
+| Query + UI + Host Composition | selectors、Triage / Projects UI、Obsidian adapters、thin `main.ts`、rebuild build entry、development validation evidence | 已完成 |
+| **Parity + Independent-risk Validation** | existing Formal behavior parity、targeted independent-risk evidence、代表性 real-host verification | **当前** |
 | Architecture Audit + Cutover | 全量 Design → Code audit；删除旧 `plugin/`，`plugin-rebuild/` 切换为正式 `plugin/` | 待开始 |
 
 这不是按技术层做长期碎片化开发。每个基础 Slice 的目的都是一次建立后续多个用户 Feature 共同消费的稳定纵向能力；基础主干完成后，继续以用户价值 Slice 开发。
@@ -110,7 +110,7 @@ Rebuild 从第一天锁住本次 Audit 暴露的关键问题：
 - future frozen contracts / carriers 的当前必要 fail-closed boundary 到位；
 - one mechanism / one owner：Runtime、Mutation、Source Sync、Persistence、Markdown、Query 均无双轨；
 - focused owner tests、full rebuild checks、root `npm run check` 与 `git diff --check` 通过；
-- 必要的 representative real-Obsidian regression 与 Diagnostics trace 通过；
+- 必要的 representative real-Obsidian regression 与 Diagnostics / Validation Evidence 通过；
 - 最终 Architecture Implementation Audit = PASS；
 - README / Implementation Plan 与实际 Cutover 状态一致。
 
@@ -118,13 +118,13 @@ Cutover 本身是一次结构替换，而不是第二轮重构：删除或归档
 
 ## 5. 当前近期计划
 
-当前推进 **Query + UI + Host Composition**：
+当前推进 **Parity + Independent-risk Validation**：
 
-- 建立页面级 Query selectors，直接消费 effective Runtime，并只抽取已有页面真实复用的 filter / sort / group helper；不提前建设 generic Query DSL；
-- 建立共享 UI shell、modules 与 entity components，优先迁移已有 Triage、Project、Workflow Issue 基本交互，并继续通过 Application 发出正式 mutation；
-- 建立 Obsidian host adapters 与 composition root，把 SourceIO、Plugin Data、workspace/bootstrap、managed file events 接到 rebuild 主链；`main.ts` 只负责 lifecycle、composition 与 host registration；
-- 同步覆盖 loading、empty、read-only/error 与窄 pane 响应式边界；本 Slice 不增加净新 Product Feature，也不提前 Cutover；
-- 本 checkpoint 验证并 push 后，再进入 Parity + Independent-risk Validation。
+- 对照 legacy reference 与正式 Product/Domain contract，确认已有 Quick Capture、Triage Management、Project / Workflow Issue、Triage Accept 的必要 parity，不把旧实现细节当兼容要求；
+- 只补仍有独立风险价值的 evidence：host lifecycle、managed-file external refresh、read-only recovery、destination-first source transition、Diagnostics / validation evidence 等，不重复 pure planner/query 已覆盖的组合测试；
+- 使用 diagnostics build 的单次 Validation Evidence 导出复盘真实 Obsidian 操作、Runtime、Plugin Data 与 managed Markdown；测试数据审核后清理，不在本地 Trail persistence 中累积 QA 痕迹；
+- 完成 parity/risk 结论后进入最终 Architecture Implementation Audit；只有 Audit 与 Cutover Gate 全部通过才做目录 Cutover；
+- 本阶段不增加净新 Product Feature；`Triage Convert to Project` 仍在 Cutover 后继续。
 
 ## 6. Implementation Checkpoints
 
@@ -145,7 +145,8 @@ Cutover 本身是一次结构替换，而不是第二轮重构：删除或归档
 | Rebuild Markdown + Persistence Foundation | 已完成 | 五类 explicit codec、Physical Schema Registry、DomainSourceRepository、Plugin Data physical ↔ logical boundary 与 owner guards 已建立 |
 | Rebuild Runtime + Mutation Foundation | 已完成 | final Runtime shape、logical Plan、ordered pending replay、global serial queue、dequeue-time physical topology 与 Persistence-only execution 已建立 |
 | Rebuild Source Sync + Application | 已完成 | 统一 bootstrap/discovery/full refresh、Source Health、refresh barrier、authoritative mutation settlement 与既有 Formal Application 行为已建立 |
-| **Clean Plugin Rebuild** | **当前** | 当前进入 Query + UI + Host Composition；通过 Cutover Gate 后替换 legacy `plugin/` |
+| Rebuild Query + UI + Host Composition | 已完成 | effective Runtime selectors、Triage / Projects UI、Obsidian host adapters、thin composition root、rebuild build entry、anti-drift guard 与 development Validation Evidence 已建立；自动化、production/Diagnostics build 与代表性 real-host evidence 已通过 |
+| **Clean Plugin Rebuild** | **当前** | 当前进入 Parity + Independent-risk Validation；随后完成 Architecture Audit 与目录 Cutover |
 | Intake → Workflow | Rebuild 后继续 | 首个净新增 Slice：`Triage Convert to Project` |
 | V1 Exit | 待开始 | — |
 
