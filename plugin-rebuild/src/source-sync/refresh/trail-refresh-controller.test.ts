@@ -242,4 +242,32 @@ describe("Trail full refresh controller", () => {
     await refresh;
     expect(harness.runtimeStore.getState().control).toEqual({ kind: "ready" });
   });
+
+  it("recovers from read-only-error when a later external reload is valid", async () => {
+    const harness = createHarness();
+    await harness.controller.initialize();
+    const revisionBefore = harness.runtimeStore.getState().committed.revision;
+
+    harness.invalidateNextRead();
+    await expect(harness.controller.requestExternalRefresh({
+      kind: "modify",
+      path: TRAIL_TRIAGE_PATH,
+    })).rejects.toThrow("External Trail refresh failed");
+
+    const failedState = harness.runtimeStore.getState();
+    expect(failedState.control.kind).toBe("read-only-error");
+    expect(failedState.committed.revision).toBe(revisionBefore);
+    expect(failedState.health.sourceIssuesByPath[TRAIL_TRIAGE_PATH])
+      .toMatchObject([{ code: "test.invalid" }]);
+
+    await expect(harness.controller.requestExternalRefresh({
+      kind: "modify",
+      path: TRAIL_TRIAGE_PATH,
+    })).resolves.toBeUndefined();
+
+    const recoveredState = harness.runtimeStore.getState();
+    expect(recoveredState.control).toEqual({ kind: "ready" });
+    expect(recoveredState.committed.revision).toBe(revisionBefore + 1);
+    expect(recoveredState.health.sourceIssuesByPath).toEqual({});
+  });
 });

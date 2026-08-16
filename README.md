@@ -6,7 +6,7 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 Trail has completed its POC exit, formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, Implementation Architecture Re-baseline, and Codebase Simplification checkpoints.
 
-The current engineering stage is **Clean Plugin Rebuild**. The rebuild has completed Boundary + Domain, Markdown + Persistence, Runtime + Mutation, Source Sync + Application, and Query + UI + Host Composition. The current step is **Parity + Independent-risk Validation** before the final Architecture Audit and directory Cutover. Net-new Intake → Workflow work remains paused until that cutover.
+The current engineering stage is **Clean Plugin Rebuild**. The rebuild has completed Boundary + Domain, Markdown + Persistence, Runtime + Mutation, Source Sync + Application, Query + UI + Host Composition, and **Parity + Independent-risk Validation**. The next step is an independent **Architecture Implementation Audit**. Directory Cutover is allowed only if that audit and the full Cutover Gate pass. Net-new Intake → Workflow work remains paused until after cutover.
 
 The current design and implementation chain is:
 
@@ -30,6 +30,8 @@ docs/implementation-plan.md
 
 The 2026-08-16 legacy reference checkpoint is `6061ca45569fe7664e0b37ed279928c9559e8592`. Its automated and representative real-Obsidian evidence remains valuable: 49 test files / 191 tests, lint with zero warnings, TypeScript typecheck, production and Diagnostics builds, external managed-file refresh, and a reviewed Diagnostics trace with no warn/error events. The rebuild reuses proven behavior and mechanisms selectively, but does not inherit the old code structure as an architectural baseline.
 
+Parity validation compared the existing Formal behavior against the current Product / Domain contract and the retained legacy evidence. Quick Capture, Triage Management, Project / Workflow Issue, and Triage Accept have the required behavior parity; no missing legacy behavior was identified that must block the rebuild. Independent-risk evidence now covers managed-file external refresh, read-only recovery, destination-first source transitions, safe compensation boundaries, host event suppression, and development Validation Evidence.
+
 ## Clean rebuild model
 
 The rebuild happens on the current `main` branch and in the current working directory. No separate rebuild worktree or branch is required.
@@ -48,7 +50,7 @@ During the rebuild:
 - No compatibility facade, old/new import bridge, dual mutation plan, or temporary wrong owner is introduced just to ease migration.
 - The Obsidian build entry now targets `plugin-rebuild/` for host/parity validation. This is not the final directory Cutover: legacy `plugin/` remains present only as reference/evidence until the Cutover Gate passes.
 
-After parity, full architecture audit, automated checks, and necessary real-host regression, the cutover removes or archives the old `plugin/` and promotes `plugin-rebuild/` to the formal `plugin/` path. `Triage Convert to Project` resumes only after that cutover.
+With parity complete, the next session must independently perform the full Design → Code Architecture Implementation Audit. Cutover is not presumed: only an audit PASS plus the remaining Cutover Gate conditions may authorize removal or archival of the old `plugin/` and promotion of `plugin-rebuild/` to the formal `plugin/` path. `Triage Convert to Project` resumes only after that cutover.
 
 The exact POC implementation / fixture / style baseline remains under `archive/poc/` as earlier technical evidence. It is not part of the active Formal runtime.
 
@@ -159,7 +161,7 @@ Real Obsidian regression now exercises the rebuild bundle generated under `.obsi
 
 Diagnostics builds expose `Trail: Copy validation evidence`, which exports recent structured diagnostics together with the current Runtime snapshot, plugin data, and raw managed Trail Markdown. This is development verification infrastructure only: it must not participate in product correctness or ship in the production bundle.
 
-Real-host test data is cleaned after review so the local `Trail/` persistence does not accumulate stale QA fixtures. Host-state resets operate only on the Trail Vault under test, not unrelated Obsidian windows.
+The representative rebuild real-host evidence has been reviewed, and focused automated evidence now explicitly covers recovery from `read-only-error` after a later valid managed-source refresh. Real-host test data is cleaned after review so the local `Trail/` persistence does not accumulate stale QA fixtures. Host-state resets operate only on the Trail Vault under test, not unrelated Obsidian windows.
 
 ## Continuous integration
 
@@ -169,7 +171,7 @@ GitHub Actions uses the Node.js version from `.nvmrc`, installs dependencies wit
 npm run check
 ~~~
 
-During the remaining rebuild validation this command checks both trees while the production build targets `plugin-rebuild/`. After final Cutover, the temporary rebuild scripts/config are removed or folded back into the normal `plugin/` toolchain.
+During the remaining rebuild audit/cutover work this command checks both trees while the production build targets `plugin-rebuild/`. After final Cutover, the temporary rebuild scripts/config are removed or folded back into the normal `plugin/` toolchain.
 
 ## Design documents
 
