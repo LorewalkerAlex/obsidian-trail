@@ -4,22 +4,13 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current development state
 
-The active implementation is `plugin/` on `main`. The current implementation baseline for the documentation re-baseline is:
-
-```text
-ae3b667aa2df0a555e1f93bb2eb9c2eb99342a72
-feat: add issue project move
-```
-
-Current product behavior includes Quick Capture and Triage management, basic Project / Workflow Issue execution, Triage Accept, Triage Convert to Project, and identity-preserving Issue moves between Projects.
-
-The next implementation work is not selected feature-first. `docs/implementation.md` defines the current dependency-ordered plan for completing the frozen V1 foundations before building the remaining dependent product workspaces.
+Current implementation baseline, active gaps, build order, and verification state are maintained in [`docs/implementation.md`](docs/implementation.md).
 
 ## Engineering and project documentation
 
 Repository-level engineering rules live in [`ENGINEERING.md`](ENGINEERING.md).
 
-Trail-specific answers follow one authority chain:
+Trail-specific project answers follow this authority chain:
 
 ```text
 docs/product.md
@@ -31,7 +22,11 @@ docs/data.md
 docs/architecture.md
     ↓
 docs/design-to-code-map.md
-    ↓
+```
+
+Current execution is planned separately:
+
+```text
 docs/implementation.md
     ↓
 code
@@ -42,7 +37,7 @@ code
 - `docs/data.md` — logical records, identity, references, authority, Markdown / plugin-data persistence, integrity, and schema evolution.
 - `docs/architecture.md` — system boundaries, shared capabilities, dependency direction, runtime/write flows, reliability, and target architecture.
 - `docs/design-to-code-map.md` — traceability from design responsibilities to canonical code owners and the target code tree.
-- `docs/implementation.md` — current repository baseline, implementation gaps, dependency-ordered build plan, verification, and intended final state.
+- `docs/implementation.md` — current execution baseline, active changes, dependency-ordered build plan, and verification state.
 
 Git history is the historical archive. Superseded POC code and documents are not duplicated in the active repository tree.
 
@@ -56,7 +51,7 @@ obsidian-trail/
 ├─ .obsidian/
 │  └─ plugins/
 │     └─ trail/          generated plugin output; ignored by Git
-├─ docs/                 current Trail project answers
+├─ docs/                 Trail project documentation
 ├─ plugin/
 │  └─ src/               active formal implementation
 ├─ Trail/                local runtime Domain Markdown; ignored by Git

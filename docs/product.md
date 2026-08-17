@@ -6,7 +6,7 @@ Trail is a personal project and task management product inside Obsidian.
 
 It combines readable Markdown persistence with a compact execution interface so one person can capture work, organize projects, decide what matters now, move work through a workflow, and keep related long-form knowledge in ordinary Obsidian notes.
 
-Trail is not a second document system and is not intended to reproduce team-oriented Jira/Linear collaboration features. Linear is the mature product reference for individual execution patterns where those patterns fit Trail's Obsidian-native and personal-use goals.
+Trail is not a second document system and is not intended to reproduce collaboration-first project-management products. It favors mature personal execution patterns where those patterns fit Trail's Obsidian-native and single-user goals.
 
 ## 2. Scope
 
@@ -177,13 +177,21 @@ Contextual submenus should use a mature pointer-grace/safe-triangle pattern wher
 
 Trail is designed for desktop Obsidian, but it must work in variable pane widths. Product composition should support expanded, compact, and narrow presentations with progressive disclosure and local horizontal scrolling/layout changes where appropriate.
 
-### 4.8 Obsidian-native documents
+### 4.8 UI Design Reference
+
+Linear is the current reference for Trail's UI and interaction design quality, especially its visual language, information density, interaction clarity, and execution-oriented polish.
+
+This reference does not import Linear's team product model, collaboration semantics, branding, or visual identity. Trail remains a personal, Obsidian-native product.
+
+As Trail's own UI Design answers become explicit, those answers replace the reference for the areas they cover.
+
+### 4.9 Obsidian-native documents
 
 Trail entities support lightweight title, description/notes, properties, and actions.
 
 Long-form design documents, research, meeting notes, and knowledge remain ordinary Obsidian Markdown documents. Native links and backlinks connect those documents to file-backed Trail entities. Trail should open the native document rather than recreate a separate rich-document experience.
 
-### 4.9 Weekly Note
+### 4.10 Weekly Note
 
 Weekly Note is a lightweight Home utility backed by one Markdown file. Users can edit the Current section and manually archive it into dated entries. It does not automatically create or link Issues/Cycles and is not a Domain entity.
 
@@ -195,12 +203,11 @@ Weekly Note is a lightweight Home utility backed by one Markdown file. Users can
 4. **Project lifecycle is explicit.** Completing all Issues does not automatically Complete the Project; the user explicitly completes or reopens the Project.
 5. **Milestone completion and Initiative completion are derived.** They are not manually maintained workflow Statuses.
 6. **Cycle planning is explicit and independent of Status.** Joining/leaving a Cycle does not silently change the Issue Status.
-7. **Triage stays distinct from normal Workflow.** Accept creates a new Workflow Issue; the source Triage Issue is removed only after the target exists safely.
+7. **Triage stays distinct from normal Workflow.** Accept creates a new Workflow Issue rather than turning the Triage Issue into another context; captured user content must not be lost during that conversion.
 8. **Drag has one global meaning for Issue cards: Status change.** Relationship changes use explicit actions.
 9. **Due is reused rather than duplicated.** Triage defer is a Due change; Reminder/Due Soon/Overdue are capabilities derived from time facts and policy.
 10. **Progress, Health, Attention, timeline, and analytics are derived when possible.** Trail does not ask the user to maintain duplicate facts.
 11. **Deletion preserves unrelated work by default.** Deleting a parent/classification target resolves references instead of cascading through independent business data unless the user explicitly chooses a stronger destructive action.
 12. **Normal knowledge work stays Obsidian-native.** Trail does not create a parallel document domain.
 13. **Views compose existing facts and capabilities.** New ways of looking at data should first use existing fields, filters, groups, sorts, and presentations rather than creating new Domain entities.
-14. **Linear is the default mature reference for personal execution patterns, not a brand template.** Team/collaboration features are removed where they do not serve personal use, while Obsidian-native and Trail-specific requirements can intentionally diverge.
-15. **Authoritative data changes are user-intent driven.** Automation or AI may assist analysis and creation workflows, but must not silently mutate authoritative data.
+14. **Authoritative data changes are user-intent driven.** Automation or AI may assist analysis and creation workflows, but must not silently mutate authoritative data.
