@@ -7,6 +7,10 @@ import type {
   TrailProject,
 } from "../../domain/model/trail-entities";
 import type { TrailMutationPlan, TrailStateEffect } from "../../mutation/plans/trail-mutation-plan";
+import {
+  buildTrailRuntimeIndexes,
+  type TrailRuntimeIndexes,
+} from "../indexes/trail-runtime-indexes";
 import type {
   TrailAuthoritativeState,
   TrailDomainState,
@@ -105,10 +109,7 @@ function applyEffect(
   }
 }
 
-/** Replays only logical effects; page sorting and presentation belong to Query. */
-export function projectTrailEffectiveAuthoritativeState(
-  state: TrailRuntimeState,
-): TrailAuthoritativeState {
+function projectAuthoritativeState(state: TrailRuntimeState): TrailAuthoritativeState {
   const projected = {
     configuration: state.committed.authoritative.configuration,
     domain: cloneDomain(state.committed.authoritative.domain),
@@ -118,6 +119,29 @@ export function projectTrailEffectiveAuthoritativeState(
     for (const effect of plan.effects) applyEffect(projected, effect);
   }
   return projected;
+}
+
+export interface TrailEffectiveRuntimeSnapshot {
+  readonly authoritative: TrailAuthoritativeState;
+  readonly indexes: TrailRuntimeIndexes;
+}
+
+/** Replays only logical effects; page sorting and presentation belong to Query. */
+export function projectTrailEffectiveAuthoritativeState(
+  state: TrailRuntimeState,
+): TrailAuthoritativeState {
+  return projectAuthoritativeState(state);
+}
+
+/** Builds indexes from the same pending-aware Domain snapshot used for optimistic reads. */
+export function projectTrailEffectiveRuntimeSnapshot(
+  state: TrailRuntimeState,
+): TrailEffectiveRuntimeSnapshot {
+  const authoritative = projectAuthoritativeState(state);
+  return {
+    authoritative,
+    indexes: buildTrailRuntimeIndexes(authoritative.domain),
+  };
 }
 
 export function addTrailPendingPlan(

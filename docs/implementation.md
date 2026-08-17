@@ -7,13 +7,13 @@ The active formal implementation is `plugin/` on `main`.
 The current repository baseline for this implementation stage is:
 
 ```text
-8fbdc01db1064e089c52e884bf0dacb0cd9455ca
-fix: guard issue reopen in terminal project
+dedc8342e4b9b2e8ba5a3adca18250a3abb3678f
+feat: operationalize project delete persistence
 ```
 
-This is the single execution baseline for the active Gate 3 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
+This is the single execution baseline for the active Gate 4 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
 
-Gate 1 — Domain / Validation Completion and Gate 2 — Semantic Planning Completion are complete at this baseline.
+Gate 1 — Domain / Validation Completion, Gate 2 — Semantic Planning Completion, and Gate 3 — Data / Persistence / Mutation Operational Completion are complete at this baseline.
 
 Gate 2 closure evidence includes:
 
@@ -24,9 +24,16 @@ Gate 2 closure evidence includes:
 - the final repository-grounded Gate 2 Exit Audit found no remaining frozen V1 semantic-planning gap;
 - GitHub Actions CI #65 through #68 passed for the corresponding Gate 2 checkpoints.
 
-Verified lower-layer outcomes now include complete V1 Domain planning for Triage, Workflow Issue, Project, Milestone, Cycle, Core Entity deletion, and reference-affecting Configuration changes. Those planners produce complete legal logical Mutation Plans before optimistic state is admitted.
+Gate 3 closure evidence includes:
 
-The repository also contains proven Markdown codecs/schema, Domain-source and plugin-data repositories, the fixed Mutation topology contracts, dequeue-time materialization, transaction execution, Runtime reconciliation, Source Sync/recovery, Query/Application/UI foundations, Diagnostics, and architecture guards. Gate 3 audits those existing mechanisms against the now-complete logical plan set rather than assuming target code-map ownership implies operational completeness.
+- the complete Gate 2 logical-plan set was re-audited against Single Transaction, Source Transition, and Integrity Batch materialization/execution paths;
+- ordinary same-carrier changes, Issue placement moves, Triage Accept/Convert, Initiative/Milestone/Issue reference cleanup, Cycle changes, and Configuration reference repairs all have shared physical execution paths;
+- Project Delete & Root Source Operationalization at `dedc8342e4b9b2e8ba5a3adca18250a3abb3678f` closed the one unsupported moving-root materialization path found by the Gate 3 audit;
+- authoritative root-source deletion now verifies the latest canonical pre-image before file destruction;
+- successful Project Delete Integrity Batch settlement releases deleted-source ownership before applying prepared snapshots containing the same stable entity IDs;
+- Application writes enter the shared authoritative Source Sync / Mutation pipeline rather than feature-local Persistence or Markdown I/O;
+- GitHub Actions CI #69 passed for the Gate 3 checkpoint;
+- the final repository-grounded Gate 3 Exit Audit found no remaining known V1 logical plan that lacks an established shared physical execution path.
 
 Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents.
 
@@ -78,40 +85,34 @@ Implementation must preserve unrelated canonical fields and relations even when 
 
 ### 4.1 Current gate
 
-Current work is **Gate 3 — Data / Persistence / Mutation Operational Completion**.
+Current work is **Gate 4 — Runtime / Index Foundation Completion**.
 
-Gate 3 starts from the complete Gate 2 logical-plan set and checks whether each plan can be materialized and executed through the established physical carriers and the three fixed transaction topologies:
+The Gate 4 repository audit starts from `dedc8342e4b9b2e8ba5a3adca18250a3abb3678f`. The authoritative Runtime, source ownership, reconciliation, and pending-plan projection foundations already exist, but the committed Runtime currently materializes only `issuesByProjectId` as a shared structural index.
 
-```text
-Single Transaction
-Source Transition
-Integrity Batch
-```
+The first Gate 4 implementation slice is **Runtime Structural & Reference Index Foundation**. It is implemented and locally verified on top of the remote `dedc8342e4b9b2e8ba5a3adca18250a3abb3678f` baseline. It establishes the shared inverse/reference dimensions needed by later integrity and read layers without moving Query behavior into Runtime.
 
-The first repository-grounded Gate 3 audit found that existing Single Transaction and Source Transition foundations already cover ordinary same-carrier changes, Issue placement moves, Triage Accept, and Triage Convert to Project. It also found a concrete Integrity Batch gap around file-backed deletion.
+The slice covers:
 
-The current implementation slice is **Project Delete & Root Source Operationalization**. It is implemented and locally verified on top of the remote `8fbdc01db1064e089c52e884bf0dacb0cd9455ca` baseline.
+1. Project membership by Initiative;
+2. Milestone membership by Project;
+3. Issue membership by Project and Milestone;
+4. Cycle membership in both directions plus the single current Open Cycle when one is unambiguous;
+5. Entity references by Label ID;
+6. Entity references by StatusDefinition ID;
+7. deterministic key/value ordering for rebuildable Runtime indexes;
+8. a pending-aware effective Runtime projection that rebuilds indexes from the same Effective Domain used for optimistic reads, so committed indexes never masquerade as current optimistic relationships.
 
-The slice now:
-
-1. materializes canonical Project deletion without inventing a new transaction topology;
-2. moves surviving child Issues to `Projectless Issues` destination-first, then deletes the old Project carrier once rather than deleting its child records one by one;
-3. requires the logical Project-delete plan to resolve every entity currently owned by that Project source exactly once before the root file can be destroyed;
-4. allows an empty Project carrier to be removed as one Single Transaction;
-5. allows an unreferenced Initiative carrier to be removed as one Single Transaction while refusing an incomplete standalone Initiative delete when Projects still reference it;
-6. attaches the expected canonical entity pre-image to authoritative root-source deletion and rereads the source immediately before file destruction, refusing deletion if that source has changed or become untrusted;
-7. reconciles successful Integrity Batch results by releasing deleted-source ownership before applying prepared snapshots that contain the same stable entity IDs;
-8. keeps physical executor audit order unchanged and reuses existing recovery, queue, Runtime, Persistence, and Source Sync mechanisms.
-
-Focused Project Delete/materialization/execution/settlement regressions, the full `npm run check`, and `git diff --check` pass locally for this slice. Gate 3 remains ACTIVE until the slice is committed, pushed, remotely verified, and the repository-grounded operational audit continues from that new checkpoint.
+The index builder remains derived-only. It does not validate or repair illegal Domain facts; Domain/reference/workspace validation remains the authority. Query and product selectors are not changed in Gate 4 Slice A and will consume the completed Runtime foundation in Gate 5. Focused Runtime/index/reconcile/query/source-sync regressions, the full `npm run check`, and `git diff --check` pass locally for this slice.
 
 ### 4.2 Current verified gaps
 
-The first Gate 3 audit findings at `8fbdc01db1064e089c52e884bf0dacb0cd9455ca` were Project Delete materialization, authoritative root-source deletion, and Integrity Batch settlement ordering. The current locally verified slice closes those three findings in the working tree.
+The first Gate 4 audit gap was the narrow committed-index surface plus the absence of a canonical pending-aware effective index projection. The current locally verified slice closes that gap in the working tree.
 
-No additional Gate 3 gap is declared by this checkpoint document. After remote verification, the audit must continue from the new repository checkpoint across the remaining complete Gate 2 logical-plan set, especially low-frequency Integrity Batch and plugin-data/reference-repair paths. Later gaps must be established from actual materialization/execution/recovery behavior rather than inferred from the target code tree.
+The architecture lists additional possible indexes, but Gate 4 does not mechanically materialize every candidate. Configuration-only lookup conveniences such as StatusDefinition/category or LabelGroup/entity-type lookup remain eligible for Gate 5 if real selectors need them. Persisted derived caches remain out of scope.
 
-These are implementation concerns inside the existing architecture; Product, Domain, Data, Architecture, and Design-to-Code Map remain unchanged unless later implementation evidence exposes a contradiction in those authorities.
+Gate 4 remains ACTIVE until this slice is committed, pushed, remotely verified, and the repository-grounded Exit Audit rechecks Runtime ownership, reconciliation, pending replay, and the known V1 downstream read requirements from the new checkpoint.
+
+Product, Domain, Data, Architecture, and Design-to-Code Map remain unchanged unless implementation evidence exposes a contradiction in those authorities.
 
 ## 5. Build Order
 
@@ -122,9 +123,9 @@ Implementation proceeds through dependency-ordered gates. A later gate starts on
    ↓
 2. Semantic Planning Completion           COMPLETE
    ↓
-3. Data / Persistence / Mutation Operational Completion   ACTIVE
+3. Data / Persistence / Mutation Operational Completion   COMPLETE
    ↓
-4. Runtime / Index Foundation Completion
+4. Runtime / Index Foundation Completion   ACTIVE
    ↓
 5. Query / Derived Foundation Completion
    ↓
@@ -147,11 +148,11 @@ Complete. Required V1 state transitions produce complete legal logical plans fro
 
 ### 5.3 Gate 3 — Data / Persistence / Mutation
 
-Exit when the complete V1 logical-plan set can be represented and executed through the established carriers and mutation architecture without feature-local I/O paths or known unsupported physical transitions.
+Complete. The current V1 logical-plan set can be materialized and executed through the established carriers and shared Mutation architecture without feature-local I/O paths or known unsupported physical transitions.
 
 ### 5.4 Gate 4 — Runtime / Index
 
-Exit when authoritative Runtime state, ownership, and required shared structural/reference indexes support downstream integrity and reads coherently.
+Exit when authoritative Runtime state, ownership, pending projection, and required shared structural/reference indexes support downstream integrity and reads coherently.
 
 ### 5.5 Gate 5 — Query / Derived
 
