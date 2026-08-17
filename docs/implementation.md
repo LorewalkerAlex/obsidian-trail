@@ -7,13 +7,13 @@ The active formal implementation is `plugin/` on `main`.
 The current repository baseline for this implementation stage is:
 
 ```text
-7cd07b638add1a7e7364f89c2fcc69d7cb2ed095
-feat: add canonical derived query facts
+df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0
+feat: expand core work application coverage
 ```
 
 This is the single execution baseline for the active Gate 6 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
 
-Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, and Gate 5 - Query / Derived Foundation Completion are complete foundations for the current stage. A bounded Gate 2 correction discovered by the Gate 6 repository audit is tracked in the current slice rather than bypassed in Application.
+Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, and Gate 5 - Query / Derived Foundation Completion are complete foundations for the current stage.
 
 Gate 4 closure evidence includes Runtime Structural & Reference Index Foundation at `fa48f2d940457e8b7ed93eca037ce395d20a4ed7`, CI #70, and the final Runtime/index audit finding no second foundation gap required by known V1 reads.
 
@@ -24,6 +24,15 @@ Gate 5 closure evidence includes:
 - one coherent committed/effective readable snapshot boundary and shared structural relationship selectors;
 - Query-owned Initiative completion and current-scope actual-start derivation for Project, Milestone, and Initiative;
 - the Gate 5 Exit Audit finding that concrete Saved View filter/sort/group/scope schemas are intentionally deferred until product slices freeze them, while page-specific selectors and similarity helpers should follow real consumers rather than speculative APIs.
+
+Gate 6 Slice A closure evidence includes:
+
+- Core Work Application Coverage at `df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0` with CI #73;
+- the bounded missing Initiative create semantic planner corrected in `domain/planning` rather than bypassed by Application;
+- Initiative, Milestone, and Cycle Application facades over the shared planning/Source Sync boundary;
+- Project lifecycle/Initiative relation/delete and Workflow Issue project-less/Milestone/delete use cases exposed through Application;
+- diagnostics normalization kept compatible with project-less Issue moves;
+- the remote checkpoint containing exactly the intended 11 files and passing the full repository CI.
 
 Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents.
 
@@ -65,7 +74,7 @@ Current reusable capability areas include:
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
 - shared structural and explicitly defined derived Query capabilities;
 - Application normalization, planning-result handling, mutation receipts, and Source Sync submission support;
-- existing Triage, Project, and Issue Application facades;
+- Triage, Initiative, Project, Milestone, Workflow Issue, and Cycle Application facades;
 - Diagnostics and architecture guards.
 
 Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. Do not create production surrogates, alternate carriers, compatibility aliases, duplicate mechanisms, persisted derived state, or feature-local persistence paths merely to unblock an upper layer.
@@ -76,28 +85,35 @@ Implementation must preserve unrelated canonical fields and relations even when 
 
 Current work is **Gate 6 - Application Foundation Completion**.
 
-The Gate 6 repository audit starts from `7cd07b638add1a7e7364f89c2fcc69d7cb2ed095`. Application currently has canonical facades only for Triage, Projects, and Workflow Issues, while the target ownership map also requires Initiatives, Milestones, Cycles, Configuration, Workspace, and create-time similarity capabilities as their product contracts become executable.
+The current public checkpoint is `df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0`. Gate 6 Slice A closed the already-frozen Core Work Application coverage gap and corrected the Initiative-create planning omission discovered by the later-layer audit.
 
-The audit also found one bounded lower-layer omission: Initiative is a managed V1 Core Entity with its own carrier, delete semantics, Runtime ownership, Query relationships, and `application/initiatives` target owner, but the completed planning set has no Initiative create planner. Application must not manufacture a raw Mutation Plan to hide that omission.
+The continued Gate 6 repository audit separates the remaining target ownership into executable and deferred contracts:
 
-The first Gate 6 implementation slice is **Core Work Application Coverage**. It keeps the correction and its consumer in one coherent slice:
+- Configuration already has a complete pure semantic planner, including explicit `NeedsInput` for Status/Label reference repair, and the shared Mutation/Source Sync path already supports authoritative `replace-configuration` settlement.
+- Workspace State persistence ownership is frozen, but concrete Custom View filter/sort/group/scope schemas and Home composition remain intentionally deferred in the Domain model. Building a generic arbitrary Workspace-State replacement facade now would expose an unstable product contract rather than a V1 use case.
+- Create-time similarity is a frozen guardrail responsibility, but no authoritative matching algorithm, threshold, candidate contract, or confirmation interaction is defined yet. It should be implemented with the actual creation consumer instead of inventing a speculative Application API.
 
-1. add the missing pure Initiative create planner and owner-level tests, creating only the canonical minimal Initiative facts and no workflow/derived state;
-2. add Initiative, Milestone, and Cycle Application facades over existing planners and the shared Source Sync submission boundary;
-3. expand Project Application to expose Status change, Initiative relation change, and delete;
-4. expand Workflow Issue Application to expose project-less create/move, Milestone relation change, and delete;
-5. expose Initiative/Milestone/Cycle facades through the stable Application Session;
-6. preserve existing Triage/Application failure-boundary evidence while adding session-level verification that the new use cases emit logical plans rather than writing Persistence directly.
+The second Gate 6 implementation slice is **Configuration Application Boundary**. It:
 
-This slice does not implement Configuration, Workspace-state editing, Saved View schemas, or create-time similarity. Those have distinct input contracts and remain subject to the continued Gate 6 audit after the core work facade has a public checkpoint.
+1. adds a thin `application/configuration` facade over `planChangeTrailConfiguration`;
+2. preserves planner `NeedsInput` so required reference resolution remains an explicit upper-layer decision;
+3. adds a non-entity mutation receipt helper while preserving existing entity receipt semantics;
+4. avoids submitting semantic no-op Configuration replacements;
+5. exposes Configuration through the stable Application Session and verifies that it emits only a logical `configuration.change` plan through Source Sync.
+
+This slice does not create Workspace-State editing, Saved View schemas, Home composition commands, similarity algorithms, or UI. Those capabilities remain consumer-driven until their specific product contracts are frozen.
 
 ### 4.2 Current verified gaps
 
 Gate 5 is remotely complete at `7cd07b638add1a7e7364f89c2fcc69d7cb2ed095` with CI #72 passing.
 
-The current verified Gate 6 gap is incomplete Application coverage for already frozen Core Entity and relationship use cases, plus the bounded missing Initiative create semantic owner exposed by that audit. The Core Work Application Coverage delivery addresses that gap without changing Product, Domain, Data, Architecture, or the Design-to-Code Map.
+Gate 6 Slice A is remotely complete at `df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0` with CI #73 passing. The bounded Gate 2 Initiative-create correction is closed at that same checkpoint.
 
-After this slice is remotely verified, continue the Gate 6 audit over Configuration commands, user Workspace State, and create-time similarity. Do not invent generic Saved View filter/group/sort schemas or similarity thresholds before their authoritative product contracts are frozen.
+The current verified Gate 6 gap is the missing Application owner for the already-frozen Configuration change planner. The Configuration Application Boundary delivery addresses that gap through the existing Source Sync path without adding business rules or direct plugin-data writes to Application.
+
+After this slice is remotely verified, run a final Gate 6 Exit Audit. Workspace State and similarity should not block Gate 6 merely because target ownership exists: their concrete write/guard contracts are explicitly deferred and must follow the product slices that define them.
+
+Product, Domain, Data, Architecture, and Design-to-Code Map remain unchanged unless implementation evidence exposes a contradiction in those authorities.
 
 ## 5. Build Order
 
@@ -106,7 +122,7 @@ Implementation proceeds through dependency-ordered gates. A later gate starts on
 ```text
 1. Domain / Validation Completion          COMPLETE
    |
-2. Semantic Planning Completion           COMPLETE (bounded correction in Gate 6 Slice A)
+2. Semantic Planning Completion           COMPLETE
    |
 3. Data / Persistence / Mutation Operational Completion   COMPLETE
    |
@@ -129,7 +145,7 @@ Complete. The frozen V1 Domain model, shared rules, and Core Invariants have can
 
 ### 5.2 Gate 2 - Semantic Planning
 
-Complete as a foundation, with the missing Initiative create planner tracked as a bounded correction in Gate 6 Slice A after later repository evidence exposed the omission. Application may not bypass that correction.
+Complete. Required currently frozen V1 state transitions produce complete legal logical plans before illegal optimistic state is admitted. The Initiative-create omission discovered by Gate 6 was corrected at `df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0`.
 
 ### 5.3 Gate 3 - Data / Persistence / Mutation
 
@@ -145,7 +161,7 @@ Complete. Known V1 consumers can use shared structural reads and currently expli
 
 ### 5.6 Gate 6 - Application
 
-Exit when required V1 business areas have thin use-case owners over the completed lower layers, with no Application-owned business rules or persistence paths.
+Exit when required currently executable V1 business areas have thin use-case owners over the completed lower layers, with no Application-owned business rules or persistence paths. Deferred product contracts do not require speculative facades merely to satisfy target directory ownership.
 
 ### 5.7 Gate 7 - Shared UI capabilities
 

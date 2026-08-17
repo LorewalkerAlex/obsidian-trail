@@ -1,5 +1,6 @@
 import type { TrailRuntimeStore } from "../runtime/store/trail-runtime-store";
 import type { TrailAuthoritativeSourceSync } from "../source-sync/trail-authoritative-source-sync";
+import { TrailConfigurationApplication } from "./configuration/trail-configuration-application";
 import { TrailCycleApplication } from "./cycles/trail-cycle-application";
 import { TrailInitiativeApplication } from "./initiatives/trail-initiative-application";
 import { TrailIssueApplication } from "./issues/trail-issue-application";
@@ -9,6 +10,7 @@ import { TrailTriageApplication } from "./triage/trail-triage-application";
 import type { TrailCommandEnvironment } from "./trail-command";
 
 export interface TrailApplicationSession {
+  readonly configuration: TrailConfigurationApplication;
   readonly cycles: TrailCycleApplication;
   readonly initiatives: TrailInitiativeApplication;
   readonly issues: TrailIssueApplication;
@@ -24,6 +26,11 @@ export function createTrailApplicationSession(input: {
   readonly sourceSync: TrailAuthoritativeSourceSync;
 }): TrailApplicationSession {
   return {
+    configuration: new TrailConfigurationApplication(
+      input.runtimeStore,
+      input.sourceSync,
+      input.environment,
+    ),
     cycles: new TrailCycleApplication(input.runtimeStore, input.sourceSync, input.environment),
     initiatives: new TrailInitiativeApplication(input.runtimeStore, input.sourceSync, input.environment),
     issues: new TrailIssueApplication(input.runtimeStore, input.sourceSync, input.environment),

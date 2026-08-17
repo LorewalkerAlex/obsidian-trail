@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { TrailConfiguration } from "../domain/model/trail-configuration";
 import type {
   TrailCycle,
   TrailInitiative,
@@ -76,10 +77,11 @@ function createHarness(options: HarnessOptions = {}) {
     plannedEnd: 500,
     startedAt: 10,
   };
+  const configuration = createTrailTestConfiguration();
   const runtimeStore = createTrailRuntimeStore();
   const committed = buildTrailCommittedRuntimeCandidate({
     pluginData: {
-      configuration: createTrailTestConfiguration(),
+      configuration,
       workspaceState: createTrailTestWorkspaceState(),
     },
     sources: [
@@ -135,6 +137,7 @@ function createHarness(options: HarnessOptions = {}) {
     sourceSync,
   });
   return {
+    configuration,
     cycle,
     initiative,
     milestone,
@@ -146,6 +149,27 @@ function createHarness(options: HarnessOptions = {}) {
     submitted,
     triage,
     workflow,
+  };
+}
+
+function replaceProjectUnstartedDefinition(configuration: TrailConfiguration): TrailConfiguration {
+  return {
+    ...configuration,
+    statusDefinitions: configuration.statusDefinitions.map((definition) => (
+      definition.id === "project-unstarted"
+        ? { ...definition, id: "project-ready", name: "Ready" }
+        : definition
+    )),
+    workflowStatuses: {
+      ...configuration.workflowStatuses,
+      project: {
+        ...configuration.workflowStatuses.project,
+        unstarted: {
+          defaultId: "project-ready",
+          definitionIds: ["project-ready"],
+        },
+      },
+    },
   };
 }
 
@@ -371,5 +395,56 @@ describe("Trail Application session", () => {
       "planning.cycle.close",
       "planning.cycle.delete",
     ]);
+  });
+
+  it("submits a legal Configuration replacement through Source Sync", async () => {
+    const harness = createHarness();
+    const nextConfiguration: TrailConfiguration = {
+      ...harness.configuration,
+      temporal: {
+        ...harness.configuration.temporal,
+        dateFormat: "yyyy-MM-dd",
+      },
+    };
+    const result = harness.session.configuration.change({
+      expectedConfiguration: harness.configuration,
+      nextConfiguration,
+    });
+
+    expect(result.kind).toBe("submitted");
+    if (result.kind !== "submitted") return;
+    await result.receipt.completion;
+    expect(harness.submitted).toHaveLength(1);
+    expect(harness.submitted[0]?.intent).toBe("configuration.change");
+    expect(harness.submitted[0]?.effects).toEqual([{
+      after: nextConfiguration,
+      before: harness.configuration,
+      kind: "replace-configuration",
+    }]);
+  });
+
+  it("returns Configuration reference repair as NeedsInput without submitting", () => {
+    const harness = createHarness();
+    const result = harness.session.configuration.change({
+      expectedConfiguration: harness.configuration,
+      nextConfiguration: replaceProjectUnstartedDefinition(harness.configuration),
+    });
+
+    expect(result).toMatchObject({
+      kind: "needs-input",
+      input: { code: "configuration-reference-resolution-required" },
+    });
+    expect(harness.submitted).toEqual([]);
+  });
+
+  it("does not submit an unchanged Configuration", () => {
+    const harness = createHarness();
+    const result = harness.session.configuration.change({
+      expectedConfiguration: harness.configuration,
+      nextConfiguration: harness.configuration,
+    });
+
+    expect(result).toEqual({ kind: "unchanged" });
+    expect(harness.submitted).toEqual([]);
   });
 });

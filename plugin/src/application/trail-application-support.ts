@@ -28,6 +28,11 @@ export interface TrailEntityMutationReceipt extends TrailMutationReceipt {
   readonly entityId: string;
 }
 
+export type TrailMutationCommandResult =
+  | { readonly kind: "submitted"; readonly receipt: TrailMutationReceipt }
+  | { readonly kind: "unchanged" }
+  | { readonly input: TrailPlanningInputRequest; readonly kind: "needs-input" };
+
 export type TrailMutationActionResult =
   | { readonly kind: "submitted"; readonly receipt: TrailEntityMutationReceipt }
   | { readonly entityId: string; readonly kind: "unchanged" }
@@ -68,14 +73,23 @@ export function resolveTrailApplicationPlan<TPlan>(
   }
 }
 
+export function submitTrailApplicationMutationPlan(
+  sourceSync: TrailAuthoritativeSourceSync,
+  plan: TrailMutationPlan,
+): TrailMutationReceipt {
+  return {
+    commandId: plan.commandId,
+    completion: sourceSync.submit(plan).then(() => undefined),
+  };
+}
+
 export function submitTrailApplicationPlan(
   sourceSync: TrailAuthoritativeSourceSync,
   plan: TrailMutationPlan,
   entityId: string,
 ): TrailEntityMutationReceipt {
   return {
-    commandId: plan.commandId,
-    completion: sourceSync.submit(plan).then(() => undefined),
+    ...submitTrailApplicationMutationPlan(sourceSync, plan),
     entityId,
   };
 }
