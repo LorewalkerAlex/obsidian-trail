@@ -1,159 +1,97 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  createTrailMutationPlan,
-  cycleMutationEntity,
-  initiativeMutationEntity,
-  mergeTrailMutationPlans,
-  milestoneMutationEntity,
-  projectMutationEntity,
-  triageIssueMutationEntity,
-  workflowIssueMutationEntity,
-} from "./trail-mutation-plan";
+import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../../test/trail-test-fixtures";
+import { createTrailMutationPlan } from "./trail-mutation-plan";
 
-const project = {
-  id: "project-a",
-  labelIds: [],
-  statusDefinitionId: "project-status",
-  title: "Project A",
-} as const;
+describe("TrailMutationPlan", () => {
+  it("derives conditions and affected scope across all authoritative universes", () => {
+    const configuration = createTrailTestConfiguration();
+    const workspaceState = createTrailTestWorkspaceState();
+    const project = {
+      kind: "project" as const,
+      value: {
+        id: "project-a",
+        labelIds: [],
+        statusDefinitionId: "project-unstarted",
+        title: "Project A",
+      },
+    };
 
-const triage = {
-  context: "triage",
-  due: 1_000,
-  id: "triage-a",
-  labelIds: [],
-  title: "Triage A",
-} as const;
-
-const workflow = {
-  context: "workflow",
-  createdAt: 2_000,
-  id: "workflow-a",
-  labelIds: [],
-  projectId: project.id,
-  statusDefinitionId: "issue-status",
-  title: "Workflow A",
-} as const;
-
-describe("Trail logical mutation plan", () => {
-  it("derives scope and logical conditions from create/replace/delete effects", () => {
-    const replacement = { ...triage, due: 3_000 };
     const plan = createTrailMutationPlan({
       commandId: "command-a",
       effects: [
-        { after: projectMutationEntity(project), kind: "create" },
+        { after: project, kind: "create-entity" },
         {
-          after: triageIssueMutationEntity(replacement),
-          before: triageIssueMutationEntity(triage),
-          kind: "replace",
+          after: { ...configuration, temporal: { timezone: "UTC" } },
+          before: configuration,
+          kind: "replace-configuration",
         },
-        { before: workflowIssueMutationEntity(workflow), kind: "delete" },
+        {
+          after: { ...workspaceState, home: { mode: "compact" } },
+          before: workspaceState,
+          kind: "replace-workspace-state",
+        },
       ],
-      intent: "test.logical-plan",
+      intent: "test-multi-universe-plan",
     });
 
-    expect(plan.affectedScope.entityIds).toEqual([
-      "project-a",
-      "triage-a",
-      "workflow-a",
-    ]);
-    expect(plan.preconditions.map((condition) => condition.kind)).toEqual([
+    expect(plan.affectedScope).toEqual({
+      configuration: true,
+      entityIds: ["project-a"],
+      workspaceState: true,
+    });
+    expect(plan.preconditions.map((item) => item.kind)).toEqual([
       "entity-absent",
-      "entity-equals",
-      "entity-equals",
-    ]);
-    expect(plan.postconditions.map((condition) => condition.kind)).toEqual([
-      "entity-equals",
-      "entity-equals",
-      "entity-absent",
+      "configuration-equals",
+      "workspace-state-equals",
     ]);
   });
 
-
-  it("keeps the full Core Entity universe available to logical planning", () => {
-    const initiative = {
-      id: "initiative-a",
-      labelIds: [],
-      title: "Initiative A",
-    } as const;
-    const milestone = {
-      id: "milestone-a",
-      projectId: project.id,
-      title: "Milestone A",
-    } as const;
-    const cycle = {
-      id: "cycle-a",
-      issueIds: [workflow.id],
-      plannedEnd: 5_000,
-      startedAt: 4_000,
-    } as const;
-
-    const plan = createTrailMutationPlan({
-      commandId: "command-core-universe",
-      effects: [
-        { after: initiativeMutationEntity(initiative), kind: "create" },
-        { after: milestoneMutationEntity(milestone), kind: "create" },
-        { after: cycleMutationEntity(cycle), kind: "create" },
-      ],
-      intent: "test.core-universe",
-    });
-
-    expect(plan.effects.map((effect) => (
-      effect.kind === "delete" ? effect.before.kind : effect.after.kind
-    ))).toEqual([
-      "initiative",
-      "milestone",
-      "cycle",
-    ]);
-    expect(plan.affectedScope.entityIds).toEqual([
-      "cycle-a",
-      "initiative-a",
-      "milestone-a",
-    ]);
-  });
-
-  it("rejects multiple final effects for one stable identity", () => {
+  it("rejects multiple final effects for one entity", () => {
+    const project = {
+      kind: "project" as const,
+      value: {
+        id: "project-a",
+        labelIds: [],
+        statusDefinitionId: "project-unstarted",
+        title: "Project A",
+      },
+    };
     expect(() => createTrailMutationPlan({
       commandId: "command-a",
       effects: [
-        { before: triageIssueMutationEntity(triage), kind: "delete" },
-        { after: triageIssueMutationEntity(triage), kind: "create" },
+        { after: project, kind: "create-entity" },
+        { before: project, kind: "delete-entity" },
       ],
-      intent: "test.duplicate-effect",
+      intent: "invalid",
     })).toThrow(/multiple final effects/);
   });
 
-  it("merges subplans from one command into one logical pending plan", () => {
-    const source = createTrailMutationPlan({
-      commandId: "accept-command",
-      effects: [{ before: triageIssueMutationEntity(triage), kind: "delete" }],
-      intent: "triage.issue.delete",
-    });
-    const target = createTrailMutationPlan({
-      commandId: "accept-command",
-      effects: [{ after: workflowIssueMutationEntity(workflow), kind: "create" }],
-      intent: "workflow.issue.create",
-      preconditions: [{
-        entity: projectMutationEntity(project),
-        kind: "entity-equals",
+  it("requires replace to preserve kind and identity", () => {
+    expect(() => createTrailMutationPlan({
+      commandId: "command-a",
+      effects: [{
+        after: {
+          kind: "project",
+          value: {
+            id: "project-b",
+            labelIds: [],
+            statusDefinitionId: "project-unstarted",
+            title: "Project B",
+          },
+        },
+        before: {
+          kind: "project",
+          value: {
+            id: "project-a",
+            labelIds: [],
+            statusDefinitionId: "project-unstarted",
+            title: "Project A",
+          },
+        },
+        kind: "replace-entity",
       }],
-    });
-
-    const merged = mergeTrailMutationPlans({
-      commandId: "accept-command",
-      intent: "triage.accept",
-      plans: [source, target],
-    });
-
-    expect(merged.effects).toHaveLength(2);
-    expect(merged.affectedScope.entityIds).toEqual([
-      "project-a",
-      "triage-a",
-      "workflow-a",
-    ]);
-    expect(merged.preconditions).toEqual(expect.arrayContaining([
-      { entity: projectMutationEntity(project), kind: "entity-equals" },
-    ]));
+      intent: "invalid",
+    })).toThrow(/stable identity/);
   });
 });

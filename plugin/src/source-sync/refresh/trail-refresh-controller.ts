@@ -1,336 +1,153 @@
+import type { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
+import type { TrailDomainSourceRepository } from "../../persistence/domain-sources/trail-domain-source-repository";
+import type { TrailSourceProblem } from "../../persistence/domain-sources/trail-source-result";
+import type { TrailPluginDataRepository } from "../../persistence/plugin-data/trail-plugin-data-repository";
+import type { TrailWorkspaceLayoutIO } from "../../persistence/ports/trail-workspace-layout-io";
+import { publishTrailCommittedRuntime } from "../../runtime/reconcile/trail-runtime-reconciler";
 import {
-  NOOP_TRAIL_DIAGNOSTICS,
-  type TrailDiagnostics,
-} from "../../diagnostics/trail-diagnostics";
-import type { TrailConfiguration } from "../../domain/trail-configuration";
-import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
-import { setTrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
-import {
-  createTrailReloadCandidate,
-  createTrailRuntimeStore,
-  publishTrailReloadCandidate,
-  selectAllSourceIssues,
-  setTrailRuntimeConfiguration,
-  setTrailRuntimeWorkspaceState,
+  setTrailRuntimeControl,
+  setTrailRuntimeSourceIssues,
   type TrailRuntimeStore,
 } from "../../runtime/store/trail-runtime-store";
+import { bootstrapFreshTrailWorkspace } from "../bootstrap/trail-workspace-bootstrap";
+import { discoverTrailWorkspace } from "../discovery/trail-workspace-discovery";
 import {
-  classifyWorkspace,
-  executeFreshWorkspaceBootstrap,
-  type WorkspaceBootstrapGateway,
-  type WorkspaceClassification,
-} from "../bootstrap/trail-workspace-bootstrap";
+  loadTrailAuthoritativeRuntimeCandidate,
+  TrailAuthoritativeLoadError,
+} from "./trail-authoritative-loader";
 
-export interface TrailInitializableSourcePair {
-  readonly triage: {
-    readonly initialize: (correlationId?: string) => Promise<void>;
-  };
-  readonly workflow: {
-    readonly initialize: (correlationId?: string) => Promise<void>;
-  };
+export interface TrailManagedPersistenceEvent {
+  readonly kind: "create" | "delete" | "modify" | "rename";
+  readonly oldPath?: string;
+  readonly path: string;
 }
 
-export type TrailManagedPersistenceEvent =
-  | { readonly kind: "create" | "delete" | "modify"; readonly path: string }
-  | { readonly kind: "rename"; readonly oldPath: string; readonly path: string };
-
-export interface TrailRefreshController {
-  readonly dispose: () => void;
-  readonly initialize: () => Promise<WorkspaceClassification>;
-  readonly requestExternalRefresh: (event: TrailManagedPersistenceEvent) => Promise<void>;
-}
-
-interface ReloadResult<TSources extends TrailInitializableSourcePair> {
-  readonly candidate: ReturnType<typeof createTrailReloadCandidate>;
-  readonly classification: WorkspaceClassification;
-  readonly configuration: TrailConfiguration;
-  readonly sources: TSources;
-  readonly timezone: string;
+export interface TrailRefreshRecovery {
+  readonly recoverFromMutationFailure: (error: unknown) => Promise<void>;
 }
 
 export class TrailRefreshError extends Error {
-  public constructor(
-    readonly code: "blocked" | "disposed" | "pending" | "source-invalid",
-    message: string,
-  ) {
+  public constructor(message: string, readonly cause?: unknown) {
     super(message);
     this.name = "TrailRefreshError";
   }
 }
 
-function blockerMessage(classification: WorkspaceClassification): string {
-  return classification.blockers.length > 0
-    ? classification.blockers.join(", ")
-    : `workspace mode: ${classification.mode}`;
+function isTrailSourceProblem(
+  detail: TrailAuthoritativeLoadError["details"][number],
+): detail is TrailSourceProblem {
+  return "sourcePath" in detail;
 }
 
-function errorName(error: unknown): string {
-  return error instanceof Error ? error.name : "UnknownError";
-}
+/** Owns the only V1 unexpected-change ingress: serialized full authoritative reload. */
+export class TrailRefreshController implements TrailRefreshRecovery {
+  private refreshDirty = false;
+  private externalRefreshPromise: Promise<void> | null = null;
 
-/**
- * Creates the single startup/external-refresh owner. Candidate data is built in a
- * staging Runtime and only published to the live Runtime after complete validation.
- */
-export function createTrailRefreshController<
-  TSources extends TrailInitializableSourcePair,
->(dependencies: {
-  readonly activateSources: (
-    configuration: TrailConfiguration,
-    sources: TSources,
-  ) => void;
-  readonly clearSources: () => void;
-  readonly createId: () => string;
-  readonly createSourceSyncs: (
-    runtimeStore: TrailRuntimeStore,
-    configuration: TrailConfiguration,
-  ) => TSources;
-  readonly diagnostics?: TrailDiagnostics;
-  readonly mutationQueue: TrailMutationQueue;
-  readonly resolveHostTimezone: () => string;
-  readonly runtimeStore: TrailRuntimeStore;
-  readonly workspace: WorkspaceBootstrapGateway;
-}): TrailRefreshController {
-  const diagnostics = dependencies.diagnostics ?? NOOP_TRAIL_DIAGNOSTICS;
-  let disposed = false;
-  let refreshDirty = false;
-  let refreshPromise: Promise<void> | null = null;
+  public constructor(private readonly options: {
+    readonly createId: () => string;
+    readonly domainSources: TrailDomainSourceRepository;
+    readonly layout: TrailWorkspaceLayoutIO;
+    readonly mutationQueue: TrailMutationQueue;
+    readonly pluginData: TrailPluginDataRepository;
+    readonly resolveHostTimezone: () => string;
+    readonly runtimeStore: TrailRuntimeStore;
+  }) {}
 
-  const assertActive = (): void => {
-    if (disposed) {
-      throw new TrailRefreshError("disposed", "Trail refresh controller is disposed");
-    }
-  };
-
-  const recordClassification = (
-    correlationId: string,
-    classification: WorkspaceClassification,
-  ): void => {
-    diagnostics.record("workspace.classified", {
-      correlationId,
-      data: {
-        blockerCount: classification.blockers.length,
-        canBootstrap: classification.canBootstrap,
-        canLoad: classification.canLoad,
-        mode: classification.mode,
-        pluginDataKind: classification.pluginData.kind,
-      },
-    });
-  };
-
-  const loadExistingCandidate = async (
-    correlationId: string,
-  ): Promise<ReloadResult<TSources>> => {
-    assertActive();
-    const classification = classifyWorkspace(await dependencies.workspace.probeWorkspace());
-    recordClassification(correlationId, classification);
-    if (!classification.canLoad || classification.pluginData.kind !== "valid") {
-      throw new TrailRefreshError(
-        "blocked",
-        `Trail cannot load the workspace: ${blockerMessage(classification)}`,
-      );
-    }
-
-    const pluginData = classification.pluginData.data;
-    const configuration = pluginData.configuration;
-    const stagingStore = createTrailRuntimeStore();
-    setTrailRuntimeConfiguration(stagingStore, configuration);
-    setTrailRuntimeWorkspaceState(stagingStore, pluginData.workspaceState);
-    const stagingSources = dependencies.createSourceSyncs(stagingStore, configuration);
-
-    await stagingSources.triage.initialize(correlationId);
-    await stagingSources.workflow.initialize(correlationId);
-    assertActive();
-
-    const sourceIssues = selectAllSourceIssues(stagingStore.getState());
-    if (sourceIssues.length > 0) {
-      throw new TrailRefreshError(
-        "source-invalid",
-        `Managed sources failed validation: ${sourceIssues.map((issue) => issue.code).join(", ")}`,
-      );
-    }
-
-    const liveSources = dependencies.createSourceSyncs(
-      dependencies.runtimeStore,
-      configuration,
-    );
-    return {
-      candidate: createTrailReloadCandidate(stagingStore.getState()),
-      classification,
-      configuration,
-      sources: liveSources,
-      timezone: configuration.temporal.timezone,
-    };
-  };
-
-  const publish = (result: ReloadResult<TSources>, correlationId: string): void => {
-    assertActive();
-    if (dependencies.runtimeStore.getState().pending.length > 0) {
-      throw new TrailRefreshError(
-        "pending",
-        "Full refresh reached publish while optimistic mutations were still pending",
-      );
-    }
-
-    dependencies.activateSources(result.configuration, result.sources);
-    publishTrailReloadCandidate(
-      dependencies.runtimeStore,
-      result.candidate,
-      result.timezone,
-    );
-    diagnostics.record("refresh.published", {
-      correlationId,
-      data: {
-        committedRevision: dependencies.runtimeStore.getState().committed.revision,
-        timezone: result.timezone,
-      },
-    });
-  };
-
-  const initialize = async (): Promise<WorkspaceClassification> => {
-    assertActive();
-    const correlationId = diagnostics.createCorrelationId("initialize");
-    diagnostics.record("refresh.initialize.started", { correlationId });
-    dependencies.clearSources();
-    setTrailRuntimeControl(dependencies.runtimeStore, { kind: "loading" });
-
+  public async initialize(): Promise<{ readonly bootstrapped: boolean }> {
+    setTrailRuntimeControl(this.options.runtimeStore, { kind: "loading" });
     try {
-      let classification = classifyWorkspace(await dependencies.workspace.probeWorkspace());
-      recordClassification(correlationId, classification);
-
-      if (classification.canBootstrap) {
-        const timezone = dependencies.resolveHostTimezone();
-        diagnostics.record("workspace.bootstrap.started", {
-          correlationId,
-          data: { timezone },
+      const discovery = await discoverTrailWorkspace(this.options);
+      let bootstrapped = false;
+      if (discovery.mode === "fresh") {
+        await bootstrapFreshTrailWorkspace({
+          createId: this.options.createId,
+          domainSources: this.options.domainSources,
+          layout: this.options.layout,
+          pluginData: this.options.pluginData,
+          timezone: this.options.resolveHostTimezone(),
         });
-        await executeFreshWorkspaceBootstrap(dependencies.workspace, {
-          createId: dependencies.createId,
-          timezone,
-        });
-        diagnostics.record("workspace.bootstrap.completed", { correlationId });
-        classification = classifyWorkspace(await dependencies.workspace.probeWorkspace());
-        recordClassification(correlationId, classification);
+        bootstrapped = true;
+      } else if (discovery.mode === "blocked") {
+        throw new Error(discovery.blockers.map(({ message }) => message).join("; "));
       }
-
-      if (!classification.canLoad || classification.pluginData.kind !== "valid") {
-        const message = blockerMessage(classification);
-        setTrailRuntimeControl(dependencies.runtimeStore, {
-          kind: "read-only-error",
-          message: `Trail cannot load the workspace: ${message}`,
-        });
-        diagnostics.record("refresh.initialize.blocked", {
-          correlationId,
-          data: {
-            blockerCount: classification.blockers.length,
-            mode: classification.mode,
-          },
-          level: "warn",
-        });
-        return classification;
-      }
-
-      const result = await loadExistingCandidate(correlationId);
-      publish(result, correlationId);
-      diagnostics.record("refresh.initialize.completed", {
-        correlationId,
-        data: {
-          projectCount: Object.keys(
-            dependencies.runtimeStore.getState().committed.authoritative.domain.projectsById,
-          ).length,
-          timezone: result.timezone,
-        },
-      });
-      return result.classification;
+      await this.reloadAndPublish();
+      setTrailRuntimeControl(this.options.runtimeStore, { kind: "ready" });
+      return { bootstrapped };
     } catch (error: unknown) {
-      dependencies.clearSources();
-      setTrailRuntimeControl(dependencies.runtimeStore, {
-        kind: "read-only-error",
-        message: error instanceof Error ? error.message : "Trail initialization failed",
-      });
-      diagnostics.record("refresh.initialize.failed", {
-        correlationId,
-        data: { errorName: errorName(error) },
-        level: "error",
-      });
-      throw error;
+      this.failClosed(error);
+      throw new TrailRefreshError("Trail initialization failed", error);
     }
-  };
+  }
 
-  const runExternalRefresh = async (
-    correlationId: string,
-  ): Promise<void> => {
-    let result: ReloadResult<TSources>;
-    do {
-      refreshDirty = false;
-      result = await loadExistingCandidate(correlationId);
-    } while (refreshDirty);
+  public requestExternalRefresh(_event: TrailManagedPersistenceEvent): Promise<void> {
+    this.refreshDirty = true;
+    setTrailRuntimeControl(this.options.runtimeStore, { kind: "refreshing" });
+    if (this.externalRefreshPromise !== null) return this.externalRefreshPromise;
 
-    publish(result, correlationId);
-  };
-
-  const requestExternalRefresh = (event: TrailManagedPersistenceEvent): Promise<void> => {
-    assertActive();
-    refreshDirty = true;
-    if (refreshPromise !== null) {
-      return refreshPromise;
-    }
-
-    const correlationId = diagnostics.createCorrelationId("external-refresh");
-    const timezone = dependencies.runtimeStore.getState().committed.authoritative
-      .configuration?.temporal.timezone;
-    setTrailRuntimeControl(
-      dependencies.runtimeStore,
-      timezone === undefined
-        ? {
-            kind: "read-only-error",
-            message: "Trail cannot refresh before an authoritative configuration is loaded",
-          }
-        : { kind: "refreshing", timezone },
-    );
-    diagnostics.record("refresh.external.enqueued", {
-      correlationId,
-      data: {
-        eventKind: event.kind,
-        oldPath: event.kind === "rename" ? event.oldPath : null,
-        path: event.path,
-      },
+    const queued = this.options.mutationQueue.enqueueAfterCurrent(async () => {
+      try {
+        let candidate;
+        do {
+          this.refreshDirty = false;
+          candidate = await loadTrailAuthoritativeRuntimeCandidate(this.options);
+        } while (this.refreshDirty);
+        publishTrailCommittedRuntime(
+          this.options.runtimeStore,
+          candidate.committed,
+          candidate.health,
+        );
+        setTrailRuntimeControl(this.options.runtimeStore, { kind: "ready" });
+      } catch (error: unknown) {
+        this.failClosed(error);
+        throw new TrailRefreshError("External Trail refresh failed", error);
+      }
     });
+    this.externalRefreshPromise = queued.finally(() => {
+      this.externalRefreshPromise = null;
+    });
+    return this.externalRefreshPromise;
+  }
 
-    const queued = dependencies.mutationQueue.enqueue(
-      async () => runExternalRefresh(correlationId),
-      { correlationId, kind: "refresh.external" },
+  /** Runs inside the failing mutation's queue slot, so it must not enqueue itself. */
+  public async recoverFromMutationFailure(_error: unknown): Promise<void> {
+    setTrailRuntimeControl(this.options.runtimeStore, { kind: "refreshing" });
+    try {
+      await this.reloadAndPublish();
+      // A previously queued host refresh must keep the mutation gate closed until it runs.
+      if (this.externalRefreshPromise === null) {
+        setTrailRuntimeControl(this.options.runtimeStore, { kind: "ready" });
+      }
+    } catch (recoveryError: unknown) {
+      this.failClosed(recoveryError);
+      throw new TrailRefreshError("Trail mutation recovery refresh failed", recoveryError);
+    }
+  }
+
+  private async reloadAndPublish(): Promise<void> {
+    const candidate = await loadTrailAuthoritativeRuntimeCandidate(this.options);
+    publishTrailCommittedRuntime(
+      this.options.runtimeStore,
+      candidate.committed,
+      candidate.health,
     );
-    refreshPromise = queued
-      .catch((error: unknown) => {
-        const lastKnownTimezone = dependencies.runtimeStore.getState().committed
-          .authoritative.configuration?.temporal.timezone;
-        setTrailRuntimeControl(dependencies.runtimeStore, {
-          kind: "read-only-error",
-          message: error instanceof Error
-            ? `Trail refresh failed: ${error.message}`
-            : "Trail refresh failed",
-          timezone: lastKnownTimezone,
-        });
-        diagnostics.record("refresh.external.failed", {
-          correlationId,
-          data: { errorName: errorName(error) },
-          level: "error",
-        });
-        throw error;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
-    return refreshPromise;
-  };
+  }
 
-  return {
-    dispose(): void {
-      disposed = true;
-      refreshDirty = false;
-    },
-    initialize,
-    requestExternalRefresh,
-  };
+  private failClosed(error: unknown): void {
+    if (error instanceof TrailAuthoritativeLoadError) {
+      const grouped = new Map<string, TrailSourceProblem[]>();
+      for (const detail of error.details) {
+        if (!isTrailSourceProblem(detail)) continue;
+        const current = grouped.get(detail.sourcePath) ?? [];
+        grouped.set(detail.sourcePath, [...current, detail]);
+      }
+      for (const [sourcePath, details] of grouped) {
+        setTrailRuntimeSourceIssues(this.options.runtimeStore, sourcePath, details);
+      }
+    }
+    setTrailRuntimeControl(this.options.runtimeStore, {
+      kind: "read-only-error",
+      message: error instanceof Error ? error.message : "Trail authoritative refresh failed",
+    });
+  }
 }

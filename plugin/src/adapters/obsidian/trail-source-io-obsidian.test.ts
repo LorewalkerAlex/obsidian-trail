@@ -5,19 +5,12 @@ import { createObsidianSourceIO } from "./trail-source-io-obsidian";
 import { createTrailHostWriteGuard } from "./trail-vault-events-obsidian";
 
 class FakeFile {
-  public constructor(
-    public name: string,
-    public path: string,
-  ) {}
+  public constructor(public name: string, public path: string) {}
 }
 
 class FakeFolder {
   public readonly children: Array<FakeFile | FakeFolder> = [];
-
-  public constructor(
-    public name: string,
-    public path: string,
-  ) {}
+  public constructor(public name: string, public path: string) {}
 }
 
 const fileKinds = {
@@ -26,7 +19,7 @@ const fileKinds = {
 };
 
 describe("Obsidian SourceIO", () => {
-  it("owns the host create/list/process/read contract without Domain parsing", async () => {
+  it("adapts create/list/process/read without Domain knowledge", async () => {
     const root = new FakeFolder("Projects", "Trail/Projects");
     const markdownByPath = new Map<string, string>();
     const lookup = (path: string): FakeFile | FakeFolder | null => {
@@ -44,9 +37,7 @@ describe("Obsidian SourceIO", () => {
       process: async (file: TFile, transform: (latest: string) => string) => {
         const latest = markdownByPath.get(file.path);
         if (latest === undefined) throw new Error("missing markdown");
-        const next = transform(latest);
-        markdownByPath.set(file.path, next);
-        return next;
+        markdownByPath.set(file.path, transform(latest));
       },
       read: async (file: TFile) => markdownByPath.get(file.path) ?? "",
     };
@@ -66,7 +57,7 @@ describe("Obsidian SourceIO", () => {
     expect(await sourceIO.read(path)).toBe("initial\nupdated");
   });
 
-  it("keeps a precise Trail-owned event guard active only for the host write Promise", async () => {
+  it("keeps the exact Trail-owned event guard active only for the host write", async () => {
     const file = new FakeFile("Triage.md", "Trail/Collections/Triage.md");
     const writeGuard = createTrailHostWriteGuard();
     let consumedDuringWrite = false;
@@ -74,11 +65,8 @@ describe("Obsidian SourceIO", () => {
       vault: {
         getAbstractFileByPath: () => file,
         process: async (_file: TFile, transform: (latest: string) => string) => {
-          consumedDuringWrite = writeGuard.consume({
-            kind: "modify",
-            path: file.path,
-          });
-          return transform("before");
+          consumedDuringWrite = writeGuard.consume({ kind: "modify", path: file.path });
+          transform("before");
         },
         read: async () => "before",
       },
@@ -90,40 +78,25 @@ describe("Obsidian SourceIO", () => {
     expect(writeGuard.consume({ kind: "modify", path: file.path })).toBe(false);
   });
 
-  it("delegates source rename and delete to Obsidian fileManager", async () => {
+  it("delegates rename/delete to Obsidian fileManager and fails closed without it", async () => {
     const file = new FakeFile("Old.md", "Trail/Old.md");
     const trashFile = vi.fn(async (_target: TAbstractFile) => undefined);
     const renameFile = vi.fn(async (target: TAbstractFile, to: string) => {
       (target as unknown as FakeFile).path = to;
-      (target as unknown as FakeFile).name = to.split("/").pop() ?? to;
     });
-    const app = {
+    const sourceIO = createObsidianSourceIO({
       fileManager: { renameFile, trashFile },
-      vault: {
-        getAbstractFileByPath: (path: string) => path === file.path ? file : null,
-      },
-    } as unknown as Pick<App, "vault"> & Partial<Pick<App, "fileManager">>;
-    const sourceIO = createObsidianSourceIO(app, fileKinds);
+      vault: { getAbstractFileByPath: (path: string) => path === file.path ? file : null },
+    } as unknown as Pick<App, "vault"> & Partial<Pick<App, "fileManager">>, fileKinds);
 
     await sourceIO.rename("Trail/Old.md", "Trail/New.md");
-    expect(renameFile).toHaveBeenCalledOnce();
     await sourceIO.delete("Trail/New.md");
+    expect(renameFile).toHaveBeenCalledOnce();
     expect(trashFile).toHaveBeenCalledOnce();
-  });
 
-  it("fails closed when destructive host operations lack fileManager", async () => {
-    const file = new FakeFile("Source.md", "Trail/Source.md");
-    const sourceIO = createObsidianSourceIO({
-      vault: {
-        getAbstractFileByPath: () => file,
-      },
+    const withoutFileManager = createObsidianSourceIO({
+      vault: { getAbstractFileByPath: () => file },
     } as unknown as Pick<App, "vault">, fileKinds);
-
-    await expect(sourceIO.delete(file.path)).rejects.toThrow(
-      "Obsidian fileManager is required to delete a source",
-    );
-    await expect(sourceIO.rename(file.path, "Trail/Renamed.md")).rejects.toThrow(
-      "Obsidian fileManager is required to rename a source",
-    );
+    await expect(withoutFileManager.delete(file.path)).rejects.toThrow("fileManager");
   });
 });

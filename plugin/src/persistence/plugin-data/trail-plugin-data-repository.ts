@@ -1,60 +1,44 @@
-import {
-  validateTrailPluginData,
-  type TrailPluginData,
-} from "../../domain/trail-configuration";
 import type { TrailPluginDataIO } from "../ports/trail-plugin-data-io";
+import {
+  parseTrailPluginData,
+  serializeTrailPluginData,
+  type TrailPluginDataIssue,
+  type TrailPluginDataSnapshot,
+} from "./trail-plugin-data-codec";
 
 export type TrailPluginDataReadResult =
   | { readonly kind: "absent" }
-  | { readonly data: TrailPluginData; readonly kind: "valid" }
-  | {
-      readonly issues: readonly string[];
-      readonly kind: "invalid";
-      readonly value: unknown;
-    };
+  | { readonly kind: "valid"; readonly snapshot: TrailPluginDataSnapshot }
+  | { readonly issues: readonly TrailPluginDataIssue[]; readonly kind: "invalid"; readonly value: unknown };
 
 export interface TrailPluginDataRepository {
   readonly read: () => Promise<TrailPluginDataReadResult>;
-  readonly save: (data: TrailPluginData) => Promise<void>;
+  readonly save: (snapshot: TrailPluginDataSnapshot) => Promise<TrailPluginDataSnapshot>;
 }
 
-/**
- * Canonical plugin-data carrier boundary. Reads classify the complete persisted
- * snapshot, while writes refuse invalid snapshots before touching host storage.
- */
-export function createTrailPluginDataRepository(
-  io: TrailPluginDataIO,
-): TrailPluginDataRepository {
+export function createTrailPluginDataRepository(io: TrailPluginDataIO): TrailPluginDataRepository {
+  const read = async (): Promise<TrailPluginDataReadResult> => {
+    const value = await io.load();
+    if (value === null || value === undefined) return { kind: "absent" };
+    const parsed = parseTrailPluginData(value);
+    if (!parsed.ok) return { issues: parsed.issues, kind: "invalid", value };
+    return { kind: "valid", snapshot: parsed.value };
+  };
+
   return {
-    async read(): Promise<TrailPluginDataReadResult> {
-      const value = await io.load();
-      if (value === null || value === undefined) {
-        return { kind: "absent" };
+    read,
+    async save(snapshot): Promise<TrailPluginDataSnapshot> {
+      const expectedPhysical = serializeTrailPluginData(snapshot);
+      await io.save(expectedPhysical);
+      const authoritative = await read();
+      if (authoritative.kind !== "valid") {
+        throw new Error("Plugin data failed authoritative reread after save");
       }
-
-      const validation = validateTrailPluginData(value);
-      if (!validation.ok) {
-        return {
-          issues: validation.issues,
-          kind: "invalid",
-          value,
-        };
+      const actualPhysical = serializeTrailPluginData(authoritative.snapshot);
+      if (JSON.stringify(actualPhysical) !== JSON.stringify(expectedPhysical)) {
+        throw new Error("Plugin data authoritative reread did not match the requested snapshot");
       }
-
-      return {
-        data: validation.value,
-        kind: "valid",
-      };
-    },
-
-    async save(data: TrailPluginData): Promise<void> {
-      const validation = validateTrailPluginData(data);
-      if (!validation.ok) {
-        throw new Error(
-          `Refused to persist invalid Trail plugin data: ${validation.issues.join("; ")}`,
-        );
-      }
-      await io.save(validation.value);
+      return authoritative.snapshot;
     },
   };
 }

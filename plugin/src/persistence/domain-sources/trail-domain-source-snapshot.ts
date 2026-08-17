@@ -1,18 +1,48 @@
 import type {
+  TrailCycle,
+  TrailInitiative,
+  TrailMilestone,
+  TrailProject,
   TrailTriageIssue,
   TrailWorkflowIssue,
-} from "../../domain/trail-issue";
-import type { TrailProject } from "../../domain/trail-project";
+} from "../../domain/model/trail-entities";
 
-/** Runtime-facing projection of the authoritative Triage source without parser metadata. */
-export interface TrailTriageSourceSnapshot {
-  readonly filePath: string;
-  readonly issuesById: Readonly<Record<string, TrailTriageIssue>>;
+export interface TrailInitiativeSourceSnapshot {
+  readonly initiative: TrailInitiative;
+  readonly kind: "initiative";
+  readonly sourcePath: string;
 }
 
-/** Runtime-facing projection of one authoritative Project source without source ranges. */
 export interface TrailProjectSourceSnapshot {
-  readonly filePath: string;
-  readonly issuesById: Readonly<Record<string, TrailWorkflowIssue>>;
+  readonly issues: readonly TrailWorkflowIssue[];
+  readonly kind: "project";
+  readonly milestones: readonly TrailMilestone[];
   readonly project: TrailProject;
+  readonly sourcePath: string;
 }
+
+export interface TrailTriageSourceSnapshot {
+  readonly issues: readonly TrailTriageIssue[];
+  readonly kind: "triage";
+  readonly sourcePath: string;
+}
+
+export interface TrailProjectlessIssuesSourceSnapshot {
+  readonly issues: readonly TrailWorkflowIssue[];
+  readonly kind: "projectless-issues";
+  readonly sourcePath: string;
+}
+
+export interface TrailCyclesSourceSnapshot {
+  readonly cycles: readonly TrailCycle[];
+  readonly kind: "cycles";
+  readonly sourcePath: string;
+}
+
+/** Runtime-facing authoritative source contribution with parser ranges removed. */
+export type TrailDomainSourceSnapshot =
+  | TrailInitiativeSourceSnapshot
+  | TrailProjectSourceSnapshot
+  | TrailTriageSourceSnapshot
+  | TrailProjectlessIssuesSourceSnapshot
+  | TrailCyclesSourceSnapshot;

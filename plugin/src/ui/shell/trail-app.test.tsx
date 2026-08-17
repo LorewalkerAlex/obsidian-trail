@@ -1,47 +1,54 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { createTrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
-import { createReadyTrailUiStore } from "../test/trail-ui-test-fixtures";
-import { TrailApp, type TrailAppProps } from "./trail-app";
+import { setTrailRuntimeControl } from "../../runtime/store/trail-runtime-store";
+import { createTrailUiTestHarness } from "../../test/trail-ui-test-harness";
+import { TrailApp } from "./trail-app";
 
-function unusedActions(): Omit<TrailAppProps, "runtimeStore"> {
-  const unused = (): never => {
-    throw new Error("action is unused");
-  };
-  return {
-    onCapture: unused,
-    onCreateProject: unused,
-    onCreateWorkflowIssue: unused,
-    onDefer: unused,
-    onDelete: unused,
-    onEdit: unused,
-    onWorkflowStatusChange: unused,
-  };
-}
-
-describe("TrailApp shell", () => {
-  it("shows initialization state before the application is ready", () => {
-    render(
-      <TrailApp
-        {...unusedActions()}
-        runtimeStore={createTrailRuntimeStore()}
-      />,
+describe("TrailApp", () => {
+  it("keeps last-known-good pages visible but read-only during refresh and errors", () => {
+    const harness = createTrailUiTestHarness();
+    const view = render(
+      <TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />,
     );
+    expect(screen.getByRole("heading", { level: 2, name: "Captured" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("What needs your attention?")).toBeEnabled();
 
-    expect(screen.getByRole("status")).toHaveTextContent("Loading Trail");
+    act(() => {
+      setTrailRuntimeControl(harness.runtimeStore, { kind: "refreshing" });
+    });
+    expect(screen.getByText("Refreshing Trail")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Captured" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("What needs your attention?")).toBeDisabled();
+
+    act(() => {
+      setTrailRuntimeControl(harness.runtimeStore, {
+        kind: "read-only-error",
+        message: "Invalid managed source",
+      });
+    });
+    expect(screen.getByText("Trail needs attention")).toBeInTheDocument();
+    expect(screen.getByText("Invalid managed source")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Captured" })).toBeInTheDocument();
+
+    view.unmount();
   });
 
-  it("owns page navigation while pages own their product content", () => {
-    const store = createReadyTrailUiStore();
-    render(<TrailApp {...unusedActions()} runtimeStore={store} />);
+  it("routes existing Triage and Project interactions through the Application surface", () => {
+    const harness = createTrailUiTestHarness();
+    render(<TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />);
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Triage");
-    expect(screen.getByText("Quick Capture")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText("What needs your attention?"), {
+      target: { value: "New capture" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Capture" }));
+    expect(harness.actions.triage.capture).toHaveBeenCalledWith("New capture");
 
     fireEvent.click(screen.getByRole("button", { name: "Projects" }));
-
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Projects");
-    expect(screen.getByText("No Projects yet.")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText("Add a Workflow Issue"), {
+      target: { value: "New issue" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add Issue" }));
+    expect(harness.actions.issues.create).toHaveBeenCalledWith("project-a", "New issue");
   });
 });

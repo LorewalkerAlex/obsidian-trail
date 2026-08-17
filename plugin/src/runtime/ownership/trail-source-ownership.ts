@@ -1,50 +1,53 @@
 export interface TrailSourceOwnership {
-  readonly sourceByEntityId: Readonly<Record<string, string>>;
-  readonly sourceEntityIdsByPath: Readonly<Record<string, readonly string[]>>;
+  readonly sourceByEntityId: ReadonlyMap<string, string>;
+  readonly sourceEntityIdsByPath: ReadonlyMap<string, readonly string[]>;
 }
 
-/** Replaces one source's logical ownership while rejecting cross-source ID collisions. */
+export function createEmptyTrailSourceOwnership(): TrailSourceOwnership {
+  return {
+    sourceByEntityId: new Map(),
+    sourceEntityIdsByPath: new Map(),
+  };
+}
+
+/** Replaces one source contribution while rejecting cross-source identity collisions. */
 export function replaceTrailSourceOwnership(
   ownership: TrailSourceOwnership,
-  filePath: string,
+  sourcePath: string,
   incomingEntityIds: readonly string[],
 ): TrailSourceOwnership {
-  for (const entityId of incomingEntityIds) {
-    const owner = ownership.sourceByEntityId[entityId];
-    if (owner !== undefined && owner !== filePath) {
-      throw new Error(
-        `Duplicate Trail entity identity ${entityId} in ${owner} and ${filePath}`,
-      );
+  const incoming = [...new Set(incomingEntityIds)].sort();
+  if (incoming.length !== incomingEntityIds.length) {
+    throw new Error(`Source ${sourcePath} contains duplicate Trail entity identities`);
+  }
+
+  for (const entityId of incoming) {
+    const owner = ownership.sourceByEntityId.get(entityId);
+    if (owner !== undefined && owner !== sourcePath) {
+      throw new Error(`Duplicate Trail entity identity ${entityId} in ${owner} and ${sourcePath}`);
     }
   }
 
-  const sourceByEntityId = { ...ownership.sourceByEntityId };
-  const previousEntityIds = ownership.sourceEntityIdsByPath[filePath] ?? [];
-  for (const entityId of previousEntityIds) {
-    delete sourceByEntityId[entityId];
+  const sourceByEntityId = new Map(ownership.sourceByEntityId);
+  for (const entityId of ownership.sourceEntityIdsByPath.get(sourcePath) ?? []) {
+    sourceByEntityId.delete(entityId);
   }
-  for (const entityId of incomingEntityIds) {
-    sourceByEntityId[entityId] = filePath;
-  }
+  for (const entityId of incoming) sourceByEntityId.set(entityId, sourcePath);
 
-  return {
-    sourceByEntityId,
-    sourceEntityIdsByPath: {
-      ...ownership.sourceEntityIdsByPath,
-      [filePath]: incomingEntityIds.slice().sort(),
-    },
-  };
+  const sourceEntityIdsByPath = new Map(ownership.sourceEntityIdsByPath);
+  sourceEntityIdsByPath.set(sourcePath, incoming);
+  return { sourceByEntityId, sourceEntityIdsByPath };
 }
 
 export function removeTrailSourceOwnership(
   ownership: TrailSourceOwnership,
-  filePath: string,
+  sourcePath: string,
 ): TrailSourceOwnership {
-  const sourceByEntityId = { ...ownership.sourceByEntityId };
-  for (const entityId of ownership.sourceEntityIdsByPath[filePath] ?? []) {
-    delete sourceByEntityId[entityId];
+  const sourceByEntityId = new Map(ownership.sourceByEntityId);
+  for (const entityId of ownership.sourceEntityIdsByPath.get(sourcePath) ?? []) {
+    sourceByEntityId.delete(entityId);
   }
-  const sourceEntityIdsByPath = { ...ownership.sourceEntityIdsByPath };
-  delete sourceEntityIdsByPath[filePath];
+  const sourceEntityIdsByPath = new Map(ownership.sourceEntityIdsByPath);
+  sourceEntityIdsByPath.delete(sourcePath);
   return { sourceByEntityId, sourceEntityIdsByPath };
 }

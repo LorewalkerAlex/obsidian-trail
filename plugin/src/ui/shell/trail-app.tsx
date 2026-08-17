@@ -1,44 +1,34 @@
 import { useState } from "react";
 import { useStore } from "zustand";
 
+import { selectTrailReadableConfiguration } from "../../query/shared/trail-effective-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
-import {
-  TrailProjectsPage,
-  type TrailProjectsPageActions,
-} from "../pages/projects/trail-projects-page";
-import {
-  TrailTriagePage,
-  type TrailTriagePageActions,
-} from "../pages/triage/trail-triage-page";
+import { TrailProjectsPage } from "../pages/projects/trail-projects-page";
+import { TrailTriagePage } from "../pages/triage/trail-triage-page";
 import { TrailStatusPanel } from "../patterns/trail-feedback";
-
-export interface TrailAppProps
-  extends TrailTriagePageActions,
-    TrailProjectsPageActions {
-  readonly runtimeStore: TrailRuntimeStore;
-}
+import type { TrailUiActions } from "./trail-ui-actions";
 
 type TrailPage = "projects" | "triage";
 
-export function TrailApp({
-  onAccept,
-  onCapture,
-  onCreateProject,
-  onCreateWorkflowIssue,
-  onDefer,
-  onDelete,
-  onEdit,
-  onWorkflowStatusChange,
-  runtimeStore,
-}: TrailAppProps) {
-  const control = useStore(
-    runtimeStore,
-    (state) => state.control,
+export function TrailApp(props: {
+  readonly actions: TrailUiActions;
+  readonly runtimeStore: TrailRuntimeStore;
+}) {
+  const control = useStore(props.runtimeStore, (state) => state.control);
+  const committedRevision = useStore(
+    props.runtimeStore,
+    (state) => state.committed.revision,
+  );
+  const configuration = useStore(
+    props.runtimeStore,
+    selectTrailReadableConfiguration,
   );
   const [activePage, setActivePage] = useState<TrailPage>("triage");
+  const writable = control.kind === "ready";
+  const hasReadableSnapshot = committedRevision > 0 && configuration !== null;
 
   return (
-    <div className="trail-app">
+    <div className="trail-app" data-runtime-control={control.kind}>
       <header className="trail-app__header">
         <div>
           <p className="trail-app__eyebrow">Trail</p>
@@ -53,41 +43,18 @@ export function TrailApp({
         </p>
       </header>
 
-      {control.kind === "ready" ? (
-        <nav className="trail-page-nav" aria-label="Trail pages">
-          <button
-            aria-current={activePage === "triage" ? "page" : undefined}
-            className={activePage === "triage" ? "is-active" : undefined}
-            onClick={() => setActivePage("triage")}
-            type="button"
-          >
-            Triage
-          </button>
-          <button
-            aria-current={activePage === "projects" ? "page" : undefined}
-            className={activePage === "projects" ? "is-active" : undefined}
-            onClick={() => setActivePage("projects")}
-            type="button"
-          >
-            Projects
-          </button>
-        </nav>
-      ) : null}
-
       {control.kind === "loading" ? (
         <TrailStatusPanel
           title="Loading Trail"
           message="Validating managed Trail data and rebuilding runtime state."
         />
       ) : null}
-
       {control.kind === "refreshing" ? (
         <TrailStatusPanel
           title="Refreshing Trail"
-          message="Re-reading authoritative sources before Trail accepts more changes."
+          message="Showing the last known good state while authoritative sources are re-read."
         />
       ) : null}
-
       {control.kind === "read-only-error" ? (
         <TrailStatusPanel
           title="Trail needs attention"
@@ -96,25 +63,42 @@ export function TrailApp({
         />
       ) : null}
 
-      {control.kind === "ready" && activePage === "triage" ? (
-        <TrailTriagePage
-          onAccept={onAccept}
-          onCapture={onCapture}
-          onDefer={onDefer}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          runtimeStore={runtimeStore}
-          timezone={control.timezone}
-        />
-      ) : null}
+      {hasReadableSnapshot ? (
+        <>
+          <nav className="trail-page-nav" aria-label="Trail pages">
+            <button
+              aria-current={activePage === "triage" ? "page" : undefined}
+              className={activePage === "triage" ? "is-active" : undefined}
+              onClick={() => setActivePage("triage")}
+              type="button"
+            >
+              Triage
+            </button>
+            <button
+              aria-current={activePage === "projects" ? "page" : undefined}
+              className={activePage === "projects" ? "is-active" : undefined}
+              onClick={() => setActivePage("projects")}
+              type="button"
+            >
+              Projects
+            </button>
+          </nav>
 
-      {control.kind === "ready" && activePage === "projects" ? (
-        <TrailProjectsPage
-          onCreateProject={onCreateProject}
-          onCreateWorkflowIssue={onCreateWorkflowIssue}
-          onWorkflowStatusChange={onWorkflowStatusChange}
-          runtimeStore={runtimeStore}
-        />
+          {activePage === "triage" ? (
+            <TrailTriagePage
+              actions={props.actions.triage}
+              runtimeStore={props.runtimeStore}
+              timezone={configuration.temporal.timezone}
+              writable={writable}
+            />
+          ) : (
+            <TrailProjectsPage
+              actions={{ issues: props.actions.issues, projects: props.actions.projects }}
+              runtimeStore={props.runtimeStore}
+              writable={writable}
+            />
+          )}
+        </>
       ) : null}
     </div>
   );

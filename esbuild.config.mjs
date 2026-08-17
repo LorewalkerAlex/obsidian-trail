@@ -31,7 +31,7 @@ const context = await esbuild.context({
   define: {
     __TRAIL_DIAGNOSTICS_ENABLED__: JSON.stringify(diagnosticsEnabled),
   },
-  entryPoints: ["plugin-rebuild/src/main.ts"],
+  entryPoints: ["plugin/src/main.ts"],
   bundle: true,
   external: [
     "obsidian",

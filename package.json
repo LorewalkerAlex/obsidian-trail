@@ -7,17 +7,13 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "typecheck": "tsc --noEmit",
-    "typecheck:rebuild": "tsc --noEmit -p plugin-rebuild/tsconfig.json",
-    "build": "npm run typecheck:rebuild && node esbuild.config.mjs production",
-    "build:diagnostics": "npm run typecheck:rebuild && node esbuild.config.mjs diagnostics",
+    "build": "npm run typecheck && node esbuild.config.mjs production",
+    "build:diagnostics": "npm run typecheck && node esbuild.config.mjs diagnostics",
     "test": "vitest",
     "test:run": "vitest run --reporter=dot",
     "test:run:verbose": "vitest run",
-    "test:run:rebuild": "vitest run --config vitest.rebuild.config.ts --reporter=dot",
     "lint": "eslint .",
-    "lint:rebuild": "eslint plugin-rebuild/src vitest.rebuild.config.ts",
-    "check:rebuild": "npm run lint:rebuild && npm run typecheck:rebuild && npm run test:run:rebuild",
-    "check": "npm run lint && npm run test:run && npm run typecheck:rebuild && npm run test:run:rebuild && npm run build"
+    "check": "npm run lint && npm run test:run && npm run build"
   },
   "engines": {
     "node": ">=24.19.0 <25",

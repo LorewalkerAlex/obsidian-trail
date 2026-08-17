@@ -1,13 +1,13 @@
 import type { TrailPluginDataIO } from "../../persistence/ports/trail-plugin-data-io";
 
-export interface ObsidianPluginDataHost {
+export interface TrailObsidianPluginDataHost {
   readonly loadData: () => Promise<unknown>;
   readonly saveData: (data: unknown) => Promise<void>;
 }
 
-/** Adapts Obsidian Plugin.loadData/saveData to the carrier-specific I/O port. */
+/** Thin adapter over Obsidian Plugin.loadData/saveData. */
 export function createObsidianPluginDataIO(
-  host: ObsidianPluginDataHost,
+  host: TrailObsidianPluginDataHost,
 ): TrailPluginDataIO {
   return {
     load: () => host.loadData(),

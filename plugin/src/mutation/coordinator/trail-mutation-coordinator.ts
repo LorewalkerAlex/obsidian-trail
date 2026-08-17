@@ -1,156 +1,90 @@
-import {
-  NOOP_TRAIL_DIAGNOSTICS,
-  type TrailDiagnosticData,
-  type TrailDiagnostics,
-} from "../../diagnostics/trail-diagnostics";
+import { isTrailRuntimeWritable } from "../../runtime/control/trail-runtime-control";
 import {
   addTrailPendingPlan,
-  removePendingPlan,
+  removeTrailPendingPlan,
 } from "../../runtime/projection/trail-runtime-projection";
-import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import type {
+  TrailCommittedRuntime,
+  TrailRuntimeStore,
+} from "../../runtime/store/trail-runtime-store";
 import type { TrailMutationPlan } from "../plans/trail-mutation-plan";
+import type { TrailPersistenceTransactionPlan } from "../physical/trail-persistence-transaction-plan";
 import type { TrailMutationQueue } from "../queue/trail-mutation-queue";
 
-export interface TrailCoordinatedMutation<Result> {
-  readonly execute: () => Promise<Result>;
-  readonly mapError?: (error: unknown) => unknown;
-  readonly onCommitted?: (result: Result) => void | Promise<void>;
-  readonly onFailed?: (error: unknown) => void | Promise<void>;
-  readonly optimisticData?: TrailDiagnosticData;
-  readonly plan: TrailMutationPlan;
-  readonly queueKind: string;
+export interface TrailMutationDriver<TResult> {
+  readonly execute: (plan: TrailPersistenceTransactionPlan) => Promise<TResult>;
+  readonly materialize: (
+    plan: TrailMutationPlan,
+    committed: TrailCommittedRuntime,
+  ) => Promise<TrailPersistenceTransactionPlan>;
   readonly recover?: (error: unknown) => Promise<void>;
-  readonly settle: (result: Result) => void | Promise<void>;
+  readonly settle: (result: TResult) => Promise<void>;
 }
 
-function errorName(error: unknown): string {
-  return error instanceof Error ? error.name : "UnknownError";
-}
-
-async function runLifecycleHook(
-  hook: (() => void | Promise<void>) | undefined,
-  hookName: string,
-  correlationId: string,
-  queueKind: string,
-  diagnostics: TrailDiagnostics,
-): Promise<void> {
-  if (hook === undefined) return;
-  try {
-    await hook();
-  } catch (error: unknown) {
-    diagnostics.record("mutation.lifecycle-hook.failed", {
-      correlationId,
-      data: {
-        errorName: errorName(error),
-        hook: hookName,
-        kind: queueKind,
-      },
-      level: "error",
-    });
+export class TrailMutationGateClosedError extends Error {
+  public constructor(readonly controlKind: string) {
+    super(`Trail mutation gate is closed while Runtime is ${controlKind}`);
+    this.name = "TrailMutationGateClosedError";
   }
 }
 
 /**
- * Owns the common optimistic lifecycle around the global serial queue. Feature
- * code supplies semantic execution, verification/reconcile, and recovery only.
+ * Owns the feature-agnostic optimistic lifecycle. Materialization occurs inside
+ * the serial queue so placement always sees the latest committed Runtime.
  */
-export function submitTrailMutation<Result>(
+export function submitTrailMutation<TResult>(
   store: TrailRuntimeStore,
   queue: TrailMutationQueue,
-  mutation: TrailCoordinatedMutation<Result>,
-  diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
-): Promise<void> {
-  const correlationId = mutation.plan.commandId;
+  plan: TrailMutationPlan,
+  driver: TrailMutationDriver<TResult>,
+): Promise<TResult> {
+  const control = store.getState().control;
+  if (!isTrailRuntimeWritable(control)) {
+    return Promise.reject(new TrailMutationGateClosedError(control.kind));
+  }
+
   let started = false;
   let finalized = false;
-
-  const finalizePending = (reason: "committed" | "failed"): void => {
+  const finalize = (): void => {
     if (finalized) return;
     finalized = true;
-    removePendingPlan(store, mutation.plan.commandId);
-    diagnostics.record("runtime.optimistic.removed", {
-      correlationId,
-      data: {
-        pendingCount: store.getState().pending.length,
-        reason,
-      },
-      level: reason === "committed" ? "info" : "warn",
-    });
+    removeTrailPendingPlan(store, plan.commandId);
   };
 
-  addTrailPendingPlan(store, mutation.plan);
-  diagnostics.record("runtime.optimistic.applied", {
-    correlationId,
-    data: {
-      ...(mutation.optimisticData ?? {}),
-      pendingCount: store.getState().pending.length,
-    },
-  });
-
+  addTrailPendingPlan(store, plan);
   const queued = queue.enqueue(async () => {
     started = true;
-    let result: Result | undefined;
-    let failure: unknown;
-    let committed = false;
-
+    const dequeueControl = store.getState().control;
+    if (!isTrailRuntimeWritable(dequeueControl)) {
+      finalize();
+      throw new TrailMutationGateClosedError(dequeueControl.kind);
+    }
     try {
-      result = await mutation.execute();
-      await mutation.settle(result);
-      committed = true;
+      const physical = await driver.materialize(plan, store.getState().committed);
+      const result = await driver.execute(physical);
+      // Settlement publishes authoritative rereads before optimistic intent disappears.
+      await driver.settle(result);
+      return result;
     } catch (error: unknown) {
-      failure = error;
-      await runLifecycleHook(
-        mutation.onFailed === undefined ? undefined : () => mutation.onFailed?.(error),
-        "failed",
-        correlationId,
-        mutation.queueKind,
-        diagnostics,
-      );
-      if (mutation.recover !== undefined) {
+      // Failed optimistic state must disappear before authoritative recovery starts.
+      finalize();
+      if (driver.recover !== undefined) {
         try {
-          await mutation.recover(error);
-        } catch (recoveryError: unknown) {
-          diagnostics.record("mutation.recovery.failed", {
-            correlationId,
-            data: {
-              errorName: errorName(recoveryError),
-              kind: mutation.queueKind,
-            },
-            level: "error",
-          });
+          await driver.recover(error);
+        } catch {
+          // Recovery failure is intentionally surfaced through the original mutation path;
+          // Source Sync owns the resulting Runtime control/health transition.
         }
       }
+      throw error;
     } finally {
-      finalizePending(committed ? "committed" : "failed");
+      finalize();
     }
-
-    if (committed) {
-      await runLifecycleHook(
-        mutation.onCommitted === undefined
-          ? undefined
-          : () => mutation.onCommitted?.(result as Result),
-        "committed",
-        correlationId,
-        mutation.queueKind,
-        diagnostics,
-      );
-      return;
-    }
-
-    if (mutation.mapError !== undefined) {
-      throw mutation.mapError(failure);
-    }
-    throw failure;
-  }, {
-    correlationId,
-    kind: mutation.queueKind,
   });
 
   return queued.catch((error: unknown) => {
-    // A queued mutation can be rejected by queue disposal before its callback runs.
-    if (!started) {
-      finalizePending("failed");
-    }
+    // Queue disposal can reject a command before its callback starts.
+    if (!started) finalize();
     throw error;
   });
 }

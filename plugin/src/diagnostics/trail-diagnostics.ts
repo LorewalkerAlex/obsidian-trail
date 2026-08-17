@@ -1,17 +1,13 @@
 export type TrailDiagnosticLevel = "debug" | "info" | "warn" | "error";
 
-export type TrailDiagnosticScalar = string | number | boolean | null;
-export type TrailDiagnosticArray = readonly TrailDiagnosticScalar[];
-export interface TrailDiagnosticObject {
-  readonly [key: string]:
-    | TrailDiagnosticScalar
-    | TrailDiagnosticArray
-    | TrailDiagnosticObject;
-}
 export type TrailDiagnosticValue =
-  | TrailDiagnosticScalar
-  | TrailDiagnosticArray
-  | TrailDiagnosticObject;
+  | string
+  | number
+  | boolean
+  | null
+  | readonly TrailDiagnosticValue[]
+  | { readonly [key: string]: TrailDiagnosticValue };
+
 export type TrailDiagnosticData = Readonly<Record<string, TrailDiagnosticValue>>;
 
 export interface TrailDiagnosticEvent {
@@ -79,30 +75,28 @@ function serializedSessionId(line: string): string | undefined {
   }
 }
 
-function selectRecentSessions(text: string, maxSessions: number): string {
-  if (maxSessions <= 0) {
-    return "";
-  }
-
-  const lines = text
+function normalizedLines(text: string): readonly string[] {
+  return text
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line !== "");
-  const sessionIds: string[] = [];
+}
 
+function selectRecentSessions(text: string, maxSessions: number): string {
+  if (maxSessions <= 0) return "";
+  const lines = normalizedLines(text);
+  const sessionIds: string[] = [];
   for (const line of lines) {
     const sessionId = serializedSessionId(line);
     if (sessionId !== undefined && !sessionIds.includes(sessionId)) {
       sessionIds.push(sessionId);
     }
   }
-
   const keep = new Set(sessionIds.slice(-maxSessions));
   const keptLines = lines.filter((line) => {
     const sessionId = serializedSessionId(line);
     return sessionId !== undefined && keep.has(sessionId);
   });
-
   return keptLines.length === 0 ? "" : `${keptLines.join("\n")}\n`;
 }
 
@@ -112,17 +106,13 @@ function mergePersistedWithCurrentSession(
   memoryEvents: readonly TrailDiagnosticEvent[],
   maxSessions: number,
 ): string {
-  const previousLines = persisted
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(
-      (line) => line !== "" && serializedSessionId(line) !== sessionId,
-    );
+  const previousLines = normalizedLines(persisted).filter(
+    (line) => serializedSessionId(line) !== sessionId,
+  );
   const merged = [
     ...previousLines.map((line) => `${line}\n`),
     ...memoryEvents.map(serializeEvent),
   ].join("");
-
   return selectRecentSessions(merged, maxSessions);
 }
 
@@ -139,14 +129,8 @@ function createNoopDiagnostics(): TrailDiagnostics {
 
 export const NOOP_TRAIL_DIAGNOSTICS: TrailDiagnostics = createNoopDiagnostics();
 
-/**
- * Session-scoped structured diagnostic recorder. Recording is synchronous from
- * the caller's perspective; persistence is serialized behind the scenes and is
- * never allowed to participate in product correctness or mutation success.
- */
-export function createTrailDiagnostics(
-  options: TrailDiagnosticsOptions,
-): TrailDiagnostics {
+/** Development-only structured trace. Persistence is best-effort and never affects product success. */
+export function createTrailDiagnostics(options: TrailDiagnosticsOptions): TrailDiagnostics {
   const sessionId = options.createId();
   let correlationSequence = 0;
   let sequence = 0;
@@ -171,10 +155,7 @@ export function createTrailDiagnostics(
     name: string,
     recordOptions: TrailDiagnosticRecordOptions = {},
   ): void => {
-    if (disposed) {
-      return;
-    }
-
+    if (disposed) return;
     const event: TrailDiagnosticEvent = {
       at: options.now(),
       correlationId: recordOptions.correlationId,
@@ -185,36 +166,25 @@ export function createTrailDiagnostics(
       sessionId,
       version: 1,
     };
-
     memoryEvents.push(event);
-    if (memoryEvents.length > MAX_IN_MEMORY_EVENTS) {
-      memoryEvents.shift();
-    }
+    if (memoryEvents.length > MAX_IN_MEMORY_EVENTS) memoryEvents.shift();
 
     if (sequence <= MAX_PERSISTED_EVENTS_PER_SESSION) {
       enqueueLine(serializeEvent(event));
       return;
     }
-
     const eventsPastCap = sequence - MAX_PERSISTED_EVENTS_PER_SESSION;
-    if (
-      eventsPastCap === 1
-      || (eventsPastCap - 1) % PERSISTED_SNAPSHOT_INTERVAL === 0
-    ) {
+    if (eventsPastCap === 1 || (eventsPastCap - 1) % PERSISTED_SNAPSHOT_INTERVAL === 0) {
       enqueueCurrentSessionSnapshot();
     }
   };
 
   const flush = async (): Promise<void> => {
-    if (sequence > MAX_PERSISTED_EVENTS_PER_SESSION) {
-      enqueueCurrentSessionSnapshot();
-    }
+    if (sequence > MAX_PERSISTED_EVENTS_PER_SESSION) enqueueCurrentSessionSnapshot();
     await writeTail;
   };
 
-  record("diagnostics.session.started", {
-    data: { sessionId },
-  });
+  record("diagnostics.session.started", { data: { sessionId } });
 
   return {
     enabled: true,
@@ -223,9 +193,7 @@ export function createTrailDiagnostics(
       return `${sessionId}:${normalizePrefix(prefix)}:${correlationSequence}`;
     },
     async dispose(): Promise<void> {
-      if (disposed) {
-        return;
-      }
+      if (disposed) return;
       record("diagnostics.session.ended");
       disposed = true;
       await flush();
@@ -241,8 +209,6 @@ export function createTrailDiagnostics(
           maxSessions,
         );
       } catch {
-        // Fall back to the current in-memory session. Diagnostics must never make
-        // the product path fail just because its optional persistence is damaged.
         return memoryEvents.map(serializeEvent).join("");
       }
     },

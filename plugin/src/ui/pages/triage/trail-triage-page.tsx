@@ -6,93 +6,44 @@ import {
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
-import type { TrailTriageIssue } from "../../../domain/trail-issue";
 import {
-  selectEffectiveProjectById,
-  selectEffectiveProjectIds,
-  selectEffectiveTriageIssueById,
-  selectEffectiveTriageIssueIds,
-  selectIsTriageIssuePending,
-} from "../../../runtime/projection/trail-runtime-projection";
+  selectTrailReadableTriageIssueIds,
+} from "../../../query/shared/trail-effective-query";
+import { selectTrailTriageSourceIssues } from "../../../query/shared/trail-source-health-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
-import {
-  selectEntitySourceIssues,
-  selectTriageSourceIssues,
-  selectWorkflowRootSourceIssues,
-} from "../../../query/trail-source-health";
-import { formatLocalDateTimeInTimeZone } from "../../../domain/trail-temporal";
-import type { TriageAcceptReceipt } from "../../../application/triage/trail-triage-accept";
-import type { TriageCaptureReceipt } from "../../../application/triage/trail-triage-intake";
-import type { TriageManagementReceipt } from "../../../application/triage/trail-triage-management";
-import { runTrailAction } from "../../interactions/trail-action";
+import { TrailTriageIssueRow } from "../../entities/trail-triage-issue-row";
+import { runTrailReceipt } from "../../interactions/trail-action";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
+import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
-export interface TrailTriagePageActions {
-  readonly onAccept?: (
-    expectedIssue: TrailTriageIssue,
-    projectId: string,
-  ) => TriageAcceptReceipt;
-  readonly onCapture: (title: string) => TriageCaptureReceipt;
-  readonly onDefer: (expectedIssue: TrailTriageIssue) => TriageManagementReceipt;
-  readonly onDelete: (expectedIssue: TrailTriageIssue) => TriageManagementReceipt;
-  readonly onEdit: (
-    expectedIssue: TrailTriageIssue,
-    title: string,
-    dueLocalValue: string,
-  ) => TriageManagementReceipt;
-}
-
-export interface TrailTriagePageProps extends TrailTriagePageActions {
+export function TrailTriagePage(props: {
+  readonly actions: TrailUiActions["triage"];
   readonly runtimeStore: TrailRuntimeStore;
   readonly timezone: string;
-}
-
-function formatDue(due: number, timezone: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: timezone,
-  }).format(new Date(due));
-}
-
-export function TrailTriagePage({
-  onAccept,
-  onCapture,
-  onDefer,
-  onDelete,
-  onEdit,
-  runtimeStore,
-  timezone,
-}: TrailTriagePageProps) {
-  const sourceIssues = useStore(
-    runtimeStore,
-    selectTriageSourceIssues,
-  );
+  readonly writable: boolean;
+}) {
   const issueIds = useStore(
-    runtimeStore,
-    useShallow(selectEffectiveTriageIssueIds),
+    props.runtimeStore,
+    useShallow(selectTrailReadableTriageIssueIds),
+  );
+  const sourceIssues = useStore(
+    props.runtimeStore,
+    useShallow(selectTrailTriageSourceIssues),
   );
   const [draft, setDraft] = useState("");
   const [captureError, setCaptureError] = useState<string>();
   const [managementError, setManagementError] = useState<string>();
-  const sourceIsValid = sourceIssues.length === 0;
+  const sourceIsHealthy = sourceIssues.length === 0;
 
   const submitCapture = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (!sourceIsValid || draft.trim() === "") {
-      return;
-    }
-
-    runTrailAction(
-      () => onCapture(draft),
+    if (!props.writable || !sourceIsHealthy || draft.trim() === "") return;
+    runTrailReceipt(
+      () => props.actions.capture(draft),
       setCaptureError,
       () => setDraft(""),
     );
   };
-
-  const runTriageAction = (
-    action: () => { readonly completion: Promise<void> },
-  ): boolean => runTrailAction(action, setManagementError) !== undefined;
 
   return (
     <main className="trail-triage">
@@ -103,33 +54,27 @@ export function TrailTriagePage({
             <p>New captures return to you in seven calendar days by default.</p>
           </div>
         </div>
-
         <form className="trail-capture__form" onSubmit={submitCapture}>
           <label className="trail-capture__field">
             <span className="screen-reader-text">Capture title</span>
             <input
               autoComplete="off"
-              disabled={!sourceIsValid}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setDraft(event.target.value);
-              }}
+              disabled={!props.writable || !sourceIsHealthy}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setDraft(event.target.value)}
               placeholder="What needs your attention?"
               value={draft}
             />
           </label>
           <button
             className="mod-cta trail-capture__button"
-            disabled={!sourceIsValid || draft.trim() === ""}
+            disabled={!props.writable || !sourceIsHealthy || draft.trim() === ""}
             type="submit"
           >
             Capture
           </button>
         </form>
-
         {captureError !== undefined ? (
-          <p className="trail-inline-error" role="alert">
-            {captureError}
-          </p>
+          <p className="trail-inline-error" role="alert">{captureError}</p>
         ) : null}
       </section>
 
@@ -166,20 +111,15 @@ export function TrailTriagePage({
         ) : (
           <ol className="trail-issue-list">
             {issueIds.map((issueId) => (
-              <TriageIssueRow
+              <TrailTriageIssueRow
+                actions={props.actions}
                 issueId={issueId}
                 key={issueId}
-                onAccept={onAccept === undefined
-                  ? undefined
-                  : (issue, projectId) =>
-                    runTriageAction(() => onAccept(issue, projectId))}
-                onDefer={(issue) => runTriageAction(() => onDefer(issue))}
-                onDelete={(issue) => runTriageAction(() => onDelete(issue))}
-                onEdit={(issue, title, dueLocalValue) =>
-                  runTriageAction(() => onEdit(issue, title, dueLocalValue))}
-                runtimeStore={runtimeStore}
-                sourceIsValid={sourceIsValid}
-                timezone={timezone}
+                onError={setManagementError}
+                runtimeStore={props.runtimeStore}
+                sourceIsHealthy={sourceIsHealthy}
+                timezone={props.timezone}
+                writable={props.writable}
               />
             ))}
           </ol>
@@ -187,293 +127,4 @@ export function TrailTriagePage({
       </section>
     </main>
   );
-}
-
-interface TriageIssueRowProps {
-  readonly issueId: string;
-  readonly onAccept?: (issue: TrailTriageIssue, projectId: string) => boolean;
-  readonly onDefer: (issue: TrailTriageIssue) => boolean;
-  readonly onDelete: (issue: TrailTriageIssue) => boolean;
-  readonly onEdit: (
-    issue: TrailTriageIssue,
-    title: string,
-    dueLocalValue: string,
-  ) => boolean;
-  readonly runtimeStore: TrailRuntimeStore;
-  readonly sourceIsValid: boolean;
-  readonly timezone: string;
-}
-
-function TriageIssueRow({
-  issueId,
-  onAccept,
-  onDefer,
-  onDelete,
-  onEdit,
-  runtimeStore,
-  sourceIsValid,
-  timezone,
-}: TriageIssueRowProps) {
-  const issue = useStore(
-    runtimeStore,
-    (state) => selectEffectiveTriageIssueById(state, issueId),
-  );
-  const isPending = useStore(
-    runtimeStore,
-    (state) => selectIsTriageIssuePending(state, issueId),
-  );
-  const projectIds = useStore(
-    runtimeStore,
-    useShallow(selectEffectiveProjectIds),
-  );
-  const workflowRootIsValid = useStore(
-    runtimeStore,
-    (state) => selectWorkflowRootSourceIssues(state).length === 0,
-  );
-  const [acceptBaseline, setAcceptBaseline] = useState<TrailTriageIssue>();
-  const [acceptProjectId, setAcceptProjectId] = useState("");
-  const [editBaseline, setEditBaseline] = useState<TrailTriageIssue>();
-  const [titleDraft, setTitleDraft] = useState("");
-  const [dueDraft, setDueDraft] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const selectedProjectSourceIsValid = useStore(
-    runtimeStore,
-    (state) => {
-      if (acceptProjectId === "") return true;
-      return selectEntitySourceIssues(state, acceptProjectId).length === 0;
-    },
-  );
-
-  if (issue === undefined) {
-    return null;
-  }
-
-  const actionsDisabled = isPending || !sourceIsValid;
-  const acceptAvailable = (
-    onAccept !== undefined
-    && projectIds.length > 0
-    && workflowRootIsValid
-  );
-  const beginAccept = (): void => {
-    setConfirmDelete(false);
-    setEditBaseline(undefined);
-    setAcceptBaseline(issue);
-    const preferredProjectId = issue.projectId !== undefined
-      && projectIds.includes(issue.projectId)
-        ? issue.projectId
-        : projectIds.length === 1
-          ? projectIds[0] ?? ""
-          : "";
-    setAcceptProjectId(preferredProjectId);
-  };
-  const cancelAccept = (): void => {
-    setAcceptBaseline(undefined);
-    setAcceptProjectId("");
-  };
-  const submitAccept = (event: SyntheticEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    if (
-      acceptBaseline === undefined
-      || onAccept === undefined
-      || actionsDisabled
-      || !acceptAvailable
-      || acceptProjectId === ""
-      || !projectIds.includes(acceptProjectId)
-      || !selectedProjectSourceIsValid
-    ) {
-      return;
-    }
-    if (onAccept(acceptBaseline, acceptProjectId)) {
-      cancelAccept();
-    }
-  };
-  const beginEdit = (): void => {
-    setAcceptBaseline(undefined);
-    setConfirmDelete(false);
-    setEditBaseline(issue);
-    setTitleDraft(issue.title);
-    setDueDraft(formatLocalDateTimeInTimeZone(issue.due, timezone));
-  };
-  const cancelEdit = (): void => {
-    setEditBaseline(undefined);
-  };
-  const submitEdit = (event: SyntheticEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    if (
-      editBaseline === undefined
-      || actionsDisabled
-      || titleDraft.trim() === ""
-      || dueDraft === ""
-    ) {
-      return;
-    }
-    if (onEdit(editBaseline, titleDraft, dueDraft)) {
-      setEditBaseline(undefined);
-    }
-  };
-
-  return (
-    <li
-      className="trail-issue-row"
-      data-pending={isPending ? "true" : undefined}
-    >
-      {editBaseline === undefined && acceptBaseline === undefined ? (
-        <>
-          <div className="trail-issue-row__body">
-            <strong>{issue.title}</strong>
-            <span>Due {formatDue(issue.due, timezone)}</span>
-          </div>
-          <div className="trail-issue-row__actions">
-            <button
-              disabled={actionsDisabled || !acceptAvailable}
-              onClick={beginAccept}
-              title={projectIds.length === 0 ? "Create a Project before accepting" : undefined}
-              type="button"
-            >
-              Accept
-            </button>
-            <button disabled={actionsDisabled} onClick={beginEdit} type="button">
-              Edit
-            </button>
-            <button
-              disabled={actionsDisabled}
-              onClick={() => {
-                setConfirmDelete(false);
-                onDefer(issue);
-              }}
-              type="button"
-            >
-              Defer 7 days
-            </button>
-            {confirmDelete ? (
-              <span className="trail-delete-confirmation">
-                <button
-                  className="mod-warning"
-                  disabled={actionsDisabled}
-                  onClick={() => {
-                    if (onDelete(issue)) setConfirmDelete(false);
-                  }}
-                  type="button"
-                >
-                  Confirm delete
-                </button>
-                <button onClick={() => setConfirmDelete(false)} type="button">
-                  Cancel
-                </button>
-              </span>
-            ) : (
-              <button
-                disabled={actionsDisabled}
-                onClick={() => {
-                  setAcceptBaseline(undefined);
-                  setConfirmDelete(true);
-                }}
-                type="button"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        </>
-      ) : null}
-
-      {acceptBaseline !== undefined ? (
-        <form className="trail-issue-editor" onSubmit={submitAccept}>
-          <label>
-            <span>Accept into Project</span>
-            <select
-              disabled={actionsDisabled || !acceptAvailable}
-              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                setAcceptProjectId(event.target.value);
-              }}
-              value={acceptProjectId}
-            >
-              <option value="">Choose Project</option>
-              {projectIds.map((projectId) => (
-                <AcceptProjectOption
-                  key={projectId}
-                  projectId={projectId}
-                  runtimeStore={runtimeStore}
-                />
-              ))}
-            </select>
-          </label>
-          <div className="trail-issue-editor__actions">
-            <button
-              className="mod-cta"
-              disabled={
-                actionsDisabled
-                || !acceptAvailable
-                || acceptProjectId === ""
-                || !projectIds.includes(acceptProjectId)
-                || !selectedProjectSourceIsValid
-              }
-              type="submit"
-            >
-              Accept to Project
-            </button>
-            <button onClick={cancelAccept} type="button">
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : null}
-
-      {editBaseline !== undefined ? (
-        <form className="trail-issue-editor" onSubmit={submitEdit}>
-          <label>
-            <span>Title</span>
-            <input
-              autoComplete="off"
-              disabled={actionsDisabled}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setTitleDraft(event.target.value);
-              }}
-              value={titleDraft}
-            />
-          </label>
-          <label>
-            <span>Due ({timezone})</span>
-            <input
-              disabled={actionsDisabled}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setDueDraft(event.target.value);
-              }}
-              type="datetime-local"
-              value={dueDraft}
-            />
-          </label>
-          <div className="trail-issue-editor__actions">
-            <button
-              className="mod-cta"
-              disabled={actionsDisabled || titleDraft.trim() === "" || dueDraft === ""}
-              type="submit"
-            >
-              Save
-            </button>
-            <button onClick={cancelEdit} type="button">
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : null}
-    </li>
-  );
-}
-
-interface AcceptProjectOptionProps {
-  readonly projectId: string;
-  readonly runtimeStore: TrailRuntimeStore;
-}
-
-function AcceptProjectOption({
-  projectId,
-  runtimeStore,
-}: AcceptProjectOptionProps) {
-  const project = useStore(
-    runtimeStore,
-    (state) => selectEffectiveProjectById(state, projectId),
-  );
-  if (project === undefined) return null;
-  return <option value={project.id}>{project.title}</option>;
 }

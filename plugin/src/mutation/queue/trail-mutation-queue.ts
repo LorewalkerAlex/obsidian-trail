@@ -1,162 +1,70 @@
-import {
-  NOOP_TRAIL_DIAGNOSTICS,
-  type TrailDiagnostics,
-} from "../../diagnostics/trail-diagnostics";
+export type TrailMutationQueueCommand<TResult> = () => Promise<TResult>;
 
-export type TrailMutationCommand<Result> = () => Promise<Result>;
-
-export interface TrailMutationQueueMetadata {
-  readonly correlationId?: string;
-  readonly kind?: string;
-}
-
-export type TrailMutationQueueErrorCode =
-  | "queue-disposed";
-
-export class TrailMutationQueueError extends Error {
-  public constructor(
-    readonly code: TrailMutationQueueErrorCode,
-    message: string,
-  ) {
-    super(message);
-    this.name = "TrailMutationQueueError";
+export class TrailMutationQueueDisposedError extends Error {
+  public constructor() {
+    super("The Trail mutation queue has been disposed.");
+    this.name = "TrailMutationQueueDisposedError";
   }
 }
 
 interface QueuedMutation {
-  readonly metadata?: TrailMutationQueueMetadata;
-  reject(error: unknown): void;
-  run(): Promise<void>;
+  readonly reject: (error: unknown) => void;
+  readonly run: () => Promise<void>;
 }
 
-function errorName(error: unknown): string {
-  return error instanceof Error ? error.name : "UnknownError";
-}
-
+/** One global FIFO persistence lane; optimistic UI is intentionally outside this queue. */
 export class TrailMutationQueue {
-  private readonly pending: QueuedMutation[] = [];
-  private isRunning = false;
+  private readonly queued: QueuedMutation[] = [];
+  private running = false;
   private disposed = false;
 
-  public constructor(
-    private readonly diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS,
-  ) {}
+  public enqueue<TResult>(command: TrailMutationQueueCommand<TResult>): Promise<TResult> {
+    return this.enqueueInternal(command, "tail");
+  }
 
-  public enqueue<Result>(
-    command: TrailMutationCommand<Result>,
-    metadata?: TrailMutationQueueMetadata,
-  ): Promise<Result> {
-    if (this.disposed) {
-      this.diagnostics.record("mutation.queue.rejected", {
-        correlationId: metadata?.correlationId,
-        data: {
-          kind: metadata?.kind ?? null,
-          reason: "queue-disposed",
-        },
-        level: "warn",
-      });
-      return Promise.reject(createDisposedError());
-    }
+  /** Inserts recovery/refresh work immediately after the currently running command. */
+  public enqueueAfterCurrent<TResult>(command: TrailMutationQueueCommand<TResult>): Promise<TResult> {
+    return this.enqueueInternal(command, "front");
+  }
 
-    return new Promise<Result>((resolve, reject) => {
-      this.pending.push({
-        metadata,
-        run: async () => {
-          resolve(await command());
-        },
+  private enqueueInternal<TResult>(
+    command: TrailMutationQueueCommand<TResult>,
+    position: "front" | "tail",
+  ): Promise<TResult> {
+    if (this.disposed) return Promise.reject(new TrailMutationQueueDisposedError());
+    return new Promise<TResult>((resolve, reject) => {
+      const mutation: QueuedMutation = {
         reject,
-      });
-      this.diagnostics.record("mutation.queue.enqueued", {
-        correlationId: metadata?.correlationId,
-        data: {
-          kind: metadata?.kind ?? null,
-          pendingCount: this.pending.length,
-        },
-      });
-
-      void this.run();
+        run: async () => { resolve(await command()); },
+      };
+      if (position === "front") this.queued.unshift(mutation);
+      else this.queued.push(mutation);
+      void this.drain();
     });
   }
 
   public dispose(): void {
-    if (this.disposed) {
-      return;
-    }
-
+    if (this.disposed) return;
     this.disposed = true;
-    this.diagnostics.record("mutation.queue.disposed", {
-      data: { queuedCount: this.pending.length },
-    });
-
-    const error = createDisposedError();
-
-    for (const mutation of this.pending.splice(0)) {
-      this.diagnostics.record("mutation.queue.rejected", {
-        correlationId: mutation.metadata?.correlationId,
-        data: {
-          kind: mutation.metadata?.kind ?? null,
-          reason: "queue-disposed",
-        },
-        level: "warn",
-      });
-      mutation.reject(error);
-    }
+    const error = new TrailMutationQueueDisposedError();
+    for (const mutation of this.queued.splice(0)) mutation.reject(error);
   }
 
-  private async run(): Promise<void> {
-    if (this.isRunning || this.disposed) {
-      return;
-    }
-
-    this.isRunning = true;
-
+  private async drain(): Promise<void> {
+    if (this.running || this.disposed) return;
+    this.running = true;
     try {
       while (!this.disposed) {
-        const mutation = this.pending.shift();
-
-        if (!mutation) {
-          return;
-        }
-
-        this.diagnostics.record("mutation.queue.started", {
-          correlationId: mutation.metadata?.correlationId,
-          data: {
-            kind: mutation.metadata?.kind ?? null,
-            queuedBehind: this.pending.length,
-          },
-        });
-
+        const mutation = this.queued.shift();
+        if (mutation === undefined) return;
         try {
           await mutation.run();
-          this.diagnostics.record("mutation.queue.completed", {
-            correlationId: mutation.metadata?.correlationId,
-            data: {
-              kind: mutation.metadata?.kind ?? null,
-              queuedBehind: this.pending.length,
-            },
-          });
         } catch (error: unknown) {
-          this.diagnostics.record("mutation.queue.failed", {
-            correlationId: mutation.metadata?.correlationId,
-            data: {
-              errorName: errorName(error),
-              kind: mutation.metadata?.kind ?? null,
-              queuedBehind: this.pending.length,
-            },
-            level: "error",
-          });
           mutation.reject(error);
         }
       }
     } finally {
-      this.isRunning = false;
+      this.running = false;
     }
   }
-}
-
-function createDisposedError(): TrailMutationQueueError {
-  return new TrailMutationQueueError(
-    "queue-disposed",
-    "The Trail mutation queue has been disposed.",
-  );
 }

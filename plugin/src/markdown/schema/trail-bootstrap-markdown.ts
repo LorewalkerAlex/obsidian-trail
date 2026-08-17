@@ -4,33 +4,30 @@ import {
   TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
 } from "./trail-paths";
+import {
+  TRAIL_PHYSICAL_SOURCE_SCHEMAS,
+  type TrailDomainSourceKind,
+} from "./trail-physical-schema";
 
-export const TRAIL_TRIAGE_EMPTY_MARKDOWN = [
-  "---",
-  "kind: triage",
-  "---",
-  "",
-  "# Issues",
-  "",
-].join("\n");
+function emptySingletonMarkdown(
+  kind: Extract<TrailDomainSourceKind, "cycles" | "projectless-issues" | "triage">,
+): string {
+  const schema = TRAIL_PHYSICAL_SOURCE_SCHEMAS[kind];
+  return [
+    "---",
+    `kind: ${schema.frontmatterKind}`,
+    "---",
+    "",
+    `# ${schema.rootSections[0]}`,
+    "",
+  ].join("\n");
+}
 
-export const TRAIL_PROJECTLESS_ISSUES_EMPTY_MARKDOWN = [
-  "---",
-  "kind: projectless-issues",
-  "---",
-  "",
-  "# Issues",
-  "",
-].join("\n");
-
-export const TRAIL_CYCLES_EMPTY_MARKDOWN = [
-  "---",
-  "kind: cycles",
-  "---",
-  "",
-  "# Cycles",
-  "",
-].join("\n");
+export const TRAIL_TRIAGE_EMPTY_MARKDOWN = emptySingletonMarkdown("triage");
+export const TRAIL_PROJECTLESS_ISSUES_EMPTY_MARKDOWN = emptySingletonMarkdown(
+  "projectless-issues",
+);
+export const TRAIL_CYCLES_EMPTY_MARKDOWN = emptySingletonMarkdown("cycles");
 
 export interface BootstrapMarkdownFile {
   readonly content: string;
@@ -46,7 +43,7 @@ export const TRAIL_BOOTSTRAP_FILES: readonly BootstrapMarkdownFile[] = [
   { path: TRAIL_CYCLES_PATH, content: TRAIL_CYCLES_EMPTY_MARKDOWN },
 ] as const;
 
-/** Stable manifest consumed by Fresh Workspace bootstrap orchestration. */
+/** Stable manifest consumed later by Source Sync bootstrap orchestration. */
 export const TRAIL_BOOTSTRAP_MARKDOWN = {
   directories: TRAIL_BOOTSTRAP_DIRECTORIES,
   files: TRAIL_BOOTSTRAP_FILES,

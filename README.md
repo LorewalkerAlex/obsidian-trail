@@ -4,9 +4,9 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit, formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, Implementation Architecture Re-baseline, and Codebase Simplification checkpoints.
+Trail has completed its POC exit, formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, Implementation Architecture Re-baseline, Codebase Simplification, Clean Plugin Rebuild, independent Architecture Implementation Audit, and directory Cutover checkpoints.
 
-The current engineering stage is **Clean Plugin Rebuild**. The rebuild has completed Boundary + Domain, Markdown + Persistence, Runtime + Mutation, Source Sync + Application, Query + UI + Host Composition, and **Parity + Independent-risk Validation**. The next step is an independent **Architecture Implementation Audit**. Directory Cutover is allowed only if that audit and the full Cutover Gate pass. Net-new Intake → Workflow work remains paused until after cutover.
+The current engineering stage is **Intake → Workflow**. The first net-new slice after Cutover is `Triage Convert to Project`.
 
 The current design and implementation chain is:
 
@@ -26,33 +26,24 @@ docs/implementation-architecture.md
 docs/implementation-plan.md
 ~~~
 
-`docs/implementation-architecture.md` is the authority for Formal code ownership, dependency direction, Runtime, Mutation, Persistence, Source Sync, Markdown, Query, UI and host boundaries. `docs/implementation-plan.md` is the source of truth for implementation progress and the current rebuild/cutover sequence.
+`docs/implementation-architecture.md` is the authority for Formal code ownership, dependency direction, Runtime, Mutation, Persistence, Source Sync, Markdown, Query, UI and host boundaries. `docs/implementation-plan.md` is the source of truth for implementation progress and the current feature sequence.
 
-The 2026-08-16 legacy reference checkpoint is `6061ca45569fe7664e0b37ed279928c9559e8592`. Its automated and representative real-Obsidian evidence remains valuable: 49 test files / 191 tests, lint with zero warnings, TypeScript typecheck, production and Diagnostics builds, external managed-file refresh, and a reviewed Diagnostics trace with no warn/error events. The rebuild reuses proven behavior and mechanisms selectively, but does not inherit the old code structure as an architectural baseline.
+The 2026-08-16 legacy reference checkpoint is `6061ca45569fe7664e0b37ed279928c9559e8592`. Its automated and representative real-Obsidian evidence remains valuable: 49 test files / 191 tests, lint with zero warnings, TypeScript typecheck, production and Diagnostics builds, external managed-file refresh, and a reviewed Diagnostics trace with no warn/error events. Git history now preserves that implementation; it is no longer kept as a second active plugin source tree.
 
-Parity validation compared the existing Formal behavior against the current Product / Domain contract and the retained legacy evidence. Quick Capture, Triage Management, Project / Workflow Issue, and Triage Accept have the required behavior parity; no missing legacy behavior was identified that must block the rebuild. Independent-risk evidence now covers managed-file external refresh, read-only recovery, destination-first source transitions, safe compensation boundaries, host event suppression, and development Validation Evidence.
+The clean rebuild completed parity validation for Quick Capture, Triage Management, Project / Workflow Issue, and Triage Accept, plus independent-risk evidence for managed-file external refresh, read-only recovery, destination-first source transitions, safe compensation boundaries, host event suppression, and development Validation Evidence. The independent Architecture Implementation Audit on 2026-08-17 returned **PASS** with no blocking finding. Cutover then promoted the audited clean implementation to the canonical `plugin/` path and removed the temporary dual-tree build/test configuration.
 
-## Clean rebuild model
+## Formal implementation model
 
-The rebuild happens on the current `main` branch and in the current working directory. No separate rebuild worktree or branch is required.
+The repository has one active Formal plugin implementation:
 
 ~~~text
-plugin/                 Existing reference implementation retained during rebuild
-plugin-rebuild/         Clean Formal implementation and current Obsidian build target
+plugin/
+`-- src/                  Formal implementation and current Obsidian build target
 ~~~
 
-During the rebuild:
+The old Formal implementation remains recoverable from Git history at checkpoint `6061ca45569fe7664e0b37ed279928c9559e8592`; it is intentionally not duplicated under `archive/`. The exact POC implementation / fixture / style baseline remains under `archive/poc/` as historical technical evidence and is not part of the active Formal runtime.
 
-- `plugin/` stays available for behavior comparison and proven technical evidence.
-- `plugin-rebuild/` must not import production code from `plugin/`.
-- Capabilities copied or rewritten from the reference implementation land directly in the canonical owner defined by `docs/implementation-architecture.md`.
-- Legacy tests are evidence, not compatibility requirements. Relevant behavior/risk tests are re-established under the new owner.
-- No compatibility facade, old/new import bridge, dual mutation plan, or temporary wrong owner is introduced just to ease migration.
-- The Obsidian build entry now targets `plugin-rebuild/` for host/parity validation. This is not the final directory Cutover: legacy `plugin/` remains present only as reference/evidence until the Cutover Gate passes.
-
-With parity complete, the next session must independently perform the full Design → Code Architecture Implementation Audit. Cutover is not presumed: only an audit PASS plus the remaining Cutover Gate conditions may authorize removal or archival of the old `plugin/` and promotion of `plugin-rebuild/` to the formal `plugin/` path. `Triage Convert to Project` resumes only after that cutover.
-
-The exact POC implementation / fixture / style baseline remains under `archive/poc/` as earlier technical evidence. It is not part of the active Formal runtime.
+The Formal source follows the ownership map in `docs/implementation-architecture.md`: Domain, Application, Markdown, Persistence, Runtime, Mutation, Source Sync, Query, UI, Obsidian adapters, Diagnostics, and the thin composition root each keep one canonical owner and dependency direction.
 
 ## Repository layout
 
@@ -66,9 +57,7 @@ obsidian-trail-active/
 |-- archive/
 |   `-- poc/                  Exact POC implementation / fixture / style baseline
 |-- plugin/
-|   `-- src/                  Retained reference implementation during rebuild
-|-- plugin-rebuild/
-|   `-- src/                  Clean Formal implementation and active build target
+|   `-- src/                  Formal Trail implementation
 |-- Trail/                    Local Domain Markdown created at runtime; ignored by Git
 `-- docs/                     Product, design and implementation documents
 ~~~
@@ -106,13 +95,7 @@ npm ci
 
 ## Development workflow
 
-The current Obsidian build target is:
-
-~~~text
-plugin-rebuild/
-~~~
-
-The legacy implementation remains available under:
+The active Obsidian source and build target is:
 
 ~~~text
 plugin/
@@ -129,39 +112,32 @@ Available commands include:
 ~~~powershell
 npm run dev
 npm run lint
-npm run lint:rebuild
 npm run test
 npm run test:run
 npm run test:run:verbose
-npm run test:run:rebuild
 npm run typecheck
-npm run typecheck:rebuild
-npm run check:rebuild
 npm run build
 npm run build:diagnostics
 npm run check
 ~~~
 
-- `npm run dev` watches/builds the current rebuild Obsidian entry.
-- `npm run lint` checks the repository source, including rebuild architecture rules.
-- `npm run lint:rebuild` checks only the rebuild source/config surface.
-- `npm run test:run` runs the retained legacy reference test suite once.
-- `npm run test:run:rebuild` runs only the rebuild test suite.
-- `npm run typecheck` checks the retained legacy reference implementation.
-- `npm run typecheck:rebuild` checks only `plugin-rebuild/`.
-- `npm run check:rebuild` runs rebuild lint, typecheck and tests without building an Obsidian artifact.
-- `npm run build` and `npm run build:diagnostics` build the rebuild composition root; the Diagnostics variant enables development-only validation evidence.
-- `npm run check` validates both the legacy reference and the clean rebuild, then performs the rebuild production build.
+- `npm run dev` watches/builds the Formal Obsidian entry.
+- `npm run lint` checks the repository source and architecture restrictions.
+- `npm run test:run` runs the Formal automated test suite once.
+- `npm run typecheck` checks the Formal implementation.
+- `npm run build` typechecks and creates the production Obsidian bundle with development Diagnostics disabled.
+- `npm run build:diagnostics` typechecks and creates the development Diagnostics bundle.
+- `npm run check` runs lint, the Formal test suite, typecheck, and the production build through the normal toolchain.
 
-During a rebuild slice, use focused owner tests first. Run the full root `npm run check` once when a coherent checkpoint is ready. A green legacy suite does not make legacy ownership authoritative; a green rebuild suite does not replace the need for final architecture and real-host gates.
+During a feature slice, use focused owner tests first. Run the full root `npm run check` once when a coherent checkpoint is ready. Architecture and representative real-host evidence remain separate exit gates where the change affects those risks.
 
 ## Testing in Obsidian
 
-Real Obsidian regression now exercises the rebuild bundle generated under `.obsidian/plugins/trail/`. Representative validation covers the Host boundary rather than repeating every pure planner/query rule already owned by automated tests.
+Real Obsidian regression exercises the Formal bundle generated under `.obsidian/plugins/trail/`. Representative validation covers the Host boundary rather than repeating every pure planner/query rule already owned by automated tests.
 
 Diagnostics builds expose `Trail: Copy validation evidence`, which exports recent structured diagnostics together with the current Runtime snapshot, plugin data, and raw managed Trail Markdown. This is development verification infrastructure only: it must not participate in product correctness or ship in the production bundle.
 
-The representative rebuild real-host evidence has been reviewed, and focused automated evidence now explicitly covers recovery from `read-only-error` after a later valid managed-source refresh. Real-host test data is cleaned after review so the local `Trail/` persistence does not accumulate stale QA fixtures. Host-state resets operate only on the Trail Vault under test, not unrelated Obsidian windows.
+The representative clean-rebuild real-host evidence was reviewed before Cutover, including recovery from `read-only-error` after a later valid managed-source refresh. Cutover itself changes repository ownership paths/tooling rather than product behavior, so that retained evidence remains the host-behavior baseline. Real-host test data is cleaned after review so the local `Trail/` persistence does not accumulate stale QA fixtures. Host-state resets operate only on the Trail Vault under test, not unrelated Obsidian windows.
 
 ## Continuous integration
 
@@ -171,7 +147,7 @@ GitHub Actions uses the Node.js version from `.nvmrc`, installs dependencies wit
 npm run check
 ~~~
 
-During the remaining rebuild audit/cutover work this command checks both trees while the production build targets `plugin-rebuild/`. After final Cutover, the temporary rebuild scripts/config are removed or folded back into the normal `plugin/` toolchain.
+After Cutover, this is the single Formal validation path; no temporary dual-tree scripts or alternate test configuration remain.
 
 ## Design documents
 
@@ -181,6 +157,6 @@ During the remaining rebuild audit/cutover work this command checks both trees w
 - `docs/markdown-physical-model.md` — authoritative Vault / Markdown / `data.json` persistence layout, serialization rules, validation boundaries, and migration policy.
 - `docs/technical-design-baseline.md` — formal conceptual Technical Design for Runtime, optimistic state, mutation planning/execution, reconciliation, frontend architecture, performance and diagnostics boundaries.
 - `docs/implementation-architecture.md` — formal code module architecture, dependency direction, shared capabilities, standard read/write pipeline, testing ownership and long-term owner map.
-- `docs/implementation-plan.md` — V1 roadmap, current rebuild stage, Cutover Gate and implementation checkpoints.
+- `docs/implementation-plan.md` — V1 roadmap, current stage, completed Cutover checkpoint, and implementation sequence.
 - `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as historical design context; superseded where it conflicts with current canonical docs.
 - `docs/technical-design.md` — POC technical baseline and verified architecture evidence only; superseded where it conflicts with the formal design chain.

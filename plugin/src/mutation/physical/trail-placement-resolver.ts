@@ -1,69 +1,102 @@
+import type { TrailDomainEntity } from "../../domain/model/trail-entities";
 import {
   TRAIL_CYCLES_PATH,
   TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
 } from "../../markdown/schema/trail-paths";
+import type { TrailDomainSourceRepository, TrailManagedDomainSourceKind } from "../../persistence/domain-sources/trail-domain-source-repository";
 import type { TrailCommittedRuntime } from "../../runtime/store/trail-runtime-store";
 import {
-  trailMutationEntityId,
-  type TrailMutationEntity,
-} from "../plans/trail-mutation-plan";
+  allocateTrailFileBackedEntityPath,
+  projectTrailRenamedFileBackedPath,
+} from "./trail-file-backed-path-allocator";
 
-export type TrailInitiativePathAllocator = (
-  initiative: Extract<TrailMutationEntity, { kind: "initiative" }>["value"],
-) => Promise<string>;
-
-export type TrailProjectPathAllocator = (
-  project: Extract<TrailMutationEntity, { kind: "project" }>["value"],
-) => Promise<string>;
-
-export interface TrailPlacementEnvironment {
-  readonly allocateInitiativePath?: TrailInitiativePathAllocator;
-  readonly allocateProjectPath?: TrailProjectPathAllocator;
+export interface TrailEntityPlacement {
+  readonly path: string;
+  readonly renameFrom?: string;
+  readonly sourceKind: TrailManagedDomainSourceKind;
 }
 
-function requireProjectSource(
-  projectId: string,
-  committed: TrailCommittedRuntime,
-  label: string,
-): string {
-  const projectPath = committed.ownership.sourceByEntityId[projectId];
-  if (projectPath === undefined) {
-    throw new Error(`${label} Project source is not committed: ${projectId}`);
-  }
-  return projectPath;
+function requiredOwner(committed: TrailCommittedRuntime, entityId: string, label: string): string {
+  const path = committed.ownership.sourceByEntityId.get(entityId);
+  if (path === undefined) throw new Error(`${label} has no authoritative source ownership: ${entityId}`);
+  return path;
 }
 
-/** Resolves logical entity placement from committed ownership and frozen physical rules. */
-export async function resolveTrailEntityPlacement(
-  entity: TrailMutationEntity,
+/** Resolves desired placement from current logical relationships, not from Markdown layout. */
+export async function resolveTrailDesiredEntityPlacement(
+  entity: TrailDomainEntity,
   committed: TrailCommittedRuntime,
-  environment: TrailPlacementEnvironment = {},
-): Promise<string> {
-  const existing = committed.ownership.sourceByEntityId[trailMutationEntityId(entity)];
-  if (existing !== undefined) return existing;
-
+  repository: Pick<TrailDomainSourceRepository, "list">,
+): Promise<TrailEntityPlacement> {
   switch (entity.kind) {
-    case "initiative":
-      if (environment.allocateInitiativePath === undefined) {
-        throw new Error("Initiative placement requires a file-backed path allocator");
+    case "initiative": {
+      const current = committed.ownership.sourceByEntityId.get(entity.value.id);
+      if (current === undefined) {
+        return {
+          path: await allocateTrailFileBackedEntityPath(repository, "initiative", entity.value.title),
+          sourceKind: "initiative",
+        };
       }
-      return environment.allocateInitiativePath(entity.value);
-    case "project":
-      if (environment.allocateProjectPath === undefined) {
-        throw new Error("Project placement requires a file-backed path allocator");
-      }
-      return environment.allocateProjectPath(entity.value);
-    case "milestone":
-      return requireProjectSource(entity.value.projectId, committed, "Milestone");
-    case "triage-issue":
-      return TRAIL_TRIAGE_PATH;
-    case "workflow-issue": {
-      const projectId = entity.value.projectId;
-      if (projectId === undefined) return TRAIL_PROJECTLESS_ISSUES_PATH;
-      return requireProjectSource(projectId, committed, "Workflow Issue");
+      const projected = projectTrailRenamedFileBackedPath(current, "initiative", entity.value.title);
+      return {
+        path: projected,
+        renameFrom: projected === current ? undefined : current,
+        sourceKind: "initiative",
+      };
     }
+    case "project": {
+      const current = committed.ownership.sourceByEntityId.get(entity.value.id);
+      if (current === undefined) {
+        return {
+          path: await allocateTrailFileBackedEntityPath(repository, "project", entity.value.title),
+          sourceKind: "project",
+        };
+      }
+      const projected = projectTrailRenamedFileBackedPath(current, "project", entity.value.title);
+      return {
+        path: projected,
+        renameFrom: projected === current ? undefined : current,
+        sourceKind: "project",
+      };
+    }
+    case "milestone":
+      return {
+        path: requiredOwner(committed, entity.value.projectId, "Milestone Project"),
+        sourceKind: "project",
+      };
+    case "issue":
+      if (entity.value.context === "triage") {
+        return { path: TRAIL_TRIAGE_PATH, sourceKind: "triage" };
+      }
+      if (entity.value.projectId === undefined) {
+        return { path: TRAIL_PROJECTLESS_ISSUES_PATH, sourceKind: "projectless-issues" };
+      }
+      return {
+        path: requiredOwner(committed, entity.value.projectId, "Workflow Issue Project"),
+        sourceKind: "project",
+      };
     case "cycle":
-      return TRAIL_CYCLES_PATH;
+      return { path: TRAIL_CYCLES_PATH, sourceKind: "cycles" };
+  }
+}
+
+export function resolveTrailCurrentEntityPlacement(
+  entity: TrailDomainEntity,
+  committed: TrailCommittedRuntime,
+): TrailEntityPlacement {
+  const path = requiredOwner(committed, entity.value.id, "Entity");
+  switch (entity.kind) {
+    case "initiative": return { path, sourceKind: "initiative" };
+    case "project": return { path, sourceKind: "project" };
+    case "milestone": return { path, sourceKind: "project" };
+    case "issue": {
+      if (entity.value.context === "triage") return { path, sourceKind: "triage" };
+      return {
+        path,
+        sourceKind: entity.value.projectId === undefined ? "projectless-issues" : "project",
+      };
+    }
+    case "cycle": return { path, sourceKind: "cycles" };
   }
 }

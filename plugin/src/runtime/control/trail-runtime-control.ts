@@ -1,19 +1,9 @@
-import type { TrailRuntimeStore } from "../store/trail-runtime-store";
-
 export type TrailRuntimeControl =
   | { readonly kind: "loading" }
-  | { readonly kind: "ready"; readonly timezone: string }
-  | { readonly kind: "refreshing"; readonly timezone: string }
-  | {
-      readonly kind: "read-only-error";
-      readonly message: string;
-      readonly timezone?: string;
-    };
+  | { readonly kind: "ready" }
+  | { readonly kind: "refreshing" }
+  | { readonly kind: "read-only-error"; readonly message: string };
 
-/** Publishes Runtime lifecycle control independently from committed facts and pending intent. */
-export function setTrailRuntimeControl(
-  store: TrailRuntimeStore,
-  control: TrailRuntimeControl,
-): void {
-  store.setState({ control });
+export function isTrailRuntimeWritable(control: TrailRuntimeControl): boolean {
+  return control.kind === "ready";
 }

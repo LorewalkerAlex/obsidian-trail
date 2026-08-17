@@ -1,40 +1,71 @@
+import type { TrailTriageIssue, TrailWorkflowIssue } from "../../domain/model/trail-entities";
 import {
-  isTrailEpochMilliseconds,
-  isTrailEstimateCarrier,
+  isTrailEstimate,
+  isTrailId,
+  isTrailPlainObject,
   isTrailPriority,
-  type TrailTriageIssue,
-  type TrailWorkflowIssue,
-} from "../../domain/trail-issue";
-import { isRecordObject } from "../core/trail-markdown-core";
+  isTrailTimestamp,
+  isTrailTitle,
+  normalizeTrailTitle,
+} from "../../domain/validation/trail-value-validation";
+import {
+  isRecordObject,
+  requiredMarkdownOffset,
+  type TrailMarkdownRecordSlice,
+} from "../core/trail-markdown-core";
 import { TRAIL_PHYSICAL_RECORD_SCHEMAS } from "../schema/trail-physical-schema";
 
 export type TrailYamlParser = (yaml: string) => unknown;
+export type TrailCodecIssueStage = "physical" | "field" | "domain";
+export type TrailCodecEntityKind = "initiative" | "project" | "milestone" | "issue" | "cycle";
+
 export interface TrailCodecIssue {
   readonly code: string;
-  readonly filePath: string;
+  readonly entityId?: string;
+  readonly entityKind?: TrailCodecEntityKind;
+  readonly field?: string;
   readonly message: string;
-  readonly objectId?: string;
   readonly offset?: number;
-  readonly scope: "file" | "record";
+  readonly scope: "source" | "entity";
+  readonly severity: "error";
+  readonly sourcePath: string;
+  readonly stage: TrailCodecIssueStage;
 }
 
-export function fileCodecIssue(
+export function sourceCodecIssue(
   code: string,
-  filePath: string,
+  sourcePath: string,
   message: string,
   offset?: number,
+  stage: TrailCodecIssueStage = "physical",
 ): TrailCodecIssue {
-  return { code, filePath, message, offset, scope: "file" };
+  return { code, message, offset, scope: "source", severity: "error", sourcePath, stage };
 }
 
-export function recordCodecIssue(
+export function entityCodecIssue(
   code: string,
-  filePath: string,
+  sourcePath: string,
+  entityKind: TrailCodecEntityKind,
   message: string,
-  objectId?: string,
-  offset?: number,
+  options: {
+    readonly entityId?: string;
+    readonly field?: string;
+    readonly offset?: number;
+    readonly stage?: TrailCodecIssueStage;
+  } = {},
 ): TrailCodecIssue {
-  return { code, filePath, message, objectId, offset, scope: "record" };
+  return {
+    code,
+    entityId: options.entityId,
+    entityKind,
+    field: options.field,
+    message,
+    offset: options.offset,
+    scope: "entity",
+    severity: "error",
+    sourcePath,
+    stage: options.stage ?? "field",
+  };
 }
 
 export function parseExactFrontmatter(
@@ -49,23 +80,16 @@ export function parseExactFrontmatter(
     value = undefined;
   }
 
-  if (!isRecordObject(value)) {
-    return ["frontmatter is invalid YAML or not an object"];
-  }
+  if (!isRecordObject(value)) return ["frontmatter is invalid YAML or not an object"];
   const expectedKeys = Object.keys(expected).sort();
   const actualKeys = Object.keys(value).sort();
-  if (
-    actualKeys.length !== expectedKeys.length
-    || actualKeys.some((key, index) => key !== expectedKeys[index])
-  ) {
+  if (actualKeys.length !== expectedKeys.length || actualKeys.some((key, index) => key !== expectedKeys[index])) {
     return [`frontmatter must contain exactly ${expectedKeys.join(" and ")}`];
   }
   for (const [key, expectedValue] of Object.entries(expected)) {
     const actualValue = value[key];
-    if (expectedValue === "<non-empty-string>") {
-      if (typeof actualValue !== "string" || actualValue.trim() === "") {
-        return [`frontmatter ${key} must be non-empty text`];
-      }
+    if (expectedValue === "<id>") {
+      if (!isTrailId(actualValue)) return [`frontmatter ${key} must be non-empty text`];
     } else if (actualValue !== expectedValue) {
       return [`frontmatter ${key} must be ${String(expectedValue)}`];
     }
@@ -73,8 +97,8 @@ export function parseExactFrontmatter(
   return [];
 }
 
-function parseJsonObject(raw: string, label: string): {
-  readonly issues: string[];
+export function parseJsonObject(raw: string, label: string): {
+  readonly issues: readonly string[];
   readonly value?: Record<string, unknown>;
 } {
   let parsed: unknown;
@@ -83,13 +107,11 @@ function parseJsonObject(raw: string, label: string): {
   } catch {
     return { issues: [`${label} must contain valid JSON`] };
   }
-  if (!isRecordObject(parsed)) {
-    return { issues: [`${label} JSON must be an object`] };
-  }
+  if (!isTrailPlainObject(parsed)) return { issues: [`${label} JSON must be an object`] };
   return { issues: [], value: parsed };
 }
 
-function rejectUnknownKeys(
+export function rejectUnknownKeys(
   value: Record<string, unknown>,
   allowed: readonly string[],
   label: string,
@@ -97,87 +119,102 @@ function rejectUnknownKeys(
 ): void {
   const allowedSet = new Set(allowed);
   for (const key of Object.keys(value)) {
-    if (!allowedSet.has(key)) {
-      issues.push(`unknown ${label} metadata field: ${key}`);
-    }
+    if (!allowedSet.has(key)) issues.push(`unknown ${label} metadata field: ${key}`);
   }
 }
 
-export function parseOptionalString(
+export function parseRequiredId(
   metadata: Record<string, unknown>,
   key: string,
   issues: string[],
 ): string | undefined {
   const value = metadata[key];
-  if (value === undefined) {
-    return undefined;
-  }
-  if (typeof value !== "string" || value.trim() === "") {
-    issues.push(`${key} must be non-empty text when present`);
-    return undefined;
-  }
-  return value;
-}
-
-export function parseRequiredString(
-  metadata: Record<string, unknown>,
-  key: string,
-  issues: string[],
-): string | undefined {
-  const value = metadata[key];
-  if (typeof value !== "string" || value.trim() === "") {
+  if (!isTrailId(value)) {
     issues.push(`${key} must be non-empty text`);
     return undefined;
   }
   return value;
 }
 
-export function parseOptionalEpoch(
+export function parseOptionalId(
   metadata: Record<string, unknown>,
   key: string,
   issues: string[],
-): number | undefined {
+): string | undefined {
   const value = metadata[key];
-  if (value === undefined) {
-    return undefined;
-  }
-  if (!isTrailEpochMilliseconds(value)) {
-    issues.push(`${key} must be a non-negative epoch-millisecond integer when present`);
+  if (value === undefined) return undefined;
+  if (!isTrailId(value)) {
+    issues.push(`${key} must be non-empty text when present`);
     return undefined;
   }
   return value;
 }
 
-export function parseRequiredEpoch(
+export function parseRequiredTimestamp(
   metadata: Record<string, unknown>,
   key: string,
   issues: string[],
 ): number | undefined {
   const value = metadata[key];
-  if (!isTrailEpochMilliseconds(value)) {
+  if (!isTrailTimestamp(value)) {
     issues.push(`${key} must be a non-negative epoch-millisecond integer`);
     return undefined;
   }
   return value;
 }
 
-export function parseIdSet(
-  value: unknown,
+export function parseOptionalTimestamp(
+  metadata: Record<string, unknown>,
   key: string,
   issues: string[],
-): readonly string[] {
-  if (value === undefined) {
-    return [];
+): number | undefined {
+  const value = metadata[key];
+  if (value === undefined) return undefined;
+  if (!isTrailTimestamp(value)) {
+    issues.push(`${key} must be a non-negative epoch-millisecond integer when present`);
+    return undefined;
   }
+  return value;
+}
+
+export function parseOptionalPriority(
+  metadata: Record<string, unknown>,
+  key: string,
+  issues: string[],
+) {
+  const value = metadata[key];
+  if (value === undefined) return undefined;
+  if (!isTrailPriority(value)) {
+    issues.push(`${key} must be urgent, high, medium, or low`);
+    return undefined;
+  }
+  return value;
+}
+
+export function parseOptionalEstimate(
+  metadata: Record<string, unknown>,
+  key: string,
+  issues: string[],
+): number | undefined {
+  const value = metadata[key];
+  if (value === undefined) return undefined;
+  if (!isTrailEstimate(value)) {
+    issues.push(`${key} must be a non-negative integer when present`);
+    return undefined;
+  }
+  return value;
+}
+
+export function parseIdSet(value: unknown, key: string, issues: string[]): readonly string[] {
+  if (value === undefined) return [];
   if (!Array.isArray(value)) {
     issues.push(`${key} must be an array when present`);
     return [];
   }
-
   const seen = new Set<string>();
   const ids: string[] = [];
   value.forEach((entry, index) => {
-    if (typeof entry !== "string" || entry.trim() === "") {
+    if (!isTrailId(entry)) {
       issues.push(`${key}[${index}] must be non-empty text`);
       return;
     }
@@ -191,69 +228,112 @@ export function parseIdSet(
   return ids.sort();
 }
 
+export function canonicalIdSet(ids: readonly string[]): readonly string[] | undefined {
+  return ids.length === 0 ? undefined : [...ids].sort();
+}
+
+export function canonicalMetadata(
+  order: readonly string[],
+  values: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const key of order) {
+    const value = values[key];
+    if (value !== undefined) result[key] = value;
+  }
+  return result;
+}
+
+export function serializeDataMarker(
+  order: readonly string[],
+  values: Readonly<Record<string, unknown>>,
+): string {
+  return `<!-- data ${JSON.stringify(canonicalMetadata(order, values))} -->`;
+}
+
+export function validateRecordEnvelope(
+  record: TrailMarkdownRecordSlice,
+  input: {
+    readonly bodyStartOffset: number;
+    readonly codePrefix: string;
+    readonly entityKind: TrailCodecEntityKind;
+    readonly label: string;
+    readonly sourcePath: string;
+  },
+  issues: TrailCodecIssue[],
+): boolean {
+  const offset = input.bodyStartOffset + record.startOffset;
+  const title = normalizeTrailTitle(record.title);
+  if (!isTrailTitle(title)) {
+    issues.push(entityCodecIssue(
+      `${input.codePrefix}.title-invalid`,
+      input.sourcePath,
+      input.entityKind,
+      `${input.label} title must be non-empty single-line text`,
+      { offset, stage: "field" },
+    ));
+  }
+  if (record.markerJson === null || record.immediateMarker === undefined) {
+    issues.push(entityCodecIssue(
+      `${input.codePrefix}.marker-position`,
+      input.sourcePath,
+      input.entityKind,
+      `${input.label} metadata marker must immediately follow its H2`,
+      { offset, stage: "physical" },
+    ));
+  }
+  if (record.markerCount !== 1) {
+    issues.push(entityCodecIssue(
+      `${input.codePrefix}.marker-count`,
+      input.sourcePath,
+      input.entityKind,
+      `${input.label} record requires exactly one metadata marker`,
+      { offset, stage: "physical" },
+    ));
+  }
+  return isTrailTitle(title)
+    && record.markerJson !== null
+    && record.immediateMarker !== undefined
+    && record.markerCount === 1;
+}
+
+export function markerOffset(record: TrailMarkdownRecordSlice, bodyStartOffset: number): number | undefined {
+  return record.immediateMarker === undefined
+    ? undefined
+    : bodyStartOffset + requiredMarkdownOffset(record.immediateMarker, "start");
+}
+
+export type TrailWorkflowIssuePhysicalContext =
+  | { readonly kind: "project"; readonly projectId: string }
+  | { readonly kind: "projectless" };
+
 export function parseTriageIssueMetadata(raw: string): {
   readonly issue?: Omit<TrailTriageIssue, "description" | "title">;
-  readonly issues: string[];
+  readonly issues: readonly string[];
 } {
-  const parsed = parseJsonObject(raw, "data marker");
-  if (parsed.value === undefined) {
-    return { issues: parsed.issues };
-  }
+  const parsed = parseJsonObject(raw, "Issue data marker");
+  if (parsed.value === undefined) return { issues: parsed.issues };
   const value = parsed.value;
-  const issues = [...parsed.issues];
+  const issues: string[] = [];
   rejectUnknownKeys(
     value,
     TRAIL_PHYSICAL_RECORD_SCHEMAS.issue.metadataOrder,
     "Issue",
     issues,
   );
-
-  const id = parseRequiredString(value, "id", issues);
-  if (value.context !== "triage") {
-    issues.push("context must be triage in Triage.md");
+  const id = parseRequiredId(value, "id", issues);
+  if (value.context !== "triage") issues.push("context must be triage in Triage.md");
+  for (const field of ["statusDefinitionId", "createdAt", "firstStartedAt", "terminalAt"] as const) {
+    if (value[field] !== undefined) issues.push(`${field} is not valid on a Triage Issue`);
   }
-  const due = parseRequiredEpoch(value, "due", issues);
-
-  for (const workflowOnly of [
-    "statusDefinitionId",
-    "createdAt",
-    "firstStartedAt",
-    "terminalAt",
-  ] as const) {
-    if (value[workflowOnly] !== undefined) {
-      issues.push(`${workflowOnly} is not valid on a Triage Issue`);
-    }
-  }
-
-  const projectId = parseOptionalString(value, "projectId", issues);
-  const milestoneId = parseOptionalString(value, "milestoneId", issues);
-  if (milestoneId !== undefined && projectId === undefined) {
-    issues.push("milestoneId requires projectId");
-  }
-
-  let priority: TrailTriageIssue["priority"];
-  if (value.priority !== undefined) {
-    if (!isTrailPriority(value.priority)) {
-      issues.push("priority must be urgent, high, medium, or low");
-    } else {
-      priority = value.priority;
-    }
-  }
-
-  let estimate: number | undefined;
-  if (value.estimate !== undefined) {
-    if (!isTrailEstimateCarrier(value.estimate)) {
-      issues.push("estimate must be a non-negative integer when present");
-    } else {
-      estimate = value.estimate;
-    }
-  }
+  const projectId = parseOptionalId(value, "projectId", issues);
+  const milestoneId = parseOptionalId(value, "milestoneId", issues);
+  if (milestoneId !== undefined && projectId === undefined) issues.push("milestoneId requires projectId");
+  const priority = parseOptionalPriority(value, "priority", issues);
+  const estimate = parseOptionalEstimate(value, "estimate", issues);
+  const due = parseRequiredTimestamp(value, "due", issues);
   const labelIds = parseIdSet(value.labelIds, "labelIds", issues);
-
-  if (id === undefined || due === undefined || issues.length > 0) {
-    return { issues };
-  }
-
+  if (id === undefined || due === undefined || issues.length > 0) return { issues };
   return {
     issues,
     issue: {
@@ -269,90 +349,46 @@ export function parseTriageIssueMetadata(raw: string): {
   };
 }
 
-export type WorkflowIssuePhysicalContext =
-  | { readonly kind: "project"; readonly projectId: string }
-  | { readonly kind: "projectless" };
-
 export function parseWorkflowIssueMetadata(
   raw: string,
-  context: WorkflowIssuePhysicalContext,
+  context: TrailWorkflowIssuePhysicalContext,
 ): {
   readonly issue?: Omit<TrailWorkflowIssue, "description" | "title">;
-  readonly issues: string[];
+  readonly issues: readonly string[];
 } {
   const parsed = parseJsonObject(raw, "Issue data marker");
-  if (parsed.value === undefined) {
-    return { issues: parsed.issues };
-  }
+  if (parsed.value === undefined) return { issues: parsed.issues };
   const value = parsed.value;
-  const issues = [...parsed.issues];
+  const issues: string[] = [];
   rejectUnknownKeys(
     value,
     TRAIL_PHYSICAL_RECORD_SCHEMAS.issue.metadataOrder,
     "Issue",
     issues,
   );
-
-  const id = parseRequiredString(value, "id", issues);
-  if (value.context !== "workflow") {
-    issues.push("context must be workflow in a Workflow Issue container");
-  }
-  const statusDefinitionId = parseRequiredString(
-    value,
-    "statusDefinitionId",
-    issues,
-  );
-  const createdAt = parseRequiredEpoch(value, "createdAt", issues);
-  const projectId = parseOptionalString(value, "projectId", issues);
-  const milestoneId = parseOptionalString(value, "milestoneId", issues);
-
+  const id = parseRequiredId(value, "id", issues);
+  if (value.context !== "workflow") issues.push("context must be workflow in a Workflow Issue container");
+  const statusDefinitionId = parseRequiredId(value, "statusDefinitionId", issues);
+  const createdAt = parseRequiredTimestamp(value, "createdAt", issues);
+  const projectId = parseOptionalId(value, "projectId", issues);
+  const milestoneId = parseOptionalId(value, "milestoneId", issues);
   if (context.kind === "project") {
-    if (projectId === undefined) {
-      issues.push("projectId must be non-empty text");
-    } else if (projectId !== context.projectId) {
-      issues.push("projectId must match the owning Project file");
-    }
+    if (projectId === undefined) issues.push("projectId is required in a Project file");
+    else if (projectId !== context.projectId) issues.push("projectId must match the owning Project file");
   } else {
-    if (projectId !== undefined) {
-      issues.push("projectId must be absent in Projectless Issues.md");
-    }
-    if (milestoneId !== undefined) {
-      issues.push("milestoneId must be absent in Projectless Issues.md");
-    }
+    if (projectId !== undefined) issues.push("projectId must be absent in Projectless Issues.md");
+    if (milestoneId !== undefined) issues.push("milestoneId must be absent in Projectless Issues.md");
   }
-
-  let priority: TrailWorkflowIssue["priority"];
-  if (value.priority !== undefined) {
-    if (!isTrailPriority(value.priority)) {
-      issues.push("priority must be urgent, high, medium, or low");
-    } else {
-      priority = value.priority;
-    }
-  }
-
-  let estimate: number | undefined;
-  if (value.estimate !== undefined) {
-    if (!isTrailEstimateCarrier(value.estimate)) {
-      issues.push("estimate must be a non-negative integer when present");
-    } else {
-      estimate = value.estimate;
-    }
-  }
-
-  const due = parseOptionalEpoch(value, "due", issues);
+  if (milestoneId !== undefined && projectId === undefined) issues.push("milestoneId requires projectId");
+  const priority = parseOptionalPriority(value, "priority", issues);
+  const estimate = parseOptionalEstimate(value, "estimate", issues);
+  const due = parseOptionalTimestamp(value, "due", issues);
   const labelIds = parseIdSet(value.labelIds, "labelIds", issues);
-  const firstStartedAt = parseOptionalEpoch(value, "firstStartedAt", issues);
-  const terminalAt = parseOptionalEpoch(value, "terminalAt", issues);
-
-  if (
-    id === undefined
-    || statusDefinitionId === undefined
-    || createdAt === undefined
-    || issues.length > 0
-  ) {
+  const firstStartedAt = parseOptionalTimestamp(value, "firstStartedAt", issues);
+  const terminalAt = parseOptionalTimestamp(value, "terminalAt", issues);
+  if (id === undefined || statusDefinitionId === undefined || createdAt === undefined || issues.length > 0) {
     return { issues };
   }
-
   return {
     issues,
     issue: {
@@ -372,38 +408,38 @@ export function parseWorkflowIssueMetadata(
   };
 }
 
-export function canonicalTriageIssueMetadata(
-  issue: TrailTriageIssue,
-): Record<string, unknown> {
-  const metadata: Record<string, unknown> = {
-    id: issue.id,
-    context: "triage",
-  };
-  if (issue.projectId !== undefined) metadata.projectId = issue.projectId;
-  if (issue.milestoneId !== undefined) metadata.milestoneId = issue.milestoneId;
-  if (issue.priority !== undefined) metadata.priority = issue.priority;
-  if (issue.estimate !== undefined) metadata.estimate = issue.estimate;
-  metadata.due = issue.due;
-  if (issue.labelIds.length > 0) metadata.labelIds = [...issue.labelIds].sort();
-  return metadata;
+export function canonicalTriageIssueMetadata(issue: TrailTriageIssue): Record<string, unknown> {
+  return canonicalMetadata(
+    TRAIL_PHYSICAL_RECORD_SCHEMAS.issue.metadataOrder,
+    {
+      id: issue.id,
+      context: "triage",
+      projectId: issue.projectId,
+      milestoneId: issue.milestoneId,
+      priority: issue.priority,
+      estimate: issue.estimate,
+      due: issue.due,
+      labelIds: canonicalIdSet(issue.labelIds),
+    },
+  );
 }
 
-export function canonicalWorkflowIssueMetadata(
-  issue: TrailWorkflowIssue,
-): Record<string, unknown> {
-  const metadata: Record<string, unknown> = {
-    id: issue.id,
-    context: "workflow",
-    statusDefinitionId: issue.statusDefinitionId,
-  };
-  if (issue.projectId !== undefined) metadata.projectId = issue.projectId;
-  if (issue.milestoneId !== undefined) metadata.milestoneId = issue.milestoneId;
-  if (issue.priority !== undefined) metadata.priority = issue.priority;
-  if (issue.estimate !== undefined) metadata.estimate = issue.estimate;
-  if (issue.due !== undefined) metadata.due = issue.due;
-  if (issue.labelIds.length > 0) metadata.labelIds = [...issue.labelIds].sort();
-  metadata.createdAt = issue.createdAt;
-  if (issue.firstStartedAt !== undefined) metadata.firstStartedAt = issue.firstStartedAt;
-  if (issue.terminalAt !== undefined) metadata.terminalAt = issue.terminalAt;
-  return metadata;
+export function canonicalWorkflowIssueMetadata(issue: TrailWorkflowIssue): Record<string, unknown> {
+  return canonicalMetadata(
+    TRAIL_PHYSICAL_RECORD_SCHEMAS.issue.metadataOrder,
+    {
+      id: issue.id,
+      context: "workflow",
+      statusDefinitionId: issue.statusDefinitionId,
+      projectId: issue.projectId,
+      milestoneId: issue.milestoneId,
+      priority: issue.priority,
+      estimate: issue.estimate,
+      due: issue.due,
+      labelIds: canonicalIdSet(issue.labelIds),
+      createdAt: issue.createdAt,
+      firstStartedAt: issue.firstStartedAt,
+      terminalAt: issue.terminalAt,
+    },
+  );
 }

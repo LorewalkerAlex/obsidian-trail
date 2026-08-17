@@ -1,45 +1,30 @@
-export interface TrailStatusPanelProps {
+export function TrailStatusPanel(props: {
   readonly message: string;
   readonly title: string;
-  readonly tone?: "error" | "warning";
-}
-
-export function TrailStatusPanel({
-  message,
-  title,
-  tone,
-}: TrailStatusPanelProps) {
-  const className = tone === undefined
-    ? "trail-status-panel"
-    : `trail-status-panel trail-status-panel--${tone}`;
-
+  readonly tone?: "error" | "info";
+}) {
   return (
-    <section className={className} role={tone === "error" ? "alert" : "status"}>
-      <h2>{title}</h2>
-      <p>{message}</p>
+    <section
+      className={`trail-status-panel${props.tone === "error" ? " is-error" : ""}`}
+      role={props.tone === "error" ? "alert" : "status"}
+    >
+      <strong>{props.title}</strong>
+      <p>{props.message}</p>
     </section>
   );
 }
 
-export interface TrailDataIssuePanelProps {
+export function TrailDataIssuePanel(props: {
   readonly issues: readonly string[];
   readonly message: string;
   readonly title: string;
-}
-
-export function TrailDataIssuePanel({
-  issues,
-  message,
-  title,
-}: TrailDataIssuePanelProps) {
+}) {
   return (
     <section className="trail-data-issue" role="alert">
-      <div>
-        <strong>{title}</strong>
-        <p>{message}</p>
-      </div>
+      <strong>{props.title}</strong>
+      <p>{props.message}</p>
       <ul>
-        {issues.map((issue, index) => (
+        {props.issues.map((issue, index) => (
           <li key={`${index}:${issue}`}>{issue}</li>
         ))}
       </ul>

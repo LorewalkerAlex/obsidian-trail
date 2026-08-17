@@ -1,10 +1,4 @@
 import {
-  WorkflowNeedsInputError,
-} from "../../../application/issues/trail-workflow-issue-application";
-import type {
-  TrailEntityMutationReceipt,
-} from "../../../application/trail-application-contracts";
-import {
   useState,
   type ChangeEvent,
   type SyntheticEvent,
@@ -13,78 +7,39 @@ import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
 import {
-  STATUS_CATEGORIES,
-  resolveStatusDefinition,
-  type TrailConfiguration,
-} from "../../../domain/trail-configuration";
-import type { TrailWorkflowIssue } from "../../../domain/trail-issue";
+  selectIsTrailEntityPending,
+  selectTrailReadableConfiguration,
+  selectTrailReadableProjectById,
+  selectTrailReadableProjectIds,
+  selectTrailReadableWorkflowIssueIdsByProject,
+} from "../../../query/shared/trail-effective-query";
 import {
-  selectEffectiveProjectById,
-  selectEffectiveProjectIds,
-  selectEffectiveWorkflowIssueById,
-  selectEffectiveWorkflowIssueIdsByProject,
-  selectIsWorkflowEntityPending,
-} from "../../../runtime/projection/trail-runtime-projection";
+  selectTrailEntitySourceIssues,
+  selectTrailProjectSourceIssues,
+} from "../../../query/shared/trail-source-health-query";
+import { selectTrailStatusDefinition } from "../../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
-import {
-  selectEntitySourceIssues,
-  selectWorkflowRootSourceIssues,
-  selectWorkflowSourceIssues,
-} from "../../../query/trail-source-health";
-
-import {
-  observeTrailActionCompletion,
-  runTrailAction,
-  trailErrorMessage,
-} from "../../interactions/trail-action";
+import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
+import { runTrailReceipt } from "../../interactions/trail-action";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
+import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
-export interface TrailProjectsPageActions {
-  readonly onCreateProject: (title: string) => TrailEntityMutationReceipt;
-  readonly onCreateWorkflowIssue: (
-    projectId: string,
-    title: string,
-  ) => TrailEntityMutationReceipt;
-  readonly onWorkflowStatusChange: (
-    expectedIssue: TrailWorkflowIssue,
-    targetStatusDefinitionId: string,
-    estimate?: number,
-  ) => TrailEntityMutationReceipt;
-}
-
-export interface TrailProjectsPageProps extends TrailProjectsPageActions {
+export function TrailProjectsPage(props: {
+  readonly actions: Pick<TrailUiActions, "issues" | "projects">;
   readonly runtimeStore: TrailRuntimeStore;
-}
-
-function statusCategoryLabel(category: string): string {
-  switch (category) {
-    case "backlog": return "Backlog";
-    case "unstarted": return "Unstarted";
-    case "started": return "Started";
-    case "completed": return "Completed";
-    case "canceled": return "Canceled";
-    default: return category;
-  }
-}
-
-export function TrailProjectsPage({
-  onCreateProject,
-  onCreateWorkflowIssue,
-  onWorkflowStatusChange,
-  runtimeStore,
-}: TrailProjectsPageProps) {
-  const projectIds = useStore(runtimeStore, useShallow(selectEffectiveProjectIds));
+  readonly writable: boolean;
+}) {
+  const projectIds = useStore(
+    props.runtimeStore,
+    useShallow(selectTrailReadableProjectIds),
+  );
   const configuration = useStore(
-    runtimeStore,
-    (state) => state.committed.authoritative.configuration,
+    props.runtimeStore,
+    selectTrailReadableConfiguration,
   );
-  const workflowSourceIssues = useStore(
-    runtimeStore,
-    useShallow(selectWorkflowSourceIssues),
-  );
-  const workflowRootIsValid = useStore(
-    runtimeStore,
-    (state) => selectWorkflowRootSourceIssues(state).length === 0,
+  const projectSourceIssues = useStore(
+    props.runtimeStore,
+    useShallow(selectTrailProjectSourceIssues),
   );
   const [selectedProjectId, setSelectedProjectId] = useState<string>();
   const [projectDraft, setProjectDraft] = useState("");
@@ -96,9 +51,9 @@ export function TrailProjectsPage({
 
   const submitProject = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (projectDraft.trim() === "") return;
-    runTrailAction(
-      () => onCreateProject(projectDraft),
+    if (!props.writable || projectDraft.trim() === "") return;
+    runTrailReceipt(
+      () => props.actions.projects.create(projectDraft),
       setWorkflowError,
       (receipt) => {
         setProjectDraft("");
@@ -124,17 +79,15 @@ export function TrailProjectsPage({
             <span className="screen-reader-text">Project title</span>
             <input
               autoComplete="off"
-              disabled={!workflowRootIsValid}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setProjectDraft(event.target.value);
-              }}
+              disabled={!props.writable}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setProjectDraft(event.target.value)}
               placeholder="Create an outcome-focused Project"
               value={projectDraft}
             />
           </label>
           <button
             className="mod-cta trail-capture__button"
-            disabled={!workflowRootIsValid || projectDraft.trim() === ""}
+            disabled={!props.writable || projectDraft.trim() === ""}
             type="submit"
           >
             Create Project
@@ -148,12 +101,10 @@ export function TrailProjectsPage({
         </p>
       ) : null}
 
-      {workflowSourceIssues.length > 0 ? (
+      {projectSourceIssues.length > 0 ? (
         <TrailDataIssuePanel
-          issues={workflowSourceIssues.map((issue) => (
-            `${issue.filePath}: ${issue.message}`
-          ))}
-          message="Valid Project sources remain visible. Mutations are paused only where the affected source is not trustworthy."
+          issues={projectSourceIssues.map((issue) => `${issue.sourcePath}: ${issue.message}`)}
+          message="Valid Project sources remain visible. Actions stay disabled for any source Trail cannot trust."
           title="Workflow data needs attention."
         />
       ) : null}
@@ -167,53 +118,47 @@ export function TrailProjectsPage({
         <div className="trail-projects-layout">
           <aside className="trail-project-list" aria-label="Projects">
             {projectIds.map((projectId) => (
-              <ProjectNavigationItem
+              <TrailProjectNavigationItem
                 isSelected={projectId === effectiveSelectedProjectId}
                 key={projectId}
                 onSelect={() => setSelectedProjectId(projectId)}
                 projectId={projectId}
-                runtimeStore={runtimeStore}
+                runtimeStore={props.runtimeStore}
               />
             ))}
           </aside>
-          <ProjectWorkspace
-            configuration={configuration}
-            onCreateWorkflowIssue={onCreateWorkflowIssue}
-            onError={setWorkflowError}
-            onWorkflowStatusChange={onWorkflowStatusChange}
-            projectId={effectiveSelectedProjectId}
-            runtimeStore={runtimeStore}
-          />
+          {configuration === null ? null : (
+            <TrailProjectWorkspace
+              actions={props.actions.issues}
+              configuration={configuration}
+              onError={setWorkflowError}
+              projectId={effectiveSelectedProjectId}
+              runtimeStore={props.runtimeStore}
+              writable={props.writable}
+            />
+          )}
         </div>
       )}
     </main>
   );
 }
 
-interface ProjectNavigationItemProps {
+function TrailProjectNavigationItem(props: {
   readonly isSelected: boolean;
   readonly onSelect: () => void;
   readonly projectId: string;
   readonly runtimeStore: TrailRuntimeStore;
-}
-
-function ProjectNavigationItem({
-  isSelected,
-  onSelect,
-  projectId,
-  runtimeStore,
-}: ProjectNavigationItemProps) {
+}) {
   const project = useStore(
-    runtimeStore,
-    (state) => selectEffectiveProjectById(state, projectId),
+    props.runtimeStore,
+    (state) => selectTrailReadableProjectById(state, props.projectId),
   );
   if (project === undefined) return null;
-
   return (
     <button
-      aria-current={isSelected ? "true" : undefined}
-      className={isSelected ? "is-active" : undefined}
-      onClick={onSelect}
+      aria-current={props.isSelected ? "true" : undefined}
+      className={props.isSelected ? "is-active" : undefined}
+      onClick={props.onSelect}
       type="button"
     >
       {project.title}
@@ -221,58 +166,46 @@ function ProjectNavigationItem({
   );
 }
 
-interface ProjectWorkspaceProps {
-  readonly configuration: TrailConfiguration | null;
-  readonly onCreateWorkflowIssue: TrailProjectsPageActions["onCreateWorkflowIssue"];
+function TrailProjectWorkspace(props: {
+  readonly actions: TrailUiActions["issues"];
+  readonly configuration: NonNullable<ReturnType<typeof selectTrailReadableConfiguration>>;
   readonly onError: (message: string | undefined) => void;
-  readonly onWorkflowStatusChange: TrailProjectsPageActions["onWorkflowStatusChange"];
   readonly projectId: string;
   readonly runtimeStore: TrailRuntimeStore;
-}
-
-function ProjectWorkspace({
-  configuration,
-  onCreateWorkflowIssue,
-  onError,
-  onWorkflowStatusChange,
-  projectId,
-  runtimeStore,
-}: ProjectWorkspaceProps) {
+  readonly writable: boolean;
+}) {
   const project = useStore(
-    runtimeStore,
-    (state) => selectEffectiveProjectById(state, projectId),
+    props.runtimeStore,
+    (state) => selectTrailReadableProjectById(state, props.projectId),
   );
   const issueIds = useStore(
-    runtimeStore,
-    useShallow((state) => selectEffectiveWorkflowIssueIdsByProject(state, projectId)),
+    props.runtimeStore,
+    useShallow((state) => selectTrailReadableWorkflowIssueIdsByProject(state, props.projectId)),
   );
-  const projectIsPending = useStore(
-    runtimeStore,
-    (state) => selectIsWorkflowEntityPending(state, projectId),
+  const pending = useStore(
+    props.runtimeStore,
+    (state) => selectIsTrailEntityPending(state, props.projectId),
   );
   const sourceIssues = useStore(
-    runtimeStore,
-    (state) => selectEntitySourceIssues(state, projectId),
-  );
-  const workflowRootIsValid = useStore(
-    runtimeStore,
-    (state) => selectWorkflowRootSourceIssues(state).length === 0,
+    props.runtimeStore,
+    useShallow((state) => selectTrailEntitySourceIssues(state, props.projectId)),
   );
   const [issueDraft, setIssueDraft] = useState("");
 
-  if (project === undefined || configuration === null) return null;
-  const projectStatus = resolveStatusDefinition(
-    configuration.statuses.project,
+  if (project === undefined) return null;
+  const projectStatus = selectTrailStatusDefinition(
+    props.configuration,
+    "project",
     project.statusDefinitionId,
   );
-  const sourceIsValid = workflowRootIsValid && sourceIssues.length === 0;
+  const sourceIsHealthy = sourceIssues.length === 0;
 
   const submitIssue = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (!sourceIsValid || issueDraft.trim() === "") return;
-    runTrailAction(
-      () => onCreateWorkflowIssue(project.id, issueDraft),
-      onError,
+    if (!props.writable || !sourceIsHealthy || issueDraft.trim() === "") return;
+    runTrailReceipt(
+      () => props.actions.create(project.id, issueDraft),
+      props.onError,
       () => setIssueDraft(""),
     );
   };
@@ -285,13 +218,13 @@ function ProjectWorkspace({
           <h2 id="trail-project-workspace-title">{project.title}</h2>
           <span>{projectStatus?.name ?? "Invalid status"}</span>
         </div>
-        {projectIsPending ? <span className="trail-pending-chip">Saving</span> : null}
+        {pending ? <span className="trail-pending-chip">Saving</span> : null}
       </div>
 
       {sourceIssues.length > 0 ? (
         <TrailDataIssuePanel
-          issues={sourceIssues.map((sourceIssue) => sourceIssue.message)}
-          message="Trail keeps the last known good Project state visible and pauses mutations for this source until the Markdown is valid again."
+          issues={sourceIssues.map((issue) => issue.message)}
+          message="Trail keeps the last known good Project visible and pauses actions for this source until the Markdown is valid again."
           title="This Project file has a data issue."
         />
       ) : null}
@@ -301,17 +234,15 @@ function ProjectWorkspace({
           <span className="screen-reader-text">Workflow Issue title</span>
           <input
             autoComplete="off"
-            disabled={!sourceIsValid}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setIssueDraft(event.target.value);
-            }}
+            disabled={!props.writable || !sourceIsHealthy}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setIssueDraft(event.target.value)}
             placeholder="Add a Workflow Issue"
             value={issueDraft}
           />
         </label>
         <button
           className="mod-cta trail-capture__button"
-          disabled={!sourceIsValid || issueDraft.trim() === ""}
+          disabled={!props.writable || !sourceIsHealthy || issueDraft.trim() === ""}
           type="submit"
         >
           Add Issue
@@ -321,7 +252,7 @@ function ProjectWorkspace({
       <div className="trail-section-heading trail-section-heading--list">
         <div>
           <h3>Issues</h3>
-          <p>Backlog by default; status changes use the Formal mutation path.</p>
+          <p>Backlog by default; update status as work progresses.</p>
         </div>
         <span className="trail-count" aria-label={`${issueIds.length} workflow issues`}>
           {issueIds.length}
@@ -336,173 +267,19 @@ function ProjectWorkspace({
       ) : (
         <ol className="trail-workflow-issue-list">
           {issueIds.map((issueId) => (
-            <WorkflowIssueRow
-              configuration={configuration}
+            <TrailWorkflowIssueRow
+              actions={props.actions}
+              configuration={props.configuration}
               issueId={issueId}
               key={issueId}
-              onError={onError}
-              onStatusChange={onWorkflowStatusChange}
-              runtimeStore={runtimeStore}
-              sourceIsValid={sourceIsValid}
+              onError={props.onError}
+              runtimeStore={props.runtimeStore}
+              sourceIsHealthy={sourceIsHealthy}
+              writable={props.writable}
             />
           ))}
         </ol>
       )}
     </section>
-  );
-}
-
-interface WorkflowIssueRowProps {
-  readonly configuration: TrailConfiguration;
-  readonly issueId: string;
-  readonly onError: (message: string | undefined) => void;
-  readonly onStatusChange: TrailProjectsPageActions["onWorkflowStatusChange"];
-  readonly runtimeStore: TrailRuntimeStore;
-  readonly sourceIsValid: boolean;
-}
-
-function WorkflowIssueRow({
-  configuration,
-  issueId,
-  onError,
-  onStatusChange,
-  runtimeStore,
-  sourceIsValid,
-}: WorkflowIssueRowProps) {
-  const issue = useStore(
-    runtimeStore,
-    (state) => selectEffectiveWorkflowIssueById(state, issueId),
-  );
-  const isPending = useStore(
-    runtimeStore,
-    (state) => selectIsWorkflowEntityPending(state, issueId),
-  );
-  const [completionBaseline, setCompletionBaseline] = useState<TrailWorkflowIssue>();
-  const [completionTargetId, setCompletionTargetId] = useState<string>();
-  const [estimateDraft, setEstimateDraft] = useState("");
-
-  if (issue === undefined) return null;
-  const status = resolveStatusDefinition(
-    configuration.statuses.issue,
-    issue.statusDefinitionId,
-  );
-  const actionsDisabled = isPending || !sourceIsValid;
-
-  const observeReceipt = (receipt: TrailEntityMutationReceipt): void => {
-    observeTrailActionCompletion(receipt, onError);
-  };
-
-  const requestStatus = (targetStatusDefinitionId: string): void => {
-    if (actionsDisabled || targetStatusDefinitionId === issue.statusDefinitionId) {
-      return;
-    }
-    try {
-      observeReceipt(onStatusChange(issue, targetStatusDefinitionId));
-    } catch (error: unknown) {
-      if (error instanceof WorkflowNeedsInputError && error.requiredInput === "estimate") {
-        setCompletionBaseline(issue);
-        setCompletionTargetId(targetStatusDefinitionId);
-        setEstimateDraft(issue.estimate?.toString() ?? "");
-        onError(undefined);
-        return;
-      }
-      onError(trailErrorMessage(error));
-    }
-  };
-
-  const submitEstimate = (event: SyntheticEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    if (
-      completionBaseline === undefined
-      || completionTargetId === undefined
-      || estimateDraft.trim() === ""
-      || actionsDisabled
-    ) {
-      return;
-    }
-    const estimate = Number(estimateDraft);
-    const receipt = runTrailAction(
-      () => onStatusChange(
-        completionBaseline,
-        completionTargetId,
-        estimate,
-      ),
-      onError,
-    );
-    if (receipt !== undefined) {
-      setCompletionBaseline(undefined);
-      setCompletionTargetId(undefined);
-      setEstimateDraft("");
-    }
-  };
-
-  return (
-    <li className="trail-workflow-issue-row">
-      <div className="trail-workflow-issue-row__main">
-        <strong>{issue.title}</strong>
-        <span>
-          {status?.name ?? "Invalid status"}
-          {issue.estimate !== undefined ? ` · Estimate ${issue.estimate}` : ""}
-        </span>
-      </div>
-      <label className="trail-status-picker">
-        <span className="screen-reader-text">Status for {issue.title}</span>
-        <select
-          disabled={actionsDisabled}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-            requestStatus(event.target.value);
-          }}
-          value={issue.statusDefinitionId}
-        >
-          {STATUS_CATEGORIES.map((category) => (
-            <optgroup key={category} label={statusCategoryLabel(category)}>
-              {configuration.statuses.issue[category].definitions.map((definition) => (
-                <option key={definition.id} value={definition.id}>
-                  {definition.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
-
-      {completionBaseline !== undefined && completionTargetId !== undefined ? (
-        <form className="trail-estimate-gate" onSubmit={submitEstimate}>
-          <label>
-            <span>Estimate required to complete</span>
-            <input
-              autoFocus
-              disabled={actionsDisabled}
-              min="0"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setEstimateDraft(event.target.value);
-              }}
-              step="1"
-              type="number"
-              value={estimateDraft}
-            />
-          </label>
-          <div className="trail-issue-editor__actions">
-            <button
-              className="mod-cta"
-              disabled={actionsDisabled || estimateDraft.trim() === ""}
-              type="submit"
-            >
-              Complete
-            </button>
-            <button
-              onClick={() => {
-                setCompletionBaseline(undefined);
-                setCompletionTargetId(undefined);
-                setEstimateDraft("");
-              }}
-              type="button"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : null}
-    </li>
   );
 }

@@ -17,19 +17,13 @@ const PATH_AUTHORITY = join(
   "schema",
   "trail-paths.ts",
 );
-const ARCHITECTURE_GUARD = join(
-  SOURCE_ROOT,
-  "test",
-  "trail-architecture-guard.test.ts",
-);
+const BUILD_CONFIG = join(process.cwd(), "esbuild.config.mjs");
 
 function collectTypeScriptFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true })
     .flatMap((entry) => {
       const path = join(directory, entry.name);
-      if (entry.isDirectory()) {
-        return collectTypeScriptFiles(path);
-      }
+      if (entry.isDirectory()) return collectTypeScriptFiles(path);
       return /\.tsx?$/.test(entry.name) ? [path] : [];
     });
 }
@@ -106,25 +100,9 @@ describe("Trail architecture guards", () => {
     expect(violations).toEqual([]);
   });
 
-  it("keeps retired owners and technology spikes out of the active tree", () => {
-    const retiredActiveFiles = allSourceFiles
-      .map(repoRelative)
-      .filter((path) =>
-        path.startsWith("plugin/src/application/workspace/")
-        || path.startsWith("plugin/src/formal-validation/"),
-      );
-    const benchmarkFiles = allSourceFiles
-      .filter((path) => /\.bench\.tsx?$/.test(path))
-      .map(repoRelative);
-    const oldOwnerImports = allSourceFiles
-      .filter((path) => path !== ARCHITECTURE_GUARD)
-      .filter((path) => readFileSync(path, "utf8").includes(
-        "application/workspace/trail-workspace",
-      ))
-      .map(repoRelative);
+  it("keeps the production bundle entry on the formal composition root", () => {
+    const buildConfig = readFileSync(BUILD_CONFIG, "utf8");
 
-    expect(retiredActiveFiles).toEqual([]);
-    expect(benchmarkFiles).toEqual([]);
-    expect(oldOwnerImports).toEqual([]);
+    expect(buildConfig).toContain('entryPoints: ["plugin/src/main.ts"]');
   });
 });

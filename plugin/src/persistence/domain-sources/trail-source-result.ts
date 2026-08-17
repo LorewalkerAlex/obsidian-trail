@@ -1,43 +1,146 @@
-import type {
-  TrailProjectSourceSnapshot,
-  TrailTriageSourceSnapshot,
-} from "./trail-domain-source-snapshot";
+import type { TrailDomainSourceSnapshot } from "./trail-domain-source-snapshot";
+import type { TrailCodecIssue } from "../../markdown/codecs/trail-codec-support";
+import type { TrailCyclesParseResult } from "../../markdown/codecs/trail-cycles-codec";
+import type { TrailInitiativeParseResult } from "../../markdown/codecs/trail-initiative-codec";
+import type { TrailProjectParseResult } from "../../markdown/codecs/trail-project-codec";
+import type { TrailProjectlessIssuesParseResult } from "../../markdown/codecs/trail-projectless-issues-codec";
+import type { TrailTriageParseResult } from "../../markdown/codecs/trail-triage-codec";
 
-/** Logical source problem exposed above Persistence; parser offsets stay below this boundary. */
+export type TrailSourceProblemStage =
+  | "physical"
+  | "field"
+  | "domain"
+  | "reference"
+  | "workspace";
+
+export type TrailSourceProblemEntityKind =
+  | "initiative"
+  | "project"
+  | "milestone"
+  | "issue"
+  | "cycle";
+
 export interface TrailSourceProblem {
   readonly code: string;
-  readonly filePath: string;
+  readonly entityId?: string;
+  readonly entityKind?: TrailSourceProblemEntityKind;
+  readonly field?: string;
   readonly message: string;
-  readonly objectId?: string;
-  readonly scope: "file" | "record";
+  readonly scope: "source" | "entity";
+  readonly severity: "error";
+  readonly sourcePath: string;
+  readonly stage: TrailSourceProblemStage;
 }
 
-/** Authoritative Triage-source result without Markdown ranges or parser-only carriers. */
-export interface TrailTriageSourceResult {
-  readonly contribution: TrailTriageSourceSnapshot;
-  readonly issues: readonly TrailSourceProblem[];
-}
+export type TrailDomainSourceReadResult =
+  | {
+      readonly issues: readonly TrailSourceProblem[];
+      readonly kind: "accepted";
+      readonly snapshot: TrailDomainSourceSnapshot;
+    }
+  | {
+      readonly issues: readonly TrailSourceProblem[];
+      readonly kind: "rejected";
+      readonly sourcePath: string;
+    };
 
-/** Authoritative Project-source result without Markdown ranges or parser-only carriers. */
-export interface TrailProjectSourceResult {
-  readonly contribution?: TrailProjectSourceSnapshot;
-  readonly issues: readonly TrailSourceProblem[];
-}
-
-/** Attaches source location only after pure Domain validation has completed. */
-export function toTrailSourceProblems(
-  filePath: string,
-  issues: readonly {
-    readonly code: string;
-    readonly entityId: string;
-    readonly message: string;
-  }[],
-): readonly TrailSourceProblem[] {
+function toProblems(issues: readonly TrailCodecIssue[]): readonly TrailSourceProblem[] {
   return issues.map((issue) => ({
     code: issue.code,
-    filePath,
+    entityId: issue.entityId,
+    entityKind: issue.entityKind,
+    field: issue.field,
     message: issue.message,
-    objectId: issue.entityId,
-    scope: "record",
+    scope: issue.scope,
+    severity: issue.severity,
+    sourcePath: issue.sourcePath,
+    stage: issue.stage,
   }));
+}
+
+export function initiativeSourceResult(
+  result: TrailInitiativeParseResult,
+  sourcePath: string,
+): TrailDomainSourceReadResult {
+  const issues = toProblems(result.issues);
+  if (result.document === undefined) return { issues, kind: "rejected", sourcePath };
+  return {
+    issues,
+    kind: "accepted",
+    snapshot: {
+      initiative: result.document.initiative,
+      kind: "initiative",
+      sourcePath,
+    },
+  };
+}
+
+export function projectSourceResult(
+  result: TrailProjectParseResult,
+  sourcePath: string,
+): TrailDomainSourceReadResult {
+  const issues = toProblems(result.issues);
+  if (result.document === undefined) return { issues, kind: "rejected", sourcePath };
+  return {
+    issues,
+    kind: "accepted",
+    snapshot: {
+      issues: result.document.issues,
+      kind: "project",
+      milestones: result.document.milestones,
+      project: result.document.project,
+      sourcePath,
+    },
+  };
+}
+
+export function triageSourceResult(
+  result: TrailTriageParseResult,
+  sourcePath: string,
+): TrailDomainSourceReadResult {
+  const issues = toProblems(result.issues);
+  if (result.document === undefined) return { issues, kind: "rejected", sourcePath };
+  return {
+    issues,
+    kind: "accepted",
+    snapshot: {
+      issues: result.document.issues,
+      kind: "triage",
+      sourcePath,
+    },
+  };
+}
+
+export function projectlessIssuesSourceResult(
+  result: TrailProjectlessIssuesParseResult,
+  sourcePath: string,
+): TrailDomainSourceReadResult {
+  const issues = toProblems(result.issues);
+  if (result.document === undefined) return { issues, kind: "rejected", sourcePath };
+  return {
+    issues,
+    kind: "accepted",
+    snapshot: {
+      issues: result.document.issues,
+      kind: "projectless-issues",
+      sourcePath,
+    },
+  };
+}
+
+export function cyclesSourceResult(
+  result: TrailCyclesParseResult,
+  sourcePath: string,
+): TrailDomainSourceReadResult {
+  const issues = toProblems(result.issues);
+  if (result.document === undefined) return { issues, kind: "rejected", sourcePath };
+  return {
+    issues,
+    kind: "accepted",
+    snapshot: {
+      cycles: result.document.cycles,
+      kind: "cycles",
+      sourcePath,
+    },
+  };
 }

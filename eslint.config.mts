@@ -12,7 +12,6 @@ export default defineConfig(
     "package.json",
     "package-lock.json",
     "tsconfig.json",
-    "plugin-rebuild/tsconfig.json",
   ]),
   {
     languageOptions: {
@@ -26,7 +25,6 @@ export default defineConfig(
             "eslint.config.mts",
             "manifest.json",
             "vitest.config.ts",
-            "vitest.rebuild.config.ts",
           ],
         },
         tsconfigRootDir: import.meta.dirname,
@@ -37,7 +35,10 @@ export default defineConfig(
   ...obsidianmd.configs.recommended,
   {
     files: ["plugin/src/domain/**/*.ts"],
-    ignores: ["plugin/src/domain/**/*.test.ts"],
+    ignores: [
+      "plugin/src/domain/**/*.test.ts",
+      "plugin/src/domain/planning/**/*.ts",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -54,7 +55,36 @@ export default defineConfig(
                 "**/source-sync/**",
                 "**/ui/**",
               ],
-              message: "Domain must remain independent of application and technical mechanisms.",
+              message: "Domain facts, validation, and rules must remain independent of technical mechanisms.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["plugin/src/domain/planning/**/*.ts"],
+    ignores: ["plugin/src/domain/planning/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/markdown/**",
+                "**/persistence/**",
+                "**/runtime/**",
+                "**/source-sync/**",
+                "**/ui/**",
+                "**/mutation/coordinator/**",
+                "**/mutation/queue/**",
+                "**/mutation/physical/**",
+                "**/mutation/execution/**",
+              ],
+              message: "Semantic planning may use the logical Mutation Plan contract, but not mutation execution or other technical layers.",
             },
           ],
         },
@@ -76,7 +106,60 @@ export default defineConfig(
                 "**/markdown/codecs/**",
                 "**/markdown/core/**",
               ],
-              message: "Application must consume domain/capability contracts, not host or raw persistence mechanisms.",
+              message: "Application owns use-case orchestration, not host or raw persistence mechanisms.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["plugin/src/markdown/**/*.ts"],
+    ignores: ["plugin/src/markdown/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/diagnostics/**",
+                "**/mutation/**",
+                "**/persistence/**",
+                "**/query/**",
+                "**/runtime/**",
+                "**/source-sync/**",
+                "**/ui/**",
+              ],
+              message: "Markdown owns physical grammar and must not depend on persistence or higher layers.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["plugin/src/persistence/**/*.ts"],
+    ignores: ["plugin/src/persistence/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/diagnostics/**",
+                "**/mutation/**",
+                "**/query/**",
+                "**/runtime/**",
+                "**/source-sync/**",
+                "**/ui/**",
+              ],
+              message: "Persistence owns authoritative carriers and must not depend on higher layers or host adapters.",
             },
           ],
         },
@@ -85,14 +168,43 @@ export default defineConfig(
   },
   {
     files: ["plugin/src/runtime/**/*.ts"],
+    ignores: ["plugin/src/runtime/**/*.test.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             {
-              group: ["**/markdown/**"],
-              message: "Runtime must consume logical source contracts, not Markdown mechanisms.",
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/markdown/**",
+                "**/source-sync/**",
+                "**/ui/**",
+              ],
+              message: "Runtime owns state projection and must not depend on higher layers or Markdown mechanisms.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["plugin/src/mutation/**/*.ts"],
+    ignores: ["plugin/src/mutation/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/source-sync/**",
+                "**/ui/**",
+              ],
+              message: "Mutation owns the mutation lifecycle and must not depend on higher layers or host adapters.",
             },
           ],
         },
@@ -101,14 +213,21 @@ export default defineConfig(
   },
   {
     files: ["plugin/src/mutation/execution/**/*.ts"],
+    ignores: ["plugin/src/mutation/execution/**/*.test.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             {
-              group: ["**/markdown/**"],
-              message: "Mutation execution must use persistence capabilities, not Markdown mechanisms.",
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/markdown/**",
+                "**/source-sync/**",
+                "**/ui/**",
+              ],
+              message: "Mutation execution must use persistence capabilities, not Markdown or higher-layer mechanisms.",
             },
           ],
         },
@@ -124,8 +243,12 @@ export default defineConfig(
         {
           patterns: [
             {
-              group: ["**/adapters/**"],
-              message: "Source Sync must stay host-agnostic; host mechanics belong in adapters.",
+              group: [
+                "**/adapters/**",
+                "**/application/**",
+                "**/ui/**",
+              ],
+              message: "Source Sync stays host-agnostic and below Application/UI.",
             },
           ],
         },
@@ -134,283 +257,9 @@ export default defineConfig(
   },
   {
     files: ["plugin/src/ui/**/*.ts", "plugin/src/ui/**/*.tsx"],
-    ignores: ["plugin/src/ui/**/*.test.ts", "plugin/src/ui/**/*.test.tsx"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/markdown/**",
-                "**/mutation/**",
-                "**/persistence/**",
-                "**/source-sync/**",
-              ],
-              message: "UI must read Runtime/query state and emit Application intents, not own technical mechanisms.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/**/*.ts", "plugin-rebuild/src/**/*.tsx"],
     ignores: [
-      "plugin-rebuild/src/**/*.test.ts",
-      "plugin-rebuild/src/**/*.test.tsx",
-    ],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["**/plugin/src/**"],
-              message: "The clean rebuild must never depend on production code from the legacy plugin tree.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/domain/**/*.ts"],
-    ignores: [
-      "plugin-rebuild/src/domain/**/*.test.ts",
-      "plugin-rebuild/src/domain/planning/**/*.ts",
-    ],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/application/**",
-                "**/markdown/**",
-                "**/mutation/**",
-                "**/persistence/**",
-                "**/runtime/**",
-                "**/source-sync/**",
-                "**/ui/**",
-                "**/plugin/src/**",
-              ],
-              message: "Rebuild Domain facts, validation, and rules must remain independent of technical mechanisms.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/domain/planning/**/*.ts"],
-    ignores: ["plugin-rebuild/src/domain/planning/**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/application/**",
-                "**/markdown/**",
-                "**/persistence/**",
-                "**/runtime/**",
-                "**/source-sync/**",
-                "**/ui/**",
-                "**/mutation/coordinator/**",
-                "**/mutation/queue/**",
-                "**/mutation/physical/**",
-                "**/mutation/execution/**",
-                "**/plugin/src/**",
-              ],
-              message: "Semantic planning may use the logical Mutation Plan contract, but not mutation execution or other technical layers.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/application/**/*.ts"],
-    ignores: ["plugin-rebuild/src/application/**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/persistence/**",
-                "**/markdown/codecs/**",
-                "**/markdown/core/**",
-                "**/plugin/src/**",
-              ],
-              message: "Rebuild Application owns use-case orchestration, not host or raw persistence mechanisms.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/markdown/**/*.ts"],
-    ignores: ["plugin-rebuild/src/markdown/**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/application/**",
-                "**/diagnostics/**",
-                "**/mutation/**",
-                "**/persistence/**",
-                "**/query/**",
-                "**/runtime/**",
-                "**/source-sync/**",
-                "**/ui/**",
-                "**/plugin/src/**",
-              ],
-              message: "Rebuild Markdown owns physical grammar and must not depend on persistence or higher layers.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/persistence/**/*.ts"],
-    ignores: ["plugin-rebuild/src/persistence/**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/application/**",
-                "**/diagnostics/**",
-                "**/mutation/**",
-                "**/query/**",
-                "**/runtime/**",
-                "**/source-sync/**",
-                "**/ui/**",
-                "**/plugin/src/**",
-              ],
-              message: "Rebuild Persistence owns authoritative carriers and must not depend on higher layers or host adapters.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/runtime/**/*.ts"],
-    ignores: ["plugin-rebuild/src/runtime/**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/application/**",
-                "**/markdown/**",
-                "**/source-sync/**",
-                "**/ui/**",
-                "**/plugin/src/**",
-              ],
-              message: "Rebuild Runtime owns state projection and must not depend on higher layers or Markdown mechanisms.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/mutation/**/*.ts"],
-    ignores: ["plugin-rebuild/src/mutation/**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/application/**",
-                "**/source-sync/**",
-                "**/ui/**",
-                "**/plugin/src/**",
-              ],
-              message: "Rebuild Mutation owns the mutation lifecycle and must not depend on higher layers or host adapters.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/mutation/execution/**/*.ts"],
-    ignores: ["plugin-rebuild/src/mutation/execution/**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/application/**",
-                "**/markdown/**",
-                "**/source-sync/**",
-                "**/ui/**",
-                "**/plugin/src/**",
-              ],
-              message: "Rebuild Mutation execution must use persistence capabilities, not Markdown or higher-layer mechanisms.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/source-sync/**/*.ts"],
-    ignores: ["plugin-rebuild/src/source-sync/**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "**/adapters/**",
-                "**/application/**",
-                "**/ui/**",
-                "**/plugin/src/**",
-              ],
-              message: "Rebuild Source Sync stays host-agnostic and below Application/UI.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["plugin-rebuild/src/ui/**/*.ts", "plugin-rebuild/src/ui/**/*.tsx"],
-    ignores: [
-      "plugin-rebuild/src/ui/**/*.test.ts",
-      "plugin-rebuild/src/ui/**/*.test.tsx",
+      "plugin/src/ui/**/*.test.ts",
+      "plugin/src/ui/**/*.test.tsx",
     ],
     rules: {
       "no-restricted-imports": [
@@ -424,9 +273,8 @@ export default defineConfig(
                 "**/mutation/**",
                 "**/persistence/**",
                 "**/source-sync/**",
-                "**/plugin/src/**",
               ],
-              message: "Rebuild UI reads Runtime/query state and emits Application intents only.",
+              message: "UI reads Runtime/query state and emits Application intents only.",
             },
           ],
         },
@@ -434,10 +282,7 @@ export default defineConfig(
     },
   },
   {
-    files: [
-      "plugin/src/test/trail-architecture-guard.test.ts",
-      "plugin-rebuild/src/test/**/*.ts",
-    ],
+    files: ["plugin/src/test/**/*.ts", "plugin/src/test/**/*.tsx"],
     languageOptions: {
       globals: {
         process: "readonly",

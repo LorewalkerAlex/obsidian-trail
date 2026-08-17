@@ -1,10 +1,16 @@
-
 export type TrailDomainSourceKind =
   | "initiative"
   | "project"
   | "triage"
   | "projectless-issues"
   | "cycles";
+
+export type TrailPhysicalRecordKind =
+  | "initiative"
+  | "project"
+  | "milestone"
+  | "issue"
+  | "cycle";
 
 export type TrailPhysicalFieldCarrier =
   | "frontmatter"
@@ -23,8 +29,11 @@ export type TrailPhysicalFieldType =
   | "integer"
   | "id-set";
 
+export type TrailPhysicalMissingBehavior = "error" | "undefined" | "empty-set" | "derived";
+
 export interface TrailPhysicalFieldSpec {
   readonly carrier: TrailPhysicalFieldCarrier;
+  readonly missing: TrailPhysicalMissingBehavior;
   readonly required: boolean;
   readonly type: TrailPhysicalFieldType;
 }
@@ -36,25 +45,24 @@ export interface TrailPhysicalRecordSchema {
 
 export interface TrailPhysicalSourceSchema {
   readonly frontmatterKind: TrailDomainSourceKind;
-  readonly records: Readonly<Record<string, TrailPhysicalRecordSchema>>;
+  readonly recordSections: Readonly<Record<string, readonly TrailPhysicalRecordKind[]>>;
   readonly rootSections: readonly string[];
 }
 
-const ID_FRONTMATTER: TrailPhysicalFieldSpec = {
-  carrier: "frontmatter",
-  required: true,
-  type: "id",
-};
-const TITLE_HEADING: TrailPhysicalFieldSpec = {
-  carrier: "heading",
-  required: true,
-  type: "text",
-};
-const DESCRIPTION_BODY: TrailPhysicalFieldSpec = {
-  carrier: "body",
-  required: false,
-  type: "text",
-};
+const required = (
+  carrier: TrailPhysicalFieldCarrier,
+  type: TrailPhysicalFieldType,
+): TrailPhysicalFieldSpec => ({ carrier, missing: "error", required: true, type });
+
+const optional = (
+  carrier: TrailPhysicalFieldCarrier,
+  type: TrailPhysicalFieldType,
+  missing: TrailPhysicalMissingBehavior = "undefined",
+): TrailPhysicalFieldSpec => ({ carrier, missing, required: false, type });
+
+const ID_FRONTMATTER = required("frontmatter", "id");
+const TITLE_HEADING = required("heading", "text");
+const DESCRIPTION_BODY = optional("body", "text");
 
 export const TRAIL_PHYSICAL_RECORD_SCHEMAS = {
   initiative: {
@@ -62,9 +70,9 @@ export const TRAIL_PHYSICAL_RECORD_SCHEMAS = {
       id: ID_FRONTMATTER,
       title: TITLE_HEADING,
       description: DESCRIPTION_BODY,
-      priority: { carrier: "metadata", required: false, type: "priority" },
-      due: { carrier: "metadata", required: false, type: "timestamp" },
-      labelIds: { carrier: "metadata", required: false, type: "id-set" },
+      priority: optional("metadata", "priority"),
+      due: optional("metadata", "timestamp"),
+      labelIds: optional("metadata", "id-set", "empty-set"),
     },
     metadataOrder: ["priority", "due", "labelIds"],
   },
@@ -73,54 +81,40 @@ export const TRAIL_PHYSICAL_RECORD_SCHEMAS = {
       id: ID_FRONTMATTER,
       title: TITLE_HEADING,
       description: DESCRIPTION_BODY,
-      statusDefinitionId: {
-        carrier: "metadata",
-        required: true,
-        type: "status-definition-id",
-      },
-      initiativeId: { carrier: "metadata", required: false, type: "id" },
-      priority: { carrier: "metadata", required: false, type: "priority" },
-      due: { carrier: "metadata", required: false, type: "timestamp" },
-      labelIds: { carrier: "metadata", required: false, type: "id-set" },
+      statusDefinitionId: required("metadata", "status-definition-id"),
+      initiativeId: optional("metadata", "id"),
+      priority: optional("metadata", "priority"),
+      due: optional("metadata", "timestamp"),
+      labelIds: optional("metadata", "id-set", "empty-set"),
     },
-    metadataOrder: [
-      "statusDefinitionId",
-      "initiativeId",
-      "priority",
-      "due",
-      "labelIds",
-    ],
+    metadataOrder: ["statusDefinitionId", "initiativeId", "priority", "due", "labelIds"],
   },
   milestone: {
     fields: {
-      id: { carrier: "metadata", required: true, type: "id" },
+      id: required("metadata", "id"),
       title: TITLE_HEADING,
       description: DESCRIPTION_BODY,
-      projectId: { carrier: "metadata", required: true, type: "id" },
-      due: { carrier: "metadata", required: false, type: "timestamp" },
+      projectId: required("metadata", "id"),
+      due: optional("metadata", "timestamp"),
     },
     metadataOrder: ["id", "projectId", "due"],
   },
   issue: {
     fields: {
-      id: { carrier: "metadata", required: true, type: "id" },
+      id: required("metadata", "id"),
       title: TITLE_HEADING,
       description: DESCRIPTION_BODY,
-      context: { carrier: "metadata", required: true, type: "issue-context" },
-      statusDefinitionId: {
-        carrier: "metadata",
-        required: false,
-        type: "status-definition-id",
-      },
-      projectId: { carrier: "metadata", required: false, type: "id" },
-      milestoneId: { carrier: "metadata", required: false, type: "id" },
-      priority: { carrier: "metadata", required: false, type: "priority" },
-      estimate: { carrier: "metadata", required: false, type: "integer" },
-      due: { carrier: "metadata", required: false, type: "timestamp" },
-      labelIds: { carrier: "metadata", required: false, type: "id-set" },
-      createdAt: { carrier: "metadata", required: false, type: "timestamp" },
-      firstStartedAt: { carrier: "metadata", required: false, type: "timestamp" },
-      terminalAt: { carrier: "metadata", required: false, type: "timestamp" },
+      context: required("metadata", "issue-context"),
+      statusDefinitionId: optional("metadata", "status-definition-id"),
+      projectId: optional("metadata", "id"),
+      milestoneId: optional("metadata", "id"),
+      priority: optional("metadata", "priority"),
+      estimate: optional("metadata", "integer"),
+      due: optional("metadata", "timestamp"),
+      labelIds: optional("metadata", "id-set", "empty-set"),
+      createdAt: optional("metadata", "timestamp"),
+      firstStartedAt: optional("metadata", "timestamp"),
+      terminalAt: optional("metadata", "timestamp"),
     },
     metadataOrder: [
       "id",
@@ -139,45 +133,45 @@ export const TRAIL_PHYSICAL_RECORD_SCHEMAS = {
   },
   cycle: {
     fields: {
-      id: { carrier: "metadata", required: true, type: "id" },
-      label: { carrier: "derived-heading", required: true, type: "text" },
-      startedAt: { carrier: "metadata", required: true, type: "timestamp" },
-      plannedEnd: { carrier: "metadata", required: true, type: "timestamp" },
-      endedAt: { carrier: "metadata", required: false, type: "timestamp" },
-      issueIds: { carrier: "metadata", required: false, type: "id-set" },
+      id: required("metadata", "id"),
+      label: { carrier: "derived-heading", missing: "derived", required: true, type: "text" },
+      startedAt: required("metadata", "timestamp"),
+      plannedEnd: required("metadata", "timestamp"),
+      endedAt: optional("metadata", "timestamp"),
+      issueIds: optional("metadata", "id-set", "empty-set"),
     },
     metadataOrder: ["id", "startedAt", "plannedEnd", "endedAt", "issueIds"],
   },
-} as const satisfies Readonly<Record<string, TrailPhysicalRecordSchema>>;
+} as const satisfies Readonly<Record<TrailPhysicalRecordKind, TrailPhysicalRecordSchema>>;
 
 export const TRAIL_PHYSICAL_SOURCE_SCHEMAS = {
   initiative: {
     frontmatterKind: "initiative",
-    records: { initiative: TRAIL_PHYSICAL_RECORD_SCHEMAS.initiative },
+    recordSections: { Initiative: ["initiative"] },
     rootSections: ["Initiative"],
   },
   project: {
     frontmatterKind: "project",
-    records: {
-      project: TRAIL_PHYSICAL_RECORD_SCHEMAS.project,
-      milestone: TRAIL_PHYSICAL_RECORD_SCHEMAS.milestone,
-      issue: TRAIL_PHYSICAL_RECORD_SCHEMAS.issue,
+    recordSections: {
+      Project: ["project"],
+      Milestones: ["milestone"],
+      Issues: ["issue"],
     },
     rootSections: ["Project", "Milestones", "Issues"],
   },
   triage: {
     frontmatterKind: "triage",
-    records: { issue: TRAIL_PHYSICAL_RECORD_SCHEMAS.issue },
+    recordSections: { Issues: ["issue"] },
     rootSections: ["Issues"],
   },
   "projectless-issues": {
     frontmatterKind: "projectless-issues",
-    records: { issue: TRAIL_PHYSICAL_RECORD_SCHEMAS.issue },
+    recordSections: { Issues: ["issue"] },
     rootSections: ["Issues"],
   },
   cycles: {
     frontmatterKind: "cycles",
-    records: { cycle: TRAIL_PHYSICAL_RECORD_SCHEMAS.cycle },
+    recordSections: { Cycles: ["cycle"] },
     rootSections: ["Cycles"],
   },
 } as const satisfies Readonly<Record<TrailDomainSourceKind, TrailPhysicalSourceSchema>>;
