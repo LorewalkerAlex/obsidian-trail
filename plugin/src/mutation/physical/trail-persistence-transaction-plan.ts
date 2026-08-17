@@ -1,3 +1,4 @@
+import type { TrailDomainEntity } from "../../domain/model/trail-entities";
 import type {
   TrailDomainSourceEntityMutation,
   TrailDomainSourceMutationOptions,
@@ -21,7 +22,13 @@ export type TrailPersistenceOperation =
       readonly sourceKind: TrailManagedDomainSourceKind;
       readonly to: string;
     }
-  | { readonly kind: "delete-domain-source"; readonly path: string }
+  | {
+      /** Present for authoritative root deletes; compensation deletes prove safety separately. */
+      readonly beforeEntities?: readonly TrailDomainEntity[];
+      readonly kind: "delete-domain-source";
+      readonly path: string;
+      readonly sourceKind?: TrailManagedDomainSourceKind;
+    }
   | {
       readonly after: TrailPluginDataSnapshot;
       readonly before: TrailPluginDataSnapshot;

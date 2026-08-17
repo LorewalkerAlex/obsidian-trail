@@ -126,6 +126,7 @@ async function executeOperation(
       return { change: { from: operation.from, kind: "renamed" }, kind: "domain-source", result: requireAccepted(result, operation) };
     }
     case "delete-domain-source":
+      await assertDomainSourceDeletePrecondition(operation, environment);
       await environment.domainSources.deleteSource(operation.path);
       return { kind: "domain-source-deleted", sourcePath: operation.path };
     case "save-plugin-data": {
@@ -154,6 +155,44 @@ function entitiesInSourceSnapshot(snapshot: TrailDomainSourceSnapshot): readonly
       return snapshot.issues.map((value) => ({ kind: "issue" as const, value }));
     case "cycles":
       return snapshot.cycles.map((value) => ({ kind: "cycle" as const, value }));
+  }
+}
+
+function sameTrailDomainEntitySet(
+  left: readonly TrailDomainEntity[],
+  right: readonly TrailDomainEntity[],
+): boolean {
+  if (left.length !== right.length) return false;
+  const rightById = new Map(right.map((entity) => [entity.value.id, entity] as const));
+  return rightById.size === right.length
+    && left.every((entity) => {
+      const candidate = rightById.get(entity.value.id);
+      return candidate !== undefined && sameTrailDomainEntity(entity, candidate);
+    });
+}
+
+async function assertDomainSourceDeletePrecondition(
+  operation: Extract<TrailPersistenceOperation, { kind: "delete-domain-source" }>,
+  environment: TrailPersistenceExecutionEnvironment,
+): Promise<void> {
+  if (operation.beforeEntities === undefined) return;
+  if (operation.sourceKind === undefined || operation.beforeEntities.length === 0) {
+    throw new TrailPersistenceOperationError("Guarded Domain source delete requires source kind and pre-image entities");
+  }
+
+  const latest = await environment.domainSources.read(operation.sourceKind, operation.path);
+  if (latest.kind !== "accepted" || latest.issues.length > 0) {
+    throw new TrailPersistenceOperationError(
+      `Cannot delete untrusted Domain source: ${operation.path}`,
+    );
+  }
+  if (!sameTrailDomainEntitySet(
+    entitiesInSourceSnapshot(latest.snapshot),
+    operation.beforeEntities,
+  )) {
+    throw new TrailPersistenceOperationError(
+      `Domain source changed before delete: ${operation.path}`,
+    );
   }
 }
 

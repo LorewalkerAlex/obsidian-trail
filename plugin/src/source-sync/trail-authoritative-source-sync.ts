@@ -77,11 +77,24 @@ function assertHealthyPhysicalSources(
 function settlementOperationResults(
   result: TrailPersistenceExecutionResult,
 ): readonly TrailPersistenceOperationResult[] {
-  if (result.topology !== "source-transition") return result.operations;
+  if (result.topology === "source-transition") {
+    // Physical durability is target-first, but after both sides succeed the final
+    // in-memory candidate must release old ownership before accepting the target.
+    return [...result.sourceOperations, ...result.targetOperations];
+  }
+  if (result.topology === "integrity-batch") {
+    const sourceDeletes = result.operations.filter(({ kind }) => kind === "domain-source-deleted");
+    if (sourceDeletes.length === 0) return result.operations;
 
-  // Physical durability is target-first, but after both sides succeed the final
-  // in-memory candidate must release old ownership before accepting the target.
-  return [...result.sourceOperations, ...result.targetOperations];
+    // Integrity Batch may prepare a replacement carrier before deleting the old
+    // file that owned the same entity IDs. Candidate replay removes old source
+    // ownership first while retaining the executor's physical audit order.
+    return [
+      ...sourceDeletes,
+      ...result.operations.filter(({ kind }) => kind !== "domain-source-deleted"),
+    ];
+  }
+  return result.operations;
 }
 
 export function runtimeChangesFromPersistenceResult(

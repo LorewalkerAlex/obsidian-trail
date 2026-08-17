@@ -167,6 +167,33 @@ async function replaceEntityTransaction(
   };
 }
 
+function rootSourceDeleteOperation(
+  entity: TrailDomainEntity,
+  committed: TrailCommittedRuntime,
+): TrailPersistenceOperation {
+  if (entity.kind !== "initiative" && entity.kind !== "project") {
+    throw new Error(`Entity kind ${entity.kind} is not file-backed root state`);
+  }
+  const placement = resolveTrailCurrentEntityPlacement(entity, committed);
+  const ownedIds = committed.ownership.sourceEntityIdsByPath.get(placement.path) ?? [];
+  const beforeEntities = ownedIds.map((entityId) => {
+    const current = findTrailDomainEntity(committed.authoritative.domain, entityId);
+    if (current === undefined) {
+      throw new Error(`Root source ownership cannot resolve entity before delete: ${entityId}`);
+    }
+    return current;
+  });
+  if (!beforeEntities.some((current) => sameTrailDomainEntity(current, entity))) {
+    throw new Error(`Root source does not contain expected ${entity.kind}: ${entity.value.id}`);
+  }
+  return {
+    beforeEntities,
+    kind: "delete-domain-source",
+    path: placement.path,
+    sourceKind: placement.sourceKind,
+  };
+}
+
 function deleteEntityOperations(
   entity: TrailDomainEntity,
   committed: TrailCommittedRuntime,
@@ -181,13 +208,23 @@ function deleteEntityOperations(
     if (ownedIds.some((id) => id !== entity.value.id)) {
       throw new Error(`Cannot delete ${entity.kind} source while it still owns child entities`);
     }
-    return [{ kind: "delete-domain-source", path: placement.path }];
+    return [rootSourceDeleteOperation(entity, committed)];
   }
   return [domainMutationOperation(
     placement,
     { before: entity, kind: "delete" },
     committed,
   )];
+}
+
+function initiativeHasProjectReferences(
+  initiativeId: string,
+  committed: TrailCommittedRuntime,
+): boolean {
+  for (const project of committed.authoritative.domain.projectsById.values()) {
+    if (project.initiativeId === initiativeId) return true;
+  }
+  return false;
 }
 
 async function singleEntityEffectPlan(
@@ -213,13 +250,18 @@ async function singleEntityEffectPlan(
         committed,
         repository,
       );
-    case "delete-entity":
+    case "delete-entity": {
+      const rootDelete = effect.before.kind === "initiative";
+      if (rootDelete && initiativeHasProjectReferences(effect.before.value.id, committed)) {
+        throw new Error("Initiative deletion with Project references requires Integrity Batch planning");
+      }
       return {
         commandId: plan.commandId,
         intent: plan.intent,
         kind: "single",
-        operations: deleteEntityOperations(effect.before, committed, false),
+        operations: deleteEntityOperations(effect.before, committed, rootDelete),
       };
+    }
   }
 }
 
@@ -246,6 +288,164 @@ function pluginDataAfterEffects(
   return {
     operation: { after, before, kind: "save-plugin-data" },
     remaining,
+  };
+}
+
+function entityEffectId(effect: TrailStateEffect): string | undefined {
+  switch (effect.kind) {
+    case "create-entity":
+      return effect.after.value.id;
+    case "replace-entity":
+    case "delete-entity":
+      return effect.before.value.id;
+    case "replace-configuration":
+    case "replace-workspace-state":
+      return undefined;
+  }
+}
+
+function requireEffectBeforeMatches(
+  effect: TrailStateEffect,
+  current: TrailDomainEntity,
+): void {
+  if (
+    (effect.kind !== "replace-entity" && effect.kind !== "delete-entity")
+    || !sameTrailDomainEntity(effect.before, current)
+  ) {
+    throw new Error(`Project deletion effect does not match current entity: ${current.value.id}`);
+  }
+}
+
+/**
+ * Project deletion is one carrier destruction plus destination-first Issue moves.
+ * Child records are not individually deleted from the Project file because the
+ * final root-source deletion removes that authoritative carrier as one operation.
+ */
+async function tryMaterializeProjectDelete(
+  plan: TrailMutationPlan,
+  effects: readonly TrailStateEffect[],
+  committed: TrailCommittedRuntime,
+  repository: Pick<TrailDomainSourceRepository, "list">,
+): Promise<TrailPersistenceTransactionPlan | undefined> {
+  const projectDeletes = effects.filter((effect): effect is Extract<TrailStateEffect, { kind: "delete-entity" }> => (
+    effect.kind === "delete-entity" && effect.before.kind === "project"
+  ));
+  if (projectDeletes.length === 0) return undefined;
+  if (projectDeletes.length !== 1) {
+    throw new Error("Project deletion materialization supports exactly one Project root");
+  }
+
+  const projectDelete = projectDeletes[0];
+  if (projectDelete === undefined) throw new Error("Project deletion effect is unavailable");
+  const project = projectDelete.before;
+  const placement = resolveTrailCurrentEntityPlacement(project, committed);
+  const ownedIds = [...(committed.ownership.sourceEntityIdsByPath.get(placement.path) ?? [])].sort();
+  const effectsById = new Map<string, TrailStateEffect>();
+
+  for (const effect of effects) {
+    const entityId = entityEffectId(effect);
+    if (entityId === undefined) {
+      throw new Error("Project deletion cannot include plugin-data effects");
+    }
+    if (effectsById.has(entityId)) {
+      throw new Error(`Project deletion contains multiple effects for entity: ${entityId}`);
+    }
+    effectsById.set(entityId, effect);
+  }
+
+  if (effectsById.size !== ownedIds.length) {
+    throw new Error("Project deletion must resolve every entity owned by the Project source exactly once");
+  }
+  for (const entityId of effectsById.keys()) {
+    if (!ownedIds.includes(entityId)) {
+      throw new Error(`Project deletion contains an effect outside the Project source: ${entityId}`);
+    }
+  }
+
+  const targetOperations: TrailPersistenceOperation[] = [];
+  for (const entityId of ownedIds) {
+    const current = findTrailDomainEntity(committed.authoritative.domain, entityId);
+    const effect = effectsById.get(entityId);
+    if (current === undefined || effect === undefined) {
+      throw new Error(`Project source ownership cannot be resolved for deletion: ${entityId}`);
+    }
+    requireEffectBeforeMatches(effect, current);
+
+    switch (current.kind) {
+      case "project":
+        if (
+          current.value.id !== project.value.id
+          || effect.kind !== "delete-entity"
+          || effect.before.kind !== "project"
+        ) {
+          throw new Error("Project deletion must delete the owning Project root");
+        }
+        break;
+      case "milestone":
+        if (
+          current.value.projectId !== project.value.id
+          || effect.kind !== "delete-entity"
+          || effect.before.kind !== "milestone"
+        ) {
+          throw new Error(`Project deletion must delete owned Milestone: ${entityId}`);
+        }
+        break;
+      case "issue": {
+        if (
+          current.value.context !== "workflow"
+          || current.value.projectId !== project.value.id
+          || effect.kind !== "replace-entity"
+          || effect.before.kind !== "issue"
+          || effect.after.kind !== "issue"
+        ) {
+          throw new Error(`Project deletion must move owned Workflow Issue: ${entityId}`);
+        }
+        const expectedAfter: TrailDomainEntity = {
+          kind: "issue",
+          value: { ...current.value, milestoneId: undefined, projectId: undefined },
+        };
+        if (!sameTrailDomainEntity(effect.after, expectedAfter)) {
+          throw new Error(`Project deletion must preserve Issue facts while clearing Project scope: ${entityId}`);
+        }
+        const created = await createEntityOperations(effect.after, committed, repository);
+        if (created.length !== 1) {
+          throw new Error(`Project deletion Issue move must materialize one target operation: ${entityId}`);
+        }
+        const operation = created[0];
+        if (
+          operation === undefined
+          || operation.kind !== "mutate-domain-source"
+          || operation.mutation.kind !== "create"
+          || operation.path === placement.path
+        ) {
+          throw new Error(`Project deletion Issue move must create a distinct target record: ${entityId}`);
+        }
+        targetOperations.push(operation);
+        break;
+      }
+      case "initiative":
+      case "cycle":
+        throw new Error(`Project source owns unsupported entity kind during deletion: ${current.kind}`);
+    }
+  }
+
+  const rootDelete = rootSourceDeleteOperation(project, committed);
+  if (targetOperations.length === 0) {
+    return {
+      commandId: plan.commandId,
+      intent: plan.intent,
+      kind: "single",
+      operations: [rootDelete],
+    };
+  }
+  return {
+    commandId: plan.commandId,
+    intent: plan.intent,
+    kind: "integrity-batch",
+    stages: [
+      { name: "prepare", operations: targetOperations },
+      { name: "destructive", operations: [rootDelete] },
+    ],
   };
 }
 
@@ -312,6 +512,16 @@ export async function materializeTrailPersistenceTransactionPlan(
       kind: "single",
       operations: [pluginData.operation],
     };
+  }
+
+  if (pluginData.operation === undefined) {
+    const projectDelete = await tryMaterializeProjectDelete(
+      plan,
+      pluginData.remaining,
+      committed,
+      repository,
+    );
+    if (projectDelete !== undefined) return projectDelete;
   }
 
   if (pluginData.operation === undefined && pluginData.remaining.length === 1) {
