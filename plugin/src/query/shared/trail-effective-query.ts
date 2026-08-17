@@ -10,7 +10,10 @@ import {
   type TrailPriority,
   type TrailStatusCategory,
 } from "../../domain/model/trail-values";
-import { projectTrailEffectiveAuthoritativeState } from "../../runtime/projection/trail-runtime-projection";
+import {
+  projectTrailEffectiveRuntimeSnapshot,
+  type TrailEffectiveRuntimeSnapshot,
+} from "../../runtime/projection/trail-runtime-projection";
 import type {
   TrailAuthoritativeState,
   TrailRuntimeState,
@@ -24,36 +27,41 @@ const STATUS_CATEGORY_ORDER = new Map<TrailStatusCategory, number>(
 );
 
 /**
- * User pages show optimistic state only while Trail is writable. During refresh or
- * read-only recovery they deliberately fall back to the committed last-known-good
- * snapshot instead of presenting queued optimistic work as authoritative data.
+ * Read consumers use optimistic authoritative state and indexes only while Trail
+ * is writable. Refresh/recovery falls back to one coherent committed snapshot.
  */
+export function selectTrailReadableRuntimeSnapshot(
+  state: TrailRuntimeState,
+): TrailEffectiveRuntimeSnapshot {
+  return state.control.kind === "ready"
+    ? projectTrailEffectiveRuntimeSnapshot(state)
+    : state.committed;
+}
+
 export function selectTrailReadableAuthoritativeState(
   state: TrailRuntimeState,
 ): TrailAuthoritativeState {
-  return state.control.kind === "ready"
-    ? projectTrailEffectiveAuthoritativeState(state)
-    : state.committed.authoritative;
+  return selectTrailReadableRuntimeSnapshot(state).authoritative;
 }
 
 export function selectTrailReadableConfiguration(
   state: TrailRuntimeState,
 ): TrailConfiguration | null {
-  return selectTrailReadableAuthoritativeState(state).configuration;
+  return selectTrailReadableRuntimeSnapshot(state).authoritative.configuration;
 }
 
 export function selectTrailReadableProjectById(
   state: TrailRuntimeState,
   projectId: string,
 ): TrailProject | undefined {
-  return selectTrailReadableAuthoritativeState(state).domain.projectsById.get(projectId);
+  return selectTrailReadableRuntimeSnapshot(state).authoritative.domain.projectsById.get(projectId);
 }
 
 export function selectTrailReadableTriageIssueById(
   state: TrailRuntimeState,
   issueId: string,
 ): TrailTriageIssue | undefined {
-  const issue = selectTrailReadableAuthoritativeState(state).domain.issuesById.get(issueId);
+  const issue = selectTrailReadableRuntimeSnapshot(state).authoritative.domain.issuesById.get(issueId);
   return issue?.context === "triage" ? issue : undefined;
 }
 
@@ -61,7 +69,7 @@ export function selectTrailReadableWorkflowIssueById(
   state: TrailRuntimeState,
   issueId: string,
 ): TrailWorkflowIssue | undefined {
-  const issue = selectTrailReadableAuthoritativeState(state).domain.issuesById.get(issueId);
+  const issue = selectTrailReadableRuntimeSnapshot(state).authoritative.domain.issuesById.get(issueId);
   return issue?.context === "workflow" ? issue : undefined;
 }
 
@@ -69,7 +77,7 @@ export function selectTrailReadableWorkflowIssueById(
 export function selectTrailReadableProjectIds(
   state: TrailRuntimeState,
 ): readonly string[] {
-  return [...selectTrailReadableAuthoritativeState(state).domain.projectsById.values()]
+  return [...selectTrailReadableRuntimeSnapshot(state).authoritative.domain.projectsById.values()]
     .sort((left, right) => {
       const titleOrder = left.title.localeCompare(right.title);
       return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
@@ -81,10 +89,66 @@ export function selectTrailReadableProjectIds(
 export function selectTrailReadableTriageIssueIds(
   state: TrailRuntimeState,
 ): readonly string[] {
-  return [...selectTrailReadableAuthoritativeState(state).domain.issuesById.values()]
+  return [...selectTrailReadableRuntimeSnapshot(state).authoritative.domain.issuesById.values()]
     .filter((issue): issue is TrailTriageIssue => issue.context === "triage")
     .sort((left, right) => left.due - right.due || left.id.localeCompare(right.id))
     .map((issue) => issue.id);
+}
+
+export function selectTrailReadableProjectIdsByInitiative(
+  state: TrailRuntimeState,
+  initiativeId: string,
+): readonly string[] {
+  return selectTrailReadableRuntimeSnapshot(state).indexes.projectsByInitiativeId.get(initiativeId) ?? [];
+}
+
+export function selectTrailReadableMilestoneIdsByProject(
+  state: TrailRuntimeState,
+  projectId: string,
+): readonly string[] {
+  return selectTrailReadableRuntimeSnapshot(state).indexes.milestonesByProjectId.get(projectId) ?? [];
+}
+
+export function selectTrailReadableWorkflowIssueIdsByMilestone(
+  state: TrailRuntimeState,
+  milestoneId: string,
+): readonly string[] {
+  return selectTrailReadableRuntimeSnapshot(state).indexes.issuesByMilestoneId.get(milestoneId) ?? [];
+}
+
+export function selectTrailReadableCurrentCycleId(
+  state: TrailRuntimeState,
+): string | undefined {
+  return selectTrailReadableRuntimeSnapshot(state).indexes.currentCycleId;
+}
+
+export function selectTrailReadableWorkflowIssueIdsByCycle(
+  state: TrailRuntimeState,
+  cycleId: string,
+): readonly string[] {
+  return selectTrailReadableRuntimeSnapshot(state).indexes.issuesByCycleId.get(cycleId) ?? [];
+}
+
+export function selectTrailReadableCycleIdsByIssue(
+  state: TrailRuntimeState,
+  issueId: string,
+): readonly string[] {
+  return selectTrailReadableRuntimeSnapshot(state).indexes.cyclesByIssueId.get(issueId) ?? [];
+}
+
+export function selectTrailReadableEntityIdsByLabel(
+  state: TrailRuntimeState,
+  labelId: string,
+): readonly string[] {
+  return selectTrailReadableRuntimeSnapshot(state).indexes.entityRefsByLabelId.get(labelId) ?? [];
+}
+
+export function selectTrailReadableEntityIdsByStatusDefinition(
+  state: TrailRuntimeState,
+  statusDefinitionId: string,
+): readonly string[] {
+  return selectTrailReadableRuntimeSnapshot(state).indexes.entityRefsByStatusDefinitionId
+    .get(statusDefinitionId) ?? [];
 }
 
 function statusCategoryFor(
@@ -114,21 +178,20 @@ function workflowSortKey(
 }
 
 /**
- * Project Issue ordering is presentation-only. It follows status-category,
- * priority, category-relevant activity time, then stable identity.
+ * Project Issue ordering is presentation-only. The Runtime index narrows the
+ * membership set; Query keeps the established status/priority/activity ordering.
  */
 export function selectTrailReadableWorkflowIssueIdsByProject(
   state: TrailRuntimeState,
   projectId: string,
 ): readonly string[] {
-  const readable = selectTrailReadableAuthoritativeState(state);
-  const configuration = readable.configuration;
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  const configuration = readable.authoritative.configuration;
   if (configuration === null) return [];
 
-  return [...readable.domain.issuesById.values()]
-    .filter((issue): issue is TrailWorkflowIssue => (
-      issue.context === "workflow" && issue.projectId === projectId
-    ))
+  return (readable.indexes.issuesByProjectId.get(projectId) ?? [])
+    .map((issueId) => readable.authoritative.domain.issuesById.get(issueId))
+    .filter((issue): issue is TrailWorkflowIssue => issue?.context === "workflow")
     .sort((left, right) => {
       const leftKey = workflowSortKey(configuration, left);
       const rightKey = workflowSortKey(configuration, right);
