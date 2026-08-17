@@ -1,3 +1,4 @@
+import type { TrailCycleConfiguration } from "../model/trail-configuration";
 import { isTrailTimestamp } from "../validation/trail-value-validation";
 
 export interface TrailZonedDateTimeParts {
@@ -9,6 +10,14 @@ export interface TrailZonedDateTimeParts {
   readonly second: number;
   readonly year: number;
 }
+
+export interface TrailCalendarDate {
+  readonly day: number;
+  readonly month: number;
+  readonly year: number;
+}
+
+const TRAIL_TRIAGE_DEFAULT_REVIEW_DAYS = 7;
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
 
@@ -138,4 +147,53 @@ export function addTrailCalendarDays(
     second: normalized.getUTCSeconds(),
     year: normalized.getUTCFullYear(),
   }, timezone);
+}
+
+/** Quick Capture schedules the first Triage review seven local calendar days later. */
+export function resolveTrailTriageDefaultDue(
+  effectiveAt: number,
+  timezone: string,
+): number {
+  return addTrailCalendarDays(
+    effectiveAt,
+    timezone,
+    TRAIL_TRIAGE_DEFAULT_REVIEW_DAYS,
+  );
+}
+
+function localIsoWeekday(parts: TrailZonedDateTimeParts): number {
+  const sundayBased = new Date(Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+  )).getUTCDay();
+  return sundayBased === 0 ? 7 : sundayBased;
+}
+
+/**
+ * Resolves the configured Cycle end suggestion as a local calendar date only.
+ * Input/display policy later turns that date into the concrete persisted Timestamp.
+ */
+export function resolveTrailCycleDefaultEndDate(
+  startedAt: number,
+  timezone: string,
+  rule: TrailCycleConfiguration["defaultEndRule"],
+): TrailCalendarDate {
+  if (rule !== "end-of-next-week") {
+    throw new Error(`Unsupported Cycle default end rule: ${String(rule)}`);
+  }
+
+  const start = readTrailZonedDateTimeParts(startedAt, timezone);
+  const daysUntilFollowingSunday = (7 - localIsoWeekday(start)) + 7;
+  const suggestedAt = addTrailCalendarDays(
+    startedAt,
+    timezone,
+    daysUntilFollowingSunday,
+  );
+  const suggested = readTrailZonedDateTimeParts(suggestedAt, timezone);
+  return {
+    day: suggested.day,
+    month: suggested.month,
+    year: suggested.year,
+  };
 }

@@ -58,7 +58,7 @@ function state() {
 }
 
 describe("Workflow Issue planning", () => {
-  it("creates Workflow work in Backlog and protects a terminal Project", () => {
+  it("creates Workflow work in Backlog and rejects a terminal Project", () => {
     const planning = state();
     const ready = planCreateTrailWorkflowIssue(planning, {
       commandId: "command-create",
@@ -72,6 +72,21 @@ describe("Workflow Issue planning", () => {
       expect(ready.plan.issue.statusDefinitionId).toBe("issue-backlog");
       expect(ready.plan.issue.createdAt).toBe(100);
     }
+
+    planning.domain.projectsById.set(planning.project.id, {
+      ...planning.project,
+      statusDefinitionId: "project-canceled",
+    });
+    expect(planCreateTrailWorkflowIssue(planning, {
+      commandId: "command-create-blocked",
+      effectiveAt: 101,
+      issueId: "issue-blocked",
+      projectId: planning.project.id,
+      title: "Blocked Issue",
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "project-terminal" },
+    });
   });
 
   it("requests Estimate before Completed and keeps firstStartedAt on reopen", () => {
@@ -111,6 +126,40 @@ describe("Workflow Issue planning", () => {
     if (reopened.kind === "ready") {
       expect(reopened.plan.issue.firstStartedAt).toBe(200);
       expect(reopened.plan.issue.terminalAt).toBeUndefined();
+    }
+  });
+
+  it("replaces terminalAt across terminal categories and preserves it within one category", () => {
+    const planning = state();
+    const completed: TrailWorkflowIssue = {
+      ...planning.issue,
+      estimate: 3,
+      statusDefinitionId: "issue-completed",
+      terminalAt: 300,
+    };
+    planning.domain.issuesById.set(completed.id, completed);
+
+    const canceled = planChangeTrailWorkflowIssueStatus(planning, {
+      commandId: "command-cancel",
+      effectiveAt: 400,
+      expectedIssue: completed,
+      targetStatusDefinitionId: "issue-canceled",
+    });
+    expect(canceled.kind).toBe("ready");
+    if (canceled.kind !== "ready") return;
+    expect(canceled.plan.issue.estimate).toBe(3);
+    expect(canceled.plan.issue.terminalAt).toBe(400);
+
+    planning.domain.issuesById.set(canceled.plan.issue.id, canceled.plan.issue);
+    const unchangedTerminalCategory = planChangeTrailWorkflowIssueStatus(planning, {
+      commandId: "command-cancel-again",
+      effectiveAt: 500,
+      expectedIssue: canceled.plan.issue,
+      targetStatusDefinitionId: "issue-canceled",
+    });
+    expect(unchangedTerminalCategory.kind).toBe("ready");
+    if (unchangedTerminalCategory.kind === "ready") {
+      expect(unchangedTerminalCategory.plan.issue.terminalAt).toBe(400);
     }
   });
 

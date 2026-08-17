@@ -38,17 +38,29 @@ describe("Trail domain validation", () => {
   });
 
   it("keeps context-conditioned Issue invariants in Domain validation", () => {
-    const invalid = {
+    const invalidWorkflow = {
       context: "workflow",
       createdAt: -1,
-      id: "issue-a",
+      id: "issue-workflow",
       labelIds: [],
+      milestoneId: "milestone-a",
       statusDefinitionId: "status-a",
-      title: "Issue",
+      title: "Workflow Issue",
     } as TrailIssue;
+    const workflowCodes = validateTrailIssue(invalidWorkflow).map((issue) => issue.code);
 
-    expect(validateTrailIssue(invalid).map((issue) => issue.code)).toContain(
-      "workflow.created-at.invalid",
+    expect(workflowCodes).toContain("workflow.created-at.invalid");
+    expect(workflowCodes).toContain("milestone.requires-project");
+
+    // Deliberately cross the typed boundary to verify malformed persisted/runtime input.
+    const invalidTriage = {
+      context: "triage",
+      id: "issue-triage",
+      labelIds: [],
+      title: "Triage Issue",
+    } as unknown as TrailIssue;
+    expect(validateTrailIssue(invalidTriage).map((issue) => issue.code)).toContain(
+      "triage.due.invalid",
     );
   });
 });

@@ -14,8 +14,18 @@ describe("Trail status rules", () => {
       .toBe("issue-backlog");
     expect(resolveTrailStatusDefinition(configuration, "project", "issue-backlog"))
       .toBeUndefined();
+  });
+
+  it("treats both Completed and Canceled as terminal categories", () => {
+    const configuration = createTrailTestConfiguration();
     expect(isTrailTerminalStatusDefinition(
       resolveTrailDefaultStatusDefinition(configuration, "project", "completed"),
     )).toBe(true);
+    expect(isTrailTerminalStatusDefinition(
+      resolveTrailDefaultStatusDefinition(configuration, "project", "canceled"),
+    )).toBe(true);
+    expect(isTrailTerminalStatusDefinition(
+      resolveTrailDefaultStatusDefinition(configuration, "project", "unstarted"),
+    )).toBe(false);
   });
 });

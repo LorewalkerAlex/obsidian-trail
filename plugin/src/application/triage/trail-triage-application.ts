@@ -7,8 +7,8 @@ import {
   planDeleteTrailTriageIssue,
   planEditTrailTriageIssue,
 } from "../../domain/planning/trail-triage-planning";
-import { addTrailCalendarDays } from "../../domain/rules/trail-temporal-rules";
 import { sameTrailDomainEntity } from "../../domain/rules/trail-domain-equality";
+import { resolveTrailTriageDefaultDue } from "../../domain/rules/trail-temporal-rules";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import type { TrailAuthoritativeSourceSync } from "../../source-sync/trail-authoritative-source-sync";
 import {
@@ -38,7 +38,10 @@ export class TrailTriageApplication {
     const effectiveAt = normalizeTrailCommandTime(this.environment);
     const result = planCreateTrailTriageIssue(state, {
       commandId: normalizeTrailCommandId(this.environment.createId(), "Command ID"),
-      due: addTrailCalendarDays(effectiveAt, state.configuration.temporal.timezone, 7),
+      due: resolveTrailTriageDefaultDue(
+        effectiveAt,
+        state.configuration.temporal.timezone,
+      ),
       issueId: normalizeTrailCommandId(this.environment.createId(), "Triage Issue ID"),
       title: normalizeTrailCommandTitle(title, "Triage Issue"),
     });

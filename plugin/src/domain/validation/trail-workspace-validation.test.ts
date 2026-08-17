@@ -45,7 +45,6 @@ describe("Trail workspace validation", () => {
     })).toEqual([]);
   });
 
-
   it("enforces status-conditioned lifecycle and completed-project invariants", () => {
     const configuration = createTrailTestConfiguration();
     const domain = emptyDomain();
@@ -135,5 +134,70 @@ describe("Trail workspace validation", () => {
     expect(codes).toContain("reference.project.initiative-missing");
     expect(codes).toContain("workspace.cycle.multiple-open");
     expect(codes).toContain("domain.cycle.triage-member");
+  });
+
+  it("enforces status, Milestone, and Label scope invariants", () => {
+    const baseConfiguration = createTrailTestConfiguration();
+    const configuration = {
+      ...baseConfiguration,
+      labelGroups: [
+        ...baseConfiguration.labelGroups,
+        {
+          id: "group-initiative-only",
+          name: "Initiative only",
+          registeredEntityTypes: ["initiative" as const],
+          selectionMode: "multiple" as const,
+        },
+      ],
+      labels: [
+        ...baseConfiguration.labels,
+        { groupId: "group-area", id: "label-home", name: "Home" },
+        {
+          groupId: "group-initiative-only",
+          id: "label-initiative-only",
+          name: "Initiative only",
+        },
+      ],
+    };
+    const domain = emptyDomain();
+    domain.projectsById.set("project-a", {
+      id: "project-a",
+      labelIds: ["label-work", "label-home"],
+      statusDefinitionId: "issue-unstarted",
+      title: "Project A",
+    });
+    domain.projectsById.set("project-b", {
+      id: "project-b",
+      labelIds: [],
+      statusDefinitionId: "project-unstarted",
+      title: "Project B",
+    });
+    domain.milestonesById.set("milestone-b", {
+      id: "milestone-b",
+      projectId: "project-b",
+      title: "Milestone B",
+    });
+    domain.issuesById.set("issue-a", {
+      context: "workflow",
+      createdAt: 1,
+      id: "issue-a",
+      labelIds: ["label-initiative-only"],
+      milestoneId: "milestone-b",
+      projectId: "project-a",
+      statusDefinitionId: "project-unstarted",
+      title: "Issue A",
+    });
+
+    const codes = validateTrailWorkspaceGraph({
+      configuration,
+      domain,
+      workspaceState: createTrailTestWorkspaceState(),
+    }).map(({ code }) => code);
+
+    expect(codes.filter((code) => code === "reference.status-definition.invalid"))
+      .toHaveLength(2);
+    expect(codes).toContain("reference.issue.milestone-project-mismatch");
+    expect(codes).toContain("reference.label.scope");
+    expect(codes).toContain("domain.label-group.single-selection");
   });
 });

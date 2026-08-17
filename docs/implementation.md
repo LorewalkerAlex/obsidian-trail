@@ -4,18 +4,30 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The current repository baseline for implementation work is:
+The current repository baseline for this implementation stage is:
 
 ```text
-d88b8ba4374267288f4821aa5b346f6671603c46
-docs: rebaseline documentation authority
+fd501a465985460dc198f15e602841140b2f9d76
+docs: tighten documentation authority boundaries
 ```
 
-This is the single execution baseline. Earlier implementation states remain available through Git history and are not repeated here as secondary baselines.
+This is the single execution baseline for the current construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
 
-The repository already contains proven product behavior for Quick Capture/Triage, basic Project and Workflow Issue execution, Triage Accept, Triage Convert to Project, and Issue moves between Projects. It also contains reusable Domain, Markdown, Persistence, Mutation, Runtime, Source Sync, Query, Application/UI, Diagnostics, and architecture-guard foundations.
+Gate 1 — Domain / Validation Completion is complete on top of this baseline.
 
-Current implementation facts in this document are expected to move as work advances; the stable target answers remain in the upstream project documents.
+Verified Gate 1 outcomes:
+
+- the frozen Core Entity, Configuration, and Workspace State shapes already matched the canonical Domain model;
+- core record/reference/workspace invariants remain owned by `domain/validation`;
+- canonical Status terminal semantics remain shared through `domain/rules`;
+- Quick Capture default Due now consumes a Domain-owned temporal rule instead of owning the seven-calendar-day policy in Application;
+- the frozen `EndOfNextWeek` Cycle default has a Domain-owned calendar-date resolver without inventing a time-of-day persistence rule;
+- direct owner-level tests now cover the audited Core Invariants and lifecycle edges that previously lacked explicit evidence;
+- focused Gate 1 tests and the full repository check pass after the completion changes.
+
+The repository also contains proven product behavior for Quick Capture/Triage, basic Project and Workflow Issue execution, Triage Accept, Triage Convert to Project, and Issue moves between Projects. Reusable Domain, Markdown, Persistence, Mutation, Runtime, Source Sync, Query, Application/UI, Diagnostics, and architecture-guard foundations remain available for later gates.
+
+Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents.
 
 ## 2. Objective
 
@@ -65,35 +77,37 @@ Implementation must preserve unrelated canonical fields and relations even when 
 
 ### 4.1 Current gate
 
-Current work is **Gate 1 — Domain / Validation Completion**.
+Current work is **Gate 2 — Semantic Planning Completion**.
 
-The immediate task is a Foundation Completion Audit against `docs/domain.md` and the actual repository implementation.
+The immediate task is a Semantic Planning Completion Audit against `docs/domain.md`, `docs/architecture.md`, `docs/design-to-code-map.md`, and the actual repository implementation under `plugin/src/domain/planning/` plus directly relevant rule/validation owners.
 
 The audit must:
 
-1. inspect the current Domain model, rules, validation, planning boundaries, and directly relevant tests;
-2. map the frozen Domain contracts to their actual implementation/test owners;
-3. distinguish already-covered contracts from verified gaps;
-4. record only repository-verified Gate 1 gaps in this section;
-5. implement those verified gaps without adding Application or UI behavior merely to exercise them;
-6. prove the Gate 1 exit condition before Gate 2 becomes active.
+1. enumerate frozen V1 state transitions and relation-resolution behaviors that require semantic planning;
+2. map each required transition to its current planner, shared Domain rule, and owner-level tests;
+3. distinguish already-complete planner contracts from repository-verified gaps;
+4. verify planners produce complete legal logical transitions rather than partial patches that defer business rules to Application, Mutation, or Persistence;
+5. verify required `NeedsInput` / rejection boundaries occur before illegal optimistic state can be created;
+6. record only repository-verified Gate 2 gaps in this section;
+7. implement those gaps without introducing persistence, runtime, application, or UI mechanisms that belong to later gates;
+8. prove the Gate 2 exit condition before Gate 3 becomes active.
 
-Do not predeclare future-layer work here. Architecture defines the required system capabilities, and the Design-to-Code Map defines their code owners. Later gates become detailed in `Changes` only when they are the active construction stage.
+Do not infer a missing planner merely from an absent business-area directory or a future UI feature. A Gate 2 gap must follow from a frozen Domain transition or relation-resolution contract that V1 actually requires.
 
 ### 4.2 Current verified gaps
 
 Not yet populated.
 
-Populate this subsection from the Gate 1 repository audit. A missing item must be supported by actual code/test evidence rather than inferred from document length, directory shape, or a future product feature.
+Populate this subsection from the Gate 2 repository audit. Missing planner coverage must be supported by an explicit frozen transition/invariant and actual repository evidence rather than by speculative feature planning.
 
 ## 5. Build Order
 
 Implementation proceeds through dependency-ordered gates. A later gate starts only when its required lower-layer contracts are complete enough that it does not need temporary substitutes.
 
 ```text
-1. Domain / Validation Completion
+1. Domain / Validation Completion          COMPLETE
    ↓
-2. Semantic Planning Completion
+2. Semantic Planning Completion           ACTIVE
    ↓
 3. Data / Persistence / Mutation Operational Completion
    ↓
@@ -112,11 +126,11 @@ Implementation proceeds through dependency-ordered gates. A later gate starts on
 
 ### 5.1 Gate 1 — Domain / Validation
 
-Exit when the frozen V1 Domain rules have canonical implementation/test coverage and no dependent layer needs to invent missing semantics.
+Complete. The frozen V1 Domain model, shared rules, and audited Core Invariants have canonical implementation/test ownership sufficient for dependent semantic planning without temporary semantics.
 
 ### 5.2 Gate 2 — Semantic Planning
 
-Exit when required V1 state transitions can produce complete legal logical plans from Domain inputs and rules.
+Exit when required V1 state transitions can produce complete legal logical plans from Domain inputs and rules, with input/rejection boundaries established before illegal optimistic state.
 
 ### 5.3 Gate 3 — Data / Persistence / Mutation
 
@@ -160,10 +174,10 @@ For each active gate:
 - run `git diff --check` before checkpoint;
 - use representative real Obsidian validation only for new or changed host/persistence/synchronization/continuous-interaction risks that automated tests cannot establish.
 
-At stable checkpoints, update this document only for current execution facts. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
+Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 
 ## 7. Final State
 
 V1 implementation is ready for final product hardening when the frozen project answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or page-private reconstructions; the dependency gates are complete; and automated plus representative real-host verification is green for the integrated product.
 
-`README.md` remains an entry point. This file owns the moving implementation baseline, active construction stage, current verified gaps, build order, and execution verification state.
+`README.md` remains an entry point. This file owns the moving implementation baseline, active construction stage, current verified gaps, build order, gate completion state, and execution verification state.
