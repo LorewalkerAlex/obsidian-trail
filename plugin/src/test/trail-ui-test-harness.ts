@@ -32,6 +32,12 @@ export function createTrailUiTestHarness() {
     statusDefinitionId: "project-unstarted",
     title: "Project A",
   };
+  const projectB = {
+    id: "project-b",
+    labelIds: [],
+    statusDefinitionId: "project-unstarted",
+    title: "Project B",
+  };
   const workflow: TrailWorkflowIssue = {
     context: "workflow",
     createdAt: Date.UTC(2026, 7, 15),
@@ -56,6 +62,13 @@ export function createTrailUiTestHarness() {
         project,
         sourcePath: "Trail/Projects/0001 Project A.md",
       },
+      {
+        issues: [],
+        kind: "project",
+        milestones: [],
+        project: projectB,
+        sourcePath: "Trail/Projects/0002 Project B.md",
+      },
       { issues: [], kind: "projectless-issues", sourcePath: "Trail/Collections/Projectless Issues.md" },
       { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
     ],
@@ -71,6 +84,7 @@ export function createTrailUiTestHarness() {
     issues: {
       changeStatus: vi.fn(() => ({ kind: "unchanged" as const, entityId: workflow.id })),
       create: vi.fn(() => receipt("new-issue")),
+      moveToProject: vi.fn(() => ({ kind: "unchanged" as const, entityId: workflow.id })),
     },
     projects: {
       create: vi.fn(() => receipt("new-project")),
@@ -85,5 +99,5 @@ export function createTrailUiTestHarness() {
     },
   };
 
-  return { actions, project, runtimeStore, triage, workflow };
+  return { actions, project, projectB, runtimeStore, triage, workflow };
 }

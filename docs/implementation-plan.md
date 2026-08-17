@@ -24,7 +24,11 @@ Clean rebuild 没有重做已经收口的 Product / Domain / Logical / Physical 
 
 Cutover 后重新进入用户价值开发，并完成第一个净新增 Slice：`Triage Convert to Project`。该 Slice 只补齐 Domain planning → Application intent → Diagnostics/UI action → Triage UI，复用既有 generic destination-first Source Transition，没有改写 Mutation / Persistence / Runtime 主干。自动化 focused tests、Diagnostics build、完整 `npm run check` 与 `git diff --check` 均通过；代表性 real-Obsidian Validation Evidence 进一步确认新 Project source 先创建成功，再删除 Triage source，最终 Runtime 收敛为 `issues=0 / projects=1`、`pending=[]`、`control=ready`、无 Source Health issue，且未出现 warn/error diagnostics。QA fixture 已清理并恢复 production bundle。
 
-因此 **Intake → Workflow** 阶段完成，当前进入下一既定阶段：**Project Organization**。具体首个 Project Organization Slice 不在此处预先猜测；稳定 checkpoint 提交并回查后，从实际仓库和既定候选能力中评估最小完整用户价值切片。
+因此 **Intake → Workflow** 阶段完成，当前进入下一既定阶段：**Project Organization**。
+
+Project Organization 的首个完整用户价值 Slice 选择 `Issue Move between Projects`。该 Slice 增加 identity-preserving 的 Issue → Project relation mutation：Workflow Issue 保持 stable ID，跨 Project 时清除不再合法的旧 Milestone relation，且 non-terminal Issue 不能移入 terminal Project。UI 使用显式 Project picker，不把 Project relation 变化混入 Status drag；Application / Domain planning 只产生标准 `replace-entity` logical Plan，复用既有 relationship-moving destination-first Source Transition，没有改写 Mutation / Persistence / Runtime 主干。Focused lint/tests、Diagnostics build、`git diff --check`、代表性 real-Obsidian Validation Evidence、QA cleanup、production restore 与完整 `npm run check` 均通过；实机 evidence 确认 target Project source 先写入，source Project 后删除，Issue identity 不变，最终 ownership/index 只指向 target Project，Runtime 为 `pending=[]`、`control=ready`、无 Source Health issue，且没有 warn/error diagnostics。
+
+当前仍处于 **Project Organization**。下一具体 Slice 不在本 checkpoint 中预先猜测；本 checkpoint commit/push 并完成 GitHub/CI 回查后，再从 Board / List、Milestone、Initiative 等剩余候选中按实际仓库和用户价值缺口选择。
 
 ## 2. V1 Implementation Roadmap
 
@@ -46,7 +50,7 @@ Cutover 后重新进入用户价值开发，并完成第一个净新增 Slice：
 
 已有 checkpoint 不作废。它们继续提供两类资产：
 
-1. **产品行为证据**：Quick Capture、Triage Management、Project / Workflow Issue、Triage Accept、Triage Convert to Project 等已经明确过的行为与边界；
+1. **产品行为证据**：Quick Capture、Triage Management、Project / Workflow Issue、Triage Accept、Triage Convert to Project、Issue Move between Projects 等已经明确过的行为与边界；
 2. **技术风险证据**：Markdown parsing / guarded write、optimistic Runtime、serial mutation、authoritative reread、reconcile、destination-first cross-source mutation、Obsidian file events、Diagnostics 等已经经过自动化或真实宿主验证的机制。
 
 Implementation Architecture Re-baseline checkpoint `9e12e32e870a2299023b64804e3070abe138eb0b` 已完成 full check、Diagnostics build、代表性 real-Obsidian regression、push 后 GitHub 回查与 CI。
@@ -56,6 +60,8 @@ Codebase Simplification checkpoint `6061ca45569fe7664e0b37ed279928c9559e8592` �
 Clean rebuild 在新的最终 owner 下重新建立所需行为与独立技术风险证据，并完成代表性 real-host Validation Evidence。2026-08-17 的独立 Architecture Implementation Audit 进一步确认 planner ownership、future carrier owner、Workspace State contract、external refresh ingress、Runtime / Mutation / Persistence 边界、UI / Host boundary 与 architecture guard coverage 均达到 Cutover 要求。
 
 Cutover 后的 `Triage Convert to Project` 证明净新增 Feature 可以沿现有 owner 和标准写链路完成，而不需要重新打开已通过 Audit 的共享架构：Product create-target-before-delete-source 语义映射为一条 logical Plan，由既有 materializer 自动选择 file-backed Source Transition，并由同一 Runtime / Source Sync / Persistence 主干完成 target-first 持久化与 authoritative convergence。
+
+`Issue Move between Projects` 进一步验证 Project Organization 可以继续沿同一架构扩展：Domain planning 只表达 relationship replace，Application 保持 use-case orchestration，UI 使用显式 relation picker；既有 materializer 根据 source ownership 自动选择 destination-first Source Transition。成功实机路径确认同一 Issue stable ID 从 source Project ownership 转移到 target Project ownership，并保持 host-write suppression 与 authoritative convergence。
 
 因此正式基线继续遵循：**保留技术资产，不继承历史结构；一个能力只有一个长期 owner。**
 
@@ -122,16 +128,16 @@ Cutover 只做结构替换和正常工具链恢复，不包含第二轮架构重
 
 ## 5. 当前近期计划
 
-当前进入 **Project Organization**。Roadmap 已冻结的候选能力包括 Board / List、Issue Move、Milestone 与 Initiative，但本节不提前把其中任意一个宣布为下一 Slice。
+当前处于 **Project Organization**。首个 Slice `Issue Move between Projects` 已完成实现与 exit validation；剩余 Roadmap 候选包括 Board / List、Milestone 与 Initiative。
 
 下一个 Slice 的选择原则：
 
 - 新 checkpoint 开始时先重新核对公开 `main`、Implementation Plan、相关 Product / Domain contract、当前 Project UI / Query / Application / Planner / persistence support 与测试；
 - 优先选择能形成一个完整用户价值闭环、并最大化复用现有 owner 的最小 Slice，而不是为了目录或 API 完整性实现孤立底层能力；
-- 若 Board / List、Move、Milestone、Initiative 中某项已经有足够底层 contract / carrier 支撑，应优先从缺失的用户行为链补齐，不另建 parallel mechanism；
+- 若 Board / List、Milestone、Initiative 中某项已经有足够底层 contract / carrier 支撑，应优先从缺失的用户行为链补齐，不另建 parallel mechanism；
 - 继续遵循 Domain rule / semantic plan → Application intent → Mutation/Persistence → Runtime reconcile → Query/UI → focused tests → 必要 real-host evidence；
 - 中途按受影响 owner 做定向验证，准备稳定 checkpoint 时再运行一次完整 `npm run check`；
-- 当前 `Triage Convert to Project` checkpoint 完成 commit/push、GitHub/CI 回查后，再开始该评估，避免把两个独立用户价值 Slice 混入同一未提交工作区。
+- 当前 `Issue Move between Projects` checkpoint 完成 commit/push、GitHub/CI 回查后，再开始下一 Slice 评估，避免把两个独立用户价值 Slice 混入同一未提交工作区。
 
 ## 6. Implementation Checkpoints
 
@@ -158,7 +164,8 @@ Cutover 只做结构替换和正常工具链恢复，不包含第二轮架构重
 | Directory Cutover | 已完成 | clean implementation 成为唯一正式 `plugin/`；临时双轨工具链移除 |
 | Triage Convert to Project | 已完成 | new Project identity、create-target-before-delete-source、existing file-backed Source Transition、automated + real-host evidence |
 | Intake → Workflow | 已完成 | Triage Accept + Triage Convert to Project 完成核心 intake conversion path |
-| **Project Organization** | **当前** | 下一具体 Slice 待 checkpoint 后基于实际仓库选择 |
+| Issue Move between Projects | 已完成 | stable Issue identity、cross-Project relation integrity、existing destination-first Source Transition、automated + real-host evidence |
+| **Project Organization** | **当前** | 首个 Slice 已完成；下一具体 Slice 待当前 checkpoint 后基于实际仓库选择 |
 | V1 Exit | 待开始 | — |
 
 Checkpoint 只记录稳定阶段边界，不追踪每个微型实现任务。

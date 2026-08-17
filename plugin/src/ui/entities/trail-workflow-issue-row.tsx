@@ -4,7 +4,9 @@ import {
   type SyntheticEvent,
 } from "react";
 import { useStore } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 
+import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
 import {
   TRAIL_STATUS_CATEGORIES,
@@ -12,8 +14,11 @@ import {
 } from "../../domain/model/trail-values";
 import {
   selectIsTrailEntityPending,
+  selectTrailReadableProjectById,
+  selectTrailReadableProjectIds,
   selectTrailReadableWorkflowIssueById,
 } from "../../query/shared/trail-effective-query";
+import { selectTrailEntitySourceIssues } from "../../query/shared/trail-source-health-query";
 import {
   selectTrailStatusDefinition,
   selectTrailStatusOptionGroups,
@@ -21,7 +26,6 @@ import {
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { runTrailMutationAction } from "../interactions/trail-action";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
-import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 
 interface TrailWorkflowIssueRowProps {
   readonly actions: TrailUiActions["issues"];
@@ -60,6 +64,10 @@ export function TrailWorkflowIssueRow({
     runtimeStore,
     (state) => selectIsTrailEntityPending(state, issueId),
   );
+  const projectIds = useStore(
+    runtimeStore,
+    useShallow(selectTrailReadableProjectIds),
+  );
   const [completionBaseline, setCompletionBaseline] = useState<TrailWorkflowIssue>();
   const [completionTargetId, setCompletionTargetId] = useState<string>();
   const [estimateDraft, setEstimateDraft] = useState("");
@@ -89,6 +97,18 @@ export function TrailWorkflowIssueRow({
           setEstimateDraft(issue.estimate?.toString() ?? "");
         },
       },
+    );
+  };
+
+  const requestProject = (targetProjectId: string): void => {
+    if (
+      actionsDisabled
+      || targetProjectId === ""
+      || targetProjectId === issue.projectId
+    ) return;
+    runTrailMutationAction(
+      () => actions.moveToProject(issue, targetProjectId),
+      { onError },
     );
   };
 
@@ -128,6 +148,22 @@ export function TrailWorkflowIssueRow({
           {issue.estimate !== undefined ? ` · Estimate ${issue.estimate}` : ""}
         </span>
       </div>
+      <label className="trail-status-picker">
+        <span className="screen-reader-text">Project for {issue.title}</span>
+        <select
+          disabled={actionsDisabled || projectIds.length <= 1}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => requestProject(event.target.value)}
+          value={issue.projectId ?? ""}
+        >
+          {projectIds.map((projectId) => (
+            <TrailWorkflowIssueProjectOption
+              key={projectId}
+              projectId={projectId}
+              runtimeStore={runtimeStore}
+            />
+          ))}
+        </select>
+      </label>
       <label className="trail-status-picker">
         <span className="screen-reader-text">Status for {issue.title}</span>
         <select
@@ -184,5 +220,25 @@ export function TrailWorkflowIssueRow({
         </form>
       ) : null}
     </li>
+  );
+}
+
+function TrailWorkflowIssueProjectOption(props: {
+  readonly projectId: string;
+  readonly runtimeStore: TrailRuntimeStore;
+}) {
+  const project = useStore(
+    props.runtimeStore,
+    (state) => selectTrailReadableProjectById(state, props.projectId),
+  );
+  const unavailable = useStore(
+    props.runtimeStore,
+    (state) => selectTrailEntitySourceIssues(state, props.projectId).length > 0,
+  );
+  if (project === undefined) return null;
+  return (
+    <option disabled={unavailable} value={project.id}>
+      {project.title}{unavailable ? " (data issue)" : ""}
+    </option>
   );
 }

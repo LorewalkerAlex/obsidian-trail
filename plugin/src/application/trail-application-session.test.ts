@@ -23,6 +23,12 @@ function createHarness() {
     statusDefinitionId: "project-unstarted",
     title: "Project A",
   };
+  const projectB = {
+    id: "project-b",
+    labelIds: [],
+    statusDefinitionId: "project-unstarted",
+    title: "Project B",
+  };
   const workflow: TrailWorkflowIssue = {
     context: "workflow",
     createdAt: 1,
@@ -47,6 +53,13 @@ function createHarness() {
         project,
         sourcePath: "Trail/Projects/0001 Project A.md",
       },
+      {
+        issues: [],
+        kind: "project",
+        milestones: [],
+        project: projectB,
+        sourcePath: "Trail/Projects/0002 Project B.md",
+      },
       { issues: [], kind: "projectless-issues", sourcePath: "Trail/Collections/Projectless Issues.md" },
       { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
     ],
@@ -69,7 +82,7 @@ function createHarness() {
     runtimeStore,
     sourceSync,
   });
-  return { project, runtimeStore, session, submitted, triage, workflow };
+  return { project, projectB, runtimeStore, session, submitted, triage, workflow };
 }
 
 describe("Trail Application session", () => {
@@ -130,6 +143,24 @@ describe("Trail Application session", () => {
     );
     expect(result).toMatchObject({ kind: "needs-input", input: { code: "estimate-required" } });
     expect(harness.submitted).toEqual([]);
+  });
+
+  it("moves a Workflow Issue through an identity-preserving logical Replace", async () => {
+    const harness = createHarness();
+    const result = harness.session.issues.moveToProject(harness.workflow, harness.projectB.id);
+    expect(result.kind).toBe("submitted");
+    if (result.kind !== "submitted") return;
+    await result.receipt.completion;
+    expect(result.receipt.entityId).toBe(harness.workflow.id);
+    expect(harness.submitted[0]?.intent).toBe("workflow.issue.move-project");
+    expect(harness.submitted[0]?.effects).toEqual([{
+      after: {
+        kind: "issue",
+        value: { ...harness.workflow, milestoneId: undefined, projectId: harness.projectB.id },
+      },
+      before: { kind: "issue", value: harness.workflow },
+      kind: "replace-entity",
+    }]);
   });
 
   it("creates Projects and Workflow Issues through the same Source Sync boundary", async () => {

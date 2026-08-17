@@ -4,9 +4,9 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit, formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, Implementation Architecture Re-baseline, Codebase Simplification, Clean Plugin Rebuild, independent Architecture Implementation Audit, directory Cutover, and Triage Convert to Project checkpoints.
+Trail has completed its POC exit, formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, Implementation Architecture Re-baseline, Codebase Simplification, Clean Plugin Rebuild, independent Architecture Implementation Audit, directory Cutover, Triage Convert to Project, and Issue Move between Projects checkpoints.
 
-The current engineering stage is **Project Organization**. `Triage Convert to Project` is the first completed net-new slice after Cutover; the next concrete Project Organization slice is selected from the existing roadmap only after checking the actual repository and current user-value gap.
+The current engineering stage is **Project Organization**. `Issue Move between Projects` is the first completed Project Organization slice; the next concrete slice is selected from the existing roadmap only after checking the actual repository and current user-value gap.
 
 The current design and implementation chain is:
 
@@ -33,6 +33,8 @@ The 2026-08-16 legacy reference checkpoint is `6061ca45569fe7664e0b37ed279928c95
 The clean rebuild completed parity validation for Quick Capture, Triage Management, Project / Workflow Issue, and Triage Accept, plus independent-risk evidence for managed-file external refresh, read-only recovery, destination-first source transitions, safe compensation boundaries, host event suppression, and development Validation Evidence. The independent Architecture Implementation Audit on 2026-08-17 returned **PASS** with no blocking finding. Cutover then promoted the audited clean implementation to the canonical `plugin/` path and removed the temporary dual-tree build/test configuration.
 
 After Cutover, `Triage Convert to Project` reused that canonical architecture rather than adding a second conversion mechanism: the semantic action creates a new Project identity and deletes the source Triage Issue in one logical plan, while the existing destination-first Source Transition creates and validates the Project source before removing the Triage source. Focused and full automated validation passed, representative real-Obsidian evidence confirmed the target-first persistence order and clean Runtime convergence, QA data was removed, and the production bundle was restored.
+
+Project Organization then started with `Issue Move between Projects`. A Workflow Issue keeps its stable identity while its Project relation changes; a cross-Project move clears any Milestone relation that is no longer in scope and rejects moving non-terminal work into a terminal Project. The existing relationship-moving Source Transition remains the only persistence mechanism. Focused lint/tests, Diagnostics build, representative real-Obsidian target-first evidence, QA cleanup, production restore, full `npm run check`, and `git diff --check` all passed.
 
 ## Formal implementation model
 

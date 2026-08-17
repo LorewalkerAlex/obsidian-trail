@@ -84,7 +84,10 @@ export function createDiagnosticTrailUiActions(
   session: TrailApplicationSession,
   diagnostics: TrailDiagnostics,
 ): {
-  readonly issues: Pick<TrailApplicationSession["issues"], "changeStatus" | "create">;
+  readonly issues: Pick<
+    TrailApplicationSession["issues"],
+    "changeStatus" | "create" | "moveToProject"
+  >;
   readonly projects: Pick<TrailApplicationSession["projects"], "create">;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
@@ -126,6 +129,23 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.workflow.issue-create", error, data);
+        }
+      },
+      moveToProject(expectedIssue, targetProjectId): TrailMutationActionResult {
+        const data = {
+          issueId: expectedIssue.id,
+          sourceProjectId: expectedIssue.projectId ?? null,
+          targetProjectId,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.workflow.issue-project",
+            session.issues.moveToProject(expectedIssue, targetProjectId),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.workflow.issue-project", error, data);
         }
       },
     },

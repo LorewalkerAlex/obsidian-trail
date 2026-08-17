@@ -5,6 +5,28 @@ import { createTrailUiTestHarness } from "../../../test/trail-ui-test-harness";
 import { TrailProjectsPage } from "./trail-projects-page";
 
 describe("TrailProjectsPage", () => {
+  it("maps the Project picker to an identity-preserving Issue move action", () => {
+    const harness = createTrailUiTestHarness();
+    render(
+      <TrailProjectsPage
+        actions={{
+          issues: harness.actions.issues,
+          projects: harness.actions.projects,
+        }}
+        runtimeStore={harness.runtimeStore}
+        writable
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Project for Issue A"), {
+      target: { value: harness.projectB.id },
+    });
+    expect(harness.actions.issues.moveToProject).toHaveBeenCalledWith(
+      harness.workflow,
+      harness.projectB.id,
+    );
+  });
+
   it("renders NeedsInput as an explicit Estimate gate before completion", () => {
     const harness = createTrailUiTestHarness();
     const changeStatus = vi.fn()

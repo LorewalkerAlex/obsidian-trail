@@ -2,7 +2,10 @@ import type { TrailApplicationSession } from "../../application/trail-applicatio
 
 /** UI-facing use-case surface; host/source-sync mechanics never cross this boundary. */
 export interface TrailUiActions {
-  readonly issues: Pick<TrailApplicationSession["issues"], "changeStatus" | "create">;
+  readonly issues: Pick<
+    TrailApplicationSession["issues"],
+    "changeStatus" | "create" | "moveToProject"
+  >;
   readonly projects: Pick<TrailApplicationSession["projects"], "create">;
   readonly triage: Pick<
     TrailApplicationSession["triage"],

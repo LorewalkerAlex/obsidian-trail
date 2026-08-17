@@ -2,6 +2,7 @@ import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
 import {
   planChangeTrailWorkflowIssueStatus,
   planCreateTrailWorkflowIssue,
+  planMoveTrailWorkflowIssueProject,
 } from "../../domain/planning/trail-issue-planning";
 import { sameTrailDomainEntity } from "../../domain/rules/trail-domain-equality";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
@@ -61,6 +62,37 @@ export class TrailIssueApplication {
         targetStatusDefinitionId,
         "StatusDefinition ID",
       ),
+    });
+    const planned = resolveTrailApplicationPlan(result);
+    if (planned.kind === "needs-input") {
+      return { input: planned.input, kind: "needs-input" };
+    }
+    if (sameTrailDomainEntity(
+      { kind: "issue", value: expectedIssue },
+      { kind: "issue", value: planned.value.issue },
+    )) {
+      return { entityId: expectedIssue.id, kind: "unchanged" };
+    }
+    return {
+      kind: "submitted",
+      receipt: submitTrailApplicationPlan(
+        this.sourceSync,
+        planned.value.plan,
+        planned.value.issue.id,
+      ),
+    };
+  }
+
+  public moveToProject(
+    expectedIssue: TrailWorkflowIssue,
+    targetProjectId: string,
+  ): TrailMutationActionResult {
+    const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
+    normalizeTrailCommandTime(this.environment);
+    const result = planMoveTrailWorkflowIssueProject(readTrailPlanningState(this.runtimeStore), {
+      commandId,
+      expectedIssue,
+      targetProjectId: normalizeTrailCommandId(targetProjectId, "Project ID"),
     });
     const planned = resolveTrailApplicationPlan(result);
     if (planned.kind === "needs-input") {

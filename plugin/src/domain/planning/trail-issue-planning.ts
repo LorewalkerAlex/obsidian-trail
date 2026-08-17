@@ -30,6 +30,12 @@ export interface ChangeTrailWorkflowIssueStatusCommand {
   readonly targetStatusDefinitionId: string;
 }
 
+export interface MoveTrailWorkflowIssueProjectCommand {
+  readonly commandId: string;
+  readonly expectedIssue: TrailWorkflowIssue;
+  readonly targetProjectId: string;
+}
+
 export interface TrailWorkflowIssuePlan {
   readonly issue: TrailWorkflowIssue;
   readonly plan: TrailMutationPlan;
@@ -164,6 +170,87 @@ export function planChangeTrailWorkflowIssueStatus(
         kind: "replace-entity",
       }],
       intent: "workflow.issue.replace",
+    }),
+  });
+}
+
+/** Moving between Projects preserves Issue identity and drops any source-scoped Milestone. */
+export function planMoveTrailWorkflowIssueProject(
+  state: TrailPlanningState,
+  command: MoveTrailWorkflowIssueProjectCommand,
+): TrailPlanResult<TrailWorkflowIssuePlan> {
+  const current = state.domain.issuesById.get(command.expectedIssue.id);
+  if (current?.context !== "workflow") {
+    return rejectTrailPlan(
+      "workflow-issue-missing",
+      `Workflow Issue does not exist: ${command.expectedIssue.id}`,
+    );
+  }
+  if (!sameTrailDomainEntity(
+    { kind: "issue", value: current },
+    { kind: "issue", value: command.expectedIssue },
+  )) {
+    return rejectTrailPlan(
+      "workflow-issue-changed",
+      `Workflow Issue changed before action: ${command.expectedIssue.id}`,
+    );
+  }
+
+  const targetProject = state.domain.projectsById.get(command.targetProjectId);
+  if (targetProject === undefined) {
+    return rejectTrailPlan("project-missing", `Project does not exist: ${command.targetProjectId}`);
+  }
+  const issueStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "issue",
+    current.statusDefinitionId,
+  );
+  const targetProjectStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    targetProject.statusDefinitionId,
+  );
+  if (issueStatus === undefined) {
+    return rejectTrailPlan("status-reference-invalid", "Workflow Issue status reference is invalid");
+  }
+  if (targetProjectStatus === undefined) {
+    return rejectTrailPlan(
+      "project-status-invalid",
+      `Project status is invalid: ${targetProject.id}`,
+    );
+  }
+  if (
+    targetProject.id !== current.projectId
+    && !isTrailTerminalStatusDefinition(issueStatus)
+    && isTrailTerminalStatusDefinition(targetProjectStatus)
+  ) {
+    return rejectTrailPlan(
+      "project-terminal",
+      "A terminal Project must be reopened before receiving non-terminal work",
+    );
+  }
+
+  const issue: TrailWorkflowIssue = targetProject.id === current.projectId
+    ? current
+    : {
+        ...current,
+        milestoneId: undefined,
+        projectId: targetProject.id,
+      };
+  return readyTrailPlan({
+    issue,
+    plan: createTrailMutationPlan({
+      commandId: command.commandId,
+      effects: [{
+        after: { kind: "issue", value: issue },
+        before: { kind: "issue", value: current },
+        kind: "replace-entity",
+      }],
+      intent: "workflow.issue.move-project",
+      preconditions: [{
+        entity: { kind: "project", value: targetProject },
+        kind: "entity-equals",
+      }],
     }),
   });
 }
