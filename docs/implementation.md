@@ -7,26 +7,30 @@ The active formal implementation is `plugin/` on `main`.
 The current repository baseline for this implementation stage is:
 
 ```text
-3abbc358ef5a61cec3fd852ad4ad4d52d536ae7d
-feat: complete domain validation foundation
+7fe3547a16bd9a3d7fdaa38a083c5368c7671e2f
+feat: expand semantic planning foundation
 ```
 
 This is the single execution baseline for the active Gate 2 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
 
-Gate 1 — Domain / Validation Completion is complete at this baseline.
+Gate 1 — Domain / Validation Completion remains complete. Gate 2 Slice A — Workflow / Project Semantic Foundation is complete at this baseline.
 
-Verified Gate 1 outcomes:
+Verified lower-layer outcomes now include:
 
-- the frozen Core Entity, Configuration, and Workspace State shapes already matched the canonical Domain model;
+- the frozen Core Entity, Configuration, and Workspace State shapes match the canonical Domain model;
 - core record/reference/workspace invariants remain owned by `domain/validation`;
 - canonical Status terminal semantics remain shared through `domain/rules`;
-- Quick Capture default Due now consumes a Domain-owned temporal rule instead of owning the seven-calendar-day policy in Application;
-- the frozen `EndOfNextWeek` Cycle default has a Domain-owned calendar-date resolver without inventing a time-of-day persistence rule;
-- direct owner-level tests now cover the audited Core Invariants and lifecycle edges that previously lacked explicit evidence;
-- focused Gate 1 tests and the full repository check pass after the completion changes;
-- GitHub Actions CI #64 passed for the Gate 1 checkpoint.
+- Quick Capture default Due and the configured Cycle end suggestion consume Domain-owned temporal rules;
+- Workflow Issue creation now covers Project and project-less forms;
+- Issue Project and Milestone relation changes preserve the frozen same-Project rules;
+- Triage Accept can create Project or project-less Workflow work without carrying Triage Due;
+- Project lifecycle planning enforces the Complete child-Issue gate and explicit Reopen semantics;
+- Project Initiative membership is planned canonically;
+- Project acceptance and non-terminal child checks have shared Domain rule ownership across planning and validation;
+- focused Slice A tests, the full repository check, and `git diff --check` passed locally;
+- GitHub Actions CI #65 passed for `7fe3547a16bd9a3d7fdaa38a083c5368c7671e2f`.
 
-The repository also contains proven product behavior for Quick Capture/Triage, basic Project and Workflow Issue execution, Triage Accept, Triage Convert to Project, and Issue moves between Projects. Reusable Domain, Markdown, Persistence, Mutation, Runtime, Source Sync, Query, Application/UI, Diagnostics, and architecture-guard foundations remain available for later gates.
+The repository also contains proven Markdown, Persistence, Mutation, Runtime, Source Sync, Query, Application/UI, Diagnostics, and architecture-guard foundations for later gates.
 
 Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents.
 
@@ -62,10 +66,10 @@ Reuse the existing canonical owners and proven shared foundations instead of reb
 
 Current reusable capability areas include:
 
-- Domain model, rules, and validation infrastructure;
+- Domain model, rules, validation, and semantic-planning infrastructure;
 - Markdown schema, codecs, and managed-path support;
 - Domain-source and plugin-data persistence;
-- shared Mutation planning/execution infrastructure and the established transaction topologies;
+- shared Mutation planning/execution infrastructure and established transaction topologies;
 - committed/pending Runtime projection, source ownership, and reconciliation;
 - Source Sync and host-event convergence;
 - shared Query helpers;
@@ -80,46 +84,40 @@ Implementation must preserve unrelated canonical fields and relations even when 
 
 Current work is **Gate 2 — Semantic Planning Completion**.
 
-The Semantic Planning Completion Audit against the frozen Domain and the actual repository at `3abbc358ef5a61cec3fd852ad4ad4d52d536ae7d` is complete. The audit confirmed that existing Issue Status and Triage planners already establish the intended pure-planning pattern, while the remaining Gate 2 work is concentrated in frozen V1 transitions and relation-resolution behaviors that do not yet have complete canonical planner ownership.
+The Semantic Planning Completion Audit against the frozen Domain and the repository at `3abbc358ef5a61cec3fd852ad4ad4d52d536ae7d` established the Gate 2 gap set. Slice A closed the Workflow Issue / Project relation and lifecycle cluster and was remotely verified at `7fe3547a16bd9a3d7fdaa38a083c5368c7671e2f`.
 
-Gate 2 implementation must:
+The current implementation slice is **Milestone / Cycle + Core Delete Relation Resolution**.
 
-1. complete the verified Workflow Issue / Project relation and lifecycle planning gaps without moving semantic rules into Application or Persistence;
-2. complete Initiative / Milestone / Cycle planning required by frozen V1 contracts;
-3. complete Core Entity delete relation-resolution planning as legal multi-effect logical mutations;
-4. complete reference-affecting Status/Label configuration planning where current authoritative references require repair or explicit replacement;
-5. keep required `NeedsInput` / rejection boundaries ahead of illegal optimistic state;
-6. reuse shared Domain rules when the same invariant is consumed by validation and planning;
-7. keep physical placement, transaction execution, Runtime indexes, Query, Application, and UI work in their later gates;
-8. prove the Gate 2 exit condition before Gate 3 becomes active.
+This slice must:
 
-The current implementation slice is **Workflow / Project Semantic Foundation**. It targets the first verified gap cluster only; the remaining verified gaps stay open until their own coherent slices are implemented and verified.
+1. provide canonical creation planning for Project-scoped Milestones without inventing a Milestone lifecycle;
+2. provide Cycle open, explicit membership change, and close plans over the existing Cycle entity contract;
+3. own the frozen Create Next Cycle initial-candidate rule in Domain rules;
+4. implement Initiative, Milestone, Project, Workflow Issue, and Cycle delete relation resolution as complete logical Mutation Plans;
+5. preserve unrelated entities and facts while clearing, replacing, or removing only the references required by the frozen delete contracts;
+6. keep Closed Cycle membership immutable for normal planning while allowing Issue deletion to remove historical membership as explicit referential cleanup;
+7. keep physical placement, transaction execution, Runtime indexes, Query, Application, and UI work in later gates.
 
 ### 4.2 Current verified gaps
 
-The repository audit verified these Gate 2 gaps:
+Remaining Gate 2 gaps at the current baseline are:
 
-1. **Workflow Issue / Project relation completeness**
-   - normal Workflow Issue creation does not yet cover the frozen project-less form;
-   - Triage Accept does not yet cover a project-less Workflow target;
-   - Issue Project planning covers Project-to-Project movement but not Project-to-project-less movement;
-   - Issue Milestone set/clear has no canonical planner even though same-Project relation legality is frozen;
-   - Project lifecycle Status planning, including Complete rejection with current non-terminal child Issues and explicit Reopen semantics, has no canonical planner;
-   - Project Initiative membership set/clear has no canonical planner;
-   - Project acceptance of new non-terminal work and Project-completion child checks are currently repeated or validation-local rather than owned as shared semantic rules.
-
-2. **Cycle semantic planning**
+1. **Milestone / Cycle semantic planning**
+   - Project-scoped Milestone creation has no canonical planner;
    - Cycle open, membership edit, and close have no canonical planner coverage sufficient to produce complete legal logical plans;
    - Create Next Cycle has no Domain-owned candidate rule for the frozen unfinished/non-terminal initial selection semantics.
 
-3. **Core Entity delete relation resolution**
-   - Initiative, Milestone, Project, Workflow Issue, and Cycle delete contracts require complete relation repair/removal in one logical mutation;
-   - current planner coverage includes Triage delete only and does not implement the frozen cross-entity delete semantics.
+2. **Core Entity delete relation resolution**
+   - Initiative deletion must preserve Projects while clearing or explicitly reassigning Initiative membership;
+   - Milestone deletion must preserve Issues while clearing or replacing the Milestone relation within the same Project;
+   - Project deletion must preserve child Issues as project-less, clear their Milestone relation, and remove Project-scoped Milestones;
+   - Workflow Issue deletion must remove the Issue from open and historical Cycle membership;
+   - Cycle deletion must remove only the Cycle and preserve member Issues and their workflow relationships.
 
-4. **Reference-affecting configuration planning**
+3. **Reference-affecting configuration planning**
    - StatusDefinition and Label configuration changes that would invalidate authoritative references have validation coverage but no canonical semantic planner for explicit replacement/cancellation boundaries and complete legal repair plans.
 
-These are implementation gaps, not new Domain questions. Product, Domain, Data, Architecture, and Design-to-Code Map remain frozen unless implementation evidence exposes an actual contradiction in those authorities.
+The Workflow Issue / Project relation gap cluster is closed. These remaining items are implementation gaps, not new Domain questions. Product, Domain, Data, Architecture, and Design-to-Code Map remain frozen unless implementation evidence exposes an actual contradiction in those authorities.
 
 ## 5. Build Order
 
