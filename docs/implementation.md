@@ -7,8 +7,8 @@ The active formal implementation is `plugin/` on `main`.
 The current repository baseline for this implementation stage is:
 
 ```text
-fa48f2d940457e8b7ed93eca037ce395d20a4ed7
-feat: add runtime structural indexes
+858a74f49d74ca61c875ad54d78f58b0202fbd07
+feat: add effective structural query foundation
 ```
 
 This is the single execution baseline for the active Gate 5 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
@@ -26,6 +26,15 @@ Gate 4 closure evidence includes:
 - committed reconciliation rebuilding indexes from authoritative Domain facts while source ownership remains a separate Runtime concern;
 - GitHub Actions CI #70 passing for the Gate 4 checkpoint;
 - the final repository-grounded Gate 4 Exit Audit finding no second Runtime/index foundation gap required by known V1 downstream reads.
+
+Gate 5 Slice A closure evidence includes:
+
+- Effective Structural Query Foundation at `858a74f49d74ca61c875ad54d78f58b0202fbd07`;
+- one coherent readable Runtime snapshot boundary pairing authoritative data with matching indexes;
+- shared selectors for Initiative, Project, Milestone, Cycle, Label, and StatusDefinition relationships;
+- Project Issue membership narrowed by effective Runtime indexes while Query retains presentation ordering;
+- optimistic relationship/classification changes reflected immediately while refresh/recovery falls back to the committed pair;
+- GitHub Actions CI #71 passing for the Gate 5 Slice A checkpoint.
 
 Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents.
 
@@ -65,7 +74,8 @@ Current reusable capability areas include:
 - Markdown schema/codecs and authoritative Persistence;
 - shared Mutation materialization/execution and Source Sync;
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
-- existing shared Query read/status/source-health helpers;
+- coherent structural Query selection over committed/effective Runtime;
+- existing Status/source-health Query helpers;
 - Application/UI foundations for already implemented workflows;
 - Diagnostics and architecture guards.
 
@@ -77,30 +87,28 @@ Implementation must preserve unrelated canonical fields and relations even when 
 
 Current work is **Gate 5 - Query / Derived Foundation Completion**.
 
-The Gate 5 repository audit starts from `fa48f2d940457e8b7ed93eca037ce395d20a4ed7`.
+The current public checkpoint is `858a74f49d74ca61c875ad54d78f58b0202fbd07`. Gate 5 Slice A closed the structural Query gap found after Gate 4 by making effective Runtime indexes consumable through shared Query selectors.
 
-Existing Query owners already provide effective/committed readable state selection, deterministic Project/Triage/Project-Issue ordering, Status option grouping, pending-state indication, and source-health selection. The first Gate 5 audit found one immediate shared-read gap: Query does not yet consume the Gate 4 effective structural indexes as a coherent readable snapshot, and several frozen relationships have no shared selector owner.
+The continued repository-grounded Gate 5 audit found a second concrete gap: Domain-defined derived facts do not yet have a Query owner. This gap is narrower than the full set of product words such as Progress, Health, Attention, or Home Focus. Only derived behavior whose semantics are already explicit in the authoritative Domain should be implemented at this stage.
 
-The first Gate 5 implementation slice is **Effective Structural Query Foundation**. It is implemented and locally verified on top of the remote `fa48f2d940457e8b7ed93eca037ce395d20a4ed7` Gate 4 checkpoint. It is pending commit, push, remote CI verification, and continuation of the repository-grounded Gate 5 audit from the resulting checkpoint.
+The current implementation slice is **Canonical Derived Facts Foundation**. It introduces Query-owned derivation for the two currently precise reusable facts:
 
-The slice:
+1. Initiative completion: an Initiative with no current Projects is not Completed; otherwise it is derived Completed only when every current Project is in Completed or Canceled Status category.
+2. Current-scope activity start for Project, Milestone, and Initiative: the earliest `firstStartedAt` among Workflow Issues currently belonging to that scope.
 
-1. adds one readable Runtime snapshot boundary that selects pending-aware authoritative data plus indexes while Runtime is ready and falls back to the matching committed pair during refresh/recovery;
-2. moves Project Issue membership narrowing from a full `issuesById` scan to the effective `issuesByProjectId` index while preserving established presentation ordering in Query;
-3. exposes shared relationship selectors for Initiative -> Projects, Project -> Milestones, Milestone -> Issues, Cycle <-> Issues, and Current Cycle;
-4. exposes shared Label and StatusDefinition reference selectors from effective Runtime indexes;
-5. verifies optimistic Issue relationship/classification changes and Cycle changes update Query-visible relationships immediately without mutating committed truth;
-6. verifies refresh mode falls back to one coherent committed authoritative/index snapshot rather than mixing committed entities with optimistic indexes.
+The slice also removes a small duplicate Status interpretation in the existing Project-Issue ordering helper by reusing the canonical Domain `resolveTrailStatusDefinition` rule.
 
-Focused structural Query regressions, the full `npm run check`, and `git diff --check` pass locally for this slice. Gate 5 remains ACTIVE until this slice is committed, pushed, remotely verified, and the repository-grounded Query/derived audit continues from that public checkpoint.
+Derived selectors use the same readable Runtime snapshot boundary as structural Query, so pending plans affect derived reads while Runtime is ready and refresh/recovery falls back to committed facts and committed indexes together.
 
-This slice does not introduce a generic query language or move presentation/grouping policy into Runtime. It also does not invent formulas for Milestone Progress, Health, Due Soon, Attention, Home Focus, or other derived capabilities whose exact product semantics still need to be established from frozen design or later evidence.
+This slice deliberately does not invent formulas for Project/Milestone progress, actual work end, Health, Due Soon, Attention, Home Focus, or Activity Heatmap aggregation. Those require an explicit product/domain rule or a concrete consumer contract before implementation.
 
 ### 4.2 Current verified gaps
 
-The first verified Gate 5 gap was structural Query consumption of the Runtime foundation. The current locally verified Slice A closes that gap in the working tree. No second Gate 5 gap is declared by this checkpoint document before the slice has a public remote checkpoint.
+Gate 5 Slice A is remotely complete at `858a74f49d74ca61c875ad54d78f58b0202fbd07` with CI #71 passing.
 
-After remote verification, the Gate 5 audit must continue from the new repository checkpoint across the remaining known V1 read requirements: exact Domain-defined derived facts, page-specific selection needs for Initiative/Cycle/Home, supported filter/group/sort/search dimensions, and duplicate-detection helper needs. New derived behavior must be based on explicit Domain/Product rules rather than convenient guessed formulas.
+The current verified Gate 5 gap is canonical derived-fact ownership. The Canonical Derived Facts Foundation delivery addresses the currently explicit Initiative completion and current-scope actual-start rules. It must pass focused repository tests, the full repository check, remote checkpoint verification, and then a renewed Gate 5 Exit Audit before Gate 5 can close.
+
+After this slice, remaining page-specific filters/groups/sorts/search, Home composition, duplicate-detection helpers, and any richer analytics should be added only when their actual V1 consumer contract requires them. The absence of a speculative generic Query API is not itself a Gate 5 gap.
 
 Product, Domain, Data, Architecture, and Design-to-Code Map remain unchanged unless implementation evidence exposes a contradiction in those authorities.
 
@@ -146,7 +154,7 @@ Complete. Authoritative Runtime state, source ownership, pending projection, rec
 
 ### 5.5 Gate 5 - Query / Derived
 
-Exit when known V1 consumers can use shared structural and derived read capabilities rather than reconstructing them inside pages.
+Exit when known V1 consumers can use shared structural and explicitly defined derived read capabilities rather than reconstructing them inside pages.
 
 ### 5.6 Gate 6 - Application
 

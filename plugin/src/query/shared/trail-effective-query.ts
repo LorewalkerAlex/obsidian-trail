@@ -10,6 +10,7 @@ import {
   type TrailPriority,
   type TrailStatusCategory,
 } from "../../domain/model/trail-values";
+import { resolveTrailStatusDefinition } from "../../domain/rules/trail-status-rules";
 import {
   projectTrailEffectiveRuntimeSnapshot,
   type TrailEffectiveRuntimeSnapshot,
@@ -155,9 +156,11 @@ function statusCategoryFor(
   configuration: TrailConfiguration,
   issue: TrailWorkflowIssue,
 ): TrailStatusCategory | undefined {
-  return configuration.statusDefinitions.find((definition) => (
-    definition.entityType === "issue" && definition.id === issue.statusDefinitionId
-  ))?.category;
+  return resolveTrailStatusDefinition(
+    configuration,
+    "issue",
+    issue.statusDefinitionId,
+  )?.category;
 }
 
 function workflowSortKey(
