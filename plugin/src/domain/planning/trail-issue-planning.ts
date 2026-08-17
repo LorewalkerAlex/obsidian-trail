@@ -2,6 +2,7 @@ import type { TrailWorkflowIssue } from "../model/trail-entities";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
 import { canTrailProjectAcceptWorkflowIssue } from "../rules/trail-project-rules";
 import {
+  isTrailTerminalStatusDefinition,
   resolveTrailDefaultStatusDefinition,
   resolveTrailStatusDefinition,
 } from "../rules/trail-status-rules";
@@ -151,6 +152,35 @@ export function planChangeTrailWorkflowIssueStatus(
   if (currentStatus === undefined || targetStatus === undefined) {
     return rejectTrailPlan("status-reference-invalid", "Workflow Issue status reference is invalid");
   }
+
+  const reopensNonTerminalWork = isTrailTerminalStatusDefinition(currentStatus)
+    && !isTrailTerminalStatusDefinition(targetStatus);
+  const reopeningProject = reopensNonTerminalWork && current.projectId !== undefined
+    ? state.domain.projectsById.get(current.projectId)
+    : undefined;
+  if (reopensNonTerminalWork && current.projectId !== undefined && reopeningProject === undefined) {
+    return rejectTrailPlan("project-missing", `Project does not exist: ${current.projectId}`);
+  }
+  if (reopeningProject !== undefined) {
+    const projectStatus = resolveTrailStatusDefinition(
+      state.configuration,
+      "project",
+      reopeningProject.statusDefinitionId,
+    );
+    if (projectStatus === undefined) {
+      return rejectTrailPlan(
+        "project-status-invalid",
+        `Project status is invalid: ${reopeningProject.id}`,
+      );
+    }
+    if (!canTrailProjectAcceptWorkflowIssue(projectStatus, targetStatus)) {
+      return rejectTrailPlan(
+        "project-terminal",
+        "A terminal Project must be reopened before reopening non-terminal work",
+      );
+    }
+  }
+
   if (command.estimate !== undefined && targetStatus.category !== "completed") {
     return rejectTrailPlan(
       "estimate-not-applicable",
@@ -189,6 +219,9 @@ export function planChangeTrailWorkflowIssueStatus(
         kind: "replace-entity",
       }],
       intent: "workflow.issue.replace",
+      preconditions: reopeningProject === undefined
+        ? []
+        : [{ entity: { kind: "project", value: reopeningProject }, kind: "entity-equals" }],
     }),
   });
 }

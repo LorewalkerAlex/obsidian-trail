@@ -159,6 +159,51 @@ describe("Workflow Issue planning", () => {
     }
   });
 
+  it("requires Project reopen before reopening terminal Issue work", () => {
+    const planning = state();
+    const completedIssue: TrailWorkflowIssue = {
+      ...planning.issue,
+      estimate: 3,
+      statusDefinitionId: "issue-completed",
+      terminalAt: 300,
+    };
+    const completedProject = {
+      ...planning.project,
+      statusDefinitionId: "project-completed",
+    };
+    planning.domain.issuesById.set(completedIssue.id, completedIssue);
+    planning.domain.projectsById.set(completedProject.id, completedProject);
+
+    expect(planChangeTrailWorkflowIssueStatus(planning, {
+      commandId: "command-reopen-blocked",
+      effectiveAt: 400,
+      expectedIssue: completedIssue,
+      targetStatusDefinitionId: "issue-unstarted",
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "project-terminal" },
+    });
+
+    const reopenedProject = {
+      ...completedProject,
+      statusDefinitionId: "project-unstarted",
+    };
+    planning.domain.projectsById.set(reopenedProject.id, reopenedProject);
+    const ready = planChangeTrailWorkflowIssueStatus(planning, {
+      commandId: "command-reopen-after-project",
+      effectiveAt: 500,
+      expectedIssue: completedIssue,
+      targetStatusDefinitionId: "issue-unstarted",
+    });
+    expect(ready.kind).toBe("ready");
+    if (ready.kind === "ready") {
+      expect(ready.plan.plan.preconditions).toContainEqual({
+        entity: { kind: "project", value: reopenedProject },
+        kind: "entity-equals",
+      });
+    }
+  });
+
   it("replaces terminalAt across terminal categories and preserves it within one category", () => {
     const planning = state();
     const completed: TrailWorkflowIssue = {
@@ -278,7 +323,9 @@ describe("Workflow Issue planning", () => {
       targetProjectId: planning.projectB.id,
     });
     expect(result.kind).toBe("ready");
-  });it("changes Milestone only within the Issue Project and supports clearing", () => {
+  });
+
+  it("changes Milestone only within the Issue Project and supports clearing", () => {
     const planning = state();
     const changed = planChangeTrailWorkflowIssueMilestone(planning, {
       commandId: "command-milestone",

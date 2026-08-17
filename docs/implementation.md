@@ -7,13 +7,17 @@ The active formal implementation is `plugin/` on `main`.
 The current repository baseline for this implementation stage is:
 
 ```text
-996fec5541d6f56ea88aad3b5f8b60b656e1b7f6
-feat: add cycle and delete semantic planning
+3a2fb55bc6ba34d2e8acff8df470396c2426d1e9
+feat: add configuration reference resolution
 ```
 
-This is the single execution baseline for the active Gate 2 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
+This is the single execution baseline for the active Gate 2 exit sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
 
-Gate 1 — Domain / Validation Completion remains complete. Gate 2 Slice A — Workflow / Project Semantic Foundation and Slice B — Milestone / Cycle + Core Delete Relation Resolution are complete at this baseline.
+Gate 1 — Domain / Validation Completion remains complete. The three planned Gate 2 implementation slices are remotely complete at this baseline:
+
+- Slice A — Workflow / Project Semantic Foundation at `7fe3547a16bd9a3d7fdaa38a083c5368c7671e2f`;
+- Slice B — Milestone / Cycle + Core Delete Relation Resolution at `996fec5541d6f56ea88aad3b5f8b60b656e1b7f6`;
+- Configuration Reference Resolution at `3a2fb55bc6ba34d2e8acff8df470396c2426d1e9`.
 
 Verified lower-layer outcomes now include:
 
@@ -30,9 +34,10 @@ Verified lower-layer outcomes now include:
 - Project-scoped Milestone creation has canonical semantic planning;
 - Cycle open, membership change, close, and next-cycle candidate selection have Domain planning/rule ownership;
 - Initiative, Milestone, Project, Workflow Issue, and Cycle deletion produce complete relation-resolving logical plans;
-- focused Slice A/Slice B tests, the full repository check, and `git diff --check` passed locally;
-- GitHub Actions CI #65 passed for `7fe3547a16bd9a3d7fdaa38a083c5368c7671e2f`;
-- GitHub Actions CI #66 passed for `996fec5541d6f56ea88aad3b5f8b60b656e1b7f6`.
+- Configuration changes preserve current Status/Label reference legality through explicit semantic resolution rather than silent defaults or data loss;
+- shared Label/Cycle rules are reused by planning and validation where the invariant is the same;
+- focused Slice A/Slice B/Configuration tests, the full repository check, and `git diff --check` passed locally;
+- GitHub Actions CI #65, #66, and #67 passed for their corresponding checkpoints.
 
 The repository also contains proven Markdown, Persistence, Mutation, Runtime, Source Sync, Query, Application/UI, Diagnostics, and architecture-guard foundations for later gates.
 
@@ -88,28 +93,25 @@ Implementation must preserve unrelated canonical fields and relations even when 
 
 Current work is **Gate 2 — Semantic Planning Completion**.
 
-The Semantic Planning Completion Audit against the frozen Domain and the repository at `3abbc358ef5a61cec3fd852ad4ad4d52d536ae7d` established the Gate 2 gap set. Slice A closed the Workflow Issue / Project relation and lifecycle cluster at `7fe3547a16bd9a3d7fdaa38a083c5368c7671e2f`. Slice B closed Milestone / Cycle semantic planning and Core Entity delete relation resolution at `996fec5541d6f56ea88aad3b5f8b60b656e1b7f6`.
+The original Semantic Planning Completion Audit against the frozen Domain and the repository at `3abbc358ef5a61cec3fd852ad4ad4d52d536ae7d` established the implementation gap set. Slice A, Slice B, and Configuration Reference Resolution closed those planned clusters and are remotely verified through `3a2fb55bc6ba34d2e8acff8df470396c2426d1e9`.
 
-The **Configuration Reference Resolution** slice is implemented and locally verified on top of the current remote baseline. It now:
+The repository-grounded **Gate 2 Exit Audit** then re-read the frozen Project acceptance contract against the current `domain/planning` owners. It found one final semantic bypass in the remote baseline: a terminal Workflow Issue already belonging to a terminal Project could transition back to a non-terminal Issue Status without first reopening the Project, and that legal reopen path lacked a Project precondition against concurrent Project closure.
 
-1. provides one canonical semantic planner for a complete Configuration replacement plus only the Domain Entity repairs made necessary by that replacement;
-2. allows safe Status name/default/order changes without rewriting existing Entity references;
-3. requires explicit per-entity Status replacement when a referenced StatusDefinition disappears or changes `entityType` / `category`, preserving the previous lifecycle category rather than silently using a configured default or smuggling a lifecycle transition into Configuration editing;
-4. requires explicit per-entity Label selection repair when removed Labels, applicability changes, or Single-selection rules would make the current selection illegal, allowing explicit replacement or explicit clearing but never silent data loss;
-5. merges Configuration and all required Entity repairs into one logical Mutation Plan with stale-state preconditions;
-6. reuses shared Domain rules where Configuration planning and workspace validation consume the same Label/Cycle invariants;
-7. rejects intrinsically invalid next Configuration before reference repair planning;
-8. keeps Persistence, Runtime, Application, Settings UI, and opaque future Custom View filter semantics in their later owners.
+The **Issue Reopen Project Guard** follow-up is now implemented and locally verified on top of the current remote baseline. It:
 
-Focused Configuration semantic tests, the full repository check, and `git diff --check` pass locally for this slice. Remote checkpoint and CI verification are still pending.
+1. applies the established Project acceptance rule only when a terminal Issue transitions back to a non-terminal Status while it belongs to a Project;
+2. rejects that reopen when the Project is terminal until the Project is explicitly reopened;
+3. includes the relevant non-terminal Project as a Mutation precondition when the Issue reopen is legal, closing the stale-Project race before optimistic commit;
+4. leaves project-less reopen, terminal-to-terminal changes, and existing non-terminal lifecycle changes unchanged;
+5. proves the boundary in the Issue planner owner tests without creating a new Project lifecycle model or duplicating Project acceptance semantics.
 
-The current task is the **Gate 2 Exit Audit**. Gate 2 remains ACTIVE until the Configuration slice is committed, pushed, remotely verified, and a repository-grounded audit confirms that no frozen V1 semantic-planning gap remains.
+Focused Issue/Project planning tests, the full repository check, and `git diff --check` pass locally for this follow-up. Gate 2 remains ACTIVE until this follow-up is committed, pushed, remotely verified, and the final repository-grounded Exit Audit confirms that no frozen V1 semantic-planning gap remains.
 
 ### 4.2 Current verified gaps
 
-No implementation gap from the established Gate 2 audit remains after the locally verified Configuration Reference Resolution slice.
+No unimplemented semantic-planning gap remains in the locally verified Gate 2 work. The final exit condition is remote verification of the Issue Reopen Project Guard followed by one last audit against that checkpoint.
 
-The exit audit must now verify the actual repository against the frozen Product / Domain / Data / Architecture contracts and the full `domain/planning` + directly relevant `domain/rules` / `domain/validation` owners. If that audit finds a concrete missing frozen transition, relation-resolution behavior, or illegal optimistic boundary, record it here and keep Gate 2 ACTIVE. Otherwise, after remote verification, mark Gate 2 COMPLETE and advance the moving implementation baseline to the verified Configuration checkpoint.
+No second missing frozen transition, relation-resolution behavior, or configuration-reference boundary was found in the Exit Audit across the current Triage, Workflow Issue, Project, Milestone, Cycle, delete, Configuration, shared rule, and validation owners.
 
 The typed Workspace State still does not define stable StatusDefinitionId or LabelId reference fields inside Custom View filter payloads, so Gate 2 does not invent repair semantics for opaque future view configuration. Product, Domain, Data, Architecture, and Design-to-Code Map remain frozen unless implementation evidence exposes an actual contradiction in those authorities.
 
