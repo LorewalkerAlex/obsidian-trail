@@ -8,6 +8,8 @@ import type {
 } from "../model/trail-entities";
 import type { TrailLabelEntityType } from "../model/trail-values";
 import type { TrailWorkspaceState } from "../model/trail-workspace-state";
+import { isTrailCycleOpen } from "../rules/trail-cycle-rules";
+import { findTrailLabelSelectionViolations } from "../rules/trail-label-rules";
 import { findTrailNonTerminalProjectChildIssue } from "../rules/trail-project-rules";
 import {
   validateTrailConfiguration,
@@ -74,49 +76,40 @@ function validateLabels(
   labelIds: readonly string[],
   issues: TrailWorkspaceValidationIssue[],
 ): void {
-  const labelsById = new Map(configuration.labels.map((label) => [label.id, label] as const));
-  const groupsById = new Map(configuration.labelGroups.map((group) => [group.id, group] as const));
-  const selectedByGroup = new Map<string, string[]>();
-
-  for (const labelId of labelIds) {
-    const label = labelsById.get(labelId);
-    if (label === undefined) {
-      issues.push(issue(
-        "reference.label.missing",
-        `Entity ${entityId} references unknown Label ${labelId}`,
-        { entityId, entityKind, field: "labelIds", stage: "reference" },
-      ));
-      continue;
-    }
-    const group = groupsById.get(label.groupId);
-    if (group === undefined) {
-      issues.push(issue(
-        "reference.label-group.missing",
-        `Label ${label.id} references unknown LabelGroup ${label.groupId}`,
-        { entityId, entityKind, field: "labelIds", stage: "reference" },
-      ));
-      continue;
-    }
-    if (!group.registeredEntityTypes.includes(entityType)) {
-      issues.push(issue(
-        "reference.label.scope",
-        `Label ${label.id} is not registered for ${entityType}`,
-        { entityId, entityKind, field: "labelIds", stage: "reference" },
-      ));
-    }
-    const selected = selectedByGroup.get(group.id) ?? [];
-    selected.push(label.id);
-    selectedByGroup.set(group.id, selected);
-  }
-
-  for (const [groupId, selected] of selectedByGroup) {
-    const group = groupsById.get(groupId);
-    if (group?.selectionMode === "single" && selected.length > 1) {
-      issues.push(issue(
-        "domain.label-group.single-selection",
-        `Entity ${entityId} selects multiple Labels from single-select group ${groupId}`,
-        { entityId, entityKind, field: "labelIds", stage: "domain" },
-      ));
+  for (const violation of findTrailLabelSelectionViolations(
+    configuration,
+    entityType,
+    labelIds,
+  )) {
+    switch (violation.kind) {
+      case "label-missing":
+        issues.push(issue(
+          "reference.label.missing",
+          `Entity ${entityId} references unknown Label ${violation.labelId}`,
+          { entityId, entityKind, field: "labelIds", stage: "reference" },
+        ));
+        break;
+      case "label-group-missing":
+        issues.push(issue(
+          "reference.label-group.missing",
+          `Label ${violation.labelId} references unknown LabelGroup ${violation.groupId}`,
+          { entityId, entityKind, field: "labelIds", stage: "reference" },
+        ));
+        break;
+      case "label-scope":
+        issues.push(issue(
+          "reference.label.scope",
+          `Label ${violation.labelId} is not registered for ${entityType}`,
+          { entityId, entityKind, field: "labelIds", stage: "reference" },
+        ));
+        break;
+      case "single-selection":
+        issues.push(issue(
+          "domain.label-group.single-selection",
+          `Entity ${entityId} selects multiple Labels from single-select group ${violation.groupId}`,
+          { entityId, entityKind, field: "labelIds", stage: "domain" },
+        ));
+        break;
     }
   }
 }
@@ -320,7 +313,7 @@ export function validateTrailWorkspaceGraph(input: {
     }
   }
 
-  const openCycles = [...input.domain.cyclesById.values()].filter(({ endedAt }) => endedAt === undefined);
+  const openCycles = [...input.domain.cyclesById.values()].filter(isTrailCycleOpen);
   if (openCycles.length > 1) {
     issues.push(issue(
       "workspace.cycle.multiple-open",
