@@ -78,6 +78,7 @@ export function createTrailUiTestHarness() {
     triage: {
       accept: vi.fn(() => receipt("accepted-issue")),
       capture: vi.fn(() => receipt("new-triage")),
+      convertToProject: vi.fn(() => receipt("converted-project")),
       defer: vi.fn(() => receipt(triage.id)),
       delete: vi.fn(() => receipt(triage.id)),
       edit: vi.fn(() => ({ kind: "unchanged" as const, entityId: triage.id })),

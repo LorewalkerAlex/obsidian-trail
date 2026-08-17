@@ -4,9 +4,9 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 ## Current status
 
-Trail has completed its POC exit, formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, Implementation Architecture Re-baseline, Codebase Simplification, Clean Plugin Rebuild, independent Architecture Implementation Audit, and directory Cutover checkpoints.
+Trail has completed its POC exit, formal Product Design, Canonical Domain, Logical Data Model, Markdown Physical Model, Technical Design, Formal Intake, basic Workflow, Implementation Architecture Re-baseline, Codebase Simplification, Clean Plugin Rebuild, independent Architecture Implementation Audit, directory Cutover, and Triage Convert to Project checkpoints.
 
-The current engineering stage is **Intake → Workflow**. The first net-new slice after Cutover is `Triage Convert to Project`.
+The current engineering stage is **Project Organization**. `Triage Convert to Project` is the first completed net-new slice after Cutover; the next concrete Project Organization slice is selected from the existing roadmap only after checking the actual repository and current user-value gap.
 
 The current design and implementation chain is:
 
@@ -31,6 +31,8 @@ docs/implementation-plan.md
 The 2026-08-16 legacy reference checkpoint is `6061ca45569fe7664e0b37ed279928c9559e8592`. Its automated and representative real-Obsidian evidence remains valuable: 49 test files / 191 tests, lint with zero warnings, TypeScript typecheck, production and Diagnostics builds, external managed-file refresh, and a reviewed Diagnostics trace with no warn/error events. Git history now preserves that implementation; it is no longer kept as a second active plugin source tree.
 
 The clean rebuild completed parity validation for Quick Capture, Triage Management, Project / Workflow Issue, and Triage Accept, plus independent-risk evidence for managed-file external refresh, read-only recovery, destination-first source transitions, safe compensation boundaries, host event suppression, and development Validation Evidence. The independent Architecture Implementation Audit on 2026-08-17 returned **PASS** with no blocking finding. Cutover then promoted the audited clean implementation to the canonical `plugin/` path and removed the temporary dual-tree build/test configuration.
+
+After Cutover, `Triage Convert to Project` reused that canonical architecture rather than adding a second conversion mechanism: the semantic action creates a new Project identity and deletes the source Triage Issue in one logical plan, while the existing destination-first Source Transition creates and validates the Project source before removing the Triage source. Focused and full automated validation passed, representative real-Obsidian evidence confirmed the target-first persistence order and clean Runtime convergence, QA data was removed, and the production bundle was restored.
 
 ## Formal implementation model
 
@@ -157,6 +159,6 @@ After Cutover, this is the single Formal validation path; no temporary dual-tree
 - `docs/markdown-physical-model.md` — authoritative Vault / Markdown / `data.json` persistence layout, serialization rules, validation boundaries, and migration policy.
 - `docs/technical-design-baseline.md` — formal conceptual Technical Design for Runtime, optimistic state, mutation planning/execution, reconciliation, frontend architecture, performance and diagnostics boundaries.
 - `docs/implementation-architecture.md` — formal code module architecture, dependency direction, shared capabilities, standard read/write pipeline, testing ownership and long-term owner map.
-- `docs/implementation-plan.md` — V1 roadmap, current stage, completed Cutover checkpoint, and implementation sequence.
+- `docs/implementation-plan.md` — V1 roadmap, current stage, completed checkpoints, and implementation sequence.
 - `docs/product-domain-hld.md` — POC-era Product / Domain HLD retained as historical design context; superseded where it conflicts with current canonical docs.
 - `docs/technical-design.md` — POC technical baseline and verified architecture evidence only; superseded where it conflicts with the formal design chain.

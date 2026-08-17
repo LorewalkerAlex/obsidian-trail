@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../../test/trail-test-fixtures";
 import {
   planAcceptTrailTriageIssue,
+  planConvertTrailTriageIssueToProject,
   planCreateTrailTriageIssue,
   planDeferTrailTriageIssue,
   planDeleteTrailTriageIssue,
@@ -14,6 +15,7 @@ function state() {
     context: "triage" as const,
     description: "Keep this",
     due: 100,
+    estimate: 5,
     id: "triage-a",
     labelIds: ["label-work"],
     priority: "high" as const,
@@ -112,5 +114,76 @@ describe("Triage planning", () => {
     expect(result.plan.targetIssue.createdAt).toBe(200);
     expect(result.plan.targetIssue.due).toBeUndefined();
     expect(result.plan.plan.effects).toHaveLength(2);
+  });
+
+  it("converts Triage to a new Project and carries only Project-applicable content", () => {
+    const planning = state();
+    const baseConfiguration = planning.configuration;
+    const configuration = {
+      ...baseConfiguration,
+      labelGroups: [
+        ...baseConfiguration.labelGroups,
+        {
+          id: "group-issue-only",
+          name: "Issue only",
+          registeredEntityTypes: ["issue" as const],
+          selectionMode: "multiple" as const,
+        },
+      ],
+      labels: [
+        ...baseConfiguration.labels,
+        { groupId: "group-issue-only", id: "label-issue-only", name: "Issue only" },
+      ],
+    };
+    const triage = {
+      ...planning.triage,
+      labelIds: ["label-work", "label-issue-only"],
+    };
+    const conversionState = {
+      ...planning,
+      configuration,
+      domain: {
+        ...planning.domain,
+        issuesById: new Map([[triage.id, triage]]),
+      },
+      triage,
+    };
+
+    const result = planConvertTrailTriageIssueToProject(conversionState, {
+      commandId: "command-convert",
+      expectedIssue: triage,
+      targetProjectId: "project-new",
+    });
+
+    expect(result.kind).toBe("ready");
+    if (result.kind !== "ready") return;
+    expect(result.plan.targetProject).toEqual({
+      description: "Keep this",
+      id: "project-new",
+      labelIds: ["label-work"],
+      priority: "high",
+      statusDefinitionId: "project-unstarted",
+      title: "Captured idea",
+    });
+    expect(result.plan.targetProject).not.toHaveProperty("due");
+    expect(result.plan.targetProject).not.toHaveProperty("estimate");
+    expect(result.plan.plan.intent).toBe("triage.convert-project");
+    expect(result.plan.plan.effects).toEqual([
+      { after: { kind: "project", value: result.plan.targetProject }, kind: "create-entity" },
+      { before: { kind: "issue", value: triage }, kind: "delete-entity" },
+    ]);
+  });
+
+  it("rejects Convert to Project when the source snapshot is stale", () => {
+    const planning = state();
+    const result = planConvertTrailTriageIssueToProject(planning, {
+      commandId: "command-convert-stale",
+      expectedIssue: { ...planning.triage, title: "Stale" },
+      targetProjectId: "project-new",
+    });
+    expect(result).toMatchObject({
+      kind: "rejected",
+      reason: { code: "triage-issue-changed" },
+    });
   });
 });

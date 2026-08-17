@@ -1,6 +1,7 @@
 import type { TrailTriageIssue } from "../../domain/model/trail-entities";
 import {
   planAcceptTrailTriageIssue,
+  planConvertTrailTriageIssueToProject,
   planCreateTrailTriageIssue,
   planDeferTrailTriageIssue,
   planDeleteTrailTriageIssue,
@@ -118,6 +119,26 @@ export class TrailTriageApplication {
       this.sourceSync,
       planned.value.plan,
       planned.value.targetIssue.id,
+    );
+  }
+
+  public convertToProject(expectedIssue: TrailTriageIssue): TrailEntityMutationReceipt {
+    const state = readTrailPlanningState(this.runtimeStore);
+    const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
+    normalizeTrailCommandTime(this.environment);
+    const result = planConvertTrailTriageIssueToProject(state, {
+      commandId,
+      expectedIssue,
+      targetProjectId: normalizeTrailCommandId(this.environment.createId(), "Project ID"),
+    });
+    const planned = resolveTrailApplicationPlan(result);
+    if (planned.kind === "needs-input") {
+      throw new Error("Triage Convert to Project unexpectedly requires input");
+    }
+    return submitTrailApplicationPlan(
+      this.sourceSync,
+      planned.value.plan,
+      planned.value.targetProject.id,
     );
   }
 }

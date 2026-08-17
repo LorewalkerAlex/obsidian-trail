@@ -6,6 +6,6 @@ export interface TrailUiActions {
   readonly projects: Pick<TrailApplicationSession["projects"], "create">;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
-    "accept" | "capture" | "defer" | "delete" | "edit"
+    "accept" | "capture" | "convertToProject" | "defer" | "delete" | "edit"
   >;
 }

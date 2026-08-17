@@ -163,6 +163,14 @@ export function TrailTriageIssueRow({
     );
   };
 
+  const convertToProject = (): void => {
+    if (actionsDisabled) return;
+    runTrailReceipt(
+      () => actions.convertToProject(issue),
+      onError,
+    );
+  };
+
   return (
     <li
       className="trail-issue-row"
@@ -182,6 +190,9 @@ export function TrailTriageIssueRow({
               type="button"
             >
               Accept
+            </button>
+            <button disabled={actionsDisabled} onClick={convertToProject} type="button">
+              Convert to project
             </button>
             <button disabled={actionsDisabled} onClick={beginEdit} type="button">
               Edit

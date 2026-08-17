@@ -24,6 +24,21 @@ describe("TrailTriagePage", () => {
     );
   });
 
+  it("maps Convert to project directly to the Triage application action", () => {
+    const harness = createTrailUiTestHarness();
+    render(
+      <TrailTriagePage
+        actions={harness.actions.triage}
+        runtimeStore={harness.runtimeStore}
+        timezone="Asia/Singapore"
+        writable
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Convert to project" }));
+    expect(harness.actions.triage.convertToProject).toHaveBeenCalledWith(harness.triage);
+  });
+
   it("keeps edit drafts local until Save", () => {
     const harness = createTrailUiTestHarness();
     render(

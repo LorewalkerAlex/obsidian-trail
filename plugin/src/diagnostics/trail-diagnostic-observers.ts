@@ -88,7 +88,7 @@ export function createDiagnosticTrailUiActions(
   readonly projects: Pick<TrailApplicationSession["projects"], "create">;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
-    "accept" | "capture" | "defer" | "delete" | "edit"
+    "accept" | "capture" | "convertToProject" | "defer" | "delete" | "edit"
   >;
 } {
   if (!diagnostics.enabled) return session;
@@ -169,6 +169,19 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.triage.capture", error, data);
+        }
+      },
+      convertToProject(expectedIssue): TrailEntityMutationReceipt {
+        const data = { sourceIssueId: expectedIssue.id };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.triage.convert-project",
+            session.triage.convertToProject(expectedIssue),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.triage.convert-project", error, data);
         }
       },
       defer(expectedIssue, due): TrailEntityMutationReceipt {

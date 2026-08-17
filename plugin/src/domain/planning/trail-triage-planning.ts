@@ -1,4 +1,4 @@
-import type { TrailTriageIssue, TrailWorkflowIssue } from "../model/trail-entities";
+import type { TrailProject, TrailTriageIssue, TrailWorkflowIssue } from "../model/trail-entities";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
 import {
   isTrailTerminalStatusDefinition,
@@ -42,6 +42,12 @@ export interface AcceptTrailTriageIssueCommand {
   readonly targetIssueId: string;
 }
 
+export interface ConvertTrailTriageIssueToProjectCommand {
+  readonly commandId: string;
+  readonly expectedIssue: TrailTriageIssue;
+  readonly targetProjectId: string;
+}
+
 export interface TrailTriageIssuePlan {
   readonly issue: TrailTriageIssue;
   readonly plan: TrailMutationPlan;
@@ -58,6 +64,12 @@ export interface TrailTriageAcceptPlan {
   readonly targetIssue: TrailWorkflowIssue;
 }
 
+export interface TrailTriageConvertProjectPlan {
+  readonly plan: TrailMutationPlan;
+  readonly sourceIssueId: string;
+  readonly targetProject: TrailProject;
+}
+
 function currentTriageIssue(
   state: TrailPlanningState,
   expected: TrailTriageIssue,
@@ -71,6 +83,21 @@ function sameTriageIssue(left: TrailTriageIssue, right: TrailTriageIssue): boole
     { kind: "issue", value: left },
     { kind: "issue", value: right },
   );
+}
+
+function projectApplicableLabelIds(
+  state: TrailPlanningState,
+  source: TrailTriageIssue,
+): readonly string[] {
+  const labelsById = new Map(state.configuration.labels.map((label) => [label.id, label] as const));
+  const groupsById = new Map(
+    state.configuration.labelGroups.map((group) => [group.id, group] as const),
+  );
+  return source.labelIds.filter((labelId) => {
+    const label = labelsById.get(labelId);
+    if (label === undefined) return false;
+    return groupsById.get(label.groupId)?.registeredEntityTypes.includes("project") ?? false;
+  });
 }
 
 export function planCreateTrailTriageIssue(
@@ -231,5 +258,55 @@ export function planAcceptTrailTriageIssue(
     }),
     sourceIssueId: source.id,
     targetIssue,
+  });
+}
+
+/** Convert to Project creates a new Project identity before deleting the source Triage Issue. */
+export function planConvertTrailTriageIssueToProject(
+  state: TrailPlanningState,
+  command: ConvertTrailTriageIssueToProjectCommand,
+): TrailPlanResult<TrailTriageConvertProjectPlan> {
+  const source = currentTriageIssue(state, command.expectedIssue);
+  if (source === undefined) {
+    return rejectTrailPlan("triage-issue-missing", `Triage Issue does not exist: ${command.expectedIssue.id}`);
+  }
+  if (!sameTriageIssue(source, command.expectedIssue)) {
+    return rejectTrailPlan(
+      "triage-issue-changed",
+      `Triage Issue changed before Convert to Project: ${source.id}`,
+    );
+  }
+  if (trailPlanningEntityExists(state.domain, command.targetProjectId)) {
+    return rejectTrailPlan(
+      "entity-id-conflict",
+      `Trail entity ID already exists: ${command.targetProjectId}`,
+    );
+  }
+
+  const status = resolveTrailDefaultStatusDefinition(
+    state.configuration,
+    "project",
+    "unstarted",
+  );
+  const targetProject: TrailProject = {
+    description: source.description,
+    id: command.targetProjectId,
+    labelIds: projectApplicableLabelIds(state, source),
+    priority: source.priority,
+    statusDefinitionId: status.id,
+    title: source.title,
+  };
+
+  return readyTrailPlan({
+    plan: createTrailMutationPlan({
+      commandId: command.commandId,
+      effects: [
+        { after: { kind: "project", value: targetProject }, kind: "create-entity" },
+        { before: { kind: "issue", value: source }, kind: "delete-entity" },
+      ],
+      intent: "triage.convert-project",
+    }),
+    sourceIssueId: source.id,
+    targetProject,
   });
 }

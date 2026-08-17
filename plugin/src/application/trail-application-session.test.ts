@@ -105,6 +105,23 @@ describe("Trail Application session", () => {
     expect(effects.map(({ kind }) => kind)).toEqual(["create-entity", "delete-entity"]);
   });
 
+  it("keeps Triage Convert to Project as semantic create-new/delete-source intent", async () => {
+    const harness = createHarness();
+    const receipt = harness.session.triage.convertToProject(harness.triage);
+    await receipt.completion;
+    expect(receipt.entityId).toBe("generated-2");
+    expect(harness.submitted[0]?.intent).toBe("triage.convert-project");
+    const effects = harness.submitted[0]?.effects ?? [];
+    expect(effects.map(({ kind }) => kind)).toEqual(["create-entity", "delete-entity"]);
+    expect(effects[0]).toMatchObject({
+      after: {
+        kind: "project",
+        value: { id: "generated-2", title: "Captured" },
+      },
+      kind: "create-entity",
+    });
+  });
+
   it("returns NeedsInput before submitting Completed without an Estimate", () => {
     const harness = createHarness();
     const result = harness.session.issues.changeStatus(
