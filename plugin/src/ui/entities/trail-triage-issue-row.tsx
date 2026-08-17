@@ -24,6 +24,12 @@ import {
   formatTrailLocalDateTime,
   parseTrailLocalDateTime,
 } from "../interactions/trail-local-date-time";
+import {
+  TrailAlertDialog,
+  TrailAlertDialogAction,
+  TrailAlertDialogCancel,
+  TrailDialogActions,
+} from "../primitives/trail-dialog";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
 
 interface TrailTriageIssueRowProps {
@@ -70,7 +76,7 @@ export function TrailTriageIssueRow({
   const [editBaseline, setEditBaseline] = useState<TrailTriageIssue>();
   const [titleDraft, setTitleDraft] = useState("");
   const [dueDraft, setDueDraft] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>();
   const targetHasIssues = useStore(
     runtimeStore,
     (state) => acceptProjectId !== ""
@@ -89,7 +95,6 @@ export function TrailTriageIssueRow({
 
   const beginAccept = (): void => {
     setEditBaseline(undefined);
-    setConfirmDelete(false);
     setAcceptBaseline(issue);
     const preferredProjectId = issue.projectId !== undefined
       && projectIds.includes(issue.projectId)
@@ -119,7 +124,6 @@ export function TrailTriageIssueRow({
 
   const beginEdit = (): void => {
     setAcceptBaseline(undefined);
-    setConfirmDelete(false);
     setEditBaseline(issue);
     setTitleDraft(issue.title);
     setDueDraft(formatTrailLocalDateTime(issue.due, timezone));
@@ -200,38 +204,48 @@ export function TrailTriageIssueRow({
             <button disabled={actionsDisabled} onClick={deferIssue} type="button">
               Defer 7 days
             </button>
-            {confirmDelete ? (
-              <span className="trail-delete-confirmation">
+            <TrailAlertDialog
+              description="This removes the captured item from Triage."
+              title="Delete Triage Issue?"
+              trigger={(
                 <button
-                  className="mod-warning"
                   disabled={actionsDisabled}
-                  onClick={() => {
-                    const receipt = runTrailReceipt(
-                      () => actions.delete(issue),
-                      onError,
-                    );
-                    if (receipt !== undefined) setConfirmDelete(false);
-                  }}
+                  onClick={() => setDeleteError(undefined)}
                   type="button"
                 >
-                  Confirm delete
+                  Delete
                 </button>
-                <button onClick={() => setConfirmDelete(false)} type="button">
-                  Cancel
-                </button>
-              </span>
-            ) : (
-              <button
-                disabled={actionsDisabled}
-                onClick={() => {
-                  setAcceptBaseline(undefined);
-                  setConfirmDelete(true);
-                }}
-                type="button"
-              >
-                Delete
-              </button>
-            )}
+              )}
+            >
+              <p className="trail-dialog__detail">{issue.title}</p>
+              {deleteError === undefined ? null : (
+                <p className="trail-inline-error" role="alert">{deleteError}</p>
+              )}
+              <TrailDialogActions>
+                <TrailAlertDialogCancel>
+                  <button type="button">Cancel</button>
+                </TrailAlertDialogCancel>
+                <TrailAlertDialogAction>
+                  <button
+                    className="mod-warning"
+                    disabled={actionsDisabled}
+                    onClick={(event) => {
+                      const receipt = runTrailReceipt(
+                        () => actions.delete(issue),
+                        (message) => {
+                          setDeleteError(message);
+                          onError(message);
+                        },
+                      );
+                      if (receipt === undefined) event.preventDefault();
+                    }}
+                    type="button"
+                  >
+                    Confirm delete
+                  </button>
+                </TrailAlertDialogAction>
+              </TrailDialogActions>
+            </TrailAlertDialog>
           </div>
         </>
       ) : null}

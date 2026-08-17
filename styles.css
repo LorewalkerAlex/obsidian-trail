@@ -322,7 +322,6 @@
 }
 
 .trail-issue-row__actions,
-.trail-delete-confirmation,
 .trail-issue-editor__actions {
   display: flex;
   align-items: center;
@@ -331,7 +330,6 @@
 }
 
 .trail-issue-row__actions button,
-.trail-delete-confirmation button,
 .trail-issue-editor__actions button {
   min-height: 1.9rem;
   padding-inline: var(--size-4-2);
@@ -513,22 +511,83 @@
   min-width: 0;
 }
 
-.trail-estimate-gate {
-  grid-column: 1 / -1;
+.trail-dialog-overlay {
+  position: fixed;
+  z-index: var(--layer-modal, 1000);
+  inset: 0;
+  background: var(--background-modifier-cover, rgb(0 0 0 / 0.48));
+}
+
+.trail-dialog-content {
+  position: fixed;
+  z-index: calc(var(--layer-modal, 1000) + 1);
+  top: 50%;
+  left: 50%;
+  display: grid;
+  gap: var(--size-4-5);
+  width: min(calc(100vw - 2rem), 30rem);
+  max-height: min(calc(100vh - 2rem), 42rem);
+  padding: var(--size-4-5);
+  overflow: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-l);
+  transform: translate(-50%, -50%);
+}
+
+.trail-dialog-content--alert {
+  width: min(calc(100vw - 2rem), 26rem);
+}
+
+.trail-dialog__heading,
+.trail-dialog__body,
+.trail-dialog-form,
+.trail-dialog__field {
   display: grid;
   gap: var(--size-4-2);
-  padding-top: var(--size-4-2);
-  border-top: 1px solid var(--background-modifier-border);
 }
 
-.trail-estimate-gate label {
-  display: grid;
-  gap: var(--size-2-1);
+.trail-dialog__title,
+.trail-dialog__description,
+.trail-dialog__detail {
+  margin: 0;
 }
 
-.trail-estimate-gate label > span {
+.trail-dialog__title {
+  font-size: var(--font-ui-medium);
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+}
+
+.trail-dialog__description,
+.trail-dialog__detail,
+.trail-dialog__field > span {
   color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
+  font-size: var(--font-ui-small);
+  line-height: var(--line-height-normal);
+}
+
+.trail-dialog__detail {
+  overflow-wrap: anywhere;
+}
+
+.trail-dialog__field input {
+  width: 100%;
+  min-height: 2.4rem;
+}
+
+.trail-dialog__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+  padding-top: var(--size-4-2);
+}
+
+.trail-dialog__actions button {
+  min-height: 2rem;
 }
 
 .trail-empty-state--compact {

@@ -7,32 +7,24 @@ The active formal implementation is `plugin/` on `main`.
 The current repository baseline for this implementation stage is:
 
 ```text
-df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0
-feat: expand core work application coverage
+6b3a9200b33b86843f59dfe848f496081b5b5b10
+feat: add configuration application boundary
 ```
 
-This is the single execution baseline for the active Gate 6 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
+This is the single execution baseline for the active Gate 7 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
 
-Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, and Gate 5 - Query / Derived Foundation Completion are complete foundations for the current stage.
+Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, and Gate 6 - Application Foundation Completion are complete foundations for the current stage.
 
-Gate 4 closure evidence includes Runtime Structural & Reference Index Foundation at `fa48f2d940457e8b7ed93eca037ce395d20a4ed7`, CI #70, and the final Runtime/index audit finding no second foundation gap required by known V1 reads.
+Gate 5 closure evidence includes Effective Structural Query Foundation at `858a74f49d74ca61c875ad54d78f58b0202fbd07` with CI #71, Canonical Derived Facts Foundation at `7cd07b638add1a7e7364f89c2fcc69d7cb2ed095` with CI #72, and the final Query audit finding no remaining executable shared/derived gap before product-specific selectors are frozen.
 
-Gate 5 closure evidence includes:
-
-- Effective Structural Query Foundation at `858a74f49d74ca61c875ad54d78f58b0202fbd07` with CI #71;
-- Canonical Derived Facts Foundation at `7cd07b638add1a7e7364f89c2fcc69d7cb2ed095` with CI #72;
-- one coherent committed/effective readable snapshot boundary and shared structural relationship selectors;
-- Query-owned Initiative completion and current-scope actual-start derivation for Project, Milestone, and Initiative;
-- the Gate 5 Exit Audit finding that concrete Saved View filter/sort/group/scope schemas are intentionally deferred until product slices freeze them, while page-specific selectors and similarity helpers should follow real consumers rather than speculative APIs.
-
-Gate 6 Slice A closure evidence includes:
+Gate 6 closure evidence includes:
 
 - Core Work Application Coverage at `df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0` with CI #73;
-- the bounded missing Initiative create semantic planner corrected in `domain/planning` rather than bypassed by Application;
-- Initiative, Milestone, and Cycle Application facades over the shared planning/Source Sync boundary;
-- Project lifecycle/Initiative relation/delete and Workflow Issue project-less/Milestone/delete use cases exposed through Application;
-- diagnostics normalization kept compatible with project-less Issue moves;
-- the remote checkpoint containing exactly the intended 11 files and passing the full repository CI.
+- the missing Initiative-create semantic owner corrected in `domain/planning` instead of bypassed by Application;
+- canonical Application facades for Triage, Initiative, Project, Milestone, Workflow Issue, and Cycle use cases;
+- Configuration Application Boundary at `6b3a9200b33b86843f59dfe848f496081b5b5b10` with CI #74;
+- Configuration reference repair remaining explicit through `NeedsInput` while Source Sync owns authoritative plugin-data settlement;
+- the Gate 6 Exit Audit finding that Workspace-State editing and create-time similarity remain intentionally consumer-driven because their concrete product contracts are not yet frozen.
 
 Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents.
 
@@ -64,7 +56,7 @@ A missing upper-layer feature must not cause a temporary lower-layer model, plac
 
 ## 3. Reuse
 
-Reuse existing canonical owners and shared foundations instead of rebuilding them per feature.
+Reuse existing canonical owners and mature external primitives where they remove well-understood interaction risk instead of rebuilding them per page.
 
 Current reusable capability areas include:
 
@@ -73,45 +65,38 @@ Current reusable capability areas include:
 - shared Mutation materialization/execution and Source Sync;
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
 - shared structural and explicitly defined derived Query capabilities;
-- Application normalization, planning-result handling, mutation receipts, and Source Sync submission support;
-- Triage, Initiative, Project, Milestone, Workflow Issue, and Cycle Application facades;
+- complete currently executable Application use-case coverage;
+- UI action-result handling, local date/time conversion, Runtime write gating, and feedback patterns;
 - Diagnostics and architecture guards.
 
-Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. Do not create production surrogates, alternate carriers, compatibility aliases, duplicate mechanisms, persisted derived state, or feature-local persistence paths merely to unblock an upper layer.
+Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. UI must keep drafts/continuous interaction local and emit only Application intents for authoritative changes. Shared interaction mechanisms belong in `ui/interactions`, `ui/primitives`, `ui/patterns`, or the design-system layer rather than being rebuilt in each page/entity component.
 
 ## 4. Changes
 
 ### 4.1 Current gate
 
-Current work is **Gate 6 - Application Foundation Completion**.
+Current work is **Gate 7 - Shared UI Capability Completion**.
 
-The current public checkpoint is `df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0`. Gate 6 Slice A closed the already-frozen Core Work Application coverage gap and corrected the Initiative-create planning omission discovered by the later-layer audit.
+The Gate 7 repository audit starts from `6b3a9200b33b86843f59dfe848f496081b5b5b10`. Current UI already has shared Application action runners, Runtime pending/source-health gating, feedback panels, and stable Triage/Workflow entity rows. The first concrete cross-workspace gap is overlay interaction: modal input and destructive confirmation behavior are still implemented as page/entity-local inline state, while future Peek and other V1 interactions require the same focus, keyboard, dismissal, and portal mechanics.
 
-The continued Gate 6 repository audit separates the remaining target ownership into executable and deferred contracts:
+The first Gate 7 implementation slice is **Shared Overlay Interaction Foundation**. It:
 
-- Configuration already has a complete pure semantic planner, including explicit `NeedsInput` for Status/Label reference repair, and the shared Mutation/Source Sync path already supports authoritative `replace-configuration` settlement.
-- Workspace State persistence ownership is frozen, but concrete Custom View filter/sort/group/scope schemas and Home composition remain intentionally deferred in the Domain model. Building a generic arbitrary Workspace-State replacement facade now would expose an unstable product contract rather than a V1 use case.
-- Create-time similarity is a frozen guardrail responsibility, but no authoritative matching algorithm, threshold, candidate contract, or confirmation interaction is defined yet. It should be implemented with the actual creation consumer instead of inventing a speculative Application API.
+1. adopts the unstyled Radix Primitives package as the accessible overlay mechanism rather than hand-building focus trapping, Escape behavior, portal placement, or AlertDialog semantics;
+2. adds Trail-owned Dialog and AlertDialog wrappers under `ui/primitives`, keeping product styling separate from the external interaction engine;
+3. moves Workflow Issue Estimate `NeedsInput` into the shared modal Dialog while keeping the draft local until submission;
+4. moves Triage delete confirmation into the shared AlertDialog while retaining the existing Application action and error behavior;
+5. verifies dialog roles, accessible names/descriptions, focus behavior, Escape dismissal, confirmation, and existing page-to-Application mappings;
+6. keeps Peek, Context Menu, Command Menu, Selection, Bulk Actions, and product page composition out of this slice until their next concrete consumer/mechanism audit.
 
-The second Gate 6 implementation slice is **Configuration Application Boundary**. It:
-
-1. adds a thin `application/configuration` facade over `planChangeTrailConfiguration`;
-2. preserves planner `NeedsInput` so required reference resolution remains an explicit upper-layer decision;
-3. adds a non-entity mutation receipt helper while preserving existing entity receipt semantics;
-4. avoids submitting semantic no-op Configuration replacements;
-5. exposes Configuration through the stable Application Session and verifies that it emits only a logical `configuration.change` plan through Source Sync.
-
-This slice does not create Workspace-State editing, Saved View schemas, Home composition commands, similarity algorithms, or UI. Those capabilities remain consumer-driven until their specific product contracts are frozen.
+This is a mechanism slice, not a visual redesign. It continues to use Obsidian theme variables and existing Trail CSS while establishing one reusable overlay owner for later product work.
 
 ### 4.2 Current verified gaps
 
-Gate 5 is remotely complete at `7cd07b638add1a7e7364f89c2fcc69d7cb2ed095` with CI #72 passing.
+Gate 6 is remotely complete at `6b3a9200b33b86843f59dfe848f496081b5b5b10` with CI #74 passing.
 
-Gate 6 Slice A is remotely complete at `df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0` with CI #73 passing. The bounded Gate 2 Initiative-create correction is closed at that same checkpoint.
+The current verified Gate 7 gap is shared overlay behavior. Existing Workflow completion and Triage deletion already require modal input/confirmation semantics, while the Product contract also requires Peek later. Keeping those mechanics inline or page-local would duplicate focus/dismissal/accessibility behavior across the next workspaces.
 
-The current verified Gate 6 gap is the missing Application owner for the already-frozen Configuration change planner. The Configuration Application Boundary delivery addresses that gap through the existing Source Sync path without adding business rules or direct plugin-data writes to Application.
-
-After this slice is remotely verified, run a final Gate 6 Exit Audit. Workspace State and similarity should not block Gate 6 merely because target ownership exists: their concrete write/guard contracts are explicitly deferred and must follow the product slices that define them.
+After this slice is remotely verified, continue the Gate 7 audit over menu/command interaction, Selection/Bulk Actions, reusable entity inspection/editing, and the minimum presentation/design-system primitives actually required before Gate 8. Do not create generic interaction state machines without real consumers.
 
 Product, Domain, Data, Architecture, and Design-to-Code Map remain unchanged unless implementation evidence exposes a contradiction in those authorities.
 
@@ -130,9 +115,9 @@ Implementation proceeds through dependency-ordered gates. A later gate starts on
    |
 5. Query / Derived Foundation Completion   COMPLETE
    |
-6. Application Foundation Completion       ACTIVE
+6. Application Foundation Completion       COMPLETE
    |
-7. Shared UI Capability Completion
+7. Shared UI Capability Completion         ACTIVE
    |
 8. Product Workspace Implementation
    |
@@ -145,7 +130,7 @@ Complete. The frozen V1 Domain model, shared rules, and Core Invariants have can
 
 ### 5.2 Gate 2 - Semantic Planning
 
-Complete. Required currently frozen V1 state transitions produce complete legal logical plans before illegal optimistic state is admitted. The Initiative-create omission discovered by Gate 6 was corrected at `df003d6d0152ed3f39cdee7fb7fdfd78a20c41d0`.
+Complete. Required currently frozen V1 state transitions produce complete legal logical plans before illegal optimistic state is admitted.
 
 ### 5.3 Gate 3 - Data / Persistence / Mutation
 
@@ -161,7 +146,7 @@ Complete. Known V1 consumers can use shared structural reads and currently expli
 
 ### 5.6 Gate 6 - Application
 
-Exit when required currently executable V1 business areas have thin use-case owners over the completed lower layers, with no Application-owned business rules or persistence paths. Deferred product contracts do not require speculative facades merely to satisfy target directory ownership.
+Complete. Required currently executable V1 business areas have thin use-case owners over the completed lower layers, with no Application-owned persistence path or speculative facade for deferred contracts.
 
 ### 5.7 Gate 7 - Shared UI capabilities
 
@@ -182,10 +167,11 @@ For each active gate:
 - verify the current repository before defining gaps;
 - run focused tests for changed owners and directly affected shared owners;
 - reuse lower-layer evidence when the relevant risk has not changed;
+- prefer mature accessible interaction primitives over custom implementations when they fit Trail's ownership model;
 - add enforceable architecture/test guards only when they protect a meaningful boundary;
 - run one full `npm run check` at each coherent stable checkpoint;
 - run `git diff --check` before checkpoint;
-- use representative real Obsidian validation only for changed host/persistence/synchronization/continuous-interaction risks that automated tests cannot establish.
+- use representative real Obsidian validation when a UI mechanism changes behavior that browser/jsdom tests cannot establish reliably in the host.
 
 Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 

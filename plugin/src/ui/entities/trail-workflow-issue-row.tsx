@@ -25,6 +25,11 @@ import {
 } from "../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { runTrailMutationAction } from "../interactions/trail-action";
+import {
+  TrailDialog,
+  TrailDialogActions,
+  TrailDialogClose,
+} from "../primitives/trail-dialog";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
 
 interface TrailWorkflowIssueRowProps {
@@ -80,6 +85,13 @@ export function TrailWorkflowIssueRow({
   );
   const groups = selectTrailStatusOptionGroups(configuration, "issue");
   const actionsDisabled = !writable || pending || !sourceIsHealthy;
+  const completionGateOpen = completionBaseline !== undefined && completionTargetId !== undefined;
+
+  const clearCompletionGate = (): void => {
+    setCompletionBaseline(undefined);
+    setCompletionTargetId(undefined);
+    setEstimateDraft("");
+  };
 
   const requestStatus = (targetStatusDefinitionId: string): void => {
     if (actionsDisabled || targetStatusDefinitionId === issue.statusDefinitionId) return;
@@ -127,11 +139,7 @@ export function TrailWorkflowIssueRow({
       {
         onError,
         onNeedsInput: (request) => onError(request.message),
-        onSettled: () => {
-          setCompletionBaseline(undefined);
-          setCompletionTargetId(undefined);
-          setEstimateDraft("");
-        },
+        onSettled: clearCompletionGate,
       },
     );
   };
@@ -184,12 +192,18 @@ export function TrailWorkflowIssueRow({
         </select>
       </label>
 
-      {completionBaseline !== undefined && completionTargetId !== undefined ? (
-        <form className="trail-estimate-gate" onSubmit={submitEstimate}>
-          <label>
-            <span>Estimate required to complete</span>
+      <TrailDialog
+        description={`Add an Estimate before moving ${issue.title} to Completed.`}
+        onOpenChange={(open) => {
+          if (!open) clearCompletionGate();
+        }}
+        open={completionGateOpen}
+        title="Estimate required to complete"
+      >
+        <form className="trail-dialog-form" onSubmit={submitEstimate}>
+          <label className="trail-dialog__field">
+            <span>Estimate</span>
             <input
-              autoFocus
               disabled={actionsDisabled}
               min="0"
               onChange={(event: ChangeEvent<HTMLInputElement>) => setEstimateDraft(event.target.value)}
@@ -198,7 +212,10 @@ export function TrailWorkflowIssueRow({
               value={estimateDraft}
             />
           </label>
-          <div className="trail-issue-editor__actions">
+          <TrailDialogActions>
+            <TrailDialogClose>
+              <button type="button">Cancel</button>
+            </TrailDialogClose>
             <button
               className="mod-cta"
               disabled={actionsDisabled || estimateDraft.trim() === ""}
@@ -206,19 +223,9 @@ export function TrailWorkflowIssueRow({
             >
               Complete
             </button>
-            <button
-              onClick={() => {
-                setCompletionBaseline(undefined);
-                setCompletionTargetId(undefined);
-                setEstimateDraft("");
-              }}
-              type="button"
-            >
-              Cancel
-            </button>
-          </div>
+          </TrailDialogActions>
         </form>
-      ) : null}
+      </TrailDialog>
     </li>
   );
 }

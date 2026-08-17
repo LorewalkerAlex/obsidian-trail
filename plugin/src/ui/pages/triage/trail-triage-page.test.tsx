@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { addTrailCalendarDays } from "../../../domain/rules/trail-temporal-rules";
 import { createTrailUiTestHarness } from "../../../test/trail-ui-test-harness";
@@ -59,5 +59,51 @@ describe("TrailTriagePage", () => {
       harness.triage,
       expect.objectContaining({ title: "Refined" }),
     );
+  });
+
+  it("keeps destructive confirmation open when Application rejects synchronously", async () => {
+    const harness = createTrailUiTestHarness();
+    harness.actions.triage.delete = vi.fn(() => {
+      throw new Error("Delete blocked");
+    });
+    render(
+      <TrailTriagePage
+        actions={harness.actions.triage}
+        runtimeStore={harness.runtimeStore}
+        timezone="Asia/Singapore"
+        writable
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+
+    expect(harness.actions.triage.delete).toHaveBeenCalledWith(harness.triage);
+    const dialog = screen.getByRole("alertdialog", { name: "Delete Triage Issue?" });
+    expect(dialog).toBeInTheDocument();
+    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("Delete blocked"));
+  });
+
+  it("confirms deletion through the shared AlertDialog before invoking Application", async () => {
+    const harness = createTrailUiTestHarness();
+    render(
+      <TrailTriagePage
+        actions={harness.actions.triage}
+        runtimeStore={harness.runtimeStore}
+        timezone="Asia/Singapore"
+        writable
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Delete" });
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("alertdialog", { name: "Delete Triage Issue?" });
+    expect(dialog).toHaveAccessibleDescription("This removes the captured item from Triage.");
+    expect(harness.actions.triage.delete).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus());
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+    expect(harness.actions.triage.delete).toHaveBeenCalledWith(harness.triage);
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 });
