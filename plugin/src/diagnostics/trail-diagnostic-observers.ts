@@ -135,7 +135,7 @@ export function createDiagnosticTrailUiActions(
         const data = {
           issueId: expectedIssue.id,
           sourceProjectId: expectedIssue.projectId ?? null,
-          targetProjectId,
+          targetProjectId: targetProjectId ?? null,
         };
         try {
           return observeActionResult(

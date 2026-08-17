@@ -7,34 +7,23 @@ The active formal implementation is `plugin/` on `main`.
 The current repository baseline for this implementation stage is:
 
 ```text
-858a74f49d74ca61c875ad54d78f58b0202fbd07
-feat: add effective structural query foundation
+7cd07b638add1a7e7364f89c2fcc69d7cb2ed095
+feat: add canonical derived query facts
 ```
 
-This is the single execution baseline for the active Gate 5 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
+This is the single execution baseline for the active Gate 6 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
 
-Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, and Gate 4 - Runtime / Index Foundation Completion are complete at this baseline.
+Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, and Gate 5 - Query / Derived Foundation Completion are complete foundations for the current stage. A bounded Gate 2 correction discovered by the Gate 6 repository audit is tracked in the current slice rather than bypassed in Application.
 
-Gate 3 closure evidence includes the repository-grounded topology audit, Project Delete & Root Source Operationalization at `dedc8342e4b9b2e8ba5a3adca18250a3abb3678f`, GitHub Actions CI #69, and the final audit finding no remaining known V1 logical plan without a shared physical execution path.
+Gate 4 closure evidence includes Runtime Structural & Reference Index Foundation at `fa48f2d940457e8b7ed93eca037ce395d20a4ed7`, CI #70, and the final Runtime/index audit finding no second foundation gap required by known V1 reads.
 
-Gate 4 closure evidence includes:
+Gate 5 closure evidence includes:
 
-- Runtime Structural & Reference Index Foundation at `fa48f2d940457e8b7ed93eca037ce395d20a4ed7`;
-- committed inverse/reference indexes for Initiative, Project, Milestone, Issue, Cycle, Label, and StatusDefinition relationships;
-- one unambiguous current Open Cycle projection;
-- pending-aware effective index projection built from the same Effective Domain as optimistic reads;
-- committed reconciliation rebuilding indexes from authoritative Domain facts while source ownership remains a separate Runtime concern;
-- GitHub Actions CI #70 passing for the Gate 4 checkpoint;
-- the final repository-grounded Gate 4 Exit Audit finding no second Runtime/index foundation gap required by known V1 downstream reads.
-
-Gate 5 Slice A closure evidence includes:
-
-- Effective Structural Query Foundation at `858a74f49d74ca61c875ad54d78f58b0202fbd07`;
-- one coherent readable Runtime snapshot boundary pairing authoritative data with matching indexes;
-- shared selectors for Initiative, Project, Milestone, Cycle, Label, and StatusDefinition relationships;
-- Project Issue membership narrowed by effective Runtime indexes while Query retains presentation ordering;
-- optimistic relationship/classification changes reflected immediately while refresh/recovery falls back to the committed pair;
-- GitHub Actions CI #71 passing for the Gate 5 Slice A checkpoint.
+- Effective Structural Query Foundation at `858a74f49d74ca61c875ad54d78f58b0202fbd07` with CI #71;
+- Canonical Derived Facts Foundation at `7cd07b638add1a7e7364f89c2fcc69d7cb2ed095` with CI #72;
+- one coherent committed/effective readable snapshot boundary and shared structural relationship selectors;
+- Query-owned Initiative completion and current-scope actual-start derivation for Project, Milestone, and Initiative;
+- the Gate 5 Exit Audit finding that concrete Saved View filter/sort/group/scope schemas are intentionally deferred until product slices freeze them, while page-specific selectors and similarity helpers should follow real consumers rather than speculative APIs.
 
 Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents.
 
@@ -62,7 +51,7 @@ foundational semantics and integrity
 -> product workspaces
 ```
 
-A missing upper-layer feature must not cause a temporary lower-layer model, placeholder entity, compatibility path, fake default, or second mechanism. Canonical data that is not yet exposed by the UI must still be preserved by unrelated mutations.
+A missing upper-layer feature must not cause a temporary lower-layer model, placeholder entity, compatibility path, fake default, or second mechanism. If later-layer evidence exposes a concrete lower-layer omission, correct the canonical lower-layer owner before consuming it.
 
 ## 3. Reuse
 
@@ -74,43 +63,41 @@ Current reusable capability areas include:
 - Markdown schema/codecs and authoritative Persistence;
 - shared Mutation materialization/execution and Source Sync;
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
-- coherent structural Query selection over committed/effective Runtime;
-- existing Status/source-health Query helpers;
-- Application/UI foundations for already implemented workflows;
+- shared structural and explicitly defined derived Query capabilities;
+- Application normalization, planning-result handling, mutation receipts, and Source Sync submission support;
+- existing Triage, Project, and Issue Application facades;
 - Diagnostics and architecture guards.
 
-Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. Do not create production surrogates, alternate carriers, compatibility aliases, duplicate mechanisms, persisted derived state, or page-private relationship caches merely to unblock an upper layer.
+Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. Do not create production surrogates, alternate carriers, compatibility aliases, duplicate mechanisms, persisted derived state, or feature-local persistence paths merely to unblock an upper layer.
 
 ## 4. Changes
 
 ### 4.1 Current gate
 
-Current work is **Gate 5 - Query / Derived Foundation Completion**.
+Current work is **Gate 6 - Application Foundation Completion**.
 
-The current public checkpoint is `858a74f49d74ca61c875ad54d78f58b0202fbd07`. Gate 5 Slice A closed the structural Query gap found after Gate 4 by making effective Runtime indexes consumable through shared Query selectors.
+The Gate 6 repository audit starts from `7cd07b638add1a7e7364f89c2fcc69d7cb2ed095`. Application currently has canonical facades only for Triage, Projects, and Workflow Issues, while the target ownership map also requires Initiatives, Milestones, Cycles, Configuration, Workspace, and create-time similarity capabilities as their product contracts become executable.
 
-The continued repository-grounded Gate 5 audit found a second concrete gap: Domain-defined derived facts do not yet have a Query owner. This gap is narrower than the full set of product words such as Progress, Health, Attention, or Home Focus. Only derived behavior whose semantics are already explicit in the authoritative Domain should be implemented at this stage.
+The audit also found one bounded lower-layer omission: Initiative is a managed V1 Core Entity with its own carrier, delete semantics, Runtime ownership, Query relationships, and `application/initiatives` target owner, but the completed planning set has no Initiative create planner. Application must not manufacture a raw Mutation Plan to hide that omission.
 
-The current implementation slice is **Canonical Derived Facts Foundation**. It introduces Query-owned derivation for the two currently precise reusable facts:
+The first Gate 6 implementation slice is **Core Work Application Coverage**. It keeps the correction and its consumer in one coherent slice:
 
-1. Initiative completion: an Initiative with no current Projects is not Completed; otherwise it is derived Completed only when every current Project is in Completed or Canceled Status category.
-2. Current-scope activity start for Project, Milestone, and Initiative: the earliest `firstStartedAt` among Workflow Issues currently belonging to that scope.
+1. add the missing pure Initiative create planner and owner-level tests, creating only the canonical minimal Initiative facts and no workflow/derived state;
+2. add Initiative, Milestone, and Cycle Application facades over existing planners and the shared Source Sync submission boundary;
+3. expand Project Application to expose Status change, Initiative relation change, and delete;
+4. expand Workflow Issue Application to expose project-less create/move, Milestone relation change, and delete;
+5. expose Initiative/Milestone/Cycle facades through the stable Application Session;
+6. preserve existing Triage/Application failure-boundary evidence while adding session-level verification that the new use cases emit logical plans rather than writing Persistence directly.
 
-The slice also removes a small duplicate Status interpretation in the existing Project-Issue ordering helper by reusing the canonical Domain `resolveTrailStatusDefinition` rule.
-
-Derived selectors use the same readable Runtime snapshot boundary as structural Query, so pending plans affect derived reads while Runtime is ready and refresh/recovery falls back to committed facts and committed indexes together.
-
-This slice deliberately does not invent formulas for Project/Milestone progress, actual work end, Health, Due Soon, Attention, Home Focus, or Activity Heatmap aggregation. Those require an explicit product/domain rule or a concrete consumer contract before implementation.
+This slice does not implement Configuration, Workspace-state editing, Saved View schemas, or create-time similarity. Those have distinct input contracts and remain subject to the continued Gate 6 audit after the core work facade has a public checkpoint.
 
 ### 4.2 Current verified gaps
 
-Gate 5 Slice A is remotely complete at `858a74f49d74ca61c875ad54d78f58b0202fbd07` with CI #71 passing.
+Gate 5 is remotely complete at `7cd07b638add1a7e7364f89c2fcc69d7cb2ed095` with CI #72 passing.
 
-The current verified Gate 5 gap is canonical derived-fact ownership. The Canonical Derived Facts Foundation delivery addresses the currently explicit Initiative completion and current-scope actual-start rules. It must pass focused repository tests, the full repository check, remote checkpoint verification, and then a renewed Gate 5 Exit Audit before Gate 5 can close.
+The current verified Gate 6 gap is incomplete Application coverage for already frozen Core Entity and relationship use cases, plus the bounded missing Initiative create semantic owner exposed by that audit. The Core Work Application Coverage delivery addresses that gap without changing Product, Domain, Data, Architecture, or the Design-to-Code Map.
 
-After this slice, remaining page-specific filters/groups/sorts/search, Home composition, duplicate-detection helpers, and any richer analytics should be added only when their actual V1 consumer contract requires them. The absence of a speculative generic Query API is not itself a Gate 5 gap.
-
-Product, Domain, Data, Architecture, and Design-to-Code Map remain unchanged unless implementation evidence exposes a contradiction in those authorities.
+After this slice is remotely verified, continue the Gate 6 audit over Configuration commands, user Workspace State, and create-time similarity. Do not invent generic Saved View filter/group/sort schemas or similarity thresholds before their authoritative product contracts are frozen.
 
 ## 5. Build Order
 
@@ -119,15 +106,15 @@ Implementation proceeds through dependency-ordered gates. A later gate starts on
 ```text
 1. Domain / Validation Completion          COMPLETE
    |
-2. Semantic Planning Completion           COMPLETE
+2. Semantic Planning Completion           COMPLETE (bounded correction in Gate 6 Slice A)
    |
 3. Data / Persistence / Mutation Operational Completion   COMPLETE
    |
 4. Runtime / Index Foundation Completion   COMPLETE
    |
-5. Query / Derived Foundation Completion   ACTIVE
+5. Query / Derived Foundation Completion   COMPLETE
    |
-6. Application Foundation Completion
+6. Application Foundation Completion       ACTIVE
    |
 7. Shared UI Capability Completion
    |
@@ -142,7 +129,7 @@ Complete. The frozen V1 Domain model, shared rules, and Core Invariants have can
 
 ### 5.2 Gate 2 - Semantic Planning
 
-Complete. Required V1 state transitions produce complete legal logical plans before illegal optimistic state is admitted.
+Complete as a foundation, with the missing Initiative create planner tracked as a bounded correction in Gate 6 Slice A after later repository evidence exposed the omission. Application may not bypass that correction.
 
 ### 5.3 Gate 3 - Data / Persistence / Mutation
 
@@ -154,11 +141,11 @@ Complete. Authoritative Runtime state, source ownership, pending projection, rec
 
 ### 5.5 Gate 5 - Query / Derived
 
-Exit when known V1 consumers can use shared structural and explicitly defined derived read capabilities rather than reconstructing them inside pages.
+Complete. Known V1 consumers can use shared structural reads and currently explicit derived facts without page-private reconstruction; deferred presentation/query schemas remain consumer-driven.
 
 ### 5.6 Gate 6 - Application
 
-Exit when required V1 business areas have thin use-case owners over the completed lower layers.
+Exit when required V1 business areas have thin use-case owners over the completed lower layers, with no Application-owned business rules or persistence paths.
 
 ### 5.7 Gate 7 - Shared UI capabilities
 

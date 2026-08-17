@@ -1,15 +1,35 @@
 import { describe, expect, it } from "vitest";
 
-import type { TrailTriageIssue, TrailWorkflowIssue } from "../domain/model/trail-entities";
+import type {
+  TrailCycle,
+  TrailInitiative,
+  TrailMilestone,
+  TrailProject,
+  TrailTriageIssue,
+  TrailWorkflowIssue,
+} from "../domain/model/trail-entities";
 import type { TrailMutationPlan } from "../mutation/plans/trail-mutation-plan";
-import { buildTrailCommittedRuntimeCandidate, publishTrailCommittedRuntime } from "../runtime/reconcile/trail-runtime-reconciler";
-import { createTrailRuntimeStore, setTrailRuntimeControl } from "../runtime/store/trail-runtime-store";
+import {
+  buildTrailCommittedRuntimeCandidate,
+  publishTrailCommittedRuntime,
+} from "../runtime/reconcile/trail-runtime-reconciler";
+import {
+  createTrailRuntimeStore,
+  setTrailRuntimeControl,
+} from "../runtime/store/trail-runtime-store";
 import type { TrailAuthoritativeSourceSync } from "../source-sync/trail-authoritative-source-sync";
-import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../test/trail-test-fixtures";
+import {
+  createTrailTestConfiguration,
+  createTrailTestWorkspaceState,
+} from "../test/trail-test-fixtures";
 import { TrailApplicationUnavailableError } from "./trail-application-support";
 import { createTrailApplicationSession } from "./trail-application-session";
 
-function createHarness() {
+interface HarnessOptions {
+  readonly includeOpenCycle?: boolean;
+}
+
+function createHarness(options: HarnessOptions = {}) {
   const triage: TrailTriageIssue = {
     context: "triage",
     due: 100,
@@ -17,26 +37,44 @@ function createHarness() {
     labelIds: [],
     title: "Captured",
   };
-  const project = {
+  const initiative: TrailInitiative = {
+    id: "initiative-a",
+    labelIds: [],
+    title: "Initiative A",
+  };
+  const project: TrailProject = {
     id: "project-a",
+    initiativeId: initiative.id,
     labelIds: [],
     statusDefinitionId: "project-unstarted",
     title: "Project A",
   };
-  const projectB = {
+  const projectB: TrailProject = {
     id: "project-b",
     labelIds: [],
     statusDefinitionId: "project-unstarted",
     title: "Project B",
+  };
+  const milestone: TrailMilestone = {
+    id: "milestone-a",
+    projectId: project.id,
+    title: "Milestone A",
   };
   const workflow: TrailWorkflowIssue = {
     context: "workflow",
     createdAt: 1,
     id: "issue-a",
     labelIds: [],
+    milestoneId: milestone.id,
     projectId: project.id,
     statusDefinitionId: "issue-unstarted",
     title: "Issue A",
+  };
+  const cycle: TrailCycle = {
+    id: "cycle-a",
+    issueIds: [workflow.id],
+    plannedEnd: 500,
+    startedAt: 10,
   };
   const runtimeStore = createTrailRuntimeStore();
   const committed = buildTrailCommittedRuntimeCandidate({
@@ -45,11 +83,16 @@ function createHarness() {
       workspaceState: createTrailTestWorkspaceState(),
     },
     sources: [
+      {
+        initiative,
+        kind: "initiative",
+        sourcePath: "Trail/Initiatives/0001 Initiative A.md",
+      },
       { issues: [triage], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
       {
         issues: [workflow],
         kind: "project",
-        milestones: [],
+        milestones: [milestone],
         project,
         sourcePath: "Trail/Projects/0001 Project A.md",
       },
@@ -60,8 +103,16 @@ function createHarness() {
         project: projectB,
         sourcePath: "Trail/Projects/0002 Project B.md",
       },
-      { issues: [], kind: "projectless-issues", sourcePath: "Trail/Collections/Projectless Issues.md" },
-      { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
+      {
+        issues: [],
+        kind: "projectless-issues",
+        sourcePath: "Trail/Collections/Projectless Issues.md",
+      },
+      {
+        cycles: options.includeOpenCycle === false ? [] : [cycle],
+        kind: "cycles",
+        sourcePath: "Trail/Collections/Cycles.md",
+      },
     ],
   });
   publishTrailCommittedRuntime(runtimeStore, committed, { sourceIssuesByPath: {} });
@@ -74,15 +125,28 @@ function createHarness() {
     },
   };
   let next = 0;
+  const now = 1_800_000_000_000;
   const session = createTrailApplicationSession({
     environment: {
       createId: () => `generated-${next += 1}`,
-      now: () => 1_800_000_000_000,
+      now: () => now,
     },
     runtimeStore,
     sourceSync,
   });
-  return { project, projectB, runtimeStore, session, submitted, triage, workflow };
+  return {
+    cycle,
+    initiative,
+    milestone,
+    now,
+    project,
+    projectB,
+    runtimeStore,
+    session,
+    submitted,
+    triage,
+    workflow,
+  };
 }
 
 describe("Trail Application session", () => {
@@ -105,7 +169,7 @@ describe("Trail Application session", () => {
     if (effect?.kind === "create-entity" && effect.after.kind === "issue") {
       expect(effect.after.value.title).toBe("New idea");
       expect(effect.after.value.context).toBe("triage");
-      expect(effect.after.value.due).toBeGreaterThan(1_800_000_000_000);
+      expect(effect.after.value.due).toBeGreaterThan(harness.now);
     }
   });
 
@@ -171,6 +235,141 @@ describe("Trail Application session", () => {
     expect(harness.submitted.map(({ intent }) => intent)).toEqual([
       "workflow.project.create",
       "workflow.issue.create",
+    ]);
+  });
+
+  it("exposes project-less Issue creation and explicit Project/Milestone relation changes", async () => {
+    const harness = createHarness();
+    const projectlessReceipt = harness.session.issues.create(undefined, " Loose Issue ");
+    const milestoneResult = harness.session.issues.changeMilestone(harness.workflow, undefined);
+    const projectResult = harness.session.issues.moveToProject(harness.workflow, undefined);
+
+    expect(milestoneResult.kind).toBe("submitted");
+    expect(projectResult.kind).toBe("submitted");
+    await projectlessReceipt.completion;
+    if (milestoneResult.kind === "submitted") await milestoneResult.receipt.completion;
+    if (projectResult.kind === "submitted") await projectResult.receipt.completion;
+
+    expect(harness.submitted.map(({ intent }) => intent)).toEqual([
+      "workflow.issue.create",
+      "workflow.issue.change-milestone",
+      "workflow.issue.move-project",
+    ]);
+    const createEffect = harness.submitted[0]?.effects[0];
+    expect(createEffect?.kind).toBe("create-entity");
+    if (createEffect?.kind === "create-entity" && createEffect.after.kind === "issue") {
+      expect(createEffect.after.value.title).toBe("Loose Issue");
+      expect(createEffect.after.value.projectId).toBeUndefined();
+    }
+  });
+
+  it("exposes Project lifecycle, Initiative membership, and core delete intents", async () => {
+    const harness = createHarness();
+    const statusResult = harness.session.projects.changeStatus(
+      harness.project,
+      "project-started",
+    );
+    const initiativeResult = harness.session.projects.changeInitiative(harness.project, undefined);
+    const projectDelete = harness.session.projects.delete(harness.project);
+    const issueDelete = harness.session.issues.delete(harness.workflow);
+
+    expect(statusResult.kind).toBe("submitted");
+    expect(initiativeResult.kind).toBe("submitted");
+    if (statusResult.kind === "submitted") await statusResult.receipt.completion;
+    if (initiativeResult.kind === "submitted") await initiativeResult.receipt.completion;
+    await Promise.all([projectDelete.completion, issueDelete.completion]);
+
+    expect(harness.submitted.map(({ intent }) => intent)).toEqual([
+      "workflow.project.change-status",
+      "workflow.project.change-initiative",
+      "workflow.project.delete",
+      "workflow.issue.delete",
+    ]);
+    expect(harness.submitted[2]?.effects.map(({ kind }) => kind)).toEqual([
+      "replace-entity",
+      "delete-entity",
+      "delete-entity",
+    ]);
+    expect(harness.submitted[3]?.effects.map(({ kind }) => kind)).toEqual([
+      "replace-entity",
+      "delete-entity",
+    ]);
+  });
+
+  it("creates and deletes Initiatives and Milestones through their canonical planners", async () => {
+    const harness = createHarness();
+    const initiativeCreate = harness.session.initiatives.create(" New Initiative ");
+    const milestoneCreate = harness.session.milestones.create(
+      harness.project.id,
+      " New Milestone ",
+      2_000,
+    );
+    const initiativeDelete = harness.session.initiatives.delete(harness.initiative);
+    const milestoneDelete = harness.session.milestones.delete(harness.milestone);
+
+    await Promise.all([
+      initiativeCreate.completion,
+      milestoneCreate.completion,
+      initiativeDelete.completion,
+      milestoneDelete.completion,
+    ]);
+    expect(harness.submitted.map(({ intent }) => intent)).toEqual([
+      "workflow.initiative.create",
+      "workflow.milestone.create",
+      "workflow.initiative.delete",
+      "workflow.milestone.delete",
+    ]);
+    expect(initiativeCreate.entityId).toBe("generated-2");
+    expect(harness.submitted[2]?.effects.map(({ kind }) => kind)).toEqual([
+      "replace-entity",
+      "delete-entity",
+    ]);
+    expect(harness.submitted[3]?.effects.map(({ kind }) => kind)).toEqual([
+      "replace-entity",
+      "delete-entity",
+    ]);
+  });
+
+  it("opens a Cycle from normalized inputs when no Current Cycle exists", async () => {
+    const harness = createHarness({ includeOpenCycle: false });
+    const receipt = harness.session.cycles.open({
+      issueIds: [harness.workflow.id],
+      plannedEnd: harness.now + 1_000,
+    });
+    await receipt.completion;
+
+    expect(receipt.entityId).toBe("generated-2");
+    expect(harness.submitted).toHaveLength(1);
+    expect(harness.submitted[0]).toMatchObject({
+      intent: "planning.cycle.open",
+      effects: [{
+        after: {
+          kind: "cycle",
+          value: {
+            id: "generated-2",
+            issueIds: [harness.workflow.id],
+            plannedEnd: harness.now + 1_000,
+            startedAt: harness.now,
+          },
+        },
+        kind: "create-entity",
+      }],
+    });
+  });
+
+  it("changes, closes, and deletes Cycle state only through logical plans", async () => {
+    const harness = createHarness();
+    const membership = harness.session.cycles.changeMembership(harness.cycle, []);
+    const close = harness.session.cycles.close(harness.cycle);
+    const remove = harness.session.cycles.delete(harness.cycle);
+
+    expect(membership.kind).toBe("submitted");
+    if (membership.kind === "submitted") await membership.receipt.completion;
+    await Promise.all([close.completion, remove.completion]);
+    expect(harness.submitted.map(({ intent }) => intent)).toEqual([
+      "planning.cycle.change-membership",
+      "planning.cycle.close",
+      "planning.cycle.delete",
     ]);
   });
 });
