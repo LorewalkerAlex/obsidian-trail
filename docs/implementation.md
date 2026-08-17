@@ -7,13 +7,13 @@ The active formal implementation is `plugin/` on `main`.
 The current repository baseline for this implementation stage is:
 
 ```text
-fd501a465985460dc198f15e602841140b2f9d76
-docs: tighten documentation authority boundaries
+3abbc358ef5a61cec3fd852ad4ad4d52d536ae7d
+feat: complete domain validation foundation
 ```
 
-This is the single execution baseline for the current construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
+This is the single execution baseline for the active Gate 2 construction sequence. Earlier repository states remain available through Git history and are not repeated here as secondary baselines.
 
-Gate 1 — Domain / Validation Completion is complete on top of this baseline.
+Gate 1 — Domain / Validation Completion is complete at this baseline.
 
 Verified Gate 1 outcomes:
 
@@ -23,7 +23,8 @@ Verified Gate 1 outcomes:
 - Quick Capture default Due now consumes a Domain-owned temporal rule instead of owning the seven-calendar-day policy in Application;
 - the frozen `EndOfNextWeek` Cycle default has a Domain-owned calendar-date resolver without inventing a time-of-day persistence rule;
 - direct owner-level tests now cover the audited Core Invariants and lifecycle edges that previously lacked explicit evidence;
-- focused Gate 1 tests and the full repository check pass after the completion changes.
+- focused Gate 1 tests and the full repository check pass after the completion changes;
+- GitHub Actions CI #64 passed for the Gate 1 checkpoint.
 
 The repository also contains proven product behavior for Quick Capture/Triage, basic Project and Workflow Issue execution, Triage Accept, Triage Convert to Project, and Issue moves between Projects. Reusable Domain, Markdown, Persistence, Mutation, Runtime, Source Sync, Query, Application/UI, Diagnostics, and architecture-guard foundations remain available for later gates.
 
@@ -79,26 +80,46 @@ Implementation must preserve unrelated canonical fields and relations even when 
 
 Current work is **Gate 2 — Semantic Planning Completion**.
 
-The immediate task is a Semantic Planning Completion Audit against `docs/domain.md`, `docs/architecture.md`, `docs/design-to-code-map.md`, and the actual repository implementation under `plugin/src/domain/planning/` plus directly relevant rule/validation owners.
+The Semantic Planning Completion Audit against the frozen Domain and the actual repository at `3abbc358ef5a61cec3fd852ad4ad4d52d536ae7d` is complete. The audit confirmed that existing Issue Status and Triage planners already establish the intended pure-planning pattern, while the remaining Gate 2 work is concentrated in frozen V1 transitions and relation-resolution behaviors that do not yet have complete canonical planner ownership.
 
-The audit must:
+Gate 2 implementation must:
 
-1. enumerate frozen V1 state transitions and relation-resolution behaviors that require semantic planning;
-2. map each required transition to its current planner, shared Domain rule, and owner-level tests;
-3. distinguish already-complete planner contracts from repository-verified gaps;
-4. verify planners produce complete legal logical transitions rather than partial patches that defer business rules to Application, Mutation, or Persistence;
-5. verify required `NeedsInput` / rejection boundaries occur before illegal optimistic state can be created;
-6. record only repository-verified Gate 2 gaps in this section;
-7. implement those gaps without introducing persistence, runtime, application, or UI mechanisms that belong to later gates;
+1. complete the verified Workflow Issue / Project relation and lifecycle planning gaps without moving semantic rules into Application or Persistence;
+2. complete Initiative / Milestone / Cycle planning required by frozen V1 contracts;
+3. complete Core Entity delete relation-resolution planning as legal multi-effect logical mutations;
+4. complete reference-affecting Status/Label configuration planning where current authoritative references require repair or explicit replacement;
+5. keep required `NeedsInput` / rejection boundaries ahead of illegal optimistic state;
+6. reuse shared Domain rules when the same invariant is consumed by validation and planning;
+7. keep physical placement, transaction execution, Runtime indexes, Query, Application, and UI work in their later gates;
 8. prove the Gate 2 exit condition before Gate 3 becomes active.
 
-Do not infer a missing planner merely from an absent business-area directory or a future UI feature. A Gate 2 gap must follow from a frozen Domain transition or relation-resolution contract that V1 actually requires.
+The current implementation slice is **Workflow / Project Semantic Foundation**. It targets the first verified gap cluster only; the remaining verified gaps stay open until their own coherent slices are implemented and verified.
 
 ### 4.2 Current verified gaps
 
-Not yet populated.
+The repository audit verified these Gate 2 gaps:
 
-Populate this subsection from the Gate 2 repository audit. Missing planner coverage must be supported by an explicit frozen transition/invariant and actual repository evidence rather than by speculative feature planning.
+1. **Workflow Issue / Project relation completeness**
+   - normal Workflow Issue creation does not yet cover the frozen project-less form;
+   - Triage Accept does not yet cover a project-less Workflow target;
+   - Issue Project planning covers Project-to-Project movement but not Project-to-project-less movement;
+   - Issue Milestone set/clear has no canonical planner even though same-Project relation legality is frozen;
+   - Project lifecycle Status planning, including Complete rejection with current non-terminal child Issues and explicit Reopen semantics, has no canonical planner;
+   - Project Initiative membership set/clear has no canonical planner;
+   - Project acceptance of new non-terminal work and Project-completion child checks are currently repeated or validation-local rather than owned as shared semantic rules.
+
+2. **Cycle semantic planning**
+   - Cycle open, membership edit, and close have no canonical planner coverage sufficient to produce complete legal logical plans;
+   - Create Next Cycle has no Domain-owned candidate rule for the frozen unfinished/non-terminal initial selection semantics.
+
+3. **Core Entity delete relation resolution**
+   - Initiative, Milestone, Project, Workflow Issue, and Cycle delete contracts require complete relation repair/removal in one logical mutation;
+   - current planner coverage includes Triage delete only and does not implement the frozen cross-entity delete semantics.
+
+4. **Reference-affecting configuration planning**
+   - StatusDefinition and Label configuration changes that would invalidate authoritative references have validation coverage but no canonical semantic planner for explicit replacement/cancellation boundaries and complete legal repair plans.
+
+These are implementation gaps, not new Domain questions. Product, Domain, Data, Architecture, and Design-to-Code Map remain frozen unless implementation evidence exposes an actual contradiction in those authorities.
 
 ## 5. Build Order
 

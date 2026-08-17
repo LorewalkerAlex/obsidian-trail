@@ -4,6 +4,7 @@ import type { TrailWorkflowIssue } from "../model/trail-entities";
 
 import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../../test/trail-test-fixtures";
 import {
+  planChangeTrailWorkflowIssueMilestone,
   planChangeTrailWorkflowIssueStatus,
   planCreateTrailWorkflowIssue,
   planMoveTrailWorkflowIssueProject,
@@ -27,6 +28,16 @@ function state() {
     projectId: project.id,
     title: "Milestone A",
   };
+  const milestoneA2 = {
+    id: "milestone-a2",
+    projectId: project.id,
+    title: "Milestone A2",
+  };
+  const milestoneB = {
+    id: "milestone-b",
+    projectId: projectB.id,
+    title: "Milestone B",
+  };
   const issue: TrailWorkflowIssue = {
     context: "workflow",
     createdAt: 1,
@@ -43,7 +54,11 @@ function state() {
       cyclesById: new Map(),
       initiativesById: new Map(),
       issuesById: new Map([[issue.id, issue]]),
-      milestonesById: new Map([[milestone.id, milestone]]),
+      milestonesById: new Map([
+        [milestone.id, milestone],
+        [milestoneA2.id, milestoneA2],
+        [milestoneB.id, milestoneB],
+      ]),
       projectsById: new Map([
         [project.id, project],
         [projectB.id, projectB],
@@ -51,6 +66,8 @@ function state() {
     },
     issue,
     milestone,
+    milestoneA2,
+    milestoneB,
     project,
     projectB,
     workspaceState: createTrailTestWorkspaceState(),
@@ -58,7 +75,7 @@ function state() {
 }
 
 describe("Workflow Issue planning", () => {
-  it("creates Workflow work in Backlog and rejects a terminal Project", () => {
+  it("creates Workflow work in Backlog with or without a Project and rejects a terminal Project", () => {
     const planning = state();
     const ready = planCreateTrailWorkflowIssue(planning, {
       commandId: "command-create",
@@ -71,6 +88,19 @@ describe("Workflow Issue planning", () => {
     if (ready.kind === "ready") {
       expect(ready.plan.issue.statusDefinitionId).toBe("issue-backlog");
       expect(ready.plan.issue.createdAt).toBe(100);
+      expect(ready.plan.issue.projectId).toBe("project-a");
+    }
+
+    const projectless = planCreateTrailWorkflowIssue(planning, {
+      commandId: "command-create-projectless",
+      effectiveAt: 101,
+      issueId: "issue-projectless",
+      title: "Projectless Issue",
+    });
+    expect(projectless.kind).toBe("ready");
+    if (projectless.kind === "ready") {
+      expect(projectless.plan.issue.projectId).toBeUndefined();
+      expect(projectless.plan.issue.milestoneId).toBeUndefined();
     }
 
     planning.domain.projectsById.set(planning.project.id, {
@@ -79,7 +109,7 @@ describe("Workflow Issue planning", () => {
     });
     expect(planCreateTrailWorkflowIssue(planning, {
       commandId: "command-create-blocked",
-      effectiveAt: 101,
+      effectiveAt: 102,
       issueId: "issue-blocked",
       projectId: planning.project.id,
       title: "Blocked Issue",
@@ -189,16 +219,26 @@ describe("Workflow Issue planning", () => {
     });
   });
 
-  it("keeps same-Project membership unchanged and preserves its Milestone", () => {
+  it("moves an Issue to project-less while clearing Milestone and preserves same-Project membership", () => {
     const planning = state();
+    const projectless = planMoveTrailWorkflowIssueProject(planning, {
+      commandId: "command-projectless",
+      expectedIssue: planning.issue,
+    });
+    expect(projectless.kind).toBe("ready");
+    if (projectless.kind !== "ready") return;
+    expect(projectless.plan.issue.projectId).toBeUndefined();
+    expect(projectless.plan.issue.milestoneId).toBeUndefined();
+
     const unchanged = planMoveTrailWorkflowIssueProject(planning, {
       commandId: "command-same-project",
       expectedIssue: planning.issue,
       targetProjectId: planning.project.id,
     });
     expect(unchanged.kind).toBe("ready");
-    if (unchanged.kind !== "ready") return;
-    expect(unchanged.plan.issue).toEqual(planning.issue);
+    if (unchanged.kind === "ready") {
+      expect(unchanged.plan.issue).toEqual(planning.issue);
+    }
   });
 
   it("rejects moving non-terminal work into a terminal Project", () => {
@@ -216,5 +256,59 @@ describe("Workflow Issue planning", () => {
       kind: "rejected",
       reason: { code: "project-terminal" },
     });
+  });
+
+  it("allows terminal Issue history to move into a terminal Project", () => {
+    const planning = state();
+    const completedIssue: TrailWorkflowIssue = {
+      ...planning.issue,
+      estimate: 3,
+      statusDefinitionId: "issue-completed",
+      terminalAt: 20,
+    };
+    planning.domain.issuesById.set(completedIssue.id, completedIssue);
+    planning.domain.projectsById.set(planning.projectB.id, {
+      ...planning.projectB,
+      statusDefinitionId: "project-completed",
+    });
+
+    const result = planMoveTrailWorkflowIssueProject(planning, {
+      commandId: "command-terminal-history-move",
+      expectedIssue: completedIssue,
+      targetProjectId: planning.projectB.id,
+    });
+    expect(result.kind).toBe("ready");
+  });it("changes Milestone only within the Issue Project and supports clearing", () => {
+    const planning = state();
+    const changed = planChangeTrailWorkflowIssueMilestone(planning, {
+      commandId: "command-milestone",
+      expectedIssue: planning.issue,
+      targetMilestoneId: planning.milestoneA2.id,
+    });
+    expect(changed.kind).toBe("ready");
+    if (changed.kind !== "ready") return;
+    expect(changed.plan.issue.milestoneId).toBe(planning.milestoneA2.id);
+    expect(changed.plan.plan.preconditions).toContainEqual({
+      entity: { kind: "milestone", value: planning.milestoneA2 },
+      kind: "entity-equals",
+    });
+
+    expect(planChangeTrailWorkflowIssueMilestone(planning, {
+      commandId: "command-milestone-mismatch",
+      expectedIssue: planning.issue,
+      targetMilestoneId: planning.milestoneB.id,
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "milestone-project-mismatch" },
+    });
+
+    const cleared = planChangeTrailWorkflowIssueMilestone(planning, {
+      commandId: "command-milestone-clear",
+      expectedIssue: planning.issue,
+    });
+    expect(cleared.kind).toBe("ready");
+    if (cleared.kind === "ready") {
+      expect(cleared.plan.issue.milestoneId).toBeUndefined();
+    }
   });
 });

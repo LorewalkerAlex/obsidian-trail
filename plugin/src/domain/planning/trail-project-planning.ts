@@ -1,5 +1,10 @@
 import type { TrailProject } from "../model/trail-entities";
-import { resolveTrailDefaultStatusDefinition } from "../rules/trail-status-rules";
+import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
+import { findTrailNonTerminalProjectChildIssue } from "../rules/trail-project-rules";
+import {
+  resolveTrailDefaultStatusDefinition,
+  resolveTrailStatusDefinition,
+} from "../rules/trail-status-rules";
 import { createTrailMutationPlan, type TrailMutationPlan } from "../../mutation/plans/trail-mutation-plan";
 import { readyTrailPlan, rejectTrailPlan, type TrailPlanResult } from "./trail-plan-result";
 import { trailPlanningEntityExists, type TrailPlanningState } from "./trail-planning-state";
@@ -10,7 +15,19 @@ export interface CreateTrailProjectCommand {
   readonly title: string;
 }
 
-export interface CreateTrailProjectPlan {
+export interface ChangeTrailProjectStatusCommand {
+  readonly commandId: string;
+  readonly expectedProject: TrailProject;
+  readonly targetStatusDefinitionId: string;
+}
+
+export interface ChangeTrailProjectInitiativeCommand {
+  readonly commandId: string;
+  readonly expectedProject: TrailProject;
+  readonly targetInitiativeId?: string;
+}
+
+export interface TrailProjectPlan {
   readonly plan: TrailMutationPlan;
   readonly project: TrailProject;
 }
@@ -18,7 +35,7 @@ export interface CreateTrailProjectPlan {
 export function planCreateTrailProject(
   state: TrailPlanningState,
   command: CreateTrailProjectCommand,
-): TrailPlanResult<CreateTrailProjectPlan> {
+): TrailPlanResult<TrailProjectPlan> {
   if (trailPlanningEntityExists(state.domain, command.projectId)) {
     return rejectTrailPlan("entity-id-conflict", `Trail entity ID already exists: ${command.projectId}`);
   }
@@ -38,6 +55,122 @@ export function planCreateTrailProject(
       commandId: command.commandId,
       effects: [{ after: { kind: "project", value: project }, kind: "create-entity" }],
       intent: "workflow.project.create",
+    }),
+    project,
+  });
+}
+
+export function planChangeTrailProjectStatus(
+  state: TrailPlanningState,
+  command: ChangeTrailProjectStatusCommand,
+): TrailPlanResult<TrailProjectPlan> {
+  const current = state.domain.projectsById.get(command.expectedProject.id);
+  if (current === undefined) {
+    return rejectTrailPlan(
+      "project-missing",
+      `Project does not exist: ${command.expectedProject.id}`,
+    );
+  }
+  if (!sameTrailDomainEntity(
+    { kind: "project", value: current },
+    { kind: "project", value: command.expectedProject },
+  )) {
+    return rejectTrailPlan(
+      "project-changed",
+      `Project changed before action: ${command.expectedProject.id}`,
+    );
+  }
+
+  const currentStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    current.statusDefinitionId,
+  );
+  const targetStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    command.targetStatusDefinitionId,
+  );
+  if (currentStatus === undefined || targetStatus === undefined) {
+    return rejectTrailPlan("project-status-invalid", "Project status reference is invalid");
+  }
+  if (targetStatus.category === "completed") {
+    const activeChild = findTrailNonTerminalProjectChildIssue(
+      state.configuration,
+      state.domain.issuesById.values(),
+      current.id,
+    );
+    if (activeChild !== undefined) {
+      return rejectTrailPlan(
+        "project-active-child",
+        `Project cannot be completed while Issue ${activeChild.id} is non-terminal`,
+      );
+    }
+  }
+
+  const project: TrailProject = targetStatus.id === current.statusDefinitionId
+    ? current
+    : { ...current, statusDefinitionId: targetStatus.id };
+  return readyTrailPlan({
+    plan: createTrailMutationPlan({
+      commandId: command.commandId,
+      effects: [{
+        after: { kind: "project", value: project },
+        before: { kind: "project", value: current },
+        kind: "replace-entity",
+      }],
+      intent: "workflow.project.change-status",
+    }),
+    project,
+  });
+}
+
+export function planChangeTrailProjectInitiative(
+  state: TrailPlanningState,
+  command: ChangeTrailProjectInitiativeCommand,
+): TrailPlanResult<TrailProjectPlan> {
+  const current = state.domain.projectsById.get(command.expectedProject.id);
+  if (current === undefined) {
+    return rejectTrailPlan(
+      "project-missing",
+      `Project does not exist: ${command.expectedProject.id}`,
+    );
+  }
+  if (!sameTrailDomainEntity(
+    { kind: "project", value: current },
+    { kind: "project", value: command.expectedProject },
+  )) {
+    return rejectTrailPlan(
+      "project-changed",
+      `Project changed before action: ${command.expectedProject.id}`,
+    );
+  }
+
+  const targetInitiative = command.targetInitiativeId === undefined
+    ? undefined
+    : state.domain.initiativesById.get(command.targetInitiativeId);
+  if (command.targetInitiativeId !== undefined && targetInitiative === undefined) {
+    return rejectTrailPlan(
+      "initiative-missing",
+      `Initiative does not exist: ${command.targetInitiativeId}`,
+    );
+  }
+
+  const project: TrailProject = targetInitiative?.id === current.initiativeId
+    ? current
+    : { ...current, initiativeId: targetInitiative?.id };
+  return readyTrailPlan({
+    plan: createTrailMutationPlan({
+      commandId: command.commandId,
+      effects: [{
+        after: { kind: "project", value: project },
+        before: { kind: "project", value: current },
+        kind: "replace-entity",
+      }],
+      intent: "workflow.project.change-initiative",
+      preconditions: targetInitiative === undefined
+        ? []
+        : [{ entity: { kind: "initiative", value: targetInitiative }, kind: "entity-equals" }],
     }),
     project,
   });

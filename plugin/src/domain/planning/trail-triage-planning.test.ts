@@ -113,7 +113,23 @@ describe("Triage planning", () => {
     expect(result.plan.targetIssue.id).toBe("workflow-new");
     expect(result.plan.targetIssue.createdAt).toBe(200);
     expect(result.plan.targetIssue.due).toBeUndefined();
+    expect(result.plan.targetIssue.projectId).toBe(planning.project.id);
     expect(result.plan.plan.effects).toHaveLength(2);
+  });
+
+  it("accepts into project-less Workflow when no Project is selected", () => {
+    const planning = state();
+    const result = planAcceptTrailTriageIssue(planning, {
+      commandId: "command-accept-projectless",
+      effectiveAt: 201,
+      expectedIssue: planning.triage,
+      targetIssueId: "workflow-projectless",
+    });
+    expect(result.kind).toBe("ready");
+    if (result.kind !== "ready") return;
+    expect(result.plan.targetIssue.projectId).toBeUndefined();
+    expect(result.plan.targetIssue.milestoneId).toBeUndefined();
+    expect(result.plan.targetIssue.due).toBeUndefined();
   });
 
   it("converts Triage to a new Project and carries only Project-applicable content", () => {

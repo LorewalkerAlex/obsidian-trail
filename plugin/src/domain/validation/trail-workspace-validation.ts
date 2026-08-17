@@ -8,6 +8,7 @@ import type {
 } from "../model/trail-entities";
 import type { TrailLabelEntityType } from "../model/trail-values";
 import type { TrailWorkspaceState } from "../model/trail-workspace-state";
+import { findTrailNonTerminalProjectChildIssue } from "../rules/trail-project-rules";
 import {
   validateTrailConfiguration,
   validateTrailWorkspaceState,
@@ -305,15 +306,11 @@ export function validateTrailWorkspaceGraph(input: {
     );
     if (projectStatus?.entityType !== "project" || projectStatus.category !== "completed") continue;
 
-    const activeChild = [...input.domain.issuesById.values()].find((candidate) => {
-      if (candidate.context !== "workflow" || candidate.projectId !== project.id) return false;
-      const childStatus = input.configuration.statusDefinitions.find(({ id }) => (
-        id === candidate.statusDefinitionId
-      ));
-      return childStatus?.entityType === "issue"
-        && childStatus.category !== "completed"
-        && childStatus.category !== "canceled";
-    });
+    const activeChild = findTrailNonTerminalProjectChildIssue(
+      input.configuration,
+      input.domain.issuesById.values(),
+      project.id,
+    );
     if (activeChild !== undefined) {
       issues.push(issue(
         "domain.project.completed-active-child",

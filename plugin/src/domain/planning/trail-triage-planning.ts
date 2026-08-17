@@ -1,7 +1,7 @@
 import type { TrailProject, TrailTriageIssue, TrailWorkflowIssue } from "../model/trail-entities";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
+import { canTrailProjectAcceptWorkflowIssue } from "../rules/trail-project-rules";
 import {
-  isTrailTerminalStatusDefinition,
   resolveTrailDefaultStatusDefinition,
   resolveTrailStatusDefinition,
 } from "../rules/trail-status-rules";
@@ -38,7 +38,7 @@ export interface AcceptTrailTriageIssueCommand {
   readonly commandId: string;
   readonly effectiveAt: number;
   readonly expectedIssue: TrailTriageIssue;
-  readonly projectId: string;
+  readonly projectId?: string;
   readonly targetIssueId: string;
 }
 
@@ -212,28 +212,34 @@ export function planAcceptTrailTriageIssue(
   if (!sameTriageIssue(source, command.expectedIssue)) {
     return rejectTrailPlan("triage-issue-changed", `Triage Issue changed before Accept: ${source.id}`);
   }
-  const project = state.domain.projectsById.get(command.projectId);
-  if (project === undefined) {
-    return rejectTrailPlan("project-missing", `Project does not exist: ${command.projectId}`);
-  }
-  const projectStatus = resolveTrailStatusDefinition(
-    state.configuration,
-    "project",
-    project.statusDefinitionId,
-  );
-  if (projectStatus === undefined) {
-    return rejectTrailPlan("project-status-invalid", `Project status is invalid: ${project.id}`);
-  }
-  if (isTrailTerminalStatusDefinition(projectStatus)) {
-    return rejectTrailPlan(
-      "project-terminal",
-      "A terminal Project must be reopened before accepting non-terminal work",
-    );
-  }
   if (trailPlanningEntityExists(state.domain, command.targetIssueId)) {
     return rejectTrailPlan("entity-id-conflict", `Trail entity ID already exists: ${command.targetIssueId}`);
   }
+
   const backlog = resolveTrailDefaultStatusDefinition(state.configuration, "issue", "backlog");
+  const project = command.projectId === undefined
+    ? undefined
+    : state.domain.projectsById.get(command.projectId);
+  if (command.projectId !== undefined && project === undefined) {
+    return rejectTrailPlan("project-missing", `Project does not exist: ${command.projectId}`);
+  }
+  if (project !== undefined) {
+    const projectStatus = resolveTrailStatusDefinition(
+      state.configuration,
+      "project",
+      project.statusDefinitionId,
+    );
+    if (projectStatus === undefined) {
+      return rejectTrailPlan("project-status-invalid", `Project status is invalid: ${project.id}`);
+    }
+    if (!canTrailProjectAcceptWorkflowIssue(projectStatus, backlog)) {
+      return rejectTrailPlan(
+        "project-terminal",
+        "A terminal Project must be reopened before accepting non-terminal work",
+      );
+    }
+  }
+
   const targetIssue: TrailWorkflowIssue = {
     context: "workflow",
     createdAt: command.effectiveAt,
@@ -242,7 +248,7 @@ export function planAcceptTrailTriageIssue(
     id: command.targetIssueId,
     labelIds: [...source.labelIds],
     priority: source.priority,
-    projectId: project.id,
+    ...(project === undefined ? {} : { projectId: project.id }),
     statusDefinitionId: backlog.id,
     title: source.title,
   };
@@ -254,7 +260,9 @@ export function planAcceptTrailTriageIssue(
         { before: { kind: "issue", value: source }, kind: "delete-entity" },
       ],
       intent: "triage.accept",
-      preconditions: [{ entity: { kind: "project", value: project }, kind: "entity-equals" }],
+      preconditions: project === undefined
+        ? []
+        : [{ entity: { kind: "project", value: project }, kind: "entity-equals" }],
     }),
     sourceIssueId: source.id,
     targetIssue,
