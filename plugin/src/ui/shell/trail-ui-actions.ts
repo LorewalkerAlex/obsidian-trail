@@ -8,7 +8,7 @@ export interface TrailUiActions {
   >;
   readonly initiatives: Pick<
     TrailApplicationSession["initiatives"],
-    "create"
+    "create" | "editProperties"
   >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],

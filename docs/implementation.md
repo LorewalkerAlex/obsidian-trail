@@ -4,14 +4,14 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The pushed Gate 8 checkpoint immediately preceding the current Project Details Editing checkpoint is:
+The pushed Gate 8 checkpoint immediately preceding the current Initiative Details Editing checkpoint is:
 
 ```text
-afd7ff5743fcd3497bf1dbcdd6c4493025996e5e
-feat: add workflow issue peek and planning properties
+982316b3adcbad23c42b4e487e111814c96895f8
+feat: add project details editing
 ```
 
-This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, and Workflow Issue Peek & Planning Properties slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, and Project Details Editing slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -46,9 +46,11 @@ Gate 8 evidence now includes:
 - **Workflow Issue Peek & Planning Properties** at `afd7ff5743fcd3497bf1dbcdd6c4493025996e5e`, adding the canonical planning-property edit path for title, description, Priority, Estimate, Due, and Labels; enforcing Completed-Estimate retention and safe managed-Markdown descriptions; and exposing one shared lightweight Issue-details carrier from Project/Cycle List and Board;
 - the Peek checkpoint passed 78/78 test files and 261/261 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; representative Obsidian validation confirmed property persistence, Priority editing, Completed-Estimate protection, reload convergence, and a clean Runtime with no pending or source-health residue;
 - the current Radix Dialog is only a temporary carrier for the verified Peek content/editing contract. Final Linear-style Peek positioning, non-blocking interaction, keyboard traversal, dimensions, density, responsive behavior, and broader Selection/Context Menu/Command Menu integration remain later interaction/UI work;
-- **Project Details Editing** is completed in this checkpoint, adding canonical lightweight Project editing for title, description, Priority, Due, and Labels while leaving Status and Initiative on their existing explicit controls;
+- **Project Details Editing** at `982316b3adcbad23c42b4e487e111814c96895f8`, adding canonical lightweight Project editing for title, description, Priority, Due, and Labels while leaving Status and Initiative on their existing explicit controls;
 - the Project Details checkpoint passed 83/83 test files and 271/271 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; representative Obsidian validation confirmed title-driven source rename, property persistence, plugin reload convergence, preservation of the existing contained Workflow Issue, and a clean Runtime with no pending residue;
-- repository-root `Trail/` is versioned only as disposable host-test observation data so real Obsidian Markdown write effects are visible in Git diffs. Its concrete contents are not Product facts, are not a stable fixture baseline, and may be created, changed, or deleted as a test requires;
+- **Initiative Details Editing** is completed in this checkpoint, adding canonical lightweight Initiative editing for title, description, Priority, Due, and Labels from Initiative Focus;
+- the Initiative Details checkpoint passed 90/90 test files and 281/281 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; representative Obsidian validation confirmed Initiative creation, title-driven source rename, description/Priority/Due persistence, plugin reload convergence, and a clean Runtime with no pending or source-health residue;
+- repository-root `Trail/` remains versioned as disposable host-test observation data. The repository development Vault now also versions `.obsidian/plugins/trail/data.json` so its Configuration/Workspace State reference IDs remain coherent with checked-in `Trail/` observations across machines; generated plugin bundles, diagnostics, graph state, and workspace state remain ignored. These development-Vault values are not Product facts or production defaults;
 - lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
 Push-triggered GitHub Actions status for the recent Gate 8 commits was not available through the connected GitHub workflow lookup, so this document does not invent CI run numbers for those commits.
@@ -116,7 +118,8 @@ Completed Gate 8 slices:
 - **Cycle Planning & Rollover** at `826424ff673499d3aaef1669875db2719b1d9e5a`;
 - **Project / Cycle Board & List Interaction Foundation** at `c87723486e95c2915ff02388540e2fd189010b63`;
 - **Workflow Issue Peek & Planning Properties** at `afd7ff5743fcd3497bf1dbcdd6c4493025996e5e`;
-- **Project Details Editing** in this checkpoint.
+- **Project Details Editing** at `982316b3adcbad23c42b4e487e111814c96895f8`;
+- **Initiative Details Editing** in this checkpoint.
 
 The completed **Project Details Editing** slice closes the lightweight Project-facts editing gap without merging Status or Initiative relationship changes into the same interaction:
 
@@ -145,15 +148,35 @@ The slice:
 
 The Project Details host scenario edited `BOARD-B` to `BOARD-B DETAILS`, persisted description/Priority/Due, renamed `Trail/Projects/0002 BOARD-B.md` to `Trail/Projects/0002 BOARD-B DETAILS.md`, preserved the contained `B-LANE` Workflow Issue, and remained correct after plugin reload with empty Runtime pending state. The host fixture had no configured Labels, so Label editing is established by planner/Application/UI automated coverage rather than that representative host scenario.
 
-This slice validates the Project-details content/editing and title-rename contract, not final Project Workspace visual design. The Dialog carrier remains a functional intermediate surface; broader property-presentation polish, final pane/layout density, Selection/Context Menu/Command Menu composition, and other UI refinement remain later Gate 8 work. No next Gate 8 slice is preselected in this checkpoint; select it only after re-auditing the pushed repository baseline.
+This slice validates the Project-details content/editing and title-rename contract, not final Project Workspace visual design. The Dialog carrier remains a functional intermediate surface; broader property-presentation polish, final pane/layout density, Selection/Context Menu/Command Menu composition, and other UI refinement remain later Gate 8 work.
+
+The completed **Initiative Details Editing** slice closes the equivalent lightweight Initiative-facts editing gap without introducing Initiative Status or another relationship model:
+
+```text
+Initiative Focus
+-> open lightweight Initiative details editor
+-> edit Initiative planning properties
+-> canonical Semantic Plan / Application Replace
+-> authoritative Initiative Markdown rewrite
+-> title change optionally renames the file-backed Initiative source
+-> same Initiative identity and Project relationships remain intact
+```
+
+The slice adds the Initiative properties planner/Application path, reuses configured-timezone Due conversion and the shared Label editor, applies the managed-record H1/H2 body guard to Initiative descriptions, preserves file-backed rename semantics, and extends diagnostics through the same mutation/persistence/reconcile chain used by Project details. The representative host scenario created `INIT-HOST`, edited it to `INIT-HOST DETAILS`, persisted description/Priority/Due, renamed its authoritative Markdown source, and remained correct after reload with empty Runtime pending state and no source-health issues.
+
+That host run also exposed a development-Vault integrity problem rather than an Initiative feature defect: versioned `Trail/` Markdown referenced StatusDefinition IDs from one machine while plugin `data.json` on another machine contained independently bootstrapped IDs. The development Vault now versions its `data.json` alongside `Trail/` observation data so those two authoritative persistence classes stay coherent during cross-machine host validation.
+
+The next Gate 8 slice is **Label Configuration & Management**. Existing Domain/Data/Configuration planning, reference repair, persistence, and entity Label selection remain canonical; the missing product capability is a user-facing way to create and manage LabelGroups and Labels so those existing entity editors have real selectable values.
 
 ### 4.2 Current verified gaps
 
 Current Product gaps split into three groups:
 
-- Product composition gaps whose lower-layer owners already exist, including later Home/View composition and remaining lightweight entity editing surfaces beyond Workflow Issue and Project planning properties;
+- Product composition gaps whose lower-layer owners already exist, including later Home/View composition and remaining lightweight entity editing surfaces beyond Workflow Issue, Project, and Initiative planning properties;
 - consumer-driven shared UI gaps such as Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state;
 - real lower-layer gaps that must be repaired at their canonical owners when reached, including the current Triage Application narrowing that requires a Project even though Domain Accept permits project-less Workflow creation.
+
+Label Configuration & Management is the current actionable gap: LabelGroup/Label Domain and persistence models, Configuration replacement/reference repair, and entity-side Label selection already exist, but there is no user-facing Configuration UI to create, edit, or remove LabelGroups/Labels. The current development-Vault Configuration therefore contains no Labels and the shared entity Label editor has nothing to render.
 
 Home Focus and saved Views remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Trail should not invent those schemas merely to surface a page early.
 
@@ -201,11 +224,12 @@ Completed:
 - Cycle Planning & Rollover;
 - Project / Cycle Board & List Interaction Foundation;
 - Workflow Issue Peek & Planning Properties;
-- Project Details Editing.
+- Project Details Editing;
+- Initiative Details Editing.
 
 Active:
 
-- no Gate 8 slice is preselected; choose the next coherent workflow from the latest pushed repository facts.
+- **Label Configuration & Management** — expose Configuration-owned LabelGroup/Label management, then prove existing Initiative/Project/Issue Label selection through authoritative `data.json` and Markdown persistence.
 
 ### 5.3 Gate 9 - V1 hardening
 
@@ -227,6 +251,8 @@ For each active Gate 8 slice:
 The completed Peek checkpoint reused the existing Radix portal/focus primitive while adding a new cross-workspace consumer and a new authoritative Issue property mutation. Automated coverage and representative real-Obsidian validation both passed. Host evidence covered Project/Cycle access to the same Issue state, planning-property persistence, Priority editing, Completed-Estimate protection, plugin reload convergence, and clean Runtime settlement. The current Dialog was validated only as a temporary functional carrier, not as final Peek interaction or visual design.
 
 The completed Project Details checkpoint reused the established Project Application/Source Sync path while adding the canonical Project planning-property edit planner and a second consumer of shared Label editing. Automated coverage and representative real-Obsidian validation both passed. Host evidence covered Project title-driven file rename, description/Priority/Due persistence, preservation of contained Workflow Issue data, plugin reload convergence, and empty Runtime pending state; the representative host configuration had no Labels, so Label interaction remained automated-test evidence only.
+
+The completed Initiative Details checkpoint extended the same property-editing and file-backed rename contract to Initiative while preserving Initiative identity and Project relationships. Automated coverage and representative real-Obsidian validation both passed at 90/90 test files and 281/281 tests. The host run also verified the development-Vault persistence boundary after checking in `data.json` so cross-machine Configuration IDs and versioned `Trail/` observation records initialize coherently. Label interaction still lacks representative host evidence because the current development-Vault Configuration intentionally has zero LabelGroups/Labels; that gap is the next selected slice.
 
 Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 

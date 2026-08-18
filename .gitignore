@@ -10,9 +10,13 @@ npm-debug.log*
 # Obsidian machine-specific state
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
+.obsidian/graph.json
 
 # Installed and generated Obsidian plugins
-.obsidian/plugins/
+.obsidian/plugins/*
+!.obsidian/plugins/trail/
+.obsidian/plugins/trail/*
+!.obsidian/plugins/trail/data.json
 
 # Obsidian local trash
 .trash/

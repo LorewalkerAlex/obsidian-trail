@@ -15,6 +15,7 @@ import {
   TRAIL_PHYSICAL_SOURCE_SCHEMAS,
 } from "../schema/trail-physical-schema";
 import {
+  assertTrailManagedRecordBody,
   canonicalIdSet,
   entityCodecIssue,
   markerOffset,
@@ -171,6 +172,7 @@ export function parseInitiativeMarkdown(input: {
 export function serializeInitiativeMarkdown(initiative: TrailInitiative): string {
   const issues = validateTrailInitiative(initiative);
   if (issues.length > 0) throw new Error(`Cannot serialize invalid Initiative: ${issues.map((item) => item.message).join("; ")}`);
+  assertTrailManagedRecordBody(initiative.description, "Initiative");
 
   const marker = serializeDataMarker(TRAIL_PHYSICAL_RECORD_SCHEMAS.initiative.metadataOrder, {
     priority: initiative.priority,

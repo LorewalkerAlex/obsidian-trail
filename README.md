@@ -50,7 +50,9 @@ obsidian-trail/
 ├─ .github/
 ├─ .obsidian/
 │  └─ plugins/
-│     └─ trail/          generated plugin output; ignored by Git
+│     └─ trail/
+│        ├─ data.json    version-controlled development-Vault Configuration / Workspace State
+│        └─ ...          generated plugin output and diagnostics; ignored by Git
 ├─ docs/                 Trail project documentation
 ├─ plugin/
 │  └─ src/               active formal implementation
@@ -60,7 +62,7 @@ obsidian-trail/
 └─ ...
 ```
 
-`Trail/` is disposable test data for the repository development Vault. It is versioned so real Obsidian persistence effects can be inspected through ordinary Git diffs. Its current files and values are not Product facts and are not a stable automated-test fixture; they may be created, changed, or deleted as a host-validation scenario requires.
+`Trail/` is disposable test data for the repository development Vault. It is versioned so real Obsidian persistence effects can be inspected through ordinary Git diffs. The development Vault also versions `.obsidian/plugins/trail/data.json` because Trail Domain Markdown can reference Configuration IDs stored there; keeping both persistence classes in the same checkpoint prevents cross-machine host validation from combining incompatible IDs. These checked-in development-Vault values are not Product facts or production defaults. Generated plugin bundles, diagnostics, graph state, and workspace state remain machine-local/ignored.
 
 ## Development environment
 
@@ -112,7 +114,7 @@ During implementation, use focused owner-level validation while iterating. Run t
 
 Representative real-host verification exercises host-specific risks that cannot be established by pure or jsdom tests alone. Diagnostics builds expose development-only validation evidence for the command / mutation / persistence / reconcile chain.
 
-When `Trail/` is used during host validation, Git diff is an additional observation channel for the actual Markdown write effects. The test data itself is intentionally disposable; production correctness must not depend on diagnostics output or on any specific checked-in `Trail/` value.
+When `Trail/` is used during host validation, Git diff is an additional observation channel for the actual Markdown write effects. The versioned development-Vault `data.json` keeps Configuration/Workspace State references coherent with those observations across machines. The test state remains development evidence only; production correctness must not depend on diagnostics output or on any specific checked-in `Trail/` or development-Vault configuration value.
 
 ## Continuous integration
 

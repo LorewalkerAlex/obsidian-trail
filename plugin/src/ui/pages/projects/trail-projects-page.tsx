@@ -32,6 +32,7 @@ import {
 } from "../../interactions/trail-action";
 import { parseTrailLocalDateTime } from "../../interactions/trail-local-date-time";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
+import { TrailInitiativePropertiesDialog } from "../../patterns/trail-initiative-properties-dialog";
 import { TrailProjectPropertiesDialog } from "../../patterns/trail-project-properties-dialog";
 import { TrailStatusPicker } from "../../patterns/trail-status-picker";
 import { TrailWorkflowPresentation } from "../../patterns/trail-workflow-presentation";
@@ -212,10 +213,14 @@ export function TrailProjectsPage(props: {
         />
       ) : effectiveSelectedInitiativeId !== undefined ? (
         <TrailInitiativeFocus
+          actions={props.actions.initiatives}
+          configuration={configuration}
           initiativeId={effectiveSelectedInitiativeId}
+          onError={setWorkflowError}
           onNavigateProject={setSelectedProjectId}
           onNavigateRoot={navigateRoot}
           runtimeStore={props.runtimeStore}
+          writable={props.writable}
         />
       ) : (
         <TrailProjectsRoot
@@ -339,10 +344,14 @@ function TrailProjectNavigationItem(props: {
 }
 
 function TrailInitiativeFocus(props: {
+  readonly actions: TrailUiActions["initiatives"];
+  readonly configuration: NonNullable<ReturnType<typeof selectTrailReadableConfiguration>>;
   readonly initiativeId: string;
+  readonly onError: (message: string | undefined) => void;
   readonly onNavigateProject: (projectId: string) => void;
   readonly onNavigateRoot: () => void;
   readonly runtimeStore: TrailRuntimeStore;
+  readonly writable: boolean;
 }) {
   const initiative = useStore(
     props.runtimeStore,
@@ -352,11 +361,17 @@ function TrailInitiativeFocus(props: {
     props.runtimeStore,
     useShallow((state) => selectTrailReadableProjectIdsByInitiative(state, props.initiativeId)),
   );
+  const pending = useStore(
+    props.runtimeStore,
+    (state) => selectIsTrailEntityPending(state, props.initiativeId),
+  );
   const sourceIssues = useStore(
     props.runtimeStore,
     useShallow((state) => selectTrailEntitySourceIssues(state, props.initiativeId)),
   );
+  const [detailsOpen, setDetailsOpen] = useState(false);
   if (initiative === undefined) return null;
+  const actionsDisabled = !props.writable || pending || sourceIssues.length > 0;
 
   return (
     <>
@@ -371,7 +386,28 @@ function TrailInitiativeFocus(props: {
             <h2 id="trail-initiative-focus-title">{initiative.title}</h2>
             <span>{projectIds.length} Projects</span>
           </div>
+          <div>
+            <button
+              disabled={actionsDisabled}
+              onClick={() => setDetailsOpen(true)}
+              type="button"
+            >
+              Edit details
+            </button>
+            {pending ? <span className="trail-pending-chip">Saving</span> : null}
+          </div>
         </div>
+
+        <TrailInitiativePropertiesDialog
+          actions={props.actions}
+          configuration={props.configuration}
+          initiativeId={initiative.id}
+          onError={props.onError}
+          onOpenChange={setDetailsOpen}
+          open={detailsOpen}
+          runtimeStore={props.runtimeStore}
+          writable={props.writable}
+        />
 
         {sourceIssues.length > 0 ? (
           <TrailDataIssuePanel

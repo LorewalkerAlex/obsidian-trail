@@ -1,0 +1,115 @@
+{
+  "configuration": {
+    "statuses": {
+      "issue": {
+        "backlog": {
+          "defaultId": "354abdb1-31fb-4ffb-95cc-40f65c6d3525",
+          "definitions": [
+            {
+              "id": "354abdb1-31fb-4ffb-95cc-40f65c6d3525",
+              "name": "Backlog"
+            }
+          ]
+        },
+        "unstarted": {
+          "defaultId": "cba07486-3fbf-4b88-bf50-8fc4f6dbf7a0",
+          "definitions": [
+            {
+              "id": "cba07486-3fbf-4b88-bf50-8fc4f6dbf7a0",
+              "name": "Todo"
+            }
+          ]
+        },
+        "started": {
+          "defaultId": "d748a206-9002-40df-945e-c74586082b4a",
+          "definitions": [
+            {
+              "id": "d748a206-9002-40df-945e-c74586082b4a",
+              "name": "In Progress"
+            }
+          ]
+        },
+        "completed": {
+          "defaultId": "883278b3-f713-4466-80bf-1b8584282806",
+          "definitions": [
+            {
+              "id": "883278b3-f713-4466-80bf-1b8584282806",
+              "name": "Done"
+            }
+          ]
+        },
+        "canceled": {
+          "defaultId": "c78f1968-9612-4050-8ad0-c7c6a1cef8a6",
+          "definitions": [
+            {
+              "id": "c78f1968-9612-4050-8ad0-c7c6a1cef8a6",
+              "name": "Canceled"
+            }
+          ]
+        }
+      },
+      "project": {
+        "backlog": {
+          "defaultId": "6c402c5d-0182-4918-a57c-3fc134b60061",
+          "definitions": [
+            {
+              "id": "6c402c5d-0182-4918-a57c-3fc134b60061",
+              "name": "Backlog"
+            }
+          ]
+        },
+        "unstarted": {
+          "defaultId": "8c079d1b-e481-41b2-9cab-81f9fb6c65b2",
+          "definitions": [
+            {
+              "id": "8c079d1b-e481-41b2-9cab-81f9fb6c65b2",
+              "name": "Planned"
+            }
+          ]
+        },
+        "started": {
+          "defaultId": "65135527-ac2c-4838-b15f-6892eaeeb925",
+          "definitions": [
+            {
+              "id": "65135527-ac2c-4838-b15f-6892eaeeb925",
+              "name": "In Progress"
+            }
+          ]
+        },
+        "completed": {
+          "defaultId": "47356db3-9ae7-4d04-8238-0effeae6607a",
+          "definitions": [
+            {
+              "id": "47356db3-9ae7-4d04-8238-0effeae6607a",
+              "name": "Completed"
+            }
+          ]
+        },
+        "canceled": {
+          "defaultId": "2ce3880a-80dd-410e-b102-a99b20f31e71",
+          "definitions": [
+            {
+              "id": "2ce3880a-80dd-410e-b102-a99b20f31e71",
+              "name": "Canceled"
+            }
+          ]
+        }
+      }
+    },
+    "labels": {
+      "groups": [],
+      "definitions": []
+    },
+    "cycle": {
+      "defaultEndRule": "end-of-next-week"
+    },
+    "temporal": {
+      "timezone": "Asia/Shanghai"
+    }
+  },
+  "workspaceState": {
+    "customViews": [],
+    "favorites": [],
+    "home": {}
+  }
+}
