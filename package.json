@@ -12,7 +12,7 @@
     "test": "vitest",
     "test:run": "vitest run --reporter=dot",
     "test:run:verbose": "vitest run",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "check": "npm run lint && npm run test:run && npm run build"
   },
   "engines": {

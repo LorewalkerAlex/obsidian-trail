@@ -33,6 +33,14 @@ export default defineConfig(
   },
   ...obsidianmd.configs.recommended,
   {
+    rules: {
+      "obsidianmd/ui/sentence-case": [
+        "warn",
+        { brands: ["Obsidian", "Markdown", "Trail"] },
+      ],
+    },
+  },
+  {
     files: ["plugin/src/domain/**/*.ts"],
     ignores: [
       "plugin/src/domain/**/*.test.ts",
