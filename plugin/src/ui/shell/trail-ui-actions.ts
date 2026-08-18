@@ -8,7 +8,11 @@ export interface TrailUiActions {
   >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],
-    "changeStatus" | "create" | "moveToProject"
+    "changeMilestone" | "changeStatus" | "create" | "moveToProject"
+  >;
+  readonly milestones: Pick<
+    TrailApplicationSession["milestones"],
+    "create" | "delete"
   >;
   readonly projects: Pick<
     TrailApplicationSession["projects"],

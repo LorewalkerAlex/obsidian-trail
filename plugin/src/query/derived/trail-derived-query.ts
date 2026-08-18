@@ -6,6 +6,11 @@ import {
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
 
+export interface TrailMilestoneProgress {
+  readonly terminalIssueCount: number;
+  readonly totalIssueCount: number;
+}
+
 function earliestIssueFirstStartedAt(
   readable: ReturnType<typeof selectTrailReadableRuntimeSnapshot>,
   issueIds: readonly string[],
@@ -50,6 +55,39 @@ export function selectIsTrailInitiativeCompleted(
   }
 
   return true;
+}
+
+/**
+ * Milestone progress is current-scope aggregation only. It deliberately exposes
+ * counts instead of inventing a persisted or page-local Milestone lifecycle.
+ */
+export function selectTrailMilestoneProgress(
+  state: TrailRuntimeState,
+  milestoneId: string,
+): TrailMilestoneProgress | undefined {
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  const configuration = readable.authoritative.configuration;
+  if (configuration === null) return undefined;
+  if (!readable.authoritative.domain.milestonesById.has(milestoneId)) return undefined;
+
+  const issueIds = readable.indexes.issuesByMilestoneId.get(milestoneId) ?? [];
+  let terminalIssueCount = 0;
+  for (const issueId of issueIds) {
+    const issue = readable.authoritative.domain.issuesById.get(issueId);
+    if (issue?.context !== "workflow") return undefined;
+    const status = resolveTrailStatusDefinition(
+      configuration,
+      "issue",
+      issue.statusDefinitionId,
+    );
+    if (status === undefined) return undefined;
+    if (isTrailTerminalStatusDefinition(status)) terminalIssueCount += 1;
+  }
+
+  return {
+    terminalIssueCount,
+    totalIssueCount: issueIds.length,
+  };
 }
 
 /** Current-scope activity start is the earliest first-start fact of its current Issues. */

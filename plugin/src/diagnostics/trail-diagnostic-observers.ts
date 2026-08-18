@@ -90,7 +90,11 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],
-    "changeStatus" | "create" | "moveToProject"
+    "changeMilestone" | "changeStatus" | "create" | "moveToProject"
+  >;
+  readonly milestones: Pick<
+    TrailApplicationSession["milestones"],
+    "create" | "delete"
   >;
   readonly projects: Pick<
     TrailApplicationSession["projects"],
@@ -119,6 +123,23 @@ export function createDiagnosticTrailUiActions(
       },
     },
     issues: {
+      changeMilestone(expectedIssue, targetMilestoneId): TrailMutationActionResult {
+        const data = {
+          issueId: expectedIssue.id,
+          sourceMilestoneId: expectedIssue.milestoneId ?? null,
+          targetMilestoneId: targetMilestoneId ?? null,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.workflow.issue-milestone",
+            session.issues.changeMilestone(expectedIssue, targetMilestoneId),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.workflow.issue-milestone", error, data);
+        }
+      },
       changeStatus(
         expectedIssue: TrailWorkflowIssue,
         targetStatusDefinitionId: string,
@@ -168,6 +189,42 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.workflow.issue-project", error, data);
+        }
+      },
+    },
+    milestones: {
+      create(projectId, title, due): TrailEntityMutationReceipt {
+        const data = {
+          due: due ?? null,
+          projectId,
+          titleLength: title.length,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.milestone.create",
+            session.milestones.create(projectId, title, due),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.milestone.create", error, data);
+        }
+      },
+      delete(expectedMilestone, replacementMilestoneId): TrailEntityMutationReceipt {
+        const data = {
+          milestoneId: expectedMilestone.id,
+          projectId: expectedMilestone.projectId,
+          replacementMilestoneId: replacementMilestoneId ?? null,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.milestone.delete",
+            session.milestones.delete(expectedMilestone, replacementMilestoneId),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.milestone.delete", error, data);
         }
       },
     },

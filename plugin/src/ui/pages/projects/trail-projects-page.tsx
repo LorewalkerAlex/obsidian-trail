@@ -12,6 +12,7 @@ import {
   selectTrailReadableConfiguration,
   selectTrailReadableInitiativeById,
   selectTrailReadableInitiativeIds,
+  selectTrailReadableMilestoneIdsByProject,
   selectTrailReadableProjectById,
   selectTrailReadableProjectIds,
   selectTrailReadableProjectIdsByInitiative,
@@ -24,17 +25,19 @@ import {
 } from "../../../query/shared/trail-source-health-query";
 import { selectTrailStatusDefinition } from "../../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
+import { TrailMilestoneRow } from "../../entities/trail-milestone-row";
 import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
 import {
   runTrailMutationAction,
   runTrailReceipt,
 } from "../../interactions/trail-action";
+import { parseTrailLocalDateTime } from "../../interactions/trail-local-date-time";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
 import { TrailStatusPicker } from "../../patterns/trail-status-picker";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
 export function TrailProjectsPage(props: {
-  readonly actions: Pick<TrailUiActions, "initiatives" | "issues" | "projects">;
+  readonly actions: Pick<TrailUiActions, "initiatives" | "issues" | "milestones" | "projects">;
   readonly runtimeStore: TrailRuntimeStore;
   readonly writable: boolean;
 }) {
@@ -427,7 +430,7 @@ function TrailInitiativeOption(props: {
 }
 
 function TrailProjectWorkspace(props: {
-  readonly actions: Pick<TrailUiActions, "issues" | "projects">;
+  readonly actions: Pick<TrailUiActions, "issues" | "milestones" | "projects">;
   readonly configuration: NonNullable<ReturnType<typeof selectTrailReadableConfiguration>>;
   readonly onError: (message: string | undefined) => void;
   readonly onNavigateInitiative: (initiativeId: string) => void;
@@ -450,6 +453,10 @@ function TrailProjectWorkspace(props: {
       ? undefined
       : selectTrailReadableInitiativeById(state, project.initiativeId),
   );
+  const milestoneIds = useStore(
+    props.runtimeStore,
+    useShallow((state) => selectTrailReadableMilestoneIdsByProject(state, props.projectId)),
+  );
   const issueIds = useStore(
     props.runtimeStore,
     useShallow((state) => selectTrailReadableWorkflowIssueIdsByProject(state, props.projectId)),
@@ -462,6 +469,8 @@ function TrailProjectWorkspace(props: {
     props.runtimeStore,
     useShallow((state) => selectTrailEntitySourceIssues(state, props.projectId)),
   );
+  const [milestoneDraft, setMilestoneDraft] = useState("");
+  const [milestoneDueDraft, setMilestoneDueDraft] = useState("");
   const [issueDraft, setIssueDraft] = useState("");
 
   if (project === undefined) return null;
@@ -490,6 +499,28 @@ function TrailProjectWorkspace(props: {
     runTrailMutationAction(
       () => props.actions.projects.changeInitiative(project, targetInitiativeId),
       { onError: props.onError },
+    );
+  };
+
+  const submitMilestone = (event: SyntheticEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    if (actionsDisabled || milestoneDraft.trim() === "") return;
+    runTrailReceipt(
+      () => props.actions.milestones.create(
+        project.id,
+        milestoneDraft,
+        milestoneDueDraft === ""
+          ? undefined
+          : parseTrailLocalDateTime(
+              milestoneDueDraft,
+              props.configuration.temporal.timezone,
+            ),
+      ),
+      props.onError,
+      () => {
+        setMilestoneDraft("");
+        setMilestoneDueDraft("");
+      },
     );
   };
 
@@ -560,6 +591,67 @@ function TrailProjectWorkspace(props: {
           />
         ) : null}
 
+        <div className="trail-section-heading trail-section-heading--list">
+          <div>
+            <h3>Milestones</h3>
+            <p>Use checkpoints to organize current Project work without adding another workflow Status.</p>
+          </div>
+          <span className="trail-count" aria-label={`${milestoneIds.length} milestones`}>
+            {milestoneIds.length}
+          </span>
+        </div>
+
+        <form className="trail-capture__form" onSubmit={submitMilestone}>
+          <label className="trail-capture__field">
+            <span className="screen-reader-text">Milestone title</span>
+            <input
+              autoComplete="off"
+              disabled={actionsDisabled}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setMilestoneDraft(event.target.value)}
+              placeholder="Add a Project Milestone"
+              value={milestoneDraft}
+            />
+          </label>
+          <label className="trail-capture__field">
+            <span className="screen-reader-text">Milestone due</span>
+            <input
+              disabled={actionsDisabled}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setMilestoneDueDraft(event.target.value)}
+              type="datetime-local"
+              value={milestoneDueDraft}
+            />
+          </label>
+          <button
+            className="mod-cta trail-capture__button"
+            disabled={actionsDisabled || milestoneDraft.trim() === ""}
+            type="submit"
+          >
+            Add Milestone
+          </button>
+        </form>
+
+        {milestoneIds.length === 0 ? (
+          <div className="trail-empty-state trail-empty-state--compact">
+            <p>No Milestones yet.</p>
+            <span>Add a checkpoint when the Project needs an intermediate outcome.</span>
+          </div>
+        ) : (
+          <ol className="trail-workflow-issue-list" aria-label={`Milestones in ${project.title}`}>
+            {milestoneIds.map((milestoneId) => (
+              <TrailMilestoneRow
+                actions={props.actions.milestones}
+                key={milestoneId}
+                milestoneId={milestoneId}
+                onError={props.onError}
+                runtimeStore={props.runtimeStore}
+                sourceIsHealthy={sourceIsHealthy}
+                timezone={props.configuration.temporal.timezone}
+                writable={props.writable}
+              />
+            ))}
+          </ol>
+        )}
+
         {projectIsTerminal ? (
           <p className="trail-project-terminal-note">
             Reopen this Project before adding new Workflow Issues.
@@ -589,7 +681,7 @@ function TrailProjectWorkspace(props: {
         <div className="trail-section-heading trail-section-heading--list">
           <div>
             <h3>Issues</h3>
-            <p>Backlog by default; update status as work progresses.</p>
+            <p>Backlog by default; Status and Milestone remain independent properties.</p>
           </div>
           <span className="trail-count" aria-label={`${issueIds.length} workflow issues`}>
             {issueIds.length}

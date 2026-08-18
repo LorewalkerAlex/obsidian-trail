@@ -1,6 +1,7 @@
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import type {
   TrailInitiative,
+  TrailMilestone,
   TrailProject,
   TrailTriageIssue,
   TrailWorkflowIssue,
@@ -58,6 +59,15 @@ export function selectTrailReadableInitiativeById(
 ): TrailInitiative | undefined {
   return selectTrailReadableRuntimeSnapshot(state).authoritative.domain.initiativesById.get(
     initiativeId,
+  );
+}
+
+export function selectTrailReadableMilestoneById(
+  state: TrailRuntimeState,
+  milestoneId: string,
+): TrailMilestone | undefined {
+  return selectTrailReadableRuntimeSnapshot(state).authoritative.domain.milestonesById.get(
+    milestoneId,
   );
 }
 
@@ -146,11 +156,20 @@ export function selectTrailReadableProjectIdsByInitiative(
     .map((project) => project.id);
 }
 
+/** Milestone presentation order is derived from current titles, never persisted rank. */
 export function selectTrailReadableMilestoneIdsByProject(
   state: TrailRuntimeState,
   projectId: string,
 ): readonly string[] {
-  return selectTrailReadableRuntimeSnapshot(state).indexes.milestonesByProjectId.get(projectId) ?? [];
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  return (readable.indexes.milestonesByProjectId.get(projectId) ?? [])
+    .map((milestoneId) => readable.authoritative.domain.milestonesById.get(milestoneId))
+    .filter((milestone): milestone is TrailMilestone => milestone !== undefined)
+    .sort((left, right) => {
+      const titleOrder = left.title.localeCompare(right.title);
+      return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
+    })
+    .map((milestone) => milestone.id);
 }
 
 export function selectTrailReadableWorkflowIssueIdsByMilestone(

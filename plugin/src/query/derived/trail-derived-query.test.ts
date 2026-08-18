@@ -18,6 +18,7 @@ import {
   selectIsTrailInitiativeCompleted,
   selectTrailInitiativeActualStart,
   selectTrailMilestoneActualStart,
+  selectTrailMilestoneProgress,
   selectTrailProjectActualStart,
 } from "./trail-derived-query";
 
@@ -50,6 +51,11 @@ function readyStore() {
     id: "milestone-a",
     projectId: projectA.id,
     title: "Milestone A",
+  };
+  const milestoneEmpty = {
+    id: "milestone-empty",
+    projectId: projectA.id,
+    title: "Milestone Empty",
   };
   const issueA = {
     context: "workflow" as const,
@@ -108,7 +114,7 @@ function readyStore() {
       {
         issues: [issueA, issueB],
         kind: "project",
-        milestones: [milestoneA],
+        milestones: [milestoneA, milestoneEmpty],
         project: projectA,
         sourcePath: "Trail/Projects/0001 Project A.md",
       },
@@ -123,7 +129,7 @@ function readyStore() {
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
 
-  return { issueC, projectB, store };
+  return { issueA, issueC, projectB, store };
 }
 
 describe("Trail canonical derived Query", () => {
@@ -148,6 +154,46 @@ describe("Trail canonical derived Query", () => {
 
     setTrailRuntimeControl(store, { kind: "refreshing" });
     expect(selectIsTrailInitiativeCompleted(store.getState(), "initiative-a")).toBe(true);
+  });
+
+  it("derives Milestone progress as terminal/current Issue counts without lifecycle state", () => {
+    const { issueA, store } = readyStore();
+
+    expect(selectTrailMilestoneProgress(store.getState(), "milestone-a")).toEqual({
+      terminalIssueCount: 1,
+      totalIssueCount: 1,
+    });
+    expect(selectTrailMilestoneProgress(store.getState(), "milestone-empty")).toEqual({
+      terminalIssueCount: 0,
+      totalIssueCount: 0,
+    });
+    expect(selectTrailMilestoneProgress(store.getState(), "milestone-missing")).toBeUndefined();
+
+    const reopenedIssue = {
+      ...issueA,
+      statusDefinitionId: "issue-started",
+      terminalAt: undefined,
+    };
+    addTrailPendingPlan(store, createTrailMutationPlan({
+      commandId: "milestone-progress-change",
+      effects: [{
+        after: { kind: "issue", value: reopenedIssue },
+        before: { kind: "issue", value: issueA },
+        kind: "replace-entity",
+      }],
+      intent: "test.milestone.progress",
+    }));
+
+    expect(selectTrailMilestoneProgress(store.getState(), "milestone-a")).toEqual({
+      terminalIssueCount: 0,
+      totalIssueCount: 1,
+    });
+
+    setTrailRuntimeControl(store, { kind: "refreshing" });
+    expect(selectTrailMilestoneProgress(store.getState(), "milestone-a")).toEqual({
+      terminalIssueCount: 1,
+      totalIssueCount: 1,
+    });
   });
 
   it("derives current-scope actual start from earliest Issue firstStartedAt", () => {

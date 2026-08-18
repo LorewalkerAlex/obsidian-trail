@@ -9,6 +9,7 @@ function renderProjects(
   harness: ReturnType<typeof createTrailUiTestHarness>,
   overrides: {
     readonly issues?: TrailUiActions["issues"];
+    readonly milestones?: TrailUiActions["milestones"];
     readonly projects?: TrailUiActions["projects"];
   } = {},
 ) {
@@ -17,6 +18,7 @@ function renderProjects(
       actions={{
         initiatives: harness.actions.initiatives,
         issues: overrides.issues ?? harness.actions.issues,
+        milestones: overrides.milestones ?? harness.actions.milestones,
         projects: overrides.projects ?? harness.actions.projects,
       }}
       runtimeStore={harness.runtimeStore}
@@ -72,6 +74,66 @@ describe("TrailProjectsPage", () => {
       harness.project,
       undefined,
     );
+  });
+
+  it("creates a Project-scoped Milestone with an optional configured-timezone Due", () => {
+    const harness = createTrailUiTestHarness();
+    renderProjects(harness);
+    openProjectA();
+
+    fireEvent.change(screen.getByPlaceholderText("Add a Project Milestone"), {
+      target: { value: "Checkpoint" },
+    });
+    fireEvent.change(screen.getByLabelText("Milestone due"), {
+      target: { value: "2026-08-20T09:30" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add Milestone" }));
+
+    expect(harness.actions.milestones.create).toHaveBeenCalledWith(
+      harness.project.id,
+      "Checkpoint",
+      Date.UTC(2026, 7, 20, 1, 30),
+    );
+  });
+
+  it("maps explicit Issue Milestone removal to the existing Issue Application action", () => {
+    const harness = createTrailUiTestHarness();
+    renderProjects(harness);
+    openProjectA();
+
+    fireEvent.change(screen.getByLabelText("Milestone for Issue A"), {
+      target: { value: "" },
+    });
+
+    expect(harness.actions.issues.changeMilestone).toHaveBeenCalledWith(
+      harness.workflow,
+      undefined,
+    );
+  });
+
+  it("renders derived Milestone progress without a manual Milestone lifecycle", () => {
+    const harness = createTrailUiTestHarness({
+      workflowStatusDefinitionId: "issue-completed",
+    });
+    renderProjects(harness);
+    openProjectA();
+
+    expect(screen.getByText(/1 of 1 Issues terminal/)).toBeInTheDocument();
+  });
+
+  it("deletes a Milestone through the shared confirmation while preserving Issue semantics", () => {
+    const harness = createTrailUiTestHarness();
+    renderProjects(harness);
+    openProjectA();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Milestone A" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Delete Milestone?" });
+    expect(dialog).toHaveAccessibleDescription(
+      "Linked Workflow Issues stay in their Project and are detached from this Milestone.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+
+    expect(harness.actions.milestones.delete).toHaveBeenCalledWith(harness.milestone);
   });
 
   it("maps the Project lifecycle picker to the existing Project Application action", () => {

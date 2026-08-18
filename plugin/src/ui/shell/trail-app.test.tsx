@@ -34,7 +34,7 @@ describe("TrailApp", () => {
     view.unmount();
   });
 
-  it("routes Triage, Initiative, Project, and Workflow interactions through Application", () => {
+  it("routes Triage, Initiative, Project, Milestone, and Workflow interactions through Application", () => {
     const harness = createTrailUiTestHarness();
     render(<TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />);
 
@@ -53,6 +53,16 @@ describe("TrailApp", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Initiative A" }));
     fireEvent.click(screen.getByRole("button", { name: "Project A" }));
+    fireEvent.change(screen.getByPlaceholderText("Add a Project Milestone"), {
+      target: { value: "New milestone" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add Milestone" }));
+    expect(harness.actions.milestones.create).toHaveBeenCalledWith(
+      "project-a",
+      "New milestone",
+      undefined,
+    );
+
     fireEvent.change(screen.getByPlaceholderText("Add a Workflow Issue"), {
       target: { value: "New issue" },
     });

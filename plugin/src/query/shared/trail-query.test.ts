@@ -22,6 +22,7 @@ import {
   selectTrailReadableEntityIdsByStatusDefinition,
   selectTrailReadableInitiativeById,
   selectTrailReadableInitiativeIds,
+  selectTrailReadableMilestoneById,
   selectTrailReadableMilestoneIdsByProject,
   selectTrailReadableProjectIds,
   selectTrailReadableProjectIdsByInitiative,
@@ -57,7 +58,12 @@ function readyStore() {
   const milestone = {
     id: "milestone-a",
     projectId: projectA.id,
-    title: "Milestone A",
+    title: "Milestone Zulu",
+  };
+  const milestoneB = {
+    id: "milestone-b",
+    projectId: projectA.id,
+    title: "Milestone Alpha",
   };
   const issueA = {
     context: "workflow" as const,
@@ -122,7 +128,7 @@ function readyStore() {
       {
         issues: [issueA, issueB, issueC],
         kind: "project",
-        milestones: [milestone],
+        milestones: [milestone, milestoneB],
         project: projectA,
         sourcePath: "Trail/Projects/0001 Zulu.md",
       },
@@ -158,6 +164,7 @@ function readyStore() {
     issueA,
     issueB,
     milestone,
+    milestoneB,
     projectA,
     projectB,
     store,
@@ -166,7 +173,16 @@ function readyStore() {
 
 describe("Trail Query read side", () => {
   it("returns deterministic page IDs and shared structural membership", () => {
-    const { cycle, initiative, issueA, milestone, projectA, projectB, store } = readyStore();
+    const {
+      cycle,
+      initiative,
+      issueA,
+      milestone,
+      milestoneB,
+      projectA,
+      projectB,
+      store,
+    } = readyStore();
     expect(selectTrailReadableInitiativeIds(store.getState())).toEqual([initiative.id]);
     expect(selectTrailReadableInitiativeById(store.getState(), initiative.id)).toBe(initiative);
     expect(selectTrailReadableProjectIds(store.getState())).toEqual(["project-b", "project-a"]);
@@ -179,8 +195,9 @@ describe("Trail Query read side", () => {
     ]);
     expect(selectTrailReadableProjectIdsByInitiative(store.getState(), initiative.id))
       .toEqual([projectA.id]);
+    expect(selectTrailReadableMilestoneById(store.getState(), milestone.id)).toBe(milestone);
     expect(selectTrailReadableMilestoneIdsByProject(store.getState(), projectA.id))
-      .toEqual([milestone.id]);
+      .toEqual([milestoneB.id, milestone.id]);
     expect(selectTrailReadableWorkflowIssueIdsByMilestone(store.getState(), milestone.id))
       .toEqual([issueA.id]);
     expect(selectTrailReadableCurrentCycleId(store.getState())).toBe(cycle.id);

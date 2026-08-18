@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { TrailApplicationSession } from "../application/trail-application-session";
-import type { TrailProject } from "../domain/model/trail-entities";
+import type {
+  TrailMilestone,
+  TrailProject,
+  TrailWorkflowIssue,
+} from "../domain/model/trail-entities";
 import type { TrailAuthoritativeSourceSync } from "../source-sync/trail-authoritative-source-sync";
 import { createTrailMutationPlan } from "../mutation/plans/trail-mutation-plan";
 import { createTrailRuntimeStore, setTrailRuntimeControl } from "../runtime/store/trail-runtime-store";
@@ -23,6 +27,14 @@ function recorder() {
     record: (name, options) => events.push({ name, options }),
   };
   return { diagnostics, events };
+}
+
+function pendingReceipt(entityId: string) {
+  return {
+    commandId: `command-${entityId}`,
+    completion: new Promise<void>(() => { /* keep pending so the test isolates submission telemetry */ }),
+    entityId,
+  };
 }
 
 describe("Trail diagnostic observers", () => {
@@ -124,6 +136,81 @@ describe("Trail diagnostic observers", () => {
         },
       },
     }]);
+  });
+
+  it("observes Milestone management and Issue Milestone assignment on the UI boundary", () => {
+    const { diagnostics, events } = recorder();
+    const milestone: TrailMilestone = {
+      id: "milestone-a",
+      projectId: "project-a",
+      title: "Milestone A",
+    };
+    const issue: TrailWorkflowIssue = {
+      context: "workflow",
+      createdAt: 1,
+      id: "issue-a",
+      labelIds: [],
+      milestoneId: milestone.id,
+      projectId: milestone.projectId,
+      statusDefinitionId: "issue-unstarted",
+      title: "Issue A",
+    };
+    const create = vi.fn(() => pendingReceipt("new-milestone"));
+    const deleteMilestone = vi.fn(() => pendingReceipt(milestone.id));
+    const changeMilestone = vi.fn(() => ({
+      entityId: issue.id,
+      kind: "unchanged" as const,
+    }));
+    const session = {
+      issues: { changeMilestone },
+      milestones: { create, delete: deleteMilestone },
+    } as unknown as TrailApplicationSession;
+    const actions = createDiagnosticTrailUiActions(session, diagnostics);
+
+    actions.milestones.create(milestone.projectId, "Checkpoint", 123);
+    actions.milestones.delete(milestone);
+    actions.issues.changeMilestone(issue, undefined);
+
+    expect(create).toHaveBeenCalledWith(milestone.projectId, "Checkpoint", 123);
+    expect(deleteMilestone).toHaveBeenCalledWith(milestone, undefined);
+    expect(changeMilestone).toHaveBeenCalledWith(issue, undefined);
+    expect(events).toEqual([
+      {
+        name: "ui.milestone.create.submitted",
+        options: {
+          correlationId: "command-new-milestone",
+          data: {
+            due: 123,
+            entityId: "new-milestone",
+            projectId: milestone.projectId,
+            titleLength: 10,
+          },
+        },
+      },
+      {
+        name: "ui.milestone.delete.submitted",
+        options: {
+          correlationId: `command-${milestone.id}`,
+          data: {
+            entityId: milestone.id,
+            milestoneId: milestone.id,
+            projectId: milestone.projectId,
+            replacementMilestoneId: null,
+          },
+        },
+      },
+      {
+        name: "ui.workflow.issue-milestone.unchanged",
+        options: {
+          data: {
+            entityId: issue.id,
+            issueId: issue.id,
+            sourceMilestoneId: milestone.id,
+            targetMilestoneId: null,
+          },
+        },
+      },
+    ]);
   });
 
   it("records Runtime control and pending transitions only when they change", () => {

@@ -10,6 +10,8 @@ import type { TrailConfiguration } from "../../domain/model/trail-configuration"
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
 import {
   selectIsTrailEntityPending,
+  selectTrailReadableMilestoneById,
+  selectTrailReadableMilestoneIdsByProject,
   selectTrailReadableProjectById,
   selectTrailReadableProjectIds,
   selectTrailReadableWorkflowIssueById,
@@ -56,6 +58,12 @@ export function TrailWorkflowIssueRow({
   const projectIds = useStore(
     runtimeStore,
     useShallow(selectTrailReadableProjectIds),
+  );
+  const milestoneIds = useStore(
+    runtimeStore,
+    useShallow((state) => issue?.projectId === undefined
+      ? []
+      : selectTrailReadableMilestoneIdsByProject(state, issue.projectId)),
   );
   const [completionBaseline, setCompletionBaseline] = useState<TrailWorkflowIssue>();
   const [completionTargetId, setCompletionTargetId] = useState<string>();
@@ -107,6 +115,16 @@ export function TrailWorkflowIssueRow({
     );
   };
 
+  const requestMilestone = (targetValue: string): void => {
+    if (actionsDisabled) return;
+    const targetMilestoneId = targetValue === "" ? undefined : targetValue;
+    if (targetMilestoneId === issue.milestoneId) return;
+    runTrailMutationAction(
+      () => actions.changeMilestone(issue, targetMilestoneId),
+      { onError },
+    );
+  };
+
   const submitEstimate = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (
@@ -150,6 +168,23 @@ export function TrailWorkflowIssueRow({
             <TrailWorkflowIssueProjectOption
               key={projectId}
               projectId={projectId}
+              runtimeStore={runtimeStore}
+            />
+          ))}
+        </select>
+      </label>
+      <label className="trail-status-picker">
+        <span className="screen-reader-text">Milestone for {issue.title}</span>
+        <select
+          disabled={actionsDisabled || milestoneIds.length === 0}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => requestMilestone(event.target.value)}
+          value={issue.milestoneId ?? ""}
+        >
+          <option value="">No Milestone</option>
+          {milestoneIds.map((milestoneId) => (
+            <TrailWorkflowIssueMilestoneOption
+              key={milestoneId}
+              milestoneId={milestoneId}
               runtimeStore={runtimeStore}
             />
           ))}
@@ -219,5 +254,18 @@ function TrailWorkflowIssueProjectOption(props: {
     <option disabled={unavailable} value={project.id}>
       {project.title}{unavailable ? " (data issue)" : ""}
     </option>
+  );
+}
+
+function TrailWorkflowIssueMilestoneOption(props: {
+  readonly milestoneId: string;
+  readonly runtimeStore: TrailRuntimeStore;
+}) {
+  const milestone = useStore(
+    props.runtimeStore,
+    (state) => selectTrailReadableMilestoneById(state, props.milestoneId),
+  );
+  return milestone === undefined ? null : (
+    <option value={milestone.id}>{milestone.title}</option>
   );
 }

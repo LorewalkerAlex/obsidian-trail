@@ -7,11 +7,11 @@ The active formal implementation is `plugin/` on `main`.
 The repository baseline from which the current Gate 8 slice is being built is:
 
 ```text
-12a438d538400d4f377d0183f72f172bfce42e5b
-chore: fix validation notice indentation
+4b5171e67c1dd483f3812a618d3386a3725204ae
+feat: add initiative project workspace flow
 ```
 
-This baseline includes the completed first Gate 8 product slice plus the quality-baseline cleanup that followed it. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle and Initiative/Project organization slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -37,9 +37,9 @@ Gate 8 evidence now includes:
 
 - **Project Lifecycle Closure** at `844728131f0a0acf7df4213322a7837c16b47dab`, exposing explicit Project lifecycle control while preserving Domain/Application ownership of completion legality and reusing one configured Status picker across Project and Workflow Issue consumers;
 - Quality Baseline Hardening at `f84c6f10a4708cb11a85d1071a9dcf50c29b3603`, followed by the whitespace-only correction at `12a438d538400d4f377d0183f72f172bfce42e5b`;
-- lint now fails on warnings through `eslint . --max-warnings=0`, Trail is registered as an allowed brand for sentence-case checks, and the validation-evidence tests no longer hardcode the real Obsidian config-directory name;
-- the vulnerable dev-only transitive `nanoid` resolution is pinned by the lockfile at `3.3.18`; both lockfile and installed-tree `npm audit` reported zero vulnerabilities;
-- the quality checkpoint passed 70/70 test files and 228/228 tests, TypeScript, production build, and `git diff --check`; the whitespace-only follow-up re-passed lint and `git diff --check`.
+- **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`, implementing `Projects Root -> Initiative Focus -> Project Workspace`, Initiative creation, explicit Project Initiative assignment/unassignment, and optimistic relationship queries through existing Application semantics;
+- the Initiative/Project checkpoint passed 70/70 test files and 233/233 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; GitHub remote verification confirmed exactly the intended 11-file commit scope;
+- lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
 Push-triggered GitHub Actions status for the recent Gate 8 commits was not available through the connected GitHub workflow lookup, so this document does not invent CI run numbers for those commits.
 
@@ -98,33 +98,38 @@ Current work is **Gate 8 - Product Workspace Implementation**.
 
 Gate 8 is planned around user workflows rather than component inventories. Shared UI capabilities may continue to be added, but only when a real Product consumer freezes enough of the contract to justify a canonical shared owner.
 
-The first Gate 8 slice, **Project Lifecycle Closure**, is complete at `844728131f0a0acf7df4213322a7837c16b47dab`.
+Completed Gate 8 slices:
 
-The active slice is **Initiative Focus & Project Assignment**. It implements the already-frozen Product drill-down:
+- **Project Lifecycle Closure** at `844728131f0a0acf7df4213322a7837c16b47dab`;
+- **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`.
+
+The active slice is **Project Milestone Management**. It implements the Project-scoped checkpoint workflow already frozen by Product and Domain:
 
 ```text
-Projects Root
--> Initiative Focus
--> Project Workspace
+create Milestone
+-> assign/unassign current Project Issues
+-> read derived current-scope progress
+-> delete Milestone while preserving Issues
 ```
 
 The slice:
 
-1. exposes existing `InitiativeApplication.create` and `ProjectApplication.changeInitiative` use cases through the UI action surface;
-2. adds shared readable Query selectors for Initiative identity/navigation, Initiative Project membership ordering, and unassigned Projects;
-3. turns Projects Root into an Initiative/Project distribution surface rather than a flat Project list;
-4. adds Initiative Focus as the intermediate navigation level before Project Workspace;
-5. adds an explicit Project Initiative selector, including returning a Project to the unassigned state, while leaving relationship legality in the existing Domain/Application path;
-6. preserves the completed Project lifecycle and Workflow Issue execution behaviors inside Project Workspace;
-7. extends diagnostics and focused UI/Query tests for the new Application intents and optimistic relationship projection.
+1. exposes existing `MilestoneApplication.create/delete` and `IssueApplication.changeMilestone` use cases through the UI action surface;
+2. adds readable Milestone identity and deterministic Project Milestone ordering to shared Query;
+3. adds canonical derived Milestone progress as terminal/current Issue counts without introducing manual Milestone lifecycle state;
+4. adds Project Workspace Milestone creation with optional Due using the configured Trail timezone;
+5. adds stable Milestone rows showing current derived progress and optional Due;
+6. gives each Project Workflow Issue an explicit same-Project Milestone selector with a `No Milestone` state;
+7. reuses the shared AlertDialog for Milestone deletion, while the existing Domain/Application delete plan preserves linked Issues and clears their Milestone relation;
+8. extends diagnostics and focused Query/UI tests for Milestone management and relationship intents.
 
-This slice does not introduce a generic property-picker framework, Board mechanics, new Domain entities, new persistence carriers, or new host APIs. The Initiative selector remains local to the real Project relationship consumer until broader property-picker reuse pressure exists.
+This slice does not add Milestone editing, manual Milestone completion, Milestone reparenting, a generic property-picker framework, Board mechanics, new persistence carriers, or new host APIs. It also does not change the current functional CSS layout; the later Project Board/visual-system work remains the owner of broader presentation changes.
 
 ### 4.2 Current verified gaps
 
 Current Product gaps split into three groups:
 
-- Product composition gaps whose lower-layer owners already exist, including Milestones, Cycles, richer Project execution presentation, and later Home/View composition;
+- Product composition gaps whose lower-layer owners already exist, including Cycles, richer Project Board/List execution presentation, and later Home/View composition;
 - consumer-driven shared UI gaps such as Board interaction, Peek, Selection, Context Menu, Command Menu, and broader property pickers, which should be introduced only when a concrete workflow requires them;
 - real lower-layer gaps that must be repaired at their canonical owners when reached, including general editing use cases for several entity properties and the current Triage Application narrowing that requires a Project even though Domain Accept permits project-less Workflow creation.
 
@@ -166,11 +171,12 @@ Active. Build coherent user workflows by composing the established foundations. 
 
 Completed:
 
-- Project Lifecycle Closure.
+- Project Lifecycle Closure;
+- Initiative Focus & Project Assignment.
 
 Active:
 
-- Initiative Focus & Project Assignment.
+- Project Milestone Management.
 
 ### 5.3 Gate 9 - V1 hardening
 

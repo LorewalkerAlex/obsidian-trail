@@ -2,6 +2,7 @@ import { vi } from "vitest";
 
 import type {
   TrailInitiative,
+  TrailMilestone,
   TrailTriageIssue,
   TrailWorkflowIssue,
 } from "../domain/model/trail-entities";
@@ -48,6 +49,12 @@ export function createTrailUiTestHarness(input: {
     statusDefinitionId: "project-unstarted",
     title: "Project B",
   };
+  const milestone: TrailMilestone = {
+    due: Date.UTC(2026, 7, 22, 9, 0),
+    id: "milestone-a",
+    projectId: project.id,
+    title: "Milestone A",
+  };
   const workflowStatusDefinitionId = input.workflowStatusDefinitionId ?? "issue-unstarted";
   const workflowIsTerminal = workflowStatusDefinitionId === "issue-completed"
     || workflowStatusDefinitionId === "issue-canceled";
@@ -56,6 +63,7 @@ export function createTrailUiTestHarness(input: {
     createdAt: Date.UTC(2026, 7, 15),
     id: "issue-a",
     labelIds: [],
+    milestoneId: milestone.id,
     projectId: project.id,
     statusDefinitionId: workflowStatusDefinitionId,
     title: "Issue A",
@@ -81,7 +89,7 @@ export function createTrailUiTestHarness(input: {
       {
         issues: [workflow],
         kind: "project",
-        milestones: [],
+        milestones: [milestone],
         project,
         sourcePath: "Trail/Projects/0001 Project A.md",
       },
@@ -108,9 +116,14 @@ export function createTrailUiTestHarness(input: {
       create: vi.fn(() => receipt("new-initiative")),
     },
     issues: {
+      changeMilestone: vi.fn(() => ({ kind: "unchanged" as const, entityId: workflow.id })),
       changeStatus: vi.fn(() => ({ kind: "unchanged" as const, entityId: workflow.id })),
       create: vi.fn(() => receipt("new-issue")),
       moveToProject: vi.fn(() => ({ kind: "unchanged" as const, entityId: workflow.id })),
+    },
+    milestones: {
+      create: vi.fn(() => receipt("new-milestone")),
+      delete: vi.fn(() => receipt(milestone.id)),
     },
     projects: {
       changeInitiative: vi.fn(() => ({ kind: "unchanged" as const, entityId: project.id })),
@@ -127,5 +140,14 @@ export function createTrailUiTestHarness(input: {
     },
   };
 
-  return { actions, initiative, project, projectB, runtimeStore, triage, workflow };
+  return {
+    actions,
+    initiative,
+    milestone,
+    project,
+    projectB,
+    runtimeStore,
+    triage,
+    workflow,
+  };
 }
