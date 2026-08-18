@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { setTrailRuntimeControl } from "../../runtime/store/trail-runtime-store";
 import { createTrailUiTestHarness } from "../../test/trail-ui-test-harness";
+import { parseTrailLocalDateTime } from "../interactions/trail-local-date-time";
 import { TrailApp } from "./trail-app";
 
 describe("TrailApp", () => {
@@ -34,7 +35,7 @@ describe("TrailApp", () => {
     view.unmount();
   });
 
-  it("routes Triage, Initiative, Project, Milestone, and Workflow interactions through Application", () => {
+  it("routes Triage, Project, Milestone, Workflow, and Cycle interactions through Application", () => {
     const harness = createTrailUiTestHarness();
     render(<TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />);
 
@@ -68,5 +69,17 @@ describe("TrailApp", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Add Issue" }));
     expect(harness.actions.issues.create).toHaveBeenCalledWith("project-a", "New issue");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cycles" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Include Issue A" }));
+    fireEvent.change(screen.getByLabelText("Cycle planned end"), {
+      target: { value: "2026-08-30T23:59" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Open Cycle" }));
+
+    expect(harness.actions.cycles.open).toHaveBeenCalledWith({
+      issueIds: [harness.workflow.id],
+      plannedEnd: parseTrailLocalDateTime("2026-08-30T23:59", "Asia/Singapore"),
+    });
   });
 });

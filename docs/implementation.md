@@ -7,11 +7,11 @@ The active formal implementation is `plugin/` on `main`.
 The repository baseline from which the current Gate 8 slice is being built is:
 
 ```text
-4b5171e67c1dd483f3812a618d3386a3725204ae
-feat: add initiative project workspace flow
+d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a
+feat: add project milestone management
 ```
 
-This baseline includes the completed Project Lifecycle and Initiative/Project organization slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle, Initiative/Project organization, and Project Milestone slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -38,7 +38,8 @@ Gate 8 evidence now includes:
 - **Project Lifecycle Closure** at `844728131f0a0acf7df4213322a7837c16b47dab`, exposing explicit Project lifecycle control while preserving Domain/Application ownership of completion legality and reusing one configured Status picker across Project and Workflow Issue consumers;
 - Quality Baseline Hardening at `f84c6f10a4708cb11a85d1071a9dcf50c29b3603`, followed by the whitespace-only correction at `12a438d538400d4f377d0183f72f172bfce42e5b`;
 - **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`, implementing `Projects Root -> Initiative Focus -> Project Workspace`, Initiative creation, explicit Project Initiative assignment/unassignment, and optimistic relationship queries through existing Application semantics;
-- the Initiative/Project checkpoint passed 70/70 test files and 233/233 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; GitHub remote verification confirmed exactly the intended 11-file commit scope;
+- **Project Milestone Management** at `d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a`, implementing Milestone creation, derived current-scope progress, Issue assignment/unassignment, and delete-with-Issue-preservation through existing Domain/Application owners;
+- the Milestone checkpoint passed 70/70 test files and 239/239 tests, zero-warning lint, TypeScript, production build, and a clean-worktree integrity check against the pushed commit;
 - lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
 Push-triggered GitHub Actions status for the recent Gate 8 commits was not available through the connected GitHub workflow lookup, so this document does not invent CI run numbers for those commits.
@@ -101,35 +102,37 @@ Gate 8 is planned around user workflows rather than component inventories. Share
 Completed Gate 8 slices:
 
 - **Project Lifecycle Closure** at `844728131f0a0acf7df4213322a7837c16b47dab`;
-- **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`.
+- **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`;
+- **Project Milestone Management** at `d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a`.
 
-The active slice is **Project Milestone Management**. It implements the Project-scoped checkpoint workflow already frozen by Product and Domain:
+The active slice is **Cycle Planning & Rollover**. It implements the explicit personal planning flow already frozen by Product and Domain:
 
 ```text
-create Milestone
--> assign/unassign current Project Issues
--> read derived current-scope progress
--> delete Milestone while preserving Issues
+open Cycle with chosen Workflow Issues
+-> change membership explicitly while open
+-> close Cycle without changing Issue facts
+-> optionally open next Cycle with unfinished members preselected
+-> retain closed Cycle history
 ```
 
 The slice:
 
-1. exposes existing `MilestoneApplication.create/delete` and `IssueApplication.changeMilestone` use cases through the UI action surface;
-2. adds readable Milestone identity and deterministic Project Milestone ordering to shared Query;
-3. adds canonical derived Milestone progress as terminal/current Issue counts without introducing manual Milestone lifecycle state;
-4. adds Project Workspace Milestone creation with optional Due using the configured Trail timezone;
-5. adds stable Milestone rows showing current derived progress and optional Due;
-6. gives each Project Workflow Issue an explicit same-Project Milestone selector with a `No Milestone` state;
-7. reuses the shared AlertDialog for Milestone deletion, while the existing Domain/Application delete plan preserves linked Issues and clears their Milestone relation;
-8. extends diagnostics and focused Query/UI tests for Milestone management and relationship intents.
+1. exposes existing `CycleApplication.open/changeMembership/close` use cases through the UI action and diagnostics surfaces;
+2. adds page-specific Cycle Query for current planning candidates, newest-first closed history, and unfinished rollover candidates;
+3. adds a Cycles page beside Triage and Projects without creating a new Domain or persistence mechanism;
+4. resolves the configured `EndOfNextWeek` suggestion through the existing temporal rule and presents a concrete local `datetime-local` value before Application submission;
+5. lets the user explicitly select initial membership, then add/remove membership while the Cycle remains open without changing Issue Status/Project/Milestone facts;
+6. closes the Current Cycle through the shared confirmation primitive and preselects only unfinished final members for the optional next-Cycle flow;
+7. allows canceling the next-Cycle flow so having no Current Cycle remains a first-class valid state;
+8. shows closed Cycle history from retained canonical membership rather than introducing a new activity/event log.
 
-This slice does not add Milestone editing, manual Milestone completion, Milestone reparenting, a generic property-picker framework, Board mechanics, new persistence carriers, or new host APIs. It also does not change the current functional CSS layout; the later Project Board/visual-system work remains the owner of broader presentation changes.
+This slice intentionally uses a functional List/checkbox planning surface. It does not introduce Board columns, swimlane drag semantics, generic selection/bulk infrastructure, new Domain fields, new persistence carriers, or new host APIs. Once both Project and Cycle workspaces are established consumers, the later Board/List execution slice can evaluate a shared presentation owner from real reuse pressure.
 
 ### 4.2 Current verified gaps
 
 Current Product gaps split into three groups:
 
-- Product composition gaps whose lower-layer owners already exist, including Cycles, richer Project Board/List execution presentation, and later Home/View composition;
+- Product composition gaps whose lower-layer owners already exist, including richer Project/Cycle Board/List execution presentation and later Home/View composition;
 - consumer-driven shared UI gaps such as Board interaction, Peek, Selection, Context Menu, Command Menu, and broader property pickers, which should be introduced only when a concrete workflow requires them;
 - real lower-layer gaps that must be repaired at their canonical owners when reached, including general editing use cases for several entity properties and the current Triage Application narrowing that requires a Project even though Domain Accept permits project-less Workflow creation.
 
@@ -172,11 +175,12 @@ Active. Build coherent user workflows by composing the established foundations. 
 Completed:
 
 - Project Lifecycle Closure;
-- Initiative Focus & Project Assignment.
+- Initiative Focus & Project Assignment;
+- Project Milestone Management.
 
 Active:
 
-- Project Milestone Management.
+- Cycle Planning & Rollover.
 
 ### 5.3 Gate 9 - V1 hardening
 

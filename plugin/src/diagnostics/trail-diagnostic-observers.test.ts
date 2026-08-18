@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { TrailApplicationSession } from "../application/trail-application-session";
 import type {
+  TrailCycle,
   TrailMilestone,
   TrailProject,
   TrailWorkflowIssue,
@@ -207,6 +208,68 @@ describe("Trail diagnostic observers", () => {
             issueId: issue.id,
             sourceMilestoneId: milestone.id,
             targetMilestoneId: null,
+          },
+        },
+      },
+    ]);
+  });
+
+  it("observes Cycle planning actions without changing Application semantics", () => {
+    const { diagnostics, events } = recorder();
+    const cycle: TrailCycle = {
+      id: "cycle-a",
+      issueIds: ["issue-a"],
+      plannedEnd: 200,
+      startedAt: 100,
+    };
+    const open = vi.fn(() => pendingReceipt("cycle-new"));
+    const changeMembership = vi.fn(() => ({
+      entityId: cycle.id,
+      kind: "unchanged" as const,
+    }));
+    const close = vi.fn(() => pendingReceipt(cycle.id));
+    const session = {
+      cycles: { changeMembership, close, open },
+    } as unknown as TrailApplicationSession;
+    const actions = createDiagnosticTrailUiActions(session, diagnostics);
+
+    actions.cycles.open({ issueIds: ["issue-a", "issue-b"], plannedEnd: 300 });
+    actions.cycles.changeMembership(cycle, ["issue-b"]);
+    actions.cycles.close(cycle);
+
+    expect(open).toHaveBeenCalledWith({ issueIds: ["issue-a", "issue-b"], plannedEnd: 300 });
+    expect(changeMembership).toHaveBeenCalledWith(cycle, ["issue-b"]);
+    expect(close).toHaveBeenCalledWith(cycle);
+    expect(events).toEqual([
+      {
+        name: "ui.cycle.open.submitted",
+        options: {
+          correlationId: "command-cycle-new",
+          data: {
+            entityId: "cycle-new",
+            issueCount: 2,
+            plannedEnd: 300,
+          },
+        },
+      },
+      {
+        name: "ui.cycle.membership.unchanged",
+        options: {
+          data: {
+            cycleId: cycle.id,
+            entityId: cycle.id,
+            issueCount: 1,
+          },
+        },
+      },
+      {
+        name: "ui.cycle.close.submitted",
+        options: {
+          correlationId: `command-${cycle.id}`,
+          data: {
+            cycleId: cycle.id,
+            entityId: cycle.id,
+            issueCount: 1,
           },
         },
       },

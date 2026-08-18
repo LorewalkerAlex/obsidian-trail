@@ -3,12 +3,32 @@ import { useStore } from "zustand";
 
 import { selectTrailReadableConfiguration } from "../../query/shared/trail-effective-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import { TrailCyclesPage } from "../pages/cycles/trail-cycles-page";
 import { TrailProjectsPage } from "../pages/projects/trail-projects-page";
 import { TrailTriagePage } from "../pages/triage/trail-triage-page";
 import { TrailStatusPanel } from "../patterns/trail-feedback";
 import type { TrailUiActions } from "./trail-ui-actions";
 
-type TrailPage = "projects" | "triage";
+type TrailPage = "cycles" | "projects" | "triage";
+
+function pageTitle(page: TrailPage): string {
+  switch (page) {
+    case "cycles": return "Cycles";
+    case "projects": return "Projects";
+    case "triage": return "Triage";
+  }
+}
+
+function pageSubtitle(page: TrailPage): string {
+  switch (page) {
+    case "cycles":
+      return "Choose the work you intend to focus on, close the period explicitly, and carry unfinished work forward only when you want to.";
+    case "projects":
+      return "Organize outcomes by Initiative, Milestone, and executable Workflow Issues.";
+    case "triage":
+      return "Capture now. Decide what it becomes when you are ready.";
+  }
+}
 
 export function TrailApp(props: {
   readonly actions: TrailUiActions;
@@ -32,15 +52,9 @@ export function TrailApp(props: {
       <header className="trail-app__header">
         <div>
           <p className="trail-app__eyebrow">Trail</p>
-          <h1 className="trail-app__title">
-            {activePage === "triage" ? "Triage" : "Projects"}
-          </h1>
+          <h1 className="trail-app__title">{pageTitle(activePage)}</h1>
         </div>
-        <p className="trail-app__subtitle">
-          {activePage === "triage"
-            ? "Capture now. Decide what it becomes when you are ready."
-            : "Organize outcomes by Initiative, Milestone, and executable Workflow Issues."}
-        </p>
+        <p className="trail-app__subtitle">{pageSubtitle(activePage)}</p>
       </header>
 
       {control.kind === "loading" ? (
@@ -82,6 +96,14 @@ export function TrailApp(props: {
             >
               Projects
             </button>
+            <button
+              aria-current={activePage === "cycles" ? "page" : undefined}
+              className={activePage === "cycles" ? "is-active" : undefined}
+              onClick={() => setActivePage("cycles")}
+              type="button"
+            >
+              Cycles
+            </button>
           </nav>
 
           {activePage === "triage" ? (
@@ -91,7 +113,7 @@ export function TrailApp(props: {
               timezone={configuration.temporal.timezone}
               writable={writable}
             />
-          ) : (
+          ) : activePage === "projects" ? (
             <TrailProjectsPage
               actions={{
                 initiatives: props.actions.initiatives,
@@ -99,6 +121,13 @@ export function TrailApp(props: {
                 milestones: props.actions.milestones,
                 projects: props.actions.projects,
               }}
+              runtimeStore={props.runtimeStore}
+              writable={writable}
+            />
+          ) : (
+            <TrailCyclesPage
+              actions={props.actions.cycles}
+              configuration={configuration}
               runtimeStore={props.runtimeStore}
               writable={writable}
             />

@@ -84,6 +84,10 @@ export function createDiagnosticTrailUiActions(
   session: TrailApplicationSession,
   diagnostics: TrailDiagnostics,
 ): {
+  readonly cycles: Pick<
+    TrailApplicationSession["cycles"],
+    "changeMembership" | "close" | "open"
+  >;
   readonly initiatives: Pick<
     TrailApplicationSession["initiatives"],
     "create"
@@ -107,6 +111,56 @@ export function createDiagnosticTrailUiActions(
 } {
   if (!diagnostics.enabled) return session;
   return {
+    cycles: {
+      changeMembership(expectedCycle, issueIds): TrailMutationActionResult {
+        const data = {
+          cycleId: expectedCycle.id,
+          issueCount: issueIds.length,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.cycle.membership",
+            session.cycles.changeMembership(expectedCycle, issueIds),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.cycle.membership", error, data);
+        }
+      },
+      close(expectedCycle): TrailEntityMutationReceipt {
+        const data = {
+          cycleId: expectedCycle.id,
+          issueCount: expectedCycle.issueIds.length,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.cycle.close",
+            session.cycles.close(expectedCycle),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.cycle.close", error, data);
+        }
+      },
+      open(input): TrailEntityMutationReceipt {
+        const data = {
+          issueCount: input.issueIds?.length ?? 0,
+          plannedEnd: input.plannedEnd,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.cycle.open",
+            session.cycles.open(input),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.cycle.open", error, data);
+        }
+      },
+    },
     initiatives: {
       create(title: string): TrailEntityMutationReceipt {
         const data = { titleLength: title.length };

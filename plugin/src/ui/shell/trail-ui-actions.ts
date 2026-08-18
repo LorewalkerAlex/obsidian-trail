@@ -2,6 +2,10 @@ import type { TrailApplicationSession } from "../../application/trail-applicatio
 
 /** UI-facing use-case surface; host/source-sync mechanics never cross this boundary. */
 export interface TrailUiActions {
+  readonly cycles: Pick<
+    TrailApplicationSession["cycles"],
+    "changeMembership" | "close" | "open"
+  >;
   readonly initiatives: Pick<
     TrailApplicationSession["initiatives"],
     "create"
