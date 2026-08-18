@@ -25,6 +25,7 @@ import {
   TRAIL_PHYSICAL_SOURCE_SCHEMAS,
 } from "../schema/trail-physical-schema";
 import {
+  assertTrailManagedRecordBody,
   canonicalIdSet,
   canonicalWorkflowIssueMetadata,
   entityCodecIssue,
@@ -383,6 +384,7 @@ export function serializeProjectRecord(project: TrailProject): string {
   if (validation.length > 0) {
     throw new Error(`Cannot serialize invalid Project: ${validation.map((item) => item.message).join("; ")}`);
   }
+  assertTrailManagedRecordBody(project.description, "Project");
   const lines = [
     `## ${normalizeTrailTitle(project.title)}`,
     serializeDataMarker(TRAIL_PHYSICAL_RECORD_SCHEMAS.project.metadataOrder, {

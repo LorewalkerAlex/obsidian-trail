@@ -5,8 +5,12 @@ id: "4d319293-3452-4eba-9fea-1d16af8d5d4a"
 
 # Project
 
-## BOARD-B
-<!-- data {"statusDefinitionId":"8c079d1b-e481-41b2-9cab-81f9fb6c65b2"} -->
+## BOARD-B DETAILS
+<!-- data {"statusDefinitionId":"8c079d1b-e481-41b2-9cab-81f9fb6c65b2","priority":"high","due":1788170040000} -->
+
+Project details host validation.
+### Host check
+Round 1 persistence.
 
 # Milestones
 

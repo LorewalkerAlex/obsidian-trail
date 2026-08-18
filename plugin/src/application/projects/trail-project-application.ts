@@ -1,9 +1,11 @@
 import type { TrailProject } from "../../domain/model/trail-entities";
+import type { TrailPriority } from "../../domain/model/trail-values";
 import { planDeleteTrailProject } from "../../domain/planning/trail-delete-planning";
 import {
   planChangeTrailProjectInitiative,
   planChangeTrailProjectStatus,
   planCreateTrailProject,
+  planEditTrailProjectProperties,
 } from "../../domain/planning/trail-project-planning";
 import { sameTrailDomainEntity } from "../../domain/rules/trail-domain-equality";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
@@ -16,11 +18,23 @@ import {
   type TrailMutationActionResult,
 } from "../trail-application-support";
 import {
+  normalizeTrailCommandDescription,
   normalizeTrailCommandId,
+  normalizeTrailCommandIdSet,
+  normalizeTrailCommandPriority,
   normalizeTrailCommandTime,
+  normalizeTrailCommandTimestamp,
   normalizeTrailCommandTitle,
   type TrailCommandEnvironment,
 } from "../trail-command";
+
+export interface TrailProjectPropertiesInput {
+  readonly description?: string;
+  readonly due?: number;
+  readonly labelIds: readonly string[];
+  readonly priority?: TrailPriority;
+  readonly title: string;
+}
 
 export class TrailProjectApplication {
   public constructor(
@@ -48,6 +62,40 @@ export class TrailProjectApplication {
       planned.value.plan,
       planned.value.project.id,
     );
+  }
+
+  public editProperties(
+    expectedProject: TrailProject,
+    input: TrailProjectPropertiesInput,
+  ): TrailMutationActionResult {
+    const state = readTrailPlanningState(this.runtimeStore);
+    const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
+    normalizeTrailCommandTime(this.environment);
+    const result = planEditTrailProjectProperties(state, {
+      commandId,
+      description: normalizeTrailCommandDescription(input.description),
+      due: input.due === undefined ? undefined : normalizeTrailCommandTimestamp(input.due, "Due"),
+      expectedProject,
+      labelIds: normalizeTrailCommandIdSet(input.labelIds, "Label ID"),
+      priority: normalizeTrailCommandPriority(input.priority),
+      title: normalizeTrailCommandTitle(input.title, "Project"),
+    });
+    const planned = resolveTrailApplicationPlan(result);
+    if (planned.kind === "needs-input") return { input: planned.input, kind: "needs-input" };
+    if (sameTrailDomainEntity(
+      { kind: "project", value: expectedProject },
+      { kind: "project", value: planned.value.project },
+    )) {
+      return { entityId: expectedProject.id, kind: "unchanged" };
+    }
+    return {
+      kind: "submitted",
+      receipt: submitTrailApplicationPlan(
+        this.sourceSync,
+        planned.value.plan,
+        planned.value.project.id,
+      ),
+    };
   }
 
   public changeStatus(

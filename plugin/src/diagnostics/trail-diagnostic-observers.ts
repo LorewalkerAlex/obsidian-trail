@@ -102,7 +102,7 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly projects: Pick<
     TrailApplicationSession["projects"],
-    "changeInitiative" | "changeStatus" | "create"
+    "changeInitiative" | "changeStatus" | "create" | "editProperties"
   >;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
@@ -348,6 +348,26 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.project.create", error, data);
+        }
+      },
+      editProperties(expectedProject, input): TrailMutationActionResult {
+        const data = {
+          descriptionProvided: input.description !== undefined && input.description.trim() !== "",
+          due: input.due ?? null,
+          labelCount: input.labelIds.length,
+          priority: input.priority ?? null,
+          projectId: expectedProject.id,
+          titleLength: input.title.length,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.project.properties",
+            session.projects.editProperties(expectedProject, input),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.project.properties", error, data);
         }
       },
     },

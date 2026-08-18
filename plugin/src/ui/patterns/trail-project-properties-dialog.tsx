@@ -8,16 +8,13 @@ import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
-import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
+import type { TrailProject } from "../../domain/model/trail-entities";
 import { TRAIL_PRIORITIES, type TrailPriority } from "../../domain/model/trail-values";
 import {
   selectIsTrailEntityPending,
-  selectTrailReadableMilestoneById,
   selectTrailReadableProjectById,
-  selectTrailReadableWorkflowIssueById,
 } from "../../query/shared/trail-effective-query";
 import { selectTrailEntitySourceIssues } from "../../query/shared/trail-source-health-query";
-import { selectTrailStatusDefinition } from "../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { runTrailMutationAction } from "../interactions/trail-action";
 import {
@@ -39,68 +36,54 @@ const PRIORITY_LABELS: Readonly<Record<TrailPriority, string>> = {
   urgent: "Urgent",
 };
 
-function parseOptionalEstimate(value: string): number | undefined {
-  if (value.trim() === "") return undefined;
-  const estimate = Number(value);
-  if (!Number.isSafeInteger(estimate) || estimate < 0) {
-    throw new Error("Estimate must be a non-negative integer");
-  }
-  return estimate;
-}
-
-/**
- * Current Peek carrier for lightweight Workflow Issue inspection/editing.
- * Final side-panel placement and visual treatment remain a later UI-design concern.
- */
-export function TrailWorkflowIssuePeek(props: {
-  readonly actions: TrailUiActions["issues"];
+/** Edits only Project-owned lightweight facts; Status and Initiative remain separate actions. */
+export function TrailProjectPropertiesDialog(props: {
+  readonly actions: TrailUiActions["projects"];
   readonly configuration: TrailConfiguration;
-  readonly issueId?: string;
   readonly onError: (message: string | undefined) => void;
   readonly onOpenChange: (open: boolean) => void;
   readonly open: boolean;
+  readonly projectId?: string;
   readonly runtimeStore: TrailRuntimeStore;
   readonly writable: boolean;
 }) {
-  const issue = useStore(
+  const project = useStore(
     props.runtimeStore,
-    (state) => props.issueId === undefined
+    (state) => props.projectId === undefined
       ? undefined
-      : selectTrailReadableWorkflowIssueById(state, props.issueId),
+      : selectTrailReadableProjectById(state, props.projectId),
   );
   const pending = useStore(
     props.runtimeStore,
-    (state) => props.issueId === undefined
+    (state) => props.projectId === undefined
       ? false
-      : selectIsTrailEntityPending(state, props.issueId),
+      : selectIsTrailEntityPending(state, props.projectId),
   );
   const sourceIssues = useStore(
     props.runtimeStore,
-    useShallow((state) => props.issueId === undefined
+    useShallow((state) => props.projectId === undefined
       ? []
-      : selectTrailEntitySourceIssues(state, props.issueId)),
+      : selectTrailEntitySourceIssues(state, props.projectId)),
   );
-  const [baseline, setBaseline] = useState<TrailWorkflowIssue>();
+  const [baseline, setBaseline] = useState<TrailProject>();
   const [titleDraft, setTitleDraft] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [priorityDraft, setPriorityDraft] = useState("");
-  const [estimateDraft, setEstimateDraft] = useState("");
   const [dueDraft, setDueDraft] = useState("");
   const [labelIdsDraft, setLabelIdsDraft] = useState<readonly string[]>([]);
   const [localError, setLocalError] = useState<string>();
 
   useEffect(() => {
-    if (!props.open || props.issueId === undefined) return;
-    const current = selectTrailReadableWorkflowIssueById(
+    if (!props.open || props.projectId === undefined) return;
+    const current = selectTrailReadableProjectById(
       props.runtimeStore.getState(),
-      props.issueId,
+      props.projectId,
     );
     if (current === undefined) return;
     setBaseline(current);
     setTitleDraft(current.title);
     setDescriptionDraft(current.description ?? "");
     setPriorityDraft(current.priority ?? "");
-    setEstimateDraft(current.estimate?.toString() ?? "");
     setDueDraft(current.due === undefined
       ? ""
       : formatTrailLocalDateTime(current.due, props.configuration.temporal.timezone));
@@ -108,38 +91,17 @@ export function TrailWorkflowIssuePeek(props: {
     setLocalError(undefined);
   }, [
     props.configuration.temporal.timezone,
-    props.issueId,
     props.open,
+    props.projectId,
     props.runtimeStore,
   ]);
 
-  const project = useStore(
-    props.runtimeStore,
-    (state) => baseline?.projectId === undefined
-      ? undefined
-      : selectTrailReadableProjectById(state, baseline.projectId),
-  );
-  const milestone = useStore(
-    props.runtimeStore,
-    (state) => baseline?.milestoneId === undefined
-      ? undefined
-      : selectTrailReadableMilestoneById(state, baseline.milestoneId),
-  );
-  if (!props.open || props.issueId === undefined || issue === undefined || baseline === undefined) {
+  if (!props.open || props.projectId === undefined || project === undefined || baseline === undefined) {
     return null;
   }
 
-  const status = selectTrailStatusDefinition(
-    props.configuration,
-    "issue",
-    baseline.statusDefinitionId,
-  );
-  const completed = status?.category === "completed";
-  const estimateValid = estimateDraft.trim() === ""
-    ? !completed
-    : Number.isSafeInteger(Number(estimateDraft)) && Number(estimateDraft) >= 0;
   const actionsDisabled = !props.writable || pending || sourceIssues.length > 0;
-  const saveDisabled = actionsDisabled || titleDraft.trim() === "" || !estimateValid;
+  const saveDisabled = actionsDisabled || titleDraft.trim() === "";
 
   const reportError = (message: string | undefined): void => {
     setLocalError(message);
@@ -149,38 +111,36 @@ export function TrailWorkflowIssuePeek(props: {
   const submit = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (saveDisabled) return;
-    runTrailMutationAction(
-      () => props.actions.editProperties(baseline, {
-        description: descriptionDraft,
-        due: dueDraft === ""
-          ? undefined
-          : parseTrailLocalDateTime(dueDraft, props.configuration.temporal.timezone),
-        estimate: parseOptionalEstimate(estimateDraft),
-        labelIds: labelIdsDraft,
-        priority: priorityDraft === "" ? undefined : priorityDraft as TrailPriority,
-        title: titleDraft,
-      }),
-      {
-        onError: reportError,
-        onNeedsInput: (request) => reportError(request.message),
-        onSettled: () => props.onOpenChange(false),
-      },
-    );
+    try {
+      runTrailMutationAction(
+        () => props.actions.editProperties(baseline, {
+          description: descriptionDraft,
+          due: dueDraft === ""
+            ? undefined
+            : parseTrailLocalDateTime(dueDraft, props.configuration.temporal.timezone),
+          labelIds: labelIdsDraft,
+          priority: priorityDraft === "" ? undefined : priorityDraft as TrailPriority,
+          title: titleDraft,
+        }),
+        {
+          onError: reportError,
+          onNeedsInput: (request) => reportError(request.message),
+          onSettled: () => props.onOpenChange(false),
+        },
+      );
+    } catch (error: unknown) {
+      reportError(error instanceof Error ? error.message : "Unable to parse Project Due");
+    }
   };
 
   return (
     <TrailDialog
-      description="Inspect and edit lightweight planning properties without leaving the current workspace."
+      description="Edit Project details. Status and Initiative remain on the Project Workspace."
       onOpenChange={props.onOpenChange}
       open={props.open}
       title={baseline.title}
     >
       <form className="trail-issue-editor" onSubmit={submit}>
-        <p className="trail-dialog__detail">
-          {status?.name ?? "Invalid status"}
-          {project === undefined ? " · No project" : ` · ${project.title}`}
-          {milestone === undefined ? "" : ` · ${milestone.title}`}
-        </p>
         <label>
           <span>Title</span>
           <input
@@ -215,17 +175,6 @@ export function TrailWorkflowIssuePeek(props: {
           </select>
         </label>
         <label>
-          <span>Estimate</span>
-          <input
-            disabled={actionsDisabled}
-            min="0"
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setEstimateDraft(event.target.value)}
-            step="1"
-            type="number"
-            value={estimateDraft}
-          />
-        </label>
-        <label>
           <span>Due ({props.configuration.temporal.timezone})</span>
           <input
             disabled={actionsDisabled}
@@ -238,7 +187,7 @@ export function TrailWorkflowIssuePeek(props: {
         <TrailLabelEditor
           configuration={props.configuration}
           disabled={actionsDisabled}
-          entityType="issue"
+          entityType="project"
           labelIds={labelIdsDraft}
           onChange={setLabelIdsDraft}
         />
@@ -246,9 +195,6 @@ export function TrailWorkflowIssuePeek(props: {
         {localError === undefined ? null : (
           <p className="trail-inline-error" role="alert">{localError}</p>
         )}
-        {completed && estimateDraft.trim() === "" ? (
-          <p className="trail-inline-error">Completed issues must retain an estimate.</p>
-        ) : null}
 
         <TrailDialogActions>
           <button className="mod-cta" disabled={saveDisabled} type="submit">Save</button>

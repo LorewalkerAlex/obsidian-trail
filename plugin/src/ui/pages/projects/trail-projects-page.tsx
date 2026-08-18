@@ -32,6 +32,7 @@ import {
 } from "../../interactions/trail-action";
 import { parseTrailLocalDateTime } from "../../interactions/trail-local-date-time";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
+import { TrailProjectPropertiesDialog } from "../../patterns/trail-project-properties-dialog";
 import { TrailStatusPicker } from "../../patterns/trail-status-picker";
 import { TrailWorkflowPresentation } from "../../patterns/trail-workflow-presentation";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
@@ -465,6 +466,7 @@ function TrailProjectWorkspace(props: {
     props.runtimeStore,
     useShallow((state) => selectTrailEntitySourceIssues(state, props.projectId)),
   );
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [milestoneDraft, setMilestoneDraft] = useState("");
   const [milestoneDueDraft, setMilestoneDueDraft] = useState("");
   const [issueDraft, setIssueDraft] = useState("");
@@ -548,8 +550,28 @@ function TrailProjectWorkspace(props: {
             <h2 id="trail-project-workspace-title">{project.title}</h2>
             <span>{projectStatus?.name ?? "Invalid status"}</span>
           </div>
-          {pending ? <span className="trail-pending-chip">Saving</span> : null}
+          <div>
+            <button
+              disabled={actionsDisabled}
+              onClick={() => setDetailsOpen(true)}
+              type="button"
+            >
+              Edit details
+            </button>
+            {pending ? <span className="trail-pending-chip">Saving</span> : null}
+          </div>
         </div>
+
+        <TrailProjectPropertiesDialog
+          actions={props.actions.projects}
+          configuration={props.configuration}
+          onError={props.onError}
+          onOpenChange={setDetailsOpen}
+          open={detailsOpen}
+          projectId={project.id}
+          runtimeStore={props.runtimeStore}
+          writable={props.writable}
+        />
 
         <label className="trail-issue-editor__field">
           <span>Initiative</span>

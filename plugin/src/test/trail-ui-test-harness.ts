@@ -135,6 +135,7 @@ export function createTrailUiTestHarness(input: {
       changeInitiative: vi.fn(() => ({ kind: "unchanged" as const, entityId: project.id })),
       changeStatus: vi.fn(() => ({ kind: "unchanged" as const, entityId: project.id })),
       create: vi.fn(() => receipt("new-project")),
+      editProperties: vi.fn(() => ({ kind: "unchanged" as const, entityId: project.id })),
     },
     triage: {
       accept: vi.fn(() => receipt("accepted-issue")),

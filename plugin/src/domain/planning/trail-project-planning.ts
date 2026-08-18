@@ -1,10 +1,12 @@
 import type { TrailProject } from "../model/trail-entities";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
+import { findTrailLabelSelectionViolations } from "../rules/trail-label-rules";
 import { findTrailNonTerminalProjectChildIssue } from "../rules/trail-project-rules";
 import {
   resolveTrailDefaultStatusDefinition,
   resolveTrailStatusDefinition,
 } from "../rules/trail-status-rules";
+import { validateTrailProject } from "../validation/trail-record-validation";
 import { createTrailMutationPlan, type TrailMutationPlan } from "../../mutation/plans/trail-mutation-plan";
 import { readyTrailPlan, rejectTrailPlan, type TrailPlanResult } from "./trail-plan-result";
 import { trailPlanningEntityExists, type TrailPlanningState } from "./trail-planning-state";
@@ -25,6 +27,16 @@ export interface ChangeTrailProjectInitiativeCommand {
   readonly commandId: string;
   readonly expectedProject: TrailProject;
   readonly targetInitiativeId?: string;
+}
+
+export interface EditTrailProjectPropertiesCommand {
+  readonly commandId: string;
+  readonly description?: string;
+  readonly due?: number;
+  readonly expectedProject: TrailProject;
+  readonly labelIds: readonly string[];
+  readonly priority?: TrailProject["priority"];
+  readonly title: string;
 }
 
 export interface TrailProjectPlan {
@@ -55,6 +67,92 @@ export function planCreateTrailProject(
       commandId: command.commandId,
       effects: [{ after: { kind: "project", value: project }, kind: "create-entity" }],
       intent: "workflow.project.create",
+    }),
+    project,
+  });
+}
+
+/**
+ * Replaces the complete lightweight Project details snapshot while preserving
+ * Project identity, Status, and Initiative relationship ownership.
+ */
+export function planEditTrailProjectProperties(
+  state: TrailPlanningState,
+  command: EditTrailProjectPropertiesCommand,
+): TrailPlanResult<TrailProjectPlan> {
+  const current = state.domain.projectsById.get(command.expectedProject.id);
+  if (current === undefined) {
+    return rejectTrailPlan(
+      "project-missing",
+      `Project does not exist: ${command.expectedProject.id}`,
+    );
+  }
+  if (!sameTrailDomainEntity(
+    { kind: "project", value: current },
+    { kind: "project", value: command.expectedProject },
+  )) {
+    return rejectTrailPlan(
+      "project-changed",
+      `Project changed before action: ${command.expectedProject.id}`,
+    );
+  }
+
+  const project: TrailProject = {
+    ...current,
+    description: command.description,
+    due: command.due,
+    labelIds: [...command.labelIds],
+    priority: command.priority,
+    title: command.title,
+  };
+  const recordIssues = validateTrailProject(project);
+  if (recordIssues.length > 0) {
+    return rejectTrailPlan(
+      "project-invalid",
+      recordIssues.map(({ message }) => message).join("; "),
+    );
+  }
+
+  const labelViolations = findTrailLabelSelectionViolations(
+    state.configuration,
+    "project",
+    project.labelIds,
+  );
+  const labelViolation = labelViolations[0];
+  if (labelViolation !== undefined) {
+    switch (labelViolation.kind) {
+      case "label-missing":
+        return rejectTrailPlan(
+          "label-missing",
+          `Project references unknown Label ${labelViolation.labelId}`,
+        );
+      case "label-group-missing":
+        return rejectTrailPlan(
+          "label-group-missing",
+          `Label ${labelViolation.labelId} references unknown LabelGroup ${labelViolation.groupId}`,
+        );
+      case "label-scope":
+        return rejectTrailPlan(
+          "label-scope",
+          `Label ${labelViolation.labelId} is not registered for Projects`,
+        );
+      case "single-selection":
+        return rejectTrailPlan(
+          "label-group-single-selection",
+          `Project selects multiple Labels from single-select group ${labelViolation.groupId}`,
+        );
+    }
+  }
+
+  return readyTrailPlan({
+    plan: createTrailMutationPlan({
+      commandId: command.commandId,
+      effects: [{
+        after: { kind: "project", value: project },
+        before: { kind: "project", value: current },
+        kind: "replace-entity",
+      }],
+      intent: "workflow.project.edit-properties",
     }),
     project,
   });
