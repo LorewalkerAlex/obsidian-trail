@@ -34,7 +34,7 @@ describe("TrailApp", () => {
     view.unmount();
   });
 
-  it("routes existing Triage and Project interactions through the Application surface", () => {
+  it("routes Triage, Initiative, Project, and Workflow interactions through Application", () => {
     const harness = createTrailUiTestHarness();
     render(<TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />);
 
@@ -45,6 +45,14 @@ describe("TrailApp", () => {
     expect(harness.actions.triage.capture).toHaveBeenCalledWith("New capture");
 
     fireEvent.click(screen.getByRole("button", { name: "Projects" }));
+    fireEvent.change(screen.getByPlaceholderText("Create a long-term Initiative"), {
+      target: { value: "New initiative" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Initiative" }));
+    expect(harness.actions.initiatives.create).toHaveBeenCalledWith("New initiative");
+
+    fireEvent.click(screen.getByRole("button", { name: "Initiative A" }));
+    fireEvent.click(screen.getByRole("button", { name: "Project A" }));
     fireEvent.change(screen.getByPlaceholderText("Add a Workflow Issue"), {
       target: { value: "New issue" },
     });

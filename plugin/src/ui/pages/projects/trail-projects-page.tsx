@@ -10,8 +10,12 @@ import { isTrailTerminalStatusDefinition } from "../../../domain/rules/trail-sta
 import {
   selectIsTrailEntityPending,
   selectTrailReadableConfiguration,
+  selectTrailReadableInitiativeById,
+  selectTrailReadableInitiativeIds,
   selectTrailReadableProjectById,
   selectTrailReadableProjectIds,
+  selectTrailReadableProjectIdsByInitiative,
+  selectTrailReadableUnassignedProjectIds,
   selectTrailReadableWorkflowIssueIdsByProject,
 } from "../../../query/shared/trail-effective-query";
 import {
@@ -30,13 +34,21 @@ import { TrailStatusPicker } from "../../patterns/trail-status-picker";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
 export function TrailProjectsPage(props: {
-  readonly actions: Pick<TrailUiActions, "issues" | "projects">;
+  readonly actions: Pick<TrailUiActions, "initiatives" | "issues" | "projects">;
   readonly runtimeStore: TrailRuntimeStore;
   readonly writable: boolean;
 }) {
+  const initiativeIds = useStore(
+    props.runtimeStore,
+    useShallow(selectTrailReadableInitiativeIds),
+  );
   const projectIds = useStore(
     props.runtimeStore,
     useShallow(selectTrailReadableProjectIds),
+  );
+  const unassignedProjectIds = useStore(
+    props.runtimeStore,
+    useShallow(selectTrailReadableUnassignedProjectIds),
   );
   const configuration = useStore(
     props.runtimeStore,
@@ -46,13 +58,36 @@ export function TrailProjectsPage(props: {
     props.runtimeStore,
     useShallow(selectTrailProjectSourceIssues),
   );
+  const [selectedInitiativeId, setSelectedInitiativeId] = useState<string>();
   const [selectedProjectId, setSelectedProjectId] = useState<string>();
+  const [initiativeDraft, setInitiativeDraft] = useState("");
   const [projectDraft, setProjectDraft] = useState("");
   const [workflowError, setWorkflowError] = useState<string>();
+
   const effectiveSelectedProjectId = selectedProjectId !== undefined
     && projectIds.includes(selectedProjectId)
       ? selectedProjectId
-      : projectIds[0];
+      : undefined;
+  const effectiveSelectedInitiativeId = selectedInitiativeId !== undefined
+    && initiativeIds.includes(selectedInitiativeId)
+      ? selectedInitiativeId
+      : undefined;
+  const atRoot = effectiveSelectedProjectId === undefined
+    && effectiveSelectedInitiativeId === undefined;
+
+  const submitInitiative = (event: SyntheticEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    if (!props.writable || initiativeDraft.trim() === "") return;
+    runTrailReceipt(
+      () => props.actions.initiatives.create(initiativeDraft),
+      setWorkflowError,
+      (receipt) => {
+        setInitiativeDraft("");
+        setSelectedProjectId(undefined);
+        setSelectedInitiativeId(receipt.entityId);
+      },
+    );
+  };
 
   const submitProject = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -62,43 +97,93 @@ export function TrailProjectsPage(props: {
       setWorkflowError,
       (receipt) => {
         setProjectDraft("");
+        setSelectedInitiativeId(undefined);
         setSelectedProjectId(receipt.entityId);
       },
     );
   };
 
+  const navigateRoot = (): void => {
+    setSelectedProjectId(undefined);
+    setSelectedInitiativeId(undefined);
+  };
+
+  const navigateInitiative = (initiativeId: string): void => {
+    setSelectedProjectId(undefined);
+    setSelectedInitiativeId(initiativeId);
+  };
+
+  const navigateProject = (projectId: string): void => {
+    setSelectedProjectId(projectId);
+  };
+
   return (
     <main className="trail-projects">
-      <section className="trail-project-create" aria-labelledby="trail-project-create-title">
-        <div className="trail-section-heading">
-          <div>
-            <h2 id="trail-project-create-title">Projects</h2>
-            <p>New Projects start in the configured Unstarted default.</p>
-          </div>
-          <span className="trail-count" aria-label={`${projectIds.length} projects`}>
-            {projectIds.length}
-          </span>
-        </div>
-        <form className="trail-capture__form" onSubmit={submitProject}>
-          <label className="trail-capture__field">
-            <span className="screen-reader-text">Project title</span>
-            <input
-              autoComplete="off"
-              disabled={!props.writable}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setProjectDraft(event.target.value)}
-              placeholder="Create an outcome-focused Project"
-              value={projectDraft}
-            />
-          </label>
-          <button
-            className="mod-cta trail-capture__button"
-            disabled={!props.writable || projectDraft.trim() === ""}
-            type="submit"
-          >
-            Create Project
-          </button>
-        </form>
-      </section>
+      {atRoot ? (
+        <>
+          <section className="trail-project-create" aria-labelledby="trail-project-create-title">
+            <div className="trail-section-heading">
+              <div>
+                <h2 id="trail-project-create-title">Projects</h2>
+                <p>New Projects start in the configured Unstarted default.</p>
+              </div>
+              <span className="trail-count" aria-label={`${projectIds.length} projects`}>
+                {projectIds.length}
+              </span>
+            </div>
+            <form className="trail-capture__form" onSubmit={submitProject}>
+              <label className="trail-capture__field">
+                <span className="screen-reader-text">Project title</span>
+                <input
+                  autoComplete="off"
+                  disabled={!props.writable}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setProjectDraft(event.target.value)}
+                  placeholder="Create an outcome-focused Project"
+                  value={projectDraft}
+                />
+              </label>
+              <button
+                className="mod-cta trail-capture__button"
+                disabled={!props.writable || projectDraft.trim() === ""}
+                type="submit"
+              >
+                Create Project
+              </button>
+            </form>
+          </section>
+
+          <section className="trail-project-create" aria-labelledby="trail-initiative-create-title">
+            <div className="trail-section-heading">
+              <div>
+                <h2 id="trail-initiative-create-title">Initiatives</h2>
+                <p>Group Projects under the longer-term outcomes they advance.</p>
+              </div>
+              <span className="trail-count" aria-label={`${initiativeIds.length} initiatives`}>
+                {initiativeIds.length}
+              </span>
+            </div>
+            <form className="trail-capture__form" onSubmit={submitInitiative}>
+              <label className="trail-capture__field">
+                <span className="screen-reader-text">Initiative title</span>
+                <input
+                  autoComplete="off"
+                  disabled={!props.writable}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setInitiativeDraft(event.target.value)}
+                  placeholder="Create a long-term Initiative"
+                  value={initiativeDraft}
+                />
+              </label>
+              <button
+                className="mod-cta trail-capture__button"
+                disabled={!props.writable || initiativeDraft.trim() === ""}
+                type="submit"
+              >
+                Create Initiative
+              </button>
+            </form>
+          </section>
+        </>
+      ) : null}
 
       {workflowError !== undefined ? (
         <p className="trail-inline-error trail-management-error" role="alert">
@@ -109,47 +194,134 @@ export function TrailProjectsPage(props: {
       {projectSourceIssues.length > 0 ? (
         <TrailDataIssuePanel
           issues={projectSourceIssues.map((issue) => `${issue.sourcePath}: ${issue.message}`)}
-          message="Valid Project sources remain visible. Actions stay disabled for any source Trail cannot trust."
+          message="Valid Project sources remain visible. Actions stay disabled for any Project source Trail cannot trust."
           title="Workflow data needs attention."
         />
       ) : null}
 
-      {projectIds.length === 0 || effectiveSelectedProjectId === undefined ? (
-        <div className="trail-empty-state">
-          <p>No Projects yet.</p>
-          <span>Create one to start the Workflow execution path.</span>
-        </div>
+      {configuration === null ? null : effectiveSelectedProjectId !== undefined ? (
+        <TrailProjectWorkspace
+          actions={props.actions}
+          configuration={configuration}
+          onError={setWorkflowError}
+          onNavigateInitiative={navigateInitiative}
+          onNavigateRoot={navigateRoot}
+          projectId={effectiveSelectedProjectId}
+          runtimeStore={props.runtimeStore}
+          writable={props.writable}
+        />
+      ) : effectiveSelectedInitiativeId !== undefined ? (
+        <TrailInitiativeFocus
+          initiativeId={effectiveSelectedInitiativeId}
+          onNavigateProject={navigateProject}
+          onNavigateRoot={navigateRoot}
+          runtimeStore={props.runtimeStore}
+        />
       ) : (
-        <div className="trail-projects-layout">
-          <aside className="trail-project-list" aria-label="Projects">
-            {projectIds.map((projectId) => (
-              <TrailProjectNavigationItem
-                isSelected={projectId === effectiveSelectedProjectId}
-                key={projectId}
-                onSelect={() => setSelectedProjectId(projectId)}
-                projectId={projectId}
-                runtimeStore={props.runtimeStore}
-              />
-            ))}
-          </aside>
-          {configuration === null ? null : (
-            <TrailProjectWorkspace
-              actions={props.actions}
-              configuration={configuration}
-              onError={setWorkflowError}
-              projectId={effectiveSelectedProjectId}
-              runtimeStore={props.runtimeStore}
-              writable={props.writable}
-            />
-          )}
-        </div>
+        <TrailProjectsRoot
+          initiativeIds={initiativeIds}
+          onNavigateInitiative={navigateInitiative}
+          onNavigateProject={navigateProject}
+          runtimeStore={props.runtimeStore}
+          unassignedProjectIds={unassignedProjectIds}
+        />
       )}
     </main>
   );
 }
 
+function TrailProjectsRoot(props: {
+  readonly initiativeIds: readonly string[];
+  readonly onNavigateInitiative: (initiativeId: string) => void;
+  readonly onNavigateProject: (projectId: string) => void;
+  readonly runtimeStore: TrailRuntimeStore;
+  readonly unassignedProjectIds: readonly string[];
+}) {
+  return (
+    <div className="trail-projects-layout">
+      <section className="trail-project-workspace" aria-labelledby="trail-projects-root-initiatives">
+        <div className="trail-section-heading trail-section-heading--list">
+          <div>
+            <h2 id="trail-projects-root-initiatives">Initiatives</h2>
+            <p>Focus one Initiative to see the Projects advancing it.</p>
+          </div>
+          <span className="trail-count" aria-label={`${props.initiativeIds.length} initiatives`}>
+            {props.initiativeIds.length}
+          </span>
+        </div>
+        {props.initiativeIds.length === 0 ? (
+          <div className="trail-empty-state trail-empty-state--compact">
+            <p>No Initiatives yet.</p>
+            <span>Projects can remain unassigned until a longer-term outcome is clear.</span>
+          </div>
+        ) : (
+          <div className="trail-project-list" aria-label="Initiatives">
+            {props.initiativeIds.map((initiativeId) => (
+              <TrailInitiativeNavigationItem
+                initiativeId={initiativeId}
+                key={initiativeId}
+                onSelect={() => props.onNavigateInitiative(initiativeId)}
+                runtimeStore={props.runtimeStore}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="trail-project-workspace" aria-labelledby="trail-projects-root-unassigned">
+        <div className="trail-section-heading trail-section-heading--list">
+          <div>
+            <h2 id="trail-projects-root-unassigned">Unassigned Projects</h2>
+            <p>Projects without an Initiative remain directly accessible.</p>
+          </div>
+          <span className="trail-count" aria-label={`${props.unassignedProjectIds.length} unassigned projects`}>
+            {props.unassignedProjectIds.length}
+          </span>
+        </div>
+        {props.unassignedProjectIds.length === 0 ? (
+          <div className="trail-empty-state trail-empty-state--compact">
+            <p>No unassigned Projects.</p>
+            <span>Every current Project belongs to an Initiative.</span>
+          </div>
+        ) : (
+          <div className="trail-project-list" aria-label="Unassigned Projects">
+            {props.unassignedProjectIds.map((projectId) => (
+              <TrailProjectNavigationItem
+                key={projectId}
+                onSelect={() => props.onNavigateProject(projectId)}
+                projectId={projectId}
+                runtimeStore={props.runtimeStore}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function TrailInitiativeNavigationItem(props: {
+  readonly initiativeId: string;
+  readonly onSelect: () => void;
+  readonly runtimeStore: TrailRuntimeStore;
+}) {
+  const initiative = useStore(
+    props.runtimeStore,
+    (state) => selectTrailReadableInitiativeById(state, props.initiativeId),
+  );
+  const projectIds = useStore(
+    props.runtimeStore,
+    useShallow((state) => selectTrailReadableProjectIdsByInitiative(state, props.initiativeId)),
+  );
+  if (initiative === undefined) return null;
+  return (
+    <button onClick={props.onSelect} title={`${projectIds.length} Projects`} type="button">
+      {initiative.title}
+    </button>
+  );
+}
+
 function TrailProjectNavigationItem(props: {
-  readonly isSelected: boolean;
   readonly onSelect: () => void;
   readonly projectId: string;
   readonly runtimeStore: TrailRuntimeStore;
@@ -160,14 +332,97 @@ function TrailProjectNavigationItem(props: {
   );
   if (project === undefined) return null;
   return (
-    <button
-      aria-current={props.isSelected ? "true" : undefined}
-      className={props.isSelected ? "is-active" : undefined}
-      onClick={props.onSelect}
-      type="button"
-    >
+    <button onClick={props.onSelect} type="button">
       {project.title}
     </button>
+  );
+}
+
+function TrailInitiativeFocus(props: {
+  readonly initiativeId: string;
+  readonly onNavigateProject: (projectId: string) => void;
+  readonly onNavigateRoot: () => void;
+  readonly runtimeStore: TrailRuntimeStore;
+}) {
+  const initiative = useStore(
+    props.runtimeStore,
+    (state) => selectTrailReadableInitiativeById(state, props.initiativeId),
+  );
+  const projectIds = useStore(
+    props.runtimeStore,
+    useShallow((state) => selectTrailReadableProjectIdsByInitiative(state, props.initiativeId)),
+  );
+  const sourceIssues = useStore(
+    props.runtimeStore,
+    useShallow((state) => selectTrailEntitySourceIssues(state, props.initiativeId)),
+  );
+  if (initiative === undefined) return null;
+
+  return (
+    <>
+      <nav className="trail-page-nav" aria-label="Projects hierarchy">
+        <button onClick={props.onNavigateRoot} type="button">Projects</button>
+        <span aria-current="page">{initiative.title}</span>
+      </nav>
+      <section className="trail-project-workspace" aria-labelledby="trail-initiative-focus-title">
+        <div className="trail-project-workspace__header">
+          <div>
+            <p className="trail-app__eyebrow">Initiative</p>
+            <h2 id="trail-initiative-focus-title">{initiative.title}</h2>
+            <span>{projectIds.length} Projects</span>
+          </div>
+        </div>
+
+        {sourceIssues.length > 0 ? (
+          <TrailDataIssuePanel
+            issues={sourceIssues.map((issue) => issue.message)}
+            message="Trail keeps the last known good Initiative visible while its Markdown source needs attention."
+            title="This Initiative file has a data issue."
+          />
+        ) : null}
+
+        <div className="trail-section-heading trail-section-heading--list">
+          <div>
+            <h3>Projects</h3>
+            <p>Open a Project to continue execution or change its Initiative relationship.</p>
+          </div>
+          <span className="trail-count" aria-label={`${projectIds.length} projects in ${initiative.title}`}>
+            {projectIds.length}
+          </span>
+        </div>
+
+        {projectIds.length === 0 ? (
+          <div className="trail-empty-state trail-empty-state--compact">
+            <p>No Projects in this Initiative.</p>
+            <span>Assign an existing Project from its Project Workspace.</span>
+          </div>
+        ) : (
+          <div className="trail-project-list" aria-label={`Projects in ${initiative.title}`}>
+            {projectIds.map((projectId) => (
+              <TrailProjectNavigationItem
+                key={projectId}
+                onSelect={() => props.onNavigateProject(projectId)}
+                projectId={projectId}
+                runtimeStore={props.runtimeStore}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
+function TrailInitiativeOption(props: {
+  readonly initiativeId: string;
+  readonly runtimeStore: TrailRuntimeStore;
+}) {
+  const initiative = useStore(
+    props.runtimeStore,
+    (state) => selectTrailReadableInitiativeById(state, props.initiativeId),
+  );
+  return initiative === undefined ? null : (
+    <option value={initiative.id}>{initiative.title}</option>
   );
 }
 
@@ -175,6 +430,8 @@ function TrailProjectWorkspace(props: {
   readonly actions: Pick<TrailUiActions, "issues" | "projects">;
   readonly configuration: NonNullable<ReturnType<typeof selectTrailReadableConfiguration>>;
   readonly onError: (message: string | undefined) => void;
+  readonly onNavigateInitiative: (initiativeId: string) => void;
+  readonly onNavigateRoot: () => void;
   readonly projectId: string;
   readonly runtimeStore: TrailRuntimeStore;
   readonly writable: boolean;
@@ -182,6 +439,16 @@ function TrailProjectWorkspace(props: {
   const project = useStore(
     props.runtimeStore,
     (state) => selectTrailReadableProjectById(state, props.projectId),
+  );
+  const initiativeIds = useStore(
+    props.runtimeStore,
+    useShallow(selectTrailReadableInitiativeIds),
+  );
+  const initiative = useStore(
+    props.runtimeStore,
+    (state) => project?.initiativeId === undefined
+      ? undefined
+      : selectTrailReadableInitiativeById(state, project.initiativeId),
   );
   const issueIds = useStore(
     props.runtimeStore,
@@ -216,6 +483,16 @@ function TrailProjectWorkspace(props: {
     );
   };
 
+  const requestInitiative = (targetValue: string): void => {
+    if (actionsDisabled) return;
+    const targetInitiativeId = targetValue === "" ? undefined : targetValue;
+    if (targetInitiativeId === project.initiativeId) return;
+    runTrailMutationAction(
+      () => props.actions.projects.changeInitiative(project, targetInitiativeId),
+      { onError: props.onError },
+    );
+  };
+
   const submitIssue = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (actionsDisabled || projectIsTerminal || issueDraft.trim() === "") return;
@@ -227,90 +504,120 @@ function TrailProjectWorkspace(props: {
   };
 
   return (
-    <section className="trail-project-workspace" aria-labelledby="trail-project-workspace-title">
-      <div className="trail-project-workspace__header">
-        <div>
-          <p className="trail-app__eyebrow">Project</p>
-          <h2 id="trail-project-workspace-title">{project.title}</h2>
-          <span>{projectStatus?.name ?? "Invalid status"}</span>
+    <>
+      <nav className="trail-page-nav" aria-label="Projects hierarchy">
+        <button onClick={props.onNavigateRoot} type="button">Projects</button>
+        {initiative !== undefined ? (
+          <button onClick={() => props.onNavigateInitiative(initiative.id)} type="button">
+            {initiative.title}
+          </button>
+        ) : null}
+        <span aria-current="page">{project.title}</span>
+      </nav>
+      <section className="trail-project-workspace" aria-labelledby="trail-project-workspace-title">
+        <div className="trail-project-workspace__header">
+          <div>
+            <p className="trail-app__eyebrow">Project</p>
+            <h2 id="trail-project-workspace-title">{project.title}</h2>
+            <span>{projectStatus?.name ?? "Invalid status"}</span>
+          </div>
+          {pending ? <span className="trail-pending-chip">Saving</span> : null}
         </div>
-        {pending ? <span className="trail-pending-chip">Saving</span> : null}
-      </div>
 
-      <TrailStatusPicker
-        ariaLabel={`Project status for ${project.title}`}
-        configuration={props.configuration}
-        disabled={actionsDisabled}
-        entityType="project"
-        onChange={requestStatus}
-        value={project.statusDefinitionId}
-      />
-
-      {sourceIssues.length > 0 ? (
-        <TrailDataIssuePanel
-          issues={sourceIssues.map((issue) => issue.message)}
-          message="Trail keeps the last known good Project visible and pauses actions for this source until the Markdown is valid again."
-          title="This Project file has a data issue."
-        />
-      ) : null}
-
-      {projectIsTerminal ? (
-        <p className="trail-project-terminal-note">
-          Reopen this Project before adding new Workflow Issues.
-        </p>
-      ) : null}
-
-      <form className="trail-capture__form" onSubmit={submitIssue}>
-        <label className="trail-capture__field">
-          <span className="screen-reader-text">Workflow Issue title</span>
-          <input
-            autoComplete="off"
-            disabled={actionsDisabled || projectIsTerminal}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setIssueDraft(event.target.value)}
-            placeholder="Add a Workflow Issue"
-            value={issueDraft}
-          />
+        <label className="trail-issue-editor__field">
+          <span>Initiative</span>
+          <select
+            aria-label={`Initiative for ${project.title}`}
+            disabled={actionsDisabled}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => requestInitiative(event.target.value)}
+            value={project.initiativeId ?? ""}
+          >
+            <option value="">No Initiative</option>
+            {initiativeIds.map((initiativeId) => (
+              <TrailInitiativeOption
+                initiativeId={initiativeId}
+                key={initiativeId}
+                runtimeStore={props.runtimeStore}
+              />
+            ))}
+          </select>
         </label>
-        <button
-          className="mod-cta trail-capture__button"
-          disabled={actionsDisabled || projectIsTerminal || issueDraft.trim() === ""}
-          type="submit"
-        >
-          Add Issue
-        </button>
-      </form>
 
-      <div className="trail-section-heading trail-section-heading--list">
-        <div>
-          <h3>Issues</h3>
-          <p>Backlog by default; update status as work progresses.</p>
-        </div>
-        <span className="trail-count" aria-label={`${issueIds.length} workflow issues`}>
-          {issueIds.length}
-        </span>
-      </div>
+        <TrailStatusPicker
+          ariaLabel={`Project status for ${project.title}`}
+          configuration={props.configuration}
+          disabled={actionsDisabled}
+          entityType="project"
+          onChange={requestStatus}
+          value={project.statusDefinitionId}
+        />
 
-      {issueIds.length === 0 ? (
-        <div className="trail-empty-state trail-empty-state--compact">
-          <p>No Workflow Issues yet.</p>
-          <span>Add one above to begin execution.</span>
-        </div>
-      ) : (
-        <ol className="trail-workflow-issue-list">
-          {issueIds.map((issueId) => (
-            <TrailWorkflowIssueRow
-              actions={props.actions.issues}
-              configuration={props.configuration}
-              issueId={issueId}
-              key={issueId}
-              onError={props.onError}
-              runtimeStore={props.runtimeStore}
-              sourceIsHealthy={sourceIsHealthy}
-              writable={props.writable}
+        {sourceIssues.length > 0 ? (
+          <TrailDataIssuePanel
+            issues={sourceIssues.map((issue) => issue.message)}
+            message="Trail keeps the last known good Project visible and pauses actions for this source until the Markdown is valid again."
+            title="This Project file has a data issue."
+          />
+        ) : null}
+
+        {projectIsTerminal ? (
+          <p className="trail-project-terminal-note">
+            Reopen this Project before adding new Workflow Issues.
+          </p>
+        ) : null}
+
+        <form className="trail-capture__form" onSubmit={submitIssue}>
+          <label className="trail-capture__field">
+            <span className="screen-reader-text">Workflow Issue title</span>
+            <input
+              autoComplete="off"
+              disabled={actionsDisabled || projectIsTerminal}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setIssueDraft(event.target.value)}
+              placeholder="Add a Workflow Issue"
+              value={issueDraft}
             />
-          ))}
-        </ol>
-      )}
-    </section>
+          </label>
+          <button
+            className="mod-cta trail-capture__button"
+            disabled={actionsDisabled || projectIsTerminal || issueDraft.trim() === ""}
+            type="submit"
+          >
+            Add Issue
+          </button>
+        </form>
+
+        <div className="trail-section-heading trail-section-heading--list">
+          <div>
+            <h3>Issues</h3>
+            <p>Backlog by default; update status as work progresses.</p>
+          </div>
+          <span className="trail-count" aria-label={`${issueIds.length} workflow issues`}>
+            {issueIds.length}
+          </span>
+        </div>
+
+        {issueIds.length === 0 ? (
+          <div className="trail-empty-state trail-empty-state--compact">
+            <p>No Workflow Issues yet.</p>
+            <span>Add one above to begin execution.</span>
+          </div>
+        ) : (
+          <ol className="trail-workflow-issue-list">
+            {issueIds.map((issueId) => (
+              <TrailWorkflowIssueRow
+                actions={props.actions.issues}
+                configuration={props.configuration}
+                issueId={issueId}
+                key={issueId}
+                onError={props.onError}
+                runtimeStore={props.runtimeStore}
+                sourceIsHealthy={sourceIsHealthy}
+                writable={props.writable}
+              />
+            ))}
+          </ol>
+        )}
+      </section>
+    </>
   );
 }

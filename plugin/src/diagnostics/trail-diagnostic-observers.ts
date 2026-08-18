@@ -84,13 +84,17 @@ export function createDiagnosticTrailUiActions(
   session: TrailApplicationSession,
   diagnostics: TrailDiagnostics,
 ): {
+  readonly initiatives: Pick<
+    TrailApplicationSession["initiatives"],
+    "create"
+  >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],
     "changeStatus" | "create" | "moveToProject"
   >;
   readonly projects: Pick<
     TrailApplicationSession["projects"],
-    "changeStatus" | "create"
+    "changeInitiative" | "changeStatus" | "create"
   >;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
@@ -99,6 +103,21 @@ export function createDiagnosticTrailUiActions(
 } {
   if (!diagnostics.enabled) return session;
   return {
+    initiatives: {
+      create(title: string): TrailEntityMutationReceipt {
+        const data = { titleLength: title.length };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.initiative.create",
+            session.initiatives.create(title),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.initiative.create", error, data);
+        }
+      },
+    },
     issues: {
       changeStatus(
         expectedIssue: TrailWorkflowIssue,
@@ -153,6 +172,23 @@ export function createDiagnosticTrailUiActions(
       },
     },
     projects: {
+      changeInitiative(expectedProject, targetInitiativeId): TrailMutationActionResult {
+        const data = {
+          projectId: expectedProject.id,
+          sourceInitiativeId: expectedProject.initiativeId ?? null,
+          targetInitiativeId: targetInitiativeId ?? null,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.project.initiative",
+            session.projects.changeInitiative(expectedProject, targetInitiativeId),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.project.initiative", error, data);
+        }
+      },
       changeStatus(expectedProject, targetStatusDefinitionId): TrailMutationActionResult {
         const data = {
           projectId: expectedProject.id,

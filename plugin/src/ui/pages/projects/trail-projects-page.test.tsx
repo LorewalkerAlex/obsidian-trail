@@ -2,21 +2,82 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { createTrailUiTestHarness } from "../../../test/trail-ui-test-harness";
+import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { TrailProjectsPage } from "./trail-projects-page";
 
+function renderProjects(
+  harness: ReturnType<typeof createTrailUiTestHarness>,
+  overrides: {
+    readonly issues?: TrailUiActions["issues"];
+    readonly projects?: TrailUiActions["projects"];
+  } = {},
+) {
+  return render(
+    <TrailProjectsPage
+      actions={{
+        initiatives: harness.actions.initiatives,
+        issues: overrides.issues ?? harness.actions.issues,
+        projects: overrides.projects ?? harness.actions.projects,
+      }}
+      runtimeStore={harness.runtimeStore}
+      writable
+    />,
+  );
+}
+
+function openProjectA(): void {
+  fireEvent.click(screen.getByRole("button", { name: "Initiative A" }));
+  fireEvent.click(screen.getByRole("button", { name: "Project A" }));
+}
+
 describe("TrailProjectsPage", () => {
+  it("implements Projects Root to Initiative Focus to Project Workspace navigation", () => {
+    const harness = createTrailUiTestHarness();
+    renderProjects(harness);
+
+    expect(screen.getByRole("button", { name: "Initiative A" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Project B" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Project A" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Initiative A" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Initiative A" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Project A" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Project A" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Project A" })).toBeInTheDocument();
+  });
+
+  it("maps Initiative creation to the existing Initiative Application action", () => {
+    const harness = createTrailUiTestHarness();
+    renderProjects(harness);
+
+    fireEvent.change(screen.getByPlaceholderText("Create a long-term Initiative"), {
+      target: { value: "Long-term outcome" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Initiative" }));
+
+    expect(harness.actions.initiatives.create).toHaveBeenCalledWith("Long-term outcome");
+  });
+
+  it("maps explicit Project Initiative changes to Project Application", () => {
+    const harness = createTrailUiTestHarness();
+    renderProjects(harness);
+    openProjectA();
+
+    fireEvent.change(screen.getByLabelText("Initiative for Project A"), {
+      target: { value: "" },
+    });
+
+    expect(harness.actions.projects.changeInitiative).toHaveBeenCalledWith(
+      harness.project,
+      undefined,
+    );
+  });
+
   it("maps the Project lifecycle picker to the existing Project Application action", () => {
     const harness = createTrailUiTestHarness();
-    render(
-      <TrailProjectsPage
-        actions={{
-          issues: harness.actions.issues,
-          projects: harness.actions.projects,
-        }}
-        runtimeStore={harness.runtimeStore}
-        writable
-      />,
-    );
+    renderProjects(harness);
+    openProjectA();
 
     fireEvent.change(screen.getByLabelText("Project status for Project A"), {
       target: { value: "project-started" },
@@ -32,16 +93,10 @@ describe("TrailProjectsPage", () => {
     const changeStatus = vi.fn(() => {
       throw new Error("Project cannot be completed while Issue issue-a is non-terminal");
     });
-    render(
-      <TrailProjectsPage
-        actions={{
-          issues: harness.actions.issues,
-          projects: { ...harness.actions.projects, changeStatus },
-        }}
-        runtimeStore={harness.runtimeStore}
-        writable
-      />,
-    );
+    renderProjects(harness, {
+      projects: { ...harness.actions.projects, changeStatus },
+    });
+    openProjectA();
 
     fireEvent.change(screen.getByLabelText("Project status for Project A"), {
       target: { value: "project-completed" },
@@ -58,16 +113,8 @@ describe("TrailProjectsPage", () => {
       projectStatusDefinitionId: "project-completed",
       workflowStatusDefinitionId: "issue-canceled",
     });
-    render(
-      <TrailProjectsPage
-        actions={{
-          issues: harness.actions.issues,
-          projects: harness.actions.projects,
-        }}
-        runtimeStore={harness.runtimeStore}
-        writable
-      />,
-    );
+    renderProjects(harness);
+    openProjectA();
 
     expect(screen.getByPlaceholderText("Add a Workflow Issue")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Add Issue" })).toBeDisabled();
@@ -85,16 +132,8 @@ describe("TrailProjectsPage", () => {
 
   it("maps the Project picker to an identity-preserving Issue move action", () => {
     const harness = createTrailUiTestHarness();
-    render(
-      <TrailProjectsPage
-        actions={{
-          issues: harness.actions.issues,
-          projects: harness.actions.projects,
-        }}
-        runtimeStore={harness.runtimeStore}
-        writable
-      />,
-    );
+    renderProjects(harness);
+    openProjectA();
 
     fireEvent.change(screen.getByLabelText("Project for Issue A"), {
       target: { value: harness.projectB.id },
@@ -119,18 +158,10 @@ describe("TrailProjectsPage", () => {
         kind: "unchanged",
         entityId: harness.workflow.id,
       });
-    const actions = {
+    renderProjects(harness, {
       issues: { ...harness.actions.issues, changeStatus },
-      projects: harness.actions.projects,
-    };
-
-    render(
-      <TrailProjectsPage
-        actions={actions}
-        runtimeStore={harness.runtimeStore}
-        writable
-      />,
-    );
+    });
+    openProjectA();
 
     const statusPicker = screen.getByLabelText("Status for Issue A");
     fireEvent.change(statusPicker, { target: { value: "issue-completed" } });
@@ -162,16 +193,10 @@ describe("TrailProjectsPage", () => {
       },
       kind: "needs-input",
     });
-    render(
-      <TrailProjectsPage
-        actions={{
-          issues: { ...harness.actions.issues, changeStatus },
-          projects: harness.actions.projects,
-        }}
-        runtimeStore={harness.runtimeStore}
-        writable
-      />,
-    );
+    renderProjects(harness, {
+      issues: { ...harness.actions.issues, changeStatus },
+    });
+    openProjectA();
 
     fireEvent.change(screen.getByLabelText("Status for Issue A"), {
       target: { value: "issue-completed" },

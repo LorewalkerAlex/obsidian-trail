@@ -92,6 +92,40 @@ describe("Trail diagnostic observers", () => {
     }]);
   });
 
+  it("observes Project Initiative assignment without changing Application semantics", () => {
+    const { diagnostics, events } = recorder();
+    const project: TrailProject = {
+      id: "project-a",
+      initiativeId: "initiative-a",
+      labelIds: [],
+      statusDefinitionId: "project-unstarted",
+      title: "Project A",
+    };
+    const changeInitiative = vi.fn(() => ({
+      entityId: project.id,
+      kind: "unchanged" as const,
+    }));
+    const session = {
+      projects: { changeInitiative },
+    } as unknown as TrailApplicationSession;
+    const actions = createDiagnosticTrailUiActions(session, diagnostics);
+
+    actions.projects.changeInitiative(project, undefined);
+
+    expect(changeInitiative).toHaveBeenCalledWith(project, undefined);
+    expect(events).toEqual([{
+      name: "ui.project.initiative.unchanged",
+      options: {
+        data: {
+          entityId: project.id,
+          projectId: project.id,
+          sourceInitiativeId: "initiative-a",
+          targetInitiativeId: null,
+        },
+      },
+    }]);
+  });
+
   it("records Runtime control and pending transitions only when they change", () => {
     const { diagnostics, events } = recorder();
     const store = createTrailRuntimeStore();

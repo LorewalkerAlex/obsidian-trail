@@ -20,10 +20,13 @@ import {
   selectTrailReadableCycleIdsByIssue,
   selectTrailReadableEntityIdsByLabel,
   selectTrailReadableEntityIdsByStatusDefinition,
+  selectTrailReadableInitiativeById,
+  selectTrailReadableInitiativeIds,
   selectTrailReadableMilestoneIdsByProject,
   selectTrailReadableProjectIds,
   selectTrailReadableProjectIdsByInitiative,
   selectTrailReadableTriageIssueIds,
+  selectTrailReadableUnassignedProjectIds,
   selectTrailReadableWorkflowIssueById,
   selectTrailReadableWorkflowIssueIdsByCycle,
   selectTrailReadableWorkflowIssueIdsByMilestone,
@@ -148,20 +151,33 @@ function readyStore() {
     ],
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
-  return { configuration, cycle, issueA, issueB, milestone, projectA, projectB, store };
+  return {
+    configuration,
+    cycle,
+    initiative,
+    issueA,
+    issueB,
+    milestone,
+    projectA,
+    projectB,
+    store,
+  };
 }
 
 describe("Trail Query read side", () => {
   it("returns deterministic page IDs and shared structural membership", () => {
-    const { cycle, issueA, milestone, projectA, store } = readyStore();
+    const { cycle, initiative, issueA, milestone, projectA, projectB, store } = readyStore();
+    expect(selectTrailReadableInitiativeIds(store.getState())).toEqual([initiative.id]);
+    expect(selectTrailReadableInitiativeById(store.getState(), initiative.id)).toBe(initiative);
     expect(selectTrailReadableProjectIds(store.getState())).toEqual(["project-b", "project-a"]);
+    expect(selectTrailReadableUnassignedProjectIds(store.getState())).toEqual([projectB.id]);
     expect(selectTrailReadableTriageIssueIds(store.getState())).toEqual(["triage-a", "triage-z"]);
     expect(selectTrailReadableWorkflowIssueIdsByProject(store.getState(), projectA.id)).toEqual([
       "issue-b",
       "issue-a",
       "issue-c",
     ]);
-    expect(selectTrailReadableProjectIdsByInitiative(store.getState(), "initiative-a"))
+    expect(selectTrailReadableProjectIdsByInitiative(store.getState(), initiative.id))
       .toEqual([projectA.id]);
     expect(selectTrailReadableMilestoneIdsByProject(store.getState(), projectA.id))
       .toEqual([milestone.id]);
@@ -172,9 +188,34 @@ describe("Trail Query read side", () => {
       .toEqual([issueA.id]);
     expect(selectTrailReadableCycleIdsByIssue(store.getState(), issueA.id)).toEqual([cycle.id]);
     expect(selectTrailReadableEntityIdsByLabel(store.getState(), "label-goal"))
-      .toEqual(["initiative-a"]);
+      .toEqual([initiative.id]);
     expect(selectTrailReadableEntityIdsByStatusDefinition(store.getState(), "project-unstarted"))
       .toEqual(["project-a", "project-b"]);
+  });
+
+  it("keeps Initiative distribution aligned with optimistic Project relationship changes", () => {
+    const { initiative, projectA, projectB, store } = readyStore();
+    const replacement = { ...projectA, initiativeId: undefined };
+    addTrailPendingPlan(store, createTrailMutationPlan({
+      commandId: "project-initiative-change",
+      effects: [{
+        after: { kind: "project", value: replacement },
+        before: { kind: "project", value: projectA },
+        kind: "replace-entity",
+      }],
+      intent: "test.project.initiative",
+    }));
+
+    expect(selectTrailReadableProjectIdsByInitiative(store.getState(), initiative.id)).toEqual([]);
+    expect(selectTrailReadableUnassignedProjectIds(store.getState())).toEqual([
+      projectB.id,
+      projectA.id,
+    ]);
+
+    setTrailRuntimeControl(store, { kind: "refreshing" });
+    expect(selectTrailReadableProjectIdsByInitiative(store.getState(), initiative.id))
+      .toEqual([projectA.id]);
+    expect(selectTrailReadableUnassignedProjectIds(store.getState())).toEqual([projectB.id]);
   });
 
   it("keeps structural selectors aligned with optimistic relationship changes", () => {

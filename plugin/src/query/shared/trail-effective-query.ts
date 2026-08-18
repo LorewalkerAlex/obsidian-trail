@@ -1,5 +1,6 @@
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import type {
+  TrailInitiative,
   TrailProject,
   TrailTriageIssue,
   TrailWorkflowIssue,
@@ -51,6 +52,15 @@ export function selectTrailReadableConfiguration(
   return selectTrailReadableRuntimeSnapshot(state).authoritative.configuration;
 }
 
+export function selectTrailReadableInitiativeById(
+  state: TrailRuntimeState,
+  initiativeId: string,
+): TrailInitiative | undefined {
+  return selectTrailReadableRuntimeSnapshot(state).authoritative.domain.initiativesById.get(
+    initiativeId,
+  );
+}
+
 export function selectTrailReadableProjectById(
   state: TrailRuntimeState,
   projectId: string,
@@ -74,11 +84,36 @@ export function selectTrailReadableWorkflowIssueById(
   return issue?.context === "workflow" ? issue : undefined;
 }
 
+/** Initiative navigation remains deterministic without persisting a manual rank. */
+export function selectTrailReadableInitiativeIds(
+  state: TrailRuntimeState,
+): readonly string[] {
+  return [...selectTrailReadableRuntimeSnapshot(state).authoritative.domain.initiativesById.values()]
+    .sort((left, right) => {
+      const titleOrder = left.title.localeCompare(right.title);
+      return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
+    })
+    .map((initiative) => initiative.id);
+}
+
 /** Project navigation remains deterministic without persisting a manual rank. */
 export function selectTrailReadableProjectIds(
   state: TrailRuntimeState,
 ): readonly string[] {
   return [...selectTrailReadableRuntimeSnapshot(state).authoritative.domain.projectsById.values()]
+    .sort((left, right) => {
+      const titleOrder = left.title.localeCompare(right.title);
+      return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
+    })
+    .map((project) => project.id);
+}
+
+/** Projects without an Initiative stay first-class root navigation targets. */
+export function selectTrailReadableUnassignedProjectIds(
+  state: TrailRuntimeState,
+): readonly string[] {
+  return [...selectTrailReadableRuntimeSnapshot(state).authoritative.domain.projectsById.values()]
+    .filter((project) => project.initiativeId === undefined)
     .sort((left, right) => {
       const titleOrder = left.title.localeCompare(right.title);
       return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
@@ -100,7 +135,15 @@ export function selectTrailReadableProjectIdsByInitiative(
   state: TrailRuntimeState,
   initiativeId: string,
 ): readonly string[] {
-  return selectTrailReadableRuntimeSnapshot(state).indexes.projectsByInitiativeId.get(initiativeId) ?? [];
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  return (readable.indexes.projectsByInitiativeId.get(initiativeId) ?? [])
+    .map((projectId) => readable.authoritative.domain.projectsById.get(projectId))
+    .filter((project): project is TrailProject => project !== undefined)
+    .sort((left, right) => {
+      const titleOrder = left.title.localeCompare(right.title);
+      return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
+    })
+    .map((project) => project.id);
 }
 
 export function selectTrailReadableMilestoneIdsByProject(

@@ -39,7 +39,7 @@ export function TrailApp(props: {
         <p className="trail-app__subtitle">
           {activePage === "triage"
             ? "Capture now. Decide what it becomes when you are ready."
-            : "Turn planned outcomes into executable Workflow Issues."}
+            : "Organize outcomes by Initiative, then execute inside each Project."}
         </p>
       </header>
 
@@ -93,7 +93,11 @@ export function TrailApp(props: {
             />
           ) : (
             <TrailProjectsPage
-              actions={{ issues: props.actions.issues, projects: props.actions.projects }}
+              actions={{
+                initiatives: props.actions.initiatives,
+                issues: props.actions.issues,
+                projects: props.actions.projects,
+              }}
               runtimeStore={props.runtimeStore}
               writable={writable}
             />

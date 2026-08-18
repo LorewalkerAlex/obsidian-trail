@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 
 import type {
+  TrailInitiative,
   TrailTriageIssue,
   TrailWorkflowIssue,
 } from "../domain/model/trail-entities";
@@ -29,8 +30,14 @@ export function createTrailUiTestHarness(input: {
     labelIds: [],
     title: "Captured",
   };
+  const initiative: TrailInitiative = {
+    id: "initiative-a",
+    labelIds: [],
+    title: "Initiative A",
+  };
   const project = {
     id: "project-a",
+    initiativeId: initiative.id,
     labelIds: [],
     statusDefinitionId: input.projectStatusDefinitionId ?? "project-unstarted",
     title: "Project A",
@@ -67,6 +74,11 @@ export function createTrailUiTestHarness(input: {
     sources: [
       { issues: [triage], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
       {
+        initiative,
+        kind: "initiative",
+        sourcePath: "Trail/Initiatives/0001 Initiative A.md",
+      },
+      {
         issues: [workflow],
         kind: "project",
         milestones: [],
@@ -92,12 +104,16 @@ export function createTrailUiTestHarness(input: {
     entityId,
   });
   const actions: TrailUiActions = {
+    initiatives: {
+      create: vi.fn(() => receipt("new-initiative")),
+    },
     issues: {
       changeStatus: vi.fn(() => ({ kind: "unchanged" as const, entityId: workflow.id })),
       create: vi.fn(() => receipt("new-issue")),
       moveToProject: vi.fn(() => ({ kind: "unchanged" as const, entityId: workflow.id })),
     },
     projects: {
+      changeInitiative: vi.fn(() => ({ kind: "unchanged" as const, entityId: project.id })),
       changeStatus: vi.fn(() => ({ kind: "unchanged" as const, entityId: project.id })),
       create: vi.fn(() => receipt("new-project")),
     },
@@ -111,5 +127,5 @@ export function createTrailUiTestHarness(input: {
     },
   };
 
-  return { actions, project, projectB, runtimeStore, triage, workflow };
+  return { actions, initiative, project, projectB, runtimeStore, triage, workflow };
 }
