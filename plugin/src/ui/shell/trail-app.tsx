@@ -22,9 +22,9 @@ function pageTitle(page: TrailPage): string {
 function pageSubtitle(page: TrailPage): string {
   switch (page) {
     case "cycles":
-      return "Choose the work you intend to focus on, close the period explicitly, and carry unfinished work forward only when you want to.";
+      return "Plan the period explicitly, then execute the Current Cycle through the same Workflow Status system.";
     case "projects":
-      return "Organize outcomes by Initiative, Milestone, and executable Workflow Issues.";
+      return "Organize outcomes by Initiative and Milestone, then execute Issues in List or Board.";
     case "triage":
       return "Capture now. Decide what it becomes when you are ready.";
   }
@@ -128,6 +128,7 @@ export function TrailApp(props: {
             <TrailCyclesPage
               actions={props.actions.cycles}
               configuration={configuration}
+              issueActions={props.actions.issues}
               runtimeStore={props.runtimeStore}
               writable={writable}
             />

@@ -26,7 +26,6 @@ import {
 import { selectTrailStatusDefinition } from "../../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
 import { TrailMilestoneRow } from "../../entities/trail-milestone-row";
-import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
 import {
   runTrailMutationAction,
   runTrailReceipt,
@@ -34,6 +33,7 @@ import {
 import { parseTrailLocalDateTime } from "../../interactions/trail-local-date-time";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
 import { TrailStatusPicker } from "../../patterns/trail-status-picker";
+import { TrailWorkflowPresentation } from "../../patterns/trail-workflow-presentation";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
 export function TrailProjectsPage(props: {
@@ -114,10 +114,6 @@ export function TrailProjectsPage(props: {
   const navigateInitiative = (initiativeId: string): void => {
     setSelectedProjectId(undefined);
     setSelectedInitiativeId(initiativeId);
-  };
-
-  const navigateProject = (projectId: string): void => {
-    setSelectedProjectId(projectId);
   };
 
   return (
@@ -216,7 +212,7 @@ export function TrailProjectsPage(props: {
       ) : effectiveSelectedInitiativeId !== undefined ? (
         <TrailInitiativeFocus
           initiativeId={effectiveSelectedInitiativeId}
-          onNavigateProject={navigateProject}
+          onNavigateProject={setSelectedProjectId}
           onNavigateRoot={navigateRoot}
           runtimeStore={props.runtimeStore}
         />
@@ -224,7 +220,7 @@ export function TrailProjectsPage(props: {
         <TrailProjectsRoot
           initiativeIds={initiativeIds}
           onNavigateInitiative={navigateInitiative}
-          onNavigateProject={navigateProject}
+          onNavigateProject={setSelectedProjectId}
           runtimeStore={props.runtimeStore}
           unassignedProjectIds={unassignedProjectIds}
         />
@@ -681,7 +677,7 @@ function TrailProjectWorkspace(props: {
         <div className="trail-section-heading trail-section-heading--list">
           <div>
             <h3>Issues</h3>
-            <p>Backlog by default; Status and Milestone remain independent properties.</p>
+            <p>Use List for explicit properties or Board to execute by Status.</p>
           </div>
           <span className="trail-count" aria-label={`${issueIds.length} workflow issues`}>
             {issueIds.length}
@@ -694,20 +690,15 @@ function TrailProjectWorkspace(props: {
             <span>Add one above to begin execution.</span>
           </div>
         ) : (
-          <ol className="trail-workflow-issue-list">
-            {issueIds.map((issueId) => (
-              <TrailWorkflowIssueRow
-                actions={props.actions.issues}
-                configuration={props.configuration}
-                issueId={issueId}
-                key={issueId}
-                onError={props.onError}
-                runtimeStore={props.runtimeStore}
-                sourceIsHealthy={sourceIsHealthy}
-                writable={props.writable}
-              />
-            ))}
-          </ol>
+          <TrailWorkflowPresentation
+            actions={props.actions.issues}
+            configuration={props.configuration}
+            issueIds={issueIds}
+            laneMode="single"
+            onError={props.onError}
+            runtimeStore={props.runtimeStore}
+            writable={props.writable && sourceIsHealthy}
+          />
         )}
       </section>
     </>

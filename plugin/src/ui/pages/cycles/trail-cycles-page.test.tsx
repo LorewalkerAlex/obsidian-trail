@@ -109,7 +109,13 @@ function openCycleHarness() {
   });
   const open = vi.fn(() => receipt("cycle-next"));
   const actions: TrailUiActions["cycles"] = { changeMembership, close, open };
-  return { actions, active, completed, configuration, cycle, runtimeStore };
+  const issueActions: TrailUiActions["issues"] = {
+    changeMilestone: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
+    changeStatus: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
+    create: vi.fn(() => receipt("new-issue")),
+    moveToProject: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
+  };
+  return { actions, active, completed, configuration, cycle, issueActions, runtimeStore };
 }
 
 describe("TrailCyclesPage", () => {
@@ -120,6 +126,7 @@ describe("TrailCyclesPage", () => {
       <TrailCyclesPage
         actions={harness.actions.cycles}
         configuration={configuration}
+        issueActions={harness.actions.issues}
         runtimeStore={harness.runtimeStore}
         writable
       />,
@@ -143,6 +150,7 @@ describe("TrailCyclesPage", () => {
       <TrailCyclesPage
         actions={harness.actions}
         configuration={harness.configuration}
+        issueActions={harness.issueActions}
         runtimeStore={harness.runtimeStore}
         writable
       />,
@@ -169,5 +177,33 @@ describe("TrailCyclesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel next Cycle" }));
     expect(screen.getByRole("heading", { level: 2, name: "Open Cycle" })).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Include Active" })).not.toBeChecked();
+  });
+
+  it("executes the Current Cycle through the shared Board without changing membership semantics", () => {
+    const harness = openCycleHarness();
+    render(
+      <TrailCyclesPage
+        actions={harness.actions}
+        configuration={harness.configuration}
+        issueActions={harness.issueActions}
+        runtimeStore={harness.runtimeStore}
+        writable
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Board" }));
+    expect(screen.getByRole("article", { name: "Active" })).toBeInTheDocument();
+    expect(screen.getByLabelText("started Issues")).toContainElement(
+      screen.getByRole("article", { name: "Active" }),
+    );
+
+    fireEvent.change(screen.getByLabelText("Status for Active"), {
+      target: { value: "issue-unstarted" },
+    });
+    expect(harness.issueActions.changeStatus).toHaveBeenCalledWith(
+      harness.active,
+      "issue-unstarted",
+    );
+    expect(harness.actions.changeMembership).not.toHaveBeenCalled();
   });
 });

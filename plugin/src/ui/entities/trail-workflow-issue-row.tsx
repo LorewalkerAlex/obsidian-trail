@@ -1,13 +1,8 @@
-import {
-  useState,
-  type ChangeEvent,
-  type SyntheticEvent,
-} from "react";
+import { type ChangeEvent } from "react";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
-import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
 import {
   selectIsTrailEntityPending,
   selectTrailReadableMilestoneById,
@@ -20,12 +15,8 @@ import { selectTrailEntitySourceIssues } from "../../query/shared/trail-source-h
 import { selectTrailStatusDefinition } from "../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { runTrailMutationAction } from "../interactions/trail-action";
+import { useTrailWorkflowIssueStatusMutation } from "../interactions/trail-workflow-issue-status";
 import { TrailStatusPicker } from "../patterns/trail-status-picker";
-import {
-  TrailDialog,
-  TrailDialogActions,
-  TrailDialogClose,
-} from "../primitives/trail-dialog";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
 
 interface TrailWorkflowIssueRowProps {
@@ -34,7 +25,6 @@ interface TrailWorkflowIssueRowProps {
   readonly issueId: string;
   readonly onError: (message: string | undefined) => void;
   readonly runtimeStore: TrailRuntimeStore;
-  readonly sourceIsHealthy: boolean;
   readonly writable: boolean;
 }
 
@@ -44,7 +34,6 @@ export function TrailWorkflowIssueRow({
   issueId,
   onError,
   runtimeStore,
-  sourceIsHealthy,
   writable,
 }: TrailWorkflowIssueRowProps) {
   const issue = useStore(
@@ -54,6 +43,10 @@ export function TrailWorkflowIssueRow({
   const pending = useStore(
     runtimeStore,
     (state) => selectIsTrailEntityPending(state, issueId),
+  );
+  const sourceIssues = useStore(
+    runtimeStore,
+    useShallow((state) => selectTrailEntitySourceIssues(state, issueId)),
   );
   const projectIds = useStore(
     runtimeStore,
@@ -65,9 +58,12 @@ export function TrailWorkflowIssueRow({
       ? []
       : selectTrailReadableMilestoneIdsByProject(state, issue.projectId)),
   );
-  const [completionBaseline, setCompletionBaseline] = useState<TrailWorkflowIssue>();
-  const [completionTargetId, setCompletionTargetId] = useState<string>();
-  const [estimateDraft, setEstimateDraft] = useState("");
+  const statusMutation = useTrailWorkflowIssueStatusMutation({
+    actions,
+    onError,
+    runtimeStore,
+    writable,
+  });
 
   if (issue === undefined) return null;
   const status = selectTrailStatusDefinition(
@@ -75,40 +71,12 @@ export function TrailWorkflowIssueRow({
     "issue",
     issue.statusDefinitionId,
   );
-  const actionsDisabled = !writable || pending || !sourceIsHealthy;
-  const completionGateOpen = completionBaseline !== undefined && completionTargetId !== undefined;
+  const actionsDisabled = !writable || pending || sourceIssues.length > 0;
 
-  const clearCompletionGate = (): void => {
-    setCompletionBaseline(undefined);
-    setCompletionTargetId(undefined);
-    setEstimateDraft("");
-  };
-
-  const requestStatus = (targetStatusDefinitionId: string): void => {
-    if (actionsDisabled || targetStatusDefinitionId === issue.statusDefinitionId) return;
-    runTrailMutationAction(
-      () => actions.changeStatus(issue, targetStatusDefinitionId),
-      {
-        onError,
-        onNeedsInput: (request) => {
-          if (request.code !== "estimate-required") {
-            onError(request.message);
-            return;
-          }
-          setCompletionBaseline(issue);
-          setCompletionTargetId(targetStatusDefinitionId);
-          setEstimateDraft(issue.estimate?.toString() ?? "");
-        },
-      },
-    );
-  };
-
-  const requestProject = (targetProjectId: string): void => {
-    if (
-      actionsDisabled
-      || targetProjectId === ""
-      || targetProjectId === issue.projectId
-    ) return;
+  const requestProject = (targetValue: string): void => {
+    if (actionsDisabled) return;
+    const targetProjectId = targetValue === "" ? undefined : targetValue;
+    if (targetProjectId === issue.projectId) return;
     runTrailMutationAction(
       () => actions.moveToProject(issue, targetProjectId),
       { onError },
@@ -125,26 +93,6 @@ export function TrailWorkflowIssueRow({
     );
   };
 
-  const submitEstimate = (event: SyntheticEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    if (
-      completionBaseline === undefined
-      || completionTargetId === undefined
-      || estimateDraft.trim() === ""
-      || actionsDisabled
-    ) return;
-
-    const estimate = Number(estimateDraft);
-    runTrailMutationAction(
-      () => actions.changeStatus(completionBaseline, completionTargetId, estimate),
-      {
-        onError,
-        onNeedsInput: (request) => onError(request.message),
-        onSettled: clearCompletionGate,
-      },
-    );
-  };
-
   return (
     <li
       className="trail-workflow-issue-row"
@@ -155,15 +103,17 @@ export function TrailWorkflowIssueRow({
         <span>
           {status?.name ?? "Invalid status"}
           {issue.estimate !== undefined ? ` · Estimate ${issue.estimate}` : ""}
+          {sourceIssues.length > 0 ? " · data issue" : ""}
         </span>
       </div>
       <label className="trail-status-picker">
         <span className="screen-reader-text">Project for {issue.title}</span>
         <select
-          disabled={actionsDisabled || projectIds.length <= 1}
+          disabled={actionsDisabled}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => requestProject(event.target.value)}
           value={issue.projectId ?? ""}
         >
+          <option value="">No Project</option>
           {projectIds.map((projectId) => (
             <TrailWorkflowIssueProjectOption
               key={projectId}
@@ -195,44 +145,12 @@ export function TrailWorkflowIssueRow({
         configuration={configuration}
         disabled={actionsDisabled}
         entityType="issue"
-        onChange={requestStatus}
+        onChange={(targetStatusDefinitionId) => {
+          statusMutation.requestStatus(issue, targetStatusDefinitionId);
+        }}
         value={issue.statusDefinitionId}
       />
-
-      <TrailDialog
-        description={`Add an Estimate before moving ${issue.title} to Completed.`}
-        onOpenChange={(open) => {
-          if (!open) clearCompletionGate();
-        }}
-        open={completionGateOpen}
-        title="Estimate required to complete"
-      >
-        <form className="trail-dialog-form" onSubmit={submitEstimate}>
-          <label className="trail-dialog__field">
-            <span>Estimate</span>
-            <input
-              disabled={actionsDisabled}
-              min="0"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setEstimateDraft(event.target.value)}
-              step="1"
-              type="number"
-              value={estimateDraft}
-            />
-          </label>
-          <TrailDialogActions>
-            <TrailDialogClose>
-              <button type="button">Cancel</button>
-            </TrailDialogClose>
-            <button
-              className="mod-cta"
-              disabled={actionsDisabled || estimateDraft.trim() === ""}
-              type="submit"
-            >
-              Complete
-            </button>
-          </TrailDialogActions>
-        </form>
-      </TrailDialog>
+      {statusMutation.completionDialog}
     </li>
   );
 }

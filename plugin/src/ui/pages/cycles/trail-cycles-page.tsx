@@ -33,6 +33,7 @@ import {
   runTrailReceipt,
 } from "../../interactions/trail-action";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
+import { TrailWorkflowPresentation } from "../../patterns/trail-workflow-presentation";
 import {
   TrailAlertDialog,
   TrailAlertDialogAction,
@@ -65,6 +66,7 @@ function suggestedCycleEndDraft(configuration: TrailConfiguration, effectiveAt: 
 export function TrailCyclesPage(props: {
   readonly actions: TrailUiActions["cycles"];
   readonly configuration: TrailConfiguration;
+  readonly issueActions: TrailUiActions["issues"];
   readonly runtimeStore: TrailRuntimeStore;
   readonly writable: boolean;
 }) {
@@ -245,73 +247,103 @@ export function TrailCyclesPage(props: {
           />
         </section>
       ) : (
-        <section className="trail-project-workspace" aria-labelledby="trail-cycle-current-title">
-          <div className="trail-project-workspace__header">
-            <div>
-              <p className="trail-app__eyebrow">Current Cycle</p>
-              <h2 id="trail-cycle-current-title">
-                {formatTrailLocalDateTime(
-                  currentCycle.startedAt,
-                  props.configuration.temporal.timezone,
-                )}
-                {" -> "}
-                {formatTrailLocalDateTime(
-                  currentCycle.plannedEnd,
-                  props.configuration.temporal.timezone,
-                )}
-              </h2>
-              <span>{currentCycle.issueIds.length} planned Issues</span>
+        <>
+          <section className="trail-project-workspace" aria-labelledby="trail-cycle-current-title">
+            <div className="trail-project-workspace__header">
+              <div>
+                <p className="trail-app__eyebrow">Current Cycle</p>
+                <h2 id="trail-cycle-current-title">
+                  {formatTrailLocalDateTime(
+                    currentCycle.startedAt,
+                    props.configuration.temporal.timezone,
+                  )}
+                  {" -> "}
+                  {formatTrailLocalDateTime(
+                    currentCycle.plannedEnd,
+                    props.configuration.temporal.timezone,
+                  )}
+                </h2>
+                <span>{currentCycle.issueIds.length} planned Issues</span>
+              </div>
+              {pending ? <span className="trail-pending-chip">Saving</span> : null}
             </div>
-            {pending ? <span className="trail-pending-chip">Saving</span> : null}
-          </div>
 
-          <div className="trail-section-heading trail-section-heading--list">
-            <div>
-              <h3>Membership</h3>
-              <p>Cycle membership is explicit and does not change Issue Status.</p>
+            <div className="trail-section-heading trail-section-heading--list">
+              <div>
+                <h3>Membership</h3>
+                <p>Cycle membership is explicit and does not change Issue Status.</p>
+              </div>
             </div>
-          </div>
 
-          <TrailCycleIssueSelectionList
-            configuration={props.configuration}
-            disabled={actionsDisabled}
-            issueIds={planningIssueIds}
-            onToggle={(issueId, selected) => requestMembership(currentCycle, issueId, selected)}
-            runtimeStore={props.runtimeStore}
-            selectedIssueIds={new Set(currentCycle.issueIds)}
-          />
+            <TrailCycleIssueSelectionList
+              configuration={props.configuration}
+              disabled={actionsDisabled}
+              issueIds={planningIssueIds}
+              onToggle={(issueId, selected) => requestMembership(currentCycle, issueId, selected)}
+              runtimeStore={props.runtimeStore}
+              selectedIssueIds={new Set(currentCycle.issueIds)}
+            />
 
-          <TrailAlertDialog
-            description="Closing freezes this Cycle's final membership. Unfinished members become preselected candidates for an optional next Cycle."
-            title="Close current Cycle?"
-            trigger={(
-              <button disabled={actionsDisabled} type="button">
-                Close Cycle
-              </button>
-            )}
-          >
-            <p className="trail-dialog__detail">
-              Trail will not change the Status, Project, Milestone, or other facts of any Issue.
-            </p>
-            <TrailDialogActions>
-              <TrailAlertDialogCancel>
-                <button type="button">Cancel</button>
-              </TrailAlertDialogCancel>
-              <TrailAlertDialogAction>
-                <button
-                  className="mod-warning"
-                  disabled={actionsDisabled}
-                  onClick={(event) => {
-                    if (!closeCurrentCycle(currentCycle)) event.preventDefault();
-                  }}
-                  type="button"
-                >
-                  Confirm close
+            <TrailAlertDialog
+              description="Closing freezes this Cycle's final membership. Unfinished members become preselected candidates for an optional next Cycle."
+              title="Close current Cycle?"
+              trigger={(
+                <button disabled={actionsDisabled} type="button">
+                  Close Cycle
                 </button>
-              </TrailAlertDialogAction>
-            </TrailDialogActions>
-          </TrailAlertDialog>
-        </section>
+              )}
+            >
+              <p className="trail-dialog__detail">
+                Trail will not change the Status, Project, Milestone, or other facts of any Issue.
+              </p>
+              <TrailDialogActions>
+                <TrailAlertDialogCancel>
+                  <button type="button">Cancel</button>
+                </TrailAlertDialogCancel>
+                <TrailAlertDialogAction>
+                  <button
+                    className="mod-warning"
+                    disabled={actionsDisabled}
+                    onClick={(event) => {
+                      if (!closeCurrentCycle(currentCycle)) event.preventDefault();
+                    }}
+                    type="button"
+                  >
+                    Confirm close
+                  </button>
+                </TrailAlertDialogAction>
+              </TrailDialogActions>
+            </TrailAlertDialog>
+          </section>
+
+          <section className="trail-project-workspace" aria-labelledby="trail-cycle-execution-title">
+            <div className="trail-section-heading trail-section-heading--list">
+              <div>
+                <h2 id="trail-cycle-execution-title">Execution</h2>
+                <p>Use List for explicit properties or Board for Status execution with Project swimlanes.</p>
+              </div>
+              <span className="trail-count" aria-label={`${currentCycle.issueIds.length} cycle issues`}>
+                {currentCycle.issueIds.length}
+              </span>
+            </div>
+            {currentCycle.issueIds.length === 0 ? (
+              <div className="trail-empty-state trail-empty-state--compact">
+                <p>No Issues in the Current Cycle.</p>
+                <span>Add work through Membership when priorities change.</span>
+              </div>
+            ) : (
+              <TrailWorkflowPresentation
+                actions={props.issueActions}
+                configuration={props.configuration}
+                issueIds={currentCycle.issueIds}
+                laneMode="project"
+                onError={setWorkflowError}
+                runtimeStore={props.runtimeStore}
+                writable={props.writable}
+              />
+            )}
+          </section>
+        </>
       )}
 
       <TrailCycleHistory
@@ -470,7 +502,7 @@ function TrailCycleHistoryRow(props: {
         <span>
           Planned end {formatTrailLocalDateTime(cycle.plannedEnd, props.timezone)}
           {" · "}
-          {cycle.issueIds.length} final members
+          {cycle.issueIds.length} final Issues
         </span>
       </div>
     </li>

@@ -7,11 +7,11 @@ The active formal implementation is `plugin/` on `main`.
 The repository baseline from which the current Gate 8 slice is being built is:
 
 ```text
-d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a
-feat: add project milestone management
+826424ff673499d3aaef1669875db2719b1d9e5a
+feat: add cycle planning and rollover flow
 ```
 
-This baseline includes the completed Project Lifecycle, Initiative/Project organization, and Project Milestone slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, and Cycle Planning slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -39,7 +39,8 @@ Gate 8 evidence now includes:
 - Quality Baseline Hardening at `f84c6f10a4708cb11a85d1071a9dcf50c29b3603`, followed by the whitespace-only correction at `12a438d538400d4f377d0183f72f172bfce42e5b`;
 - **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`, implementing `Projects Root -> Initiative Focus -> Project Workspace`, Initiative creation, explicit Project Initiative assignment/unassignment, and optimistic relationship queries through existing Application semantics;
 - **Project Milestone Management** at `d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a`, implementing Milestone creation, derived current-scope progress, Issue assignment/unassignment, and delete-with-Issue-preservation through existing Domain/Application owners;
-- the Milestone checkpoint passed 70/70 test files and 239/239 tests, zero-warning lint, TypeScript, production build, and a clean-worktree integrity check against the pushed commit;
+- **Cycle Planning & Rollover** at `826424ff673499d3aaef1669875db2719b1d9e5a`, implementing explicit Cycle opening/membership/closing, optional rollover, and retained closed history without changing Issue facts;
+- the Cycle checkpoint passed 72/72 test files and 244/244 tests, zero-warning lint, TypeScript, production build, `git diff --check`, and GitHub verification of the exact 11-file pushed scope;
 - lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
 Push-triggered GitHub Actions status for the recent Gate 8 commits was not available through the connected GitHub workflow lookup, so this document does not invent CI run numbers for those commits.
@@ -84,7 +85,7 @@ Current reusable capability areas include:
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
 - shared structural and explicitly defined derived Query capabilities;
 - currently executable Application use cases;
-- UI action-result handling, local date/time conversion, Runtime write gating, feedback patterns, shared Status selection, and shared overlay mechanics;
+- UI action-result handling, local time conversion, Runtime write gating, feedback patterns, shared Status selection, and shared overlay mechanics;
 - Diagnostics and architecture guards.
 
 Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. UI must keep drafts/continuous interaction local and emit only Application intents for authoritative changes.
@@ -103,37 +104,42 @@ Completed Gate 8 slices:
 
 - **Project Lifecycle Closure** at `844728131f0a0acf7df4213322a7837c16b47dab`;
 - **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`;
-- **Project Milestone Management** at `d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a`.
+- **Project Milestone Management** at `d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a`;
+- **Cycle Planning & Rollover** at `826424ff673499d3aaef1669875db2719b1d9e5a`.
 
-The active slice is **Cycle Planning & Rollover**. It implements the explicit personal planning flow already frozen by Product and Domain:
+The active slice is **Project / Cycle Board & List Execution**. It turns the already-established Project and Current Cycle workflows into two consumers of one shared Workflow presentation capability:
 
 ```text
-open Cycle with chosen Workflow Issues
--> change membership explicitly while open
--> close Cycle without changing Issue facts
--> optionally open next Cycle with unfinished members preselected
--> retain closed Cycle history
+same Workflow Issue facts
+-> List for explicit property editing
+-> Board grouped by configured Issue Status definitions
+-> drag within the same Project lane changes Status only
+-> Status picker remains the accessible non-drag path
 ```
 
 The slice:
 
-1. exposes existing `CycleApplication.open/changeMembership/close` use cases through the UI action and diagnostics surfaces;
-2. adds page-specific Cycle Query for current planning candidates, newest-first closed history, and unfinished rollover candidates;
-3. adds a Cycles page beside Triage and Projects without creating a new Domain or persistence mechanism;
-4. resolves the configured `EndOfNextWeek` suggestion through the existing temporal rule and presents a concrete local `datetime-local` value before Application submission;
-5. lets the user explicitly select initial membership, then add/remove membership while the Cycle remains open without changing Issue Status/Project/Milestone facts;
-6. closes the Current Cycle through the shared confirmation primitive and preselects only unfinished final members for the optional next-Cycle flow;
-7. allows canceling the next-Cycle flow so having no Current Cycle remains a first-class valid state;
-8. shows closed Cycle history from retained canonical membership rather than introducing a new activity/event log.
+1. introduces one shared `TrailWorkflowPresentation` used by both Project Workspace and Current Cycle execution;
+2. preserves List as the default presentation so existing explicit Project/Milestone/Status editing remains available without another Details surface;
+3. renders Board columns from configured Issue Status definitions in canonical category/definition order rather than hard-coded columns;
+4. uses Project as one implicit Board lane and Current Cycle as Project swimlanes, including a first-class `No Project` lane for project-less Workflow Issues;
+5. makes Issue-card drag mean only `IssueApplication.changeStatus`; a cross-Project-lane drop is invalid and cannot mutate Project, Milestone, or Cycle membership;
+6. preserves the existing Estimate `NeedsInput` completion gate for both Status pickers and drag-to-Completed instead of inventing a Board-specific completion path;
+7. keeps the Status picker on every Board card as the non-drag and keyboard-accessible Status action;
+8. uses Atlassian Pragmatic Drag and Drop core for pointer/drag mechanics rather than implementing a Trail-specific drag engine;
+9. keeps presentation mode, drag-over state, and Board instance identity local/rebuildable; no rank, Board state, or relationship state is persisted;
+10. adds local horizontal Board scrolling so variable-width Obsidian panes do not force the entire Trail App wider.
 
-This slice intentionally uses a functional List/checkbox planning surface. It does not introduce Board columns, swimlane drag semantics, generic selection/bulk infrastructure, new Domain fields, new persistence carriers, or new host APIs. Once both Project and Cycle workspaces are established consumers, the later Board/List execution slice can evaluate a shared presentation owner from real reuse pressure.
+This slice does not introduce drag reordering within a Status, Project/Cycle relationship dragging, Selection/Bulk Actions, Context Menu, Peek, Custom View persistence, or a generic Board builder. Those remain separate consumer-driven capabilities.
+
+This slice validates the shared execution mechanics, not final UI completeness. Final Board/card/column sizing, information density, wide/narrow-pane proportions, and any future decision to add drag behavior in List remain deferred to later UI/interaction design; their absence here is not treated as a completed product requirement.
 
 ### 4.2 Current verified gaps
 
 Current Product gaps split into three groups:
 
-- Product composition gaps whose lower-layer owners already exist, including richer Project/Cycle Board/List execution presentation and later Home/View composition;
-- consumer-driven shared UI gaps such as Board interaction, Peek, Selection, Context Menu, Command Menu, and broader property pickers, which should be introduced only when a concrete workflow requires them;
+- Product composition gaps whose lower-layer owners already exist, including later Home/View composition and remaining lightweight entity editing surfaces;
+- consumer-driven shared UI gaps such as Peek, Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state;
 - real lower-layer gaps that must be repaired at their canonical owners when reached, including general editing use cases for several entity properties and the current Triage Application narrowing that requires a Project even though Domain Accept permits project-less Workflow creation.
 
 The project-less Triage Accept gap remains deferred because the current Product contract does not yet freeze a complete discovery/management surface for project-less Workflow Issues. Trail should not invent a page merely to expose a lower-layer capability.
@@ -170,17 +176,18 @@ Complete. The frozen V1 Domain, semantic planning, persistence/mutation, Runtime
 
 ### 5.2 Gate 8 - Product workspaces
 
-Active. Build coherent user workflows by composing the established foundations. Re-audit dependencies after each meaningful slice instead of pre-ordering Board, Peek, Context Menu, Selection, or other components as an infrastructure sequence.
+Active. Build coherent user workflows by composing the established foundations. Re-audit dependencies after each meaningful slice instead of pre-ordering Peek, Context Menu, Selection, or other components as an infrastructure sequence.
 
 Completed:
 
 - Project Lifecycle Closure;
 - Initiative Focus & Project Assignment;
-- Project Milestone Management.
+- Project Milestone Management;
+- Cycle Planning & Rollover.
 
 Active:
 
-- Cycle Planning & Rollover.
+- Project / Cycle Board & List Execution.
 
 ### 5.3 Gate 9 - V1 hardening
 
@@ -197,7 +204,9 @@ For each active Gate 8 slice:
 - run one full `npm run check` at the coherent stable checkpoint before commit;
 - run `git diff --check` before checkpoint;
 - keep `npm audit` clean when dependency state changes or a security advisory is encountered;
-- use representative real Obsidian validation only when the slice changes host-specific, persistence, focus/portal, drag/pointer, keyboard, or other behavior that jsdom/pure tests cannot establish reliably.
+- use representative real Obsidian validation when the slice changes host-specific, persistence, focus/portal, drag/pointer, keyboard, or other behavior that jsdom/pure tests cannot establish reliably.
+
+This Board/List slice changes drag/pointer and responsive presentation behavior, so automated tests are necessary but not sufficient: final validation must include a real Obsidian Project Board drag, Current Cycle same-lane drag, invalid cross-lane attempt, and the drag-to-Completed Estimate gate using a diagnostics build.
 
 Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 

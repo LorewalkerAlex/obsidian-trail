@@ -614,3 +614,196 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Board/List is one presentation capability shared by Project and Cycle workspaces. */
+.trail-workflow-presentation {
+  display: grid;
+  gap: var(--size-4-3);
+  min-width: 0;
+}
+
+.trail-workflow-presentation__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-workflow-presentation__toggle {
+  display: inline-flex;
+  gap: var(--size-2-1);
+  padding: var(--size-2-1);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+}
+
+.trail-workflow-presentation__toggle button {
+  min-height: 1.8rem;
+  padding-inline: var(--size-4-2);
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.trail-workflow-presentation__toggle button[aria-pressed="true"] {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.trail-workflow-board-scroll {
+  min-width: 0;
+  padding-bottom: var(--size-4-2);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.trail-workflow-board {
+  display: grid;
+  gap: var(--size-4-2);
+  min-width: max-content;
+}
+
+.trail-workflow-board__row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(13rem, 1fr);
+  gap: var(--size-4-2);
+  align-items: stretch;
+}
+
+.trail-workflow-board__row[data-lane-label="true"] {
+  grid-template-columns: minmax(8rem, 10rem);
+}
+
+.trail-workflow-board__corner,
+.trail-workflow-board__status-heading,
+.trail-workflow-board__lane-heading {
+  min-width: 0;
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+}
+
+.trail-workflow-board__corner,
+.trail-workflow-board__status-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.trail-workflow-board__corner,
+.trail-workflow-board__lane-heading span,
+.trail-workflow-board__status-heading {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-workflow-board__lane-heading {
+  display: grid;
+  align-content: start;
+  gap: var(--size-2-1);
+}
+
+.trail-workflow-board__lane-heading strong {
+  overflow-wrap: anywhere;
+  font-size: var(--font-ui-small);
+}
+
+.trail-workflow-board__cell {
+  display: grid;
+  align-content: start;
+  gap: var(--size-4-2);
+  min-height: 7rem;
+  padding: var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary-alt, var(--background-secondary));
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.trail-workflow-board__cell[data-drag-over="true"] {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+}
+
+.trail-workflow-board__empty {
+  align-self: center;
+  justify-self: center;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.trail-workflow-issue-card {
+  display: grid;
+  gap: var(--size-4-2);
+  min-width: 0;
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  transition: border-color 120ms ease, background 120ms ease, opacity 120ms ease;
+}
+
+.trail-workflow-issue-card:hover {
+  border-color: var(--background-modifier-border-focus);
+}
+
+.trail-workflow-issue-card[data-dragging="true"] {
+  opacity: 0.45;
+}
+
+.trail-workflow-issue-card[data-pending="true"] {
+  border-style: dashed;
+}
+
+.trail-workflow-issue-card__heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--size-4-2);
+}
+
+.trail-workflow-issue-card__heading strong {
+  overflow-wrap: anywhere;
+  font-size: var(--font-ui-small);
+  line-height: var(--line-height-tight);
+}
+
+.trail-workflow-issue-card__drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0 var(--size-2-1);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  cursor: grab;
+  user-select: none;
+}
+
+.trail-workflow-issue-card__drag-handle:active {
+  cursor: grabbing;
+}
+
+.trail-workflow-issue-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-1) var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+@container (max-width: 620px) {
+  .trail-workflow-presentation__toolbar {
+    justify-content: space-between;
+  }
+
+  .trail-workflow-board-scroll {
+    margin-inline: calc(var(--size-4-2) * -1);
+    padding-inline: var(--size-4-2);
+  }
+}
