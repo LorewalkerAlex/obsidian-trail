@@ -4,14 +4,14 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The pushed Gate 8 checkpoint immediately preceding the current Initiative Details Editing checkpoint is:
+The pushed Gate 8 checkpoint immediately preceding the current Label Configuration & Management checkpoint is:
 
 ```text
-982316b3adcbad23c42b4e487e111814c96895f8
-feat: add project details editing
+f24879238a705605f7d125621c60c40e6062a3f2
+feat: add initiative details editing
 ```
 
-This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, and Project Details Editing slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, and Initiative Details Editing slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -48,9 +48,11 @@ Gate 8 evidence now includes:
 - the current Radix Dialog is only a temporary carrier for the verified Peek content/editing contract. Final Linear-style Peek positioning, non-blocking interaction, keyboard traversal, dimensions, density, responsive behavior, and broader Selection/Context Menu/Command Menu integration remain later interaction/UI work;
 - **Project Details Editing** at `982316b3adcbad23c42b4e487e111814c96895f8`, adding canonical lightweight Project editing for title, description, Priority, Due, and Labels while leaving Status and Initiative on their existing explicit controls;
 - the Project Details checkpoint passed 83/83 test files and 271/271 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; representative Obsidian validation confirmed title-driven source rename, property persistence, plugin reload convergence, preservation of the existing contained Workflow Issue, and a clean Runtime with no pending residue;
-- **Initiative Details Editing** is completed in this checkpoint, adding canonical lightweight Initiative editing for title, description, Priority, Due, and Labels from Initiative Focus;
+- **Initiative Details Editing** at `f24879238a705605f7d125621c60c40e6062a3f2`, adding canonical lightweight Initiative editing for title, description, Priority, Due, and Labels from Initiative Focus;
 - the Initiative Details checkpoint passed 90/90 test files and 281/281 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; representative Obsidian validation confirmed Initiative creation, title-driven source rename, description/Priority/Due persistence, plugin reload convergence, and a clean Runtime with no pending or source-health residue;
-- repository-root `Trail/` remains versioned as disposable host-test observation data. The repository development Vault now also versions `.obsidian/plugins/trail/data.json` so its Configuration/Workspace State reference IDs remain coherent with checked-in `Trail/` observations across machines; generated plugin bundles, diagnostics, graph state, and workspace state remain ignored. These development-Vault values are not Product facts or production defaults;
+- **Label Configuration & Management** is completed in this checkpoint, exposing Workspace-owned LabelGroup/Label management through Trail's Obsidian settings while preserving the existing Configuration Application, semantic planning, explicit reference repair, Source Sync, plugin-data persistence, and entity-side Label selection owners;
+- the Label Configuration checkpoint passed 91/91 test files and 285/285 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; representative Obsidian validation confirmed LabelGroup/Label create/edit/delete, Single/Multiple applicability, stable-ID rename behavior, destructive Multiple-to-Single reference repair across Project/Issue Markdown, Configuration persistence in `data.json`, Settings refresh after Runtime initialization, reload convergence, and a clean Runtime with no pending or source-health residue;
+- repository-root `Trail/` remains versioned as disposable host-test observation data. The repository development Vault also versions `.obsidian/plugins/trail/data.json` so its Configuration/Workspace State reference IDs remain coherent with checked-in `Trail/` observations across machines; generated plugin bundles, diagnostics, graph state, and workspace state remain ignored. These development-Vault values are not Product facts or production defaults;
 - lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
 Push-triggered GitHub Actions status for the recent Gate 8 commits was not available through the connected GitHub workflow lookup, so this document does not invent CI run numbers for those commits.
@@ -95,7 +97,7 @@ Current reusable capability areas include:
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
 - shared structural and explicitly defined derived Query capabilities;
 - currently executable Application use cases;
-- UI action-result handling, local time conversion, Runtime write gating, feedback patterns, shared Status selection, shared overlay mechanics, shared Label editing, and shared Workflow List/Board presentation;
+- UI action-result handling, local time conversion, Runtime write gating, feedback patterns, shared Status selection, shared overlay mechanics, shared Label editing, Obsidian Settings integration, and shared Workflow List/Board presentation;
 - Diagnostics and architecture guards.
 
 Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. UI must keep drafts/continuous interaction local and emit only Application intents for authoritative changes.
@@ -119,7 +121,8 @@ Completed Gate 8 slices:
 - **Project / Cycle Board & List Interaction Foundation** at `c87723486e95c2915ff02388540e2fd189010b63`;
 - **Workflow Issue Peek & Planning Properties** at `afd7ff5743fcd3497bf1dbcdd6c4493025996e5e`;
 - **Project Details Editing** at `982316b3adcbad23c42b4e487e111814c96895f8`;
-- **Initiative Details Editing** in this checkpoint.
+- **Initiative Details Editing** at `f24879238a705605f7d125621c60c40e6062a3f2`;
+- **Label Configuration & Management** in this checkpoint.
 
 The completed **Project Details Editing** slice closes the lightweight Project-facts editing gap without merging Status or Initiative relationship changes into the same interaction:
 
@@ -166,7 +169,31 @@ The slice adds the Initiative properties planner/Application path, reuses config
 
 That host run also exposed a development-Vault integrity problem rather than an Initiative feature defect: versioned `Trail/` Markdown referenced StatusDefinition IDs from one machine while plugin `data.json` on another machine contained independently bootstrapped IDs. The development Vault now versions its `data.json` alongside `Trail/` observation data so those two authoritative persistence classes stay coherent during cross-machine host validation.
 
-The next Gate 8 slice is **Label Configuration & Management**. Existing Domain/Data/Configuration planning, reference repair, persistence, and entity Label selection remain canonical; the missing product capability is a user-facing way to create and manage LabelGroups and Labels so those existing entity editors have real selectable values.
+The completed **Label Configuration & Management** slice turns the existing Label infrastructure into an actual product capability without introducing a second Configuration path:
+
+```text
+Settings -> Trail -> Labels
+-> create/edit/delete LabelGroups and Labels
+-> Configuration Application / semantic planning
+-> explicit reference repair when required
+-> Source Sync / authoritative data.json
+-> Runtime Configuration refresh
+-> Initiative / Project / Issue Label selection
+-> authoritative Markdown labelIds
+```
+
+The slice:
+
+1. exposes LabelGroup/Label management through Obsidian's declarative Plugin Settings API and refreshes the settings surface when Runtime Configuration becomes available after initialization;
+2. supports LabelGroup name, Single/Multiple selection mode, Initiative/Project/Issue applicability, and Label create/rename/move/delete while keeping stable IDs authoritative;
+3. routes every change through the existing Configuration Application and semantic planner rather than saving `data.json` directly from Settings;
+4. preserves explicit `NeedsInput` reference repair for destructive changes. Removing applicability, deleting Labels/Groups, or changing a Group from Multiple to Single clears only Label selections that become invalid and preserves the work entities themselves;
+5. avoids arbitrary data selection during Multiple-to-Single repair: an entity with conflicting Labels from that Group loses the conflicting Group selection instead of Trail silently choosing one Label, while already-valid single selections remain;
+6. canonicalizes LabelGroup and Label ordering by stable ID before submission so strict Configuration postconditions match the plugin-data codec's canonical physical ordering instead of producing a false postcondition failure after a successful save;
+7. keeps entity-side selection in the existing shared Label editor, so Initiative, Project, and Workflow Issue consumers immediately use newly configured values according to applicability and Single/Multiple rules;
+8. keeps Settings drafts local until an explicit create/save/delete action emits an Application intent; Runtime publication then refreshes the declarative settings definitions from authoritative Configuration.
+
+Representative host validation created `Area` and `Technology` groups, created and renamed stable-ID Labels, applied Labels to Initiative/Project/Issue records, and then changed `Technology` from Multiple to Single. Explicit reference repair cleared the Project's conflicting two-Label Technology selection while preserving `B-LANE`'s valid TypeScript selection and all Area selections. The final fixture contains `Area` and `Technology` plus `Professional`, `Personal`, `TypeScript`, and `Obsidian`; Initiative, Project, and Issue Markdown retain the expected stable Label IDs. Reloaded Runtime remained `ready` with empty pending state and no source-health issues.
 
 ### 4.2 Current verified gaps
 
@@ -176,11 +203,13 @@ Current Product gaps split into three groups:
 - consumer-driven shared UI gaps such as Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state;
 - real lower-layer gaps that must be repaired at their canonical owners when reached, including the current Triage Application narrowing that requires a Project even though Domain Accept permits project-less Workflow creation.
 
-Label Configuration & Management is the current actionable gap: LabelGroup/Label Domain and persistence models, Configuration replacement/reference repair, and entity-side Label selection already exist, but there is no user-facing Configuration UI to create, edit, or remove LabelGroups/Labels. The current development-Vault Configuration therefore contains no Labels and the shared entity Label editor has nothing to render.
+Label Configuration & Management is no longer a verified gap. Workspace Configuration now has a user-facing Label management surface, and Initiative/Project/Issue Label selection has representative host evidence through `data.json`, Markdown persistence, explicit reference repair, and Runtime convergence.
 
 Home Focus and saved Views remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Trail should not invent those schemas merely to surface a page early.
 
 The project-less Triage Accept gap remains deferred because the current Product contract does not yet freeze a complete discovery/management surface for project-less Workflow Issues. Trail should not invent a page merely to expose a lower-layer capability.
+
+The next Gate 8 slice is intentionally not frozen in this checkpoint. Select it by re-auditing the remaining Product composition and interaction gaps against the latest repository rather than carrying forward a stale component-first sequence.
 
 Product, Domain, Data, Architecture, and Design-to-Code Map remain unchanged unless implementation evidence exposes a contradiction in those authorities.
 
@@ -225,11 +254,12 @@ Completed:
 - Project / Cycle Board & List Interaction Foundation;
 - Workflow Issue Peek & Planning Properties;
 - Project Details Editing;
-- Initiative Details Editing.
+- Initiative Details Editing;
+- Label Configuration & Management.
 
 Active:
 
-- **Label Configuration & Management** — expose Configuration-owned LabelGroup/Label management, then prove existing Initiative/Project/Issue Label selection through authoritative `data.json` and Markdown persistence.
+- No next Gate 8 feature slice is frozen in this checkpoint. Re-audit the current repository and remaining Product gaps before selecting the next coherent user-value slice.
 
 ### 5.3 Gate 9 - V1 hardening
 
@@ -252,7 +282,9 @@ The completed Peek checkpoint reused the existing Radix portal/focus primitive w
 
 The completed Project Details checkpoint reused the established Project Application/Source Sync path while adding the canonical Project planning-property edit planner and a second consumer of shared Label editing. Automated coverage and representative real-Obsidian validation both passed. Host evidence covered Project title-driven file rename, description/Priority/Due persistence, preservation of contained Workflow Issue data, plugin reload convergence, and empty Runtime pending state; the representative host configuration had no Labels, so Label interaction remained automated-test evidence only.
 
-The completed Initiative Details checkpoint extended the same property-editing and file-backed rename contract to Initiative while preserving Initiative identity and Project relationships. Automated coverage and representative real-Obsidian validation both passed at 90/90 test files and 281/281 tests. The host run also verified the development-Vault persistence boundary after checking in `data.json` so cross-machine Configuration IDs and versioned `Trail/` observation records initialize coherently. Label interaction still lacks representative host evidence because the current development-Vault Configuration intentionally has zero LabelGroups/Labels; that gap is the next selected slice.
+The completed Initiative Details checkpoint extended the same property-editing and file-backed rename contract to Initiative while preserving Initiative identity and Project relationships. Automated coverage and representative real-Obsidian validation both passed at 90/90 test files and 281/281 tests. The host run also verified the development-Vault persistence boundary after checking in `data.json` so cross-machine Configuration IDs and versioned `Trail/` observation records initialize coherently.
+
+The completed Label Configuration checkpoint reused the existing Configuration Application, semantic planning, explicit reference-repair, Source Sync, plugin-data, Runtime, and entity Label-selection owners rather than creating a Settings-specific persistence path. Automated coverage and representative real-Obsidian validation both passed at 91/91 test files and 285/285 tests. Host evidence covered Settings initialization refresh, LabelGroup/Label create/edit/delete, stable-ID rename propagation, Initiative/Project/Issue selection, Multiple-to-Single destructive repair, authoritative `data.json` and Markdown persistence, strict Configuration postcondition convergence, and final Runtime `ready` with empty pending state and no source-health issues.
 
 Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 

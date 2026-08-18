@@ -14,6 +14,7 @@ import {
   createObsidianDiagnosticStorage,
   type TrailDiagnosticStorage,
 } from "./adapters/obsidian/trail-diagnostics-storage-obsidian";
+import { TrailLabelSettingsTab } from "./adapters/obsidian/trail-label-settings-tab";
 import { createObsidianPluginDataIO } from "./adapters/obsidian/trail-plugin-data-io-obsidian";
 import type { TrailObsidianFileKinds } from "./adapters/obsidian/trail-obsidian-file-kinds";
 import { createObsidianSourceIO } from "./adapters/obsidian/trail-source-io-obsidian";
@@ -151,6 +152,12 @@ export default class TrailPlugin extends Plugin {
     const actions = __TRAIL_DIAGNOSTICS_ENABLED__
       ? createDiagnosticTrailUiActions(applicationSession, diagnostics)
       : applicationSession;
+    this.addSettingTab(new TrailLabelSettingsTab(
+      this.app,
+      this,
+      runtimeStore,
+      applicationSession.configuration,
+    ));
     const vaultEvents = createObsidianVaultEventAdapter({
       onObserved: (event, disposition) => {
         diagnostics.record("host.vault.managed-event", {
