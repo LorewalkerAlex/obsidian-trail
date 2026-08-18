@@ -259,7 +259,7 @@ export default class TrailPlugin extends Plugin {
             level: "error",
           });
           console.error("Trail initialization failed", error);
-                new Notice("Trail could not initialize. Open Trail for details.");
+          new Notice("Trail could not initialize. Open Trail for details.");
         },
       ).finally(() => {
         if (this.refreshController !== refreshController) return;
