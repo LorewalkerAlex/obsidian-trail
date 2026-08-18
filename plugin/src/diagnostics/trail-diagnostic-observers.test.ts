@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { TrailApplicationSession } from "../application/trail-application-session";
+import type { TrailProject } from "../domain/model/trail-entities";
 import type { TrailAuthoritativeSourceSync } from "../source-sync/trail-authoritative-source-sync";
 import { createTrailMutationPlan } from "../mutation/plans/trail-mutation-plan";
 import { createTrailRuntimeStore, setTrailRuntimeControl } from "../runtime/store/trail-runtime-store";
 import type { TrailDiagnostics, TrailDiagnosticRecordOptions } from "./trail-diagnostics";
 import {
   createDiagnosticTrailSourceSync,
+  createDiagnosticTrailUiActions,
   observeTrailRuntimeDiagnostics,
 } from "./trail-diagnostic-observers";
 
@@ -55,6 +58,38 @@ describe("Trail diagnostic observers", () => {
     ]);
     expect(events[0]?.options?.correlationId).toBe("command-a");
     expect(events[1]?.options?.correlationId).toBe("command-a");
+  });
+
+  it("observes Project lifecycle actions on the UI diagnostics boundary", () => {
+    const { diagnostics, events } = recorder();
+    const project: TrailProject = {
+      id: "project-a",
+      labelIds: [],
+      statusDefinitionId: "project-unstarted",
+      title: "Project A",
+    };
+    const changeStatus = vi.fn(() => ({
+      entityId: project.id,
+      kind: "unchanged" as const,
+    }));
+    const session = {
+      projects: { changeStatus },
+    } as unknown as TrailApplicationSession;
+    const actions = createDiagnosticTrailUiActions(session, diagnostics);
+
+    actions.projects.changeStatus(project, "project-started");
+
+    expect(changeStatus).toHaveBeenCalledWith(project, "project-started");
+    expect(events).toEqual([{
+      name: "ui.project.status.unchanged",
+      options: {
+        data: {
+          entityId: project.id,
+          projectId: project.id,
+          targetStatusDefinitionId: "project-started",
+        },
+      },
+    }]);
   });
 
   it("records Runtime control and pending transitions only when they change", () => {

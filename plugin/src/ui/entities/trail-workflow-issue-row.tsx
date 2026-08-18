@@ -9,22 +9,16 @@ import { useShallow } from "zustand/react/shallow";
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
 import {
-  TRAIL_STATUS_CATEGORIES,
-  type TrailStatusCategory,
-} from "../../domain/model/trail-values";
-import {
   selectIsTrailEntityPending,
   selectTrailReadableProjectById,
   selectTrailReadableProjectIds,
   selectTrailReadableWorkflowIssueById,
 } from "../../query/shared/trail-effective-query";
 import { selectTrailEntitySourceIssues } from "../../query/shared/trail-source-health-query";
-import {
-  selectTrailStatusDefinition,
-  selectTrailStatusOptionGroups,
-} from "../../query/shared/trail-status-query";
+import { selectTrailStatusDefinition } from "../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { runTrailMutationAction } from "../interactions/trail-action";
+import { TrailStatusPicker } from "../patterns/trail-status-picker";
 import {
   TrailDialog,
   TrailDialogActions,
@@ -40,16 +34,6 @@ interface TrailWorkflowIssueRowProps {
   readonly runtimeStore: TrailRuntimeStore;
   readonly sourceIsHealthy: boolean;
   readonly writable: boolean;
-}
-
-function statusCategoryLabel(category: TrailStatusCategory): string {
-  switch (category) {
-    case "backlog": return "Backlog";
-    case "unstarted": return "Unstarted";
-    case "started": return "Started";
-    case "completed": return "Completed";
-    case "canceled": return "Canceled";
-  }
 }
 
 export function TrailWorkflowIssueRow({
@@ -83,7 +67,6 @@ export function TrailWorkflowIssueRow({
     "issue",
     issue.statusDefinitionId,
   );
-  const groups = selectTrailStatusOptionGroups(configuration, "issue");
   const actionsDisabled = !writable || pending || !sourceIsHealthy;
   const completionGateOpen = completionBaseline !== undefined && completionTargetId !== undefined;
 
@@ -172,25 +155,14 @@ export function TrailWorkflowIssueRow({
           ))}
         </select>
       </label>
-      <label className="trail-status-picker">
-        <span className="screen-reader-text">Status for {issue.title}</span>
-        <select
-          disabled={actionsDisabled}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) => requestStatus(event.target.value)}
-          value={issue.statusDefinitionId}
-        >
-          {TRAIL_STATUS_CATEGORIES.map((category) => {
-            const group = groups.find((candidate) => candidate.category === category);
-            return (
-              <optgroup key={category} label={statusCategoryLabel(category)}>
-                {(group?.definitions ?? []).map((definition) => (
-                  <option key={definition.id} value={definition.id}>{definition.name}</option>
-                ))}
-              </optgroup>
-            );
-          })}
-        </select>
-      </label>
+      <TrailStatusPicker
+        ariaLabel={`Status for ${issue.title}`}
+        configuration={configuration}
+        disabled={actionsDisabled}
+        entityType="issue"
+        onChange={requestStatus}
+        value={issue.statusDefinitionId}
+      />
 
       <TrailDialog
         description={`Add an Estimate before moving ${issue.title} to Completed.`}

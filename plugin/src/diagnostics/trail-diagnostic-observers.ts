@@ -88,7 +88,10 @@ export function createDiagnosticTrailUiActions(
     TrailApplicationSession["issues"],
     "changeStatus" | "create" | "moveToProject"
   >;
-  readonly projects: Pick<TrailApplicationSession["projects"], "create">;
+  readonly projects: Pick<
+    TrailApplicationSession["projects"],
+    "changeStatus" | "create"
+  >;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
     "accept" | "capture" | "convertToProject" | "defer" | "delete" | "edit"
@@ -150,6 +153,22 @@ export function createDiagnosticTrailUiActions(
       },
     },
     projects: {
+      changeStatus(expectedProject, targetStatusDefinitionId): TrailMutationActionResult {
+        const data = {
+          projectId: expectedProject.id,
+          targetStatusDefinitionId,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.project.status",
+            session.projects.changeStatus(expectedProject, targetStatusDefinitionId),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.project.status", error, data);
+        }
+      },
       create(title: string): TrailEntityMutationReceipt {
         const data = { titleLength: title.length };
         try {

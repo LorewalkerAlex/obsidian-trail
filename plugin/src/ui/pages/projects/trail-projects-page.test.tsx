@@ -5,6 +5,84 @@ import { createTrailUiTestHarness } from "../../../test/trail-ui-test-harness";
 import { TrailProjectsPage } from "./trail-projects-page";
 
 describe("TrailProjectsPage", () => {
+  it("maps the Project lifecycle picker to the existing Project Application action", () => {
+    const harness = createTrailUiTestHarness();
+    render(
+      <TrailProjectsPage
+        actions={{
+          issues: harness.actions.issues,
+          projects: harness.actions.projects,
+        }}
+        runtimeStore={harness.runtimeStore}
+        writable
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Project status for Project A"), {
+      target: { value: "project-started" },
+    });
+    expect(harness.actions.projects.changeStatus).toHaveBeenCalledWith(
+      harness.project,
+      "project-started",
+    );
+  });
+
+  it("surfaces a rejected Project completion without inventing page-local lifecycle rules", () => {
+    const harness = createTrailUiTestHarness();
+    const changeStatus = vi.fn(() => {
+      throw new Error("Project cannot be completed while Issue issue-a is non-terminal");
+    });
+    render(
+      <TrailProjectsPage
+        actions={{
+          issues: harness.actions.issues,
+          projects: { ...harness.actions.projects, changeStatus },
+        }}
+        runtimeStore={harness.runtimeStore}
+        writable
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Project status for Project A"), {
+      target: { value: "project-completed" },
+    });
+
+    expect(changeStatus).toHaveBeenCalledWith(harness.project, "project-completed");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Project cannot be completed while Issue issue-a is non-terminal",
+    );
+  });
+
+  it("keeps terminal Projects readable but requires explicit reopen before adding work", () => {
+    const harness = createTrailUiTestHarness({
+      projectStatusDefinitionId: "project-completed",
+      workflowStatusDefinitionId: "issue-canceled",
+    });
+    render(
+      <TrailProjectsPage
+        actions={{
+          issues: harness.actions.issues,
+          projects: harness.actions.projects,
+        }}
+        runtimeStore={harness.runtimeStore}
+        writable
+      />,
+    );
+
+    expect(screen.getByPlaceholderText("Add a Workflow Issue")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add Issue" })).toBeDisabled();
+    expect(screen.getByText("Reopen this Project before adding new Workflow Issues."))
+      .toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Project status for Project A"), {
+      target: { value: "project-unstarted" },
+    });
+    expect(harness.actions.projects.changeStatus).toHaveBeenCalledWith(
+      harness.project,
+      "project-unstarted",
+    );
+  });
+
   it("maps the Project picker to an identity-preserving Issue move action", () => {
     const harness = createTrailUiTestHarness();
     render(

@@ -18,7 +18,10 @@ import {
 } from "./trail-test-fixtures";
 import type { TrailUiActions } from "../ui/shell/trail-ui-actions";
 
-export function createTrailUiTestHarness() {
+export function createTrailUiTestHarness(input: {
+  readonly projectStatusDefinitionId?: string;
+  readonly workflowStatusDefinitionId?: string;
+} = {}) {
   const triage: TrailTriageIssue = {
     context: "triage",
     due: Date.UTC(2026, 7, 16, 10, 0),
@@ -29,7 +32,7 @@ export function createTrailUiTestHarness() {
   const project = {
     id: "project-a",
     labelIds: [],
-    statusDefinitionId: "project-unstarted",
+    statusDefinitionId: input.projectStatusDefinitionId ?? "project-unstarted",
     title: "Project A",
   };
   const projectB = {
@@ -38,14 +41,22 @@ export function createTrailUiTestHarness() {
     statusDefinitionId: "project-unstarted",
     title: "Project B",
   };
+  const workflowStatusDefinitionId = input.workflowStatusDefinitionId ?? "issue-unstarted";
+  const workflowIsTerminal = workflowStatusDefinitionId === "issue-completed"
+    || workflowStatusDefinitionId === "issue-canceled";
   const workflow: TrailWorkflowIssue = {
     context: "workflow",
     createdAt: Date.UTC(2026, 7, 15),
     id: "issue-a",
     labelIds: [],
     projectId: project.id,
-    statusDefinitionId: "issue-unstarted",
+    statusDefinitionId: workflowStatusDefinitionId,
     title: "Issue A",
+    ...(workflowStatusDefinitionId === "issue-started"
+      ? { firstStartedAt: Date.UTC(2026, 7, 15, 1) }
+      : {}),
+    ...(workflowStatusDefinitionId === "issue-completed" ? { estimate: 1 } : {}),
+    ...(workflowIsTerminal ? { terminalAt: Date.UTC(2026, 7, 15, 2) } : {}),
   };
   const runtimeStore = createTrailRuntimeStore();
   publishTrailCommittedRuntime(runtimeStore, buildTrailCommittedRuntimeCandidate({
@@ -87,6 +98,7 @@ export function createTrailUiTestHarness() {
       moveToProject: vi.fn(() => ({ kind: "unchanged" as const, entityId: workflow.id })),
     },
     projects: {
+      changeStatus: vi.fn(() => ({ kind: "unchanged" as const, entityId: project.id })),
       create: vi.fn(() => receipt("new-project")),
     },
     triage: {

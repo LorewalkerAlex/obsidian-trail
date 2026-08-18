@@ -6,6 +6,7 @@ import {
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
+import { isTrailTerminalStatusDefinition } from "../../../domain/rules/trail-status-rules";
 import {
   selectIsTrailEntityPending,
   selectTrailReadableConfiguration,
@@ -20,8 +21,12 @@ import {
 import { selectTrailStatusDefinition } from "../../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
 import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
-import { runTrailReceipt } from "../../interactions/trail-action";
+import {
+  runTrailMutationAction,
+  runTrailReceipt,
+} from "../../interactions/trail-action";
 import { TrailDataIssuePanel } from "../../patterns/trail-feedback";
+import { TrailStatusPicker } from "../../patterns/trail-status-picker";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
 export function TrailProjectsPage(props: {
@@ -129,7 +134,7 @@ export function TrailProjectsPage(props: {
           </aside>
           {configuration === null ? null : (
             <TrailProjectWorkspace
-              actions={props.actions.issues}
+              actions={props.actions}
               configuration={configuration}
               onError={setWorkflowError}
               projectId={effectiveSelectedProjectId}
@@ -167,7 +172,7 @@ function TrailProjectNavigationItem(props: {
 }
 
 function TrailProjectWorkspace(props: {
-  readonly actions: TrailUiActions["issues"];
+  readonly actions: Pick<TrailUiActions, "issues" | "projects">;
   readonly configuration: NonNullable<ReturnType<typeof selectTrailReadableConfiguration>>;
   readonly onError: (message: string | undefined) => void;
   readonly projectId: string;
@@ -199,12 +204,23 @@ function TrailProjectWorkspace(props: {
     project.statusDefinitionId,
   );
   const sourceIsHealthy = sourceIssues.length === 0;
+  const actionsDisabled = !props.writable || pending || !sourceIsHealthy;
+  const projectIsTerminal = projectStatus !== undefined
+    && isTrailTerminalStatusDefinition(projectStatus);
+
+  const requestStatus = (targetStatusDefinitionId: string): void => {
+    if (actionsDisabled || targetStatusDefinitionId === project.statusDefinitionId) return;
+    runTrailMutationAction(
+      () => props.actions.projects.changeStatus(project, targetStatusDefinitionId),
+      { onError: props.onError },
+    );
+  };
 
   const submitIssue = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (!props.writable || !sourceIsHealthy || issueDraft.trim() === "") return;
+    if (actionsDisabled || projectIsTerminal || issueDraft.trim() === "") return;
     runTrailReceipt(
-      () => props.actions.create(project.id, issueDraft),
+      () => props.actions.issues.create(project.id, issueDraft),
       props.onError,
       () => setIssueDraft(""),
     );
@@ -221,6 +237,15 @@ function TrailProjectWorkspace(props: {
         {pending ? <span className="trail-pending-chip">Saving</span> : null}
       </div>
 
+      <TrailStatusPicker
+        ariaLabel={`Project status for ${project.title}`}
+        configuration={props.configuration}
+        disabled={actionsDisabled}
+        entityType="project"
+        onChange={requestStatus}
+        value={project.statusDefinitionId}
+      />
+
       {sourceIssues.length > 0 ? (
         <TrailDataIssuePanel
           issues={sourceIssues.map((issue) => issue.message)}
@@ -229,12 +254,18 @@ function TrailProjectWorkspace(props: {
         />
       ) : null}
 
+      {projectIsTerminal ? (
+        <p className="trail-project-terminal-note">
+          Reopen this Project before adding new Workflow Issues.
+        </p>
+      ) : null}
+
       <form className="trail-capture__form" onSubmit={submitIssue}>
         <label className="trail-capture__field">
           <span className="screen-reader-text">Workflow Issue title</span>
           <input
             autoComplete="off"
-            disabled={!props.writable || !sourceIsHealthy}
+            disabled={actionsDisabled || projectIsTerminal}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setIssueDraft(event.target.value)}
             placeholder="Add a Workflow Issue"
             value={issueDraft}
@@ -242,7 +273,7 @@ function TrailProjectWorkspace(props: {
         </label>
         <button
           className="mod-cta trail-capture__button"
-          disabled={!props.writable || !sourceIsHealthy || issueDraft.trim() === ""}
+          disabled={actionsDisabled || projectIsTerminal || issueDraft.trim() === ""}
           type="submit"
         >
           Add Issue
@@ -268,7 +299,7 @@ function TrailProjectWorkspace(props: {
         <ol className="trail-workflow-issue-list">
           {issueIds.map((issueId) => (
             <TrailWorkflowIssueRow
-              actions={props.actions}
+              actions={props.actions.issues}
               configuration={props.configuration}
               issueId={issueId}
               key={issueId}
