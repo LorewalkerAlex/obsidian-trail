@@ -1,9 +1,11 @@
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
+import type { TrailPriority } from "../../domain/model/trail-values";
 import { planDeleteTrailWorkflowIssue } from "../../domain/planning/trail-delete-planning";
 import {
   planChangeTrailWorkflowIssueMilestone,
   planChangeTrailWorkflowIssueStatus,
   planCreateTrailWorkflowIssue,
+  planEditTrailWorkflowIssueProperties,
   planMoveTrailWorkflowIssueProject,
 } from "../../domain/planning/trail-issue-planning";
 import { sameTrailDomainEntity } from "../../domain/rules/trail-domain-equality";
@@ -17,12 +19,25 @@ import {
   type TrailMutationActionResult,
 } from "../trail-application-support";
 import {
+  normalizeTrailCommandDescription,
   normalizeTrailCommandEstimate,
   normalizeTrailCommandId,
+  normalizeTrailCommandIdSet,
+  normalizeTrailCommandPriority,
   normalizeTrailCommandTime,
+  normalizeTrailCommandTimestamp,
   normalizeTrailCommandTitle,
   type TrailCommandEnvironment,
 } from "../trail-command";
+
+export interface TrailWorkflowIssuePropertiesInput {
+  readonly description?: string;
+  readonly due?: number;
+  readonly estimate?: number;
+  readonly labelIds: readonly string[];
+  readonly priority?: TrailPriority;
+  readonly title: string;
+}
 
 export class TrailIssueApplication {
   public constructor(
@@ -50,6 +65,43 @@ export class TrailIssueApplication {
       planned.value.plan,
       planned.value.issue.id,
     );
+  }
+
+  public editProperties(
+    expectedIssue: TrailWorkflowIssue,
+    input: TrailWorkflowIssuePropertiesInput,
+  ): TrailMutationActionResult {
+    const state = readTrailPlanningState(this.runtimeStore);
+    const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
+    normalizeTrailCommandTime(this.environment);
+    const result = planEditTrailWorkflowIssueProperties(state, {
+      commandId,
+      description: normalizeTrailCommandDescription(input.description),
+      due: input.due === undefined
+        ? undefined
+        : normalizeTrailCommandTimestamp(input.due, "Due"),
+      estimate: normalizeTrailCommandEstimate(input.estimate),
+      expectedIssue,
+      labelIds: normalizeTrailCommandIdSet(input.labelIds, "Label ID"),
+      priority: normalizeTrailCommandPriority(input.priority),
+      title: normalizeTrailCommandTitle(input.title, "Workflow Issue"),
+    });
+    const planned = resolveTrailApplicationPlan(result);
+    if (planned.kind === "needs-input") return { input: planned.input, kind: "needs-input" };
+    if (sameTrailDomainEntity(
+      { kind: "issue", value: expectedIssue },
+      { kind: "issue", value: planned.value.issue },
+    )) {
+      return { entityId: expectedIssue.id, kind: "unchanged" };
+    }
+    return {
+      kind: "submitted",
+      receipt: submitTrailApplicationPlan(
+        this.sourceSync,
+        planned.value.plan,
+        planned.value.issue.id,
+      ),
+    };
   }
 
   public changeStatus(

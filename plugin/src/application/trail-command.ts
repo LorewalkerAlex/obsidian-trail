@@ -1,5 +1,7 @@
+import type { TrailPriority } from "../domain/model/trail-values";
 import {
   isTrailEstimate,
+  isTrailPriority,
   isTrailTimestamp,
   isTrailTitle,
   normalizeTrailTitle,
@@ -37,6 +39,37 @@ export function normalizeTrailCommandTitle(title: string, label: string): string
     throw new TrailCommandValidationError(`${label} title must be non-empty single-line text`);
   }
   return normalized;
+}
+
+/** Keeps Markdown-significant inner whitespace while removing empty outer lines. */
+export function normalizeTrailCommandDescription(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  const lines = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  while (lines.length > 0 && lines[0].trim() === "") lines.shift();
+  while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
+  const normalized = lines.join("\n");
+  return normalized === "" ? undefined : normalized;
+}
+
+export function normalizeTrailCommandPriority(
+  value: TrailPriority | undefined,
+): TrailPriority | undefined {
+  if (value !== undefined && !isTrailPriority(value)) {
+    throw new TrailCommandValidationError("Priority is invalid");
+  }
+  return value;
+}
+
+/** Label membership is a logical set, so command input is normalized and sorted once. */
+export function normalizeTrailCommandIdSet(
+  values: readonly string[],
+  label: string,
+): readonly string[] {
+  const normalized = values.map((value) => normalizeTrailCommandId(value, label));
+  if (new Set(normalized).size !== normalized.length) {
+    throw new TrailCommandValidationError(`${label} must not contain duplicate IDs`);
+  }
+  return normalized.sort();
 }
 
 export function normalizeTrailCommandTimestamp(value: number, label: string): number {

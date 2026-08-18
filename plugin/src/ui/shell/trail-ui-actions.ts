@@ -12,7 +12,7 @@ export interface TrailUiActions {
   >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],
-    "changeMilestone" | "changeStatus" | "create" | "moveToProject"
+    "changeMilestone" | "changeStatus" | "create" | "editProperties" | "moveToProject"
   >;
   readonly milestones: Pick<
     TrailApplicationSession["milestones"],

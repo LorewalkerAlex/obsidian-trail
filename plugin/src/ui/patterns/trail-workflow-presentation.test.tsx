@@ -72,4 +72,27 @@ describe("TrailWorkflowPresentation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Complete" }));
     expect(changeStatus).toHaveBeenLastCalledWith(harness.workflow, "issue-completed", 3);
   });
+
+  it("opens the same Workflow Issue Peek from both List and Board without changing workspace context", () => {
+    const harness = createTrailUiTestHarness();
+    render(
+      <TrailWorkflowPresentation
+        actions={harness.actions.issues}
+        configuration={createTrailTestConfiguration()}
+        issueIds={[harness.workflow.id]}
+        laneMode="single"
+        onError={() => undefined}
+        runtimeStore={harness.runtimeStore}
+        writable
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Issue A" }));
+    expect(screen.getByRole("dialog", { name: "Issue A" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Board" }));
+    fireEvent.click(screen.getByRole("button", { name: "Issue A" }));
+    expect(screen.getByRole("dialog", { name: "Issue A" })).toBeInTheDocument();
+  });
 });

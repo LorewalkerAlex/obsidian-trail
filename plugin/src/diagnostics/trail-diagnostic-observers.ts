@@ -94,7 +94,7 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],
-    "changeMilestone" | "changeStatus" | "create" | "moveToProject"
+    "changeMilestone" | "changeStatus" | "create" | "editProperties" | "moveToProject"
   >;
   readonly milestones: Pick<
     TrailApplicationSession["milestones"],
@@ -215,8 +215,8 @@ export function createDiagnosticTrailUiActions(
           return recordThrown(diagnostics, "ui.workflow.issue-status", error, data);
         }
       },
-      create(projectId: string, title: string): TrailEntityMutationReceipt {
-        const data = { projectId, titleLength: title.length };
+      create(projectId: string | undefined, title: string): TrailEntityMutationReceipt {
+        const data = { projectId: projectId ?? null, titleLength: title.length };
         try {
           return observeReceipt(
             diagnostics,
@@ -226,6 +226,27 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.workflow.issue-create", error, data);
+        }
+      },
+      editProperties(expectedIssue, input): TrailMutationActionResult {
+        const data = {
+          descriptionProvided: input.description !== undefined && input.description.trim() !== "",
+          due: input.due ?? null,
+          estimate: input.estimate ?? null,
+          issueId: expectedIssue.id,
+          labelCount: input.labelIds.length,
+          priority: input.priority ?? null,
+          titleLength: input.title.length,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.workflow.issue-properties",
+            session.issues.editProperties(expectedIssue, input),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.workflow.issue-properties", error, data);
         }
       },
       moveToProject(expectedIssue, targetProjectId): TrailMutationActionResult {

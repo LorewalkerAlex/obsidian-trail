@@ -14,9 +14,6 @@ npm-debug.log*
 # Installed and generated Obsidian plugins
 .obsidian/plugins/
 
-# Local Formal Trail Domain data
-/Trail/
-
 # Obsidian local trash
 .trash/
 

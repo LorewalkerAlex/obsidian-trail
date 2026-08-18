@@ -24,6 +24,7 @@ interface TrailWorkflowIssueRowProps {
   readonly configuration: TrailConfiguration;
   readonly issueId: string;
   readonly onError: (message: string | undefined) => void;
+  readonly onOpenIssue: (issueId: string) => void;
   readonly runtimeStore: TrailRuntimeStore;
   readonly writable: boolean;
 }
@@ -33,6 +34,7 @@ export function TrailWorkflowIssueRow({
   configuration,
   issueId,
   onError,
+  onOpenIssue,
   runtimeStore,
   writable,
 }: TrailWorkflowIssueRowProps) {
@@ -99,7 +101,11 @@ export function TrailWorkflowIssueRow({
       data-pending={pending ? "true" : undefined}
     >
       <div className="trail-workflow-issue-row__main">
-        <strong>{issue.title}</strong>
+        <strong>
+          <button onClick={() => onOpenIssue(issue.id)} type="button">
+            {issue.title}
+          </button>
+        </strong>
         <span>
           {status?.name ?? "Invalid status"}
           {issue.estimate !== undefined ? ` · Estimate ${issue.estimate}` : ""}

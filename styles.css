@@ -807,3 +807,64 @@
     padding-inline: var(--size-4-2);
   }
 }
+
+/* Temporary Workflow Issue Peek carrier layout.
+   This keeps the current Dialog usable without defining the final Peek UI. */
+.trail-dialog__body > .trail-issue-editor {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.trail-dialog__body > .trail-issue-editor > .trail-dialog__detail,
+.trail-dialog__body > .trail-issue-editor > label:nth-of-type(1),
+.trail-dialog__body > .trail-issue-editor > label:nth-of-type(2),
+.trail-dialog__body > .trail-issue-editor > label:nth-of-type(5),
+.trail-dialog__body > .trail-issue-editor > fieldset,
+.trail-dialog__body > .trail-issue-editor > .trail-inline-error,
+.trail-dialog__body > .trail-issue-editor > .trail-dialog__actions {
+  grid-column: 1 / -1;
+}
+
+.trail-dialog__body > .trail-issue-editor > label {
+  display: grid;
+  gap: var(--size-4-1);
+  min-width: 0;
+}
+
+.trail-dialog__body > .trail-issue-editor > label > span {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: var(--line-height-normal);
+}
+
+.trail-dialog__body > .trail-issue-editor input,
+.trail-dialog__body > .trail-issue-editor select,
+.trail-dialog__body > .trail-issue-editor textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.trail-dialog__body > .trail-issue-editor textarea {
+  resize: vertical;
+}
+
+.trail-dialog__body > .trail-issue-editor > fieldset {
+  min-width: 0;
+  margin: 0;
+}
+
+.trail-dialog__body > .trail-issue-editor > .trail-inline-error {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+@media (max-width: 36rem) {
+  .trail-dialog__body > .trail-issue-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trail-dialog__body > .trail-issue-editor > * {
+    grid-column: 1;
+  }
+}

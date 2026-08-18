@@ -214,6 +214,53 @@ describe("Trail diagnostic observers", () => {
     ]);
   });
 
+  it("observes Workflow Issue planning-property edits without logging description content", () => {
+    const { diagnostics, events } = recorder();
+    const issue: TrailWorkflowIssue = {
+      context: "workflow",
+      createdAt: 1,
+      id: "issue-a",
+      labelIds: [],
+      statusDefinitionId: "issue-unstarted",
+      title: "Issue A",
+    };
+    const editProperties = vi.fn(() => ({
+      entityId: issue.id,
+      kind: "unchanged" as const,
+    }));
+    const session = {
+      issues: { editProperties },
+    } as unknown as TrailApplicationSession;
+    const actions = createDiagnosticTrailUiActions(session, diagnostics);
+    const input = {
+      description: "Private planning notes",
+      due: 123,
+      estimate: 3,
+      labelIds: ["label-a"],
+      priority: "high" as const,
+      title: "Updated Issue",
+    };
+
+    actions.issues.editProperties(issue, input);
+
+    expect(editProperties).toHaveBeenCalledWith(issue, input);
+    expect(events).toEqual([{
+      name: "ui.workflow.issue-properties.unchanged",
+      options: {
+        data: {
+          descriptionProvided: true,
+          due: 123,
+          entityId: issue.id,
+          estimate: 3,
+          issueId: issue.id,
+          labelCount: 1,
+          priority: "high",
+          titleLength: 13,
+        },
+      },
+    }]);
+  });
+
   it("observes Cycle planning actions without changing Application semantics", () => {
     const { diagnostics, events } = recorder();
     const cycle: TrailCycle = {

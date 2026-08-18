@@ -54,13 +54,13 @@ obsidian-trail/
 ├─ docs/                 Trail project documentation
 ├─ plugin/
 │  └─ src/               active formal implementation
-├─ Trail/                local runtime Domain Markdown; ignored by Git
+├─ Trail/                version-controlled host-test observation data
 ├─ ENGINEERING.md
 ├─ README.md
 └─ ...
 ```
 
-`Trail/` is authoritative user/domain persistence created by the running plugin. It is intentionally not a checked-in fixture.
+`Trail/` is disposable test data for the repository development Vault. It is versioned so real Obsidian persistence effects can be inspected through ordinary Git diffs. Its current files and values are not Product facts and are not a stable automated-test fixture; they may be created, changed, or deleted as a host-validation scenario requires.
 
 ## Development environment
 
@@ -112,7 +112,7 @@ During implementation, use focused owner-level validation while iterating. Run t
 
 Representative real-host verification exercises host-specific risks that cannot be established by pure or jsdom tests alone. Diagnostics builds expose development-only validation evidence for the command / mutation / persistence / reconcile chain.
 
-Real-host fixtures are temporary and should be cleaned after evidence is reviewed. Production correctness must not depend on diagnostics output.
+When `Trail/` is used during host validation, Git diff is an additional observation channel for the actual Markdown write effects. The test data itself is intentionally disposable; production correctness must not depend on diagnostics output or on any specific checked-in `Trail/` value.
 
 ## Continuous integration
 

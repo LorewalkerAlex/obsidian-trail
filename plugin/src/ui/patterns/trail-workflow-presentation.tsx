@@ -25,6 +25,7 @@ import {
 } from "../interactions/trail-workflow-board-dnd";
 import { useTrailWorkflowIssueStatusMutation } from "../interactions/trail-workflow-issue-status";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
+import { TrailWorkflowIssuePeek } from "./trail-workflow-issue-peek";
 
 type TrailWorkflowPresentationMode = "board" | "list";
 type TrailWorkflowLaneMode = "project" | "single";
@@ -98,6 +99,7 @@ export function TrailWorkflowPresentation(props: {
   readonly writable: boolean;
 }) {
   const [mode, setMode] = useState<TrailWorkflowPresentationMode>("list");
+  const [selectedIssueId, setSelectedIssueId] = useState<string>();
   const instanceId = useMemo(() => Symbol("trail-workflow-board"), []);
   const issues = useStore(
     props.runtimeStore,
@@ -169,6 +171,7 @@ export function TrailWorkflowPresentation(props: {
               issueId={issueId}
               key={issueId}
               onError={props.onError}
+              onOpenIssue={setSelectedIssueId}
               runtimeStore={props.runtimeStore}
               writable={props.writable}
             />
@@ -180,6 +183,7 @@ export function TrailWorkflowPresentation(props: {
           instanceId={instanceId}
           lanes={lanes}
           onDropStatus={requestStatusById}
+          onOpenIssue={setSelectedIssueId}
           onRequestStatus={statusMutation.requestStatus}
           runtimeStore={props.runtimeStore}
           showLaneLabels={props.laneMode === "project"}
@@ -189,6 +193,18 @@ export function TrailWorkflowPresentation(props: {
       )}
 
       {mode === "board" ? statusMutation.completionDialog : null}
+      <TrailWorkflowIssuePeek
+        actions={props.actions}
+        configuration={props.configuration}
+        issueId={selectedIssueId}
+        onError={props.onError}
+        onOpenChange={(open) => {
+          if (!open) setSelectedIssueId(undefined);
+        }}
+        open={selectedIssueId !== undefined}
+        runtimeStore={props.runtimeStore}
+        writable={props.writable}
+      />
     </div>
   );
 }
@@ -198,6 +214,7 @@ function TrailWorkflowBoard(props: {
   readonly instanceId: symbol;
   readonly lanes: readonly TrailWorkflowLane[];
   readonly onDropStatus: (issueId: string, targetStatusDefinitionId: string) => void;
+  readonly onOpenIssue: (issueId: string) => void;
   readonly onRequestStatus: (issue: TrailWorkflowIssue, targetStatusDefinitionId: string) => void;
   readonly runtimeStore: TrailRuntimeStore;
   readonly showLaneLabels: boolean;
@@ -226,6 +243,7 @@ function TrailWorkflowBoard(props: {
             key={lane.key}
             lane={lane}
             onDropStatus={props.onDropStatus}
+            onOpenIssue={props.onOpenIssue}
             onRequestStatus={props.onRequestStatus}
             runtimeStore={props.runtimeStore}
             showLaneLabel={props.showLaneLabels}
@@ -243,6 +261,7 @@ function TrailWorkflowBoardLane(props: {
   readonly instanceId: symbol;
   readonly lane: TrailWorkflowLane;
   readonly onDropStatus: (issueId: string, targetStatusDefinitionId: string) => void;
+  readonly onOpenIssue: (issueId: string) => void;
   readonly onRequestStatus: (issue: TrailWorkflowIssue, targetStatusDefinitionId: string) => void;
   readonly runtimeStore: TrailRuntimeStore;
   readonly showLaneLabel: boolean;
@@ -267,6 +286,7 @@ function TrailWorkflowBoardLane(props: {
           issueIds={props.lane.issueIds}
           key={`${props.lane.key}:${status.id}`}
           onDropStatus={props.onDropStatus}
+          onOpenIssue={props.onOpenIssue}
           onRequestStatus={props.onRequestStatus}
           projectId={props.lane.projectId}
           runtimeStore={props.runtimeStore}
@@ -283,6 +303,7 @@ function TrailWorkflowStatusCell(props: {
   readonly instanceId: symbol;
   readonly issueIds: readonly string[];
   readonly onDropStatus: (issueId: string, targetStatusDefinitionId: string) => void;
+  readonly onOpenIssue: (issueId: string) => void;
   readonly onRequestStatus: (issue: TrailWorkflowIssue, targetStatusDefinitionId: string) => void;
   readonly projectId?: string;
   readonly runtimeStore: TrailRuntimeStore;
@@ -344,6 +365,7 @@ function TrailWorkflowStatusCell(props: {
           instanceId={props.instanceId}
           issueId={issueId}
           key={issueId}
+          onOpenIssue={props.onOpenIssue}
           onRequestStatus={props.onRequestStatus}
           runtimeStore={props.runtimeStore}
           showProject={false}

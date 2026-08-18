@@ -9,7 +9,10 @@ import {
   normalizeTrailTitle,
 } from "../../domain/validation/trail-value-validation";
 import {
+  isMarkdownHeading,
   isRecordObject,
+  normalizeMarkdownRecordBody,
+  parseMarkdownBody,
   requiredMarkdownOffset,
   type TrailMarkdownRecordSlice,
 } from "../core/trail-markdown-core";
@@ -424,7 +427,21 @@ export function canonicalTriageIssueMetadata(issue: TrailTriageIssue): Record<st
   );
 }
 
+/** Prevents a writer from turning one Issue body into new managed H1/H2 structure. */
+function assertWorkflowIssueDescriptionIsRecordBody(issue: TrailWorkflowIssue): void {
+  if (issue.description === undefined) return;
+  const body = normalizeMarkdownRecordBody(issue.description);
+  if (body === undefined) return;
+  const hasStructuralHeading = parseMarkdownBody(body).children.some((node) => (
+    isMarkdownHeading(node, 1) || isMarkdownHeading(node, 2)
+  ));
+  if (hasStructuralHeading) {
+    throw new Error("Workflow Issue description must not contain root H1 or H2 headings");
+  }
+}
+
 export function canonicalWorkflowIssueMetadata(issue: TrailWorkflowIssue): Record<string, unknown> {
+  assertWorkflowIssueDescriptionIsRecordBody(issue);
   return canonicalMetadata(
     TRAIL_PHYSICAL_RECORD_SCHEMAS.issue.metadataOrder,
     {

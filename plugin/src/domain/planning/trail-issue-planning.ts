@@ -1,11 +1,13 @@
 import type { TrailWorkflowIssue } from "../model/trail-entities";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
+import { findTrailLabelSelectionViolations } from "../rules/trail-label-rules";
 import { canTrailProjectAcceptWorkflowIssue } from "../rules/trail-project-rules";
 import {
   isTrailTerminalStatusDefinition,
   resolveTrailDefaultStatusDefinition,
   resolveTrailStatusDefinition,
 } from "../rules/trail-status-rules";
+import { validateTrailIssue } from "../validation/trail-record-validation";
 import { createTrailMutationPlan, type TrailMutationPlan } from "../../mutation/plans/trail-mutation-plan";
 import {
   readyTrailPlan,
@@ -20,6 +22,17 @@ export interface CreateTrailWorkflowIssueCommand {
   readonly effectiveAt: number;
   readonly issueId: string;
   readonly projectId?: string;
+  readonly title: string;
+}
+
+export interface EditTrailWorkflowIssuePropertiesCommand {
+  readonly commandId: string;
+  readonly description?: string;
+  readonly due?: number;
+  readonly estimate?: number;
+  readonly expectedIssue: TrailWorkflowIssue;
+  readonly labelIds: readonly string[];
+  readonly priority?: TrailWorkflowIssue["priority"];
   readonly title: string;
 }
 
@@ -102,6 +115,112 @@ export function planCreateTrailWorkflowIssue(
   });
 }
 
+function sameWorkflowIssue(left: TrailWorkflowIssue, right: TrailWorkflowIssue): boolean {
+  return sameTrailDomainEntity(
+    { kind: "issue", value: left },
+    { kind: "issue", value: right },
+  );
+}
+
+/**
+ * Planning-property edits replace one complete editable snapshot while preserving
+ * identity, lifecycle timestamps, Status, and structural relationships.
+ */
+export function planEditTrailWorkflowIssueProperties(
+  state: TrailPlanningState,
+  command: EditTrailWorkflowIssuePropertiesCommand,
+): TrailPlanResult<TrailWorkflowIssuePlan> {
+  const current = state.domain.issuesById.get(command.expectedIssue.id);
+  if (current?.context !== "workflow") {
+    return rejectTrailPlan(
+      "workflow-issue-missing",
+      `Workflow Issue does not exist: ${command.expectedIssue.id}`,
+    );
+  }
+  if (!sameWorkflowIssue(current, command.expectedIssue)) {
+    return rejectTrailPlan(
+      "workflow-issue-changed",
+      `Workflow Issue changed before action: ${command.expectedIssue.id}`,
+    );
+  }
+
+  const status = resolveTrailStatusDefinition(
+    state.configuration,
+    "issue",
+    current.statusDefinitionId,
+  );
+  if (status === undefined) {
+    return rejectTrailPlan("status-reference-invalid", "Workflow Issue status reference is invalid");
+  }
+  if (status.category === "completed" && command.estimate === undefined) {
+    return rejectTrailPlan(
+      "estimate-required",
+      "Completed Workflow Issue Estimate cannot be cleared",
+    );
+  }
+
+  const issue: TrailWorkflowIssue = {
+    ...current,
+    description: command.description,
+    due: command.due,
+    estimate: command.estimate,
+    labelIds: [...command.labelIds],
+    priority: command.priority,
+    title: command.title,
+  };
+  const recordIssues = validateTrailIssue(issue);
+  if (recordIssues.length > 0) {
+    return rejectTrailPlan(
+      "workflow-issue-invalid",
+      recordIssues.map(({ message }) => message).join("; "),
+    );
+  }
+
+  const labelViolations = findTrailLabelSelectionViolations(
+    state.configuration,
+    "issue",
+    issue.labelIds,
+  );
+  const labelViolation = labelViolations[0];
+  if (labelViolation !== undefined) {
+    switch (labelViolation.kind) {
+      case "label-missing":
+        return rejectTrailPlan(
+          "label-missing",
+          `Workflow Issue references unknown Label ${labelViolation.labelId}`,
+        );
+      case "label-group-missing":
+        return rejectTrailPlan(
+          "label-group-missing",
+          `Label ${labelViolation.labelId} references unknown LabelGroup ${labelViolation.groupId}`,
+        );
+      case "label-scope":
+        return rejectTrailPlan(
+          "label-scope",
+          `Label ${labelViolation.labelId} is not registered for Workflow Issues`,
+        );
+      case "single-selection":
+        return rejectTrailPlan(
+          "label-group-single-selection",
+          `Workflow Issue selects multiple Labels from single-select group ${labelViolation.groupId}`,
+        );
+    }
+  }
+
+  return readyTrailPlan({
+    issue,
+    plan: createTrailMutationPlan({
+      commandId: command.commandId,
+      effects: [{
+        after: { kind: "issue", value: issue },
+        before: { kind: "issue", value: current },
+        kind: "replace-entity",
+      }],
+      intent: "workflow.issue.edit-properties",
+    }),
+  });
+}
+
 function terminalAtFor(
   issue: TrailWorkflowIssue,
   currentCategory: string,
@@ -112,13 +231,6 @@ function terminalAtFor(
   if (!targetTerminal) return undefined;
   if (currentCategory === targetCategory && issue.terminalAt !== undefined) return issue.terminalAt;
   return effectiveAt;
-}
-
-function sameWorkflowIssue(left: TrailWorkflowIssue, right: TrailWorkflowIssue): boolean {
-  return sameTrailDomainEntity(
-    { kind: "issue", value: left },
-    { kind: "issue", value: right },
-  );
 }
 
 export function planChangeTrailWorkflowIssueStatus(

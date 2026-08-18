@@ -22,6 +22,7 @@ export function TrailWorkflowIssueCard(props: {
   readonly configuration: TrailConfiguration;
   readonly instanceId: symbol;
   readonly issueId: string;
+  readonly onOpenIssue: (issueId: string) => void;
   readonly onRequestStatus: (issue: TrailWorkflowIssue, targetStatusDefinitionId: string) => void;
   readonly runtimeStore: TrailRuntimeStore;
   readonly showProject: boolean;
@@ -93,7 +94,11 @@ export function TrailWorkflowIssueCard(props: {
       ref={setElement}
     >
       <div className="trail-workflow-issue-card__heading">
-        <strong>{issue.title}</strong>
+        <strong>
+          <button onClick={() => props.onOpenIssue(issue.id)} type="button">
+            {issue.title}
+          </button>
+        </strong>
         <span
           aria-hidden="true"
           className="trail-workflow-issue-card__drag-handle"

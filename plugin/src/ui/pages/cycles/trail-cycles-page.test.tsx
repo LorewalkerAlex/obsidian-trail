@@ -112,6 +112,7 @@ function openCycleHarness() {
   const issueActions: TrailUiActions["issues"] = {
     changeMilestone: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
     changeStatus: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
+    editProperties: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
     create: vi.fn(() => receipt("new-issue")),
     moveToProject: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
   };

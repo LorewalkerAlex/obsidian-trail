@@ -4,14 +4,14 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The repository baseline from which the current Gate 8 slice is being built is:
+The pushed Gate 8 checkpoint immediately preceding the completed Workflow Issue Peek & Planning Properties checkpoint is:
 
 ```text
-826424ff673499d3aaef1669875db2719b1d9e5a
-feat: add cycle planning and rollover flow
+c87723486e95c2915ff02388540e2fd189010b63
+feat: add workflow board interaction foundation
 ```
 
-This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, and Cycle Planning slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, and shared Project/Cycle Workflow presentation slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -40,7 +40,13 @@ Gate 8 evidence now includes:
 - **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`, implementing `Projects Root -> Initiative Focus -> Project Workspace`, Initiative creation, explicit Project Initiative assignment/unassignment, and optimistic relationship queries through existing Application semantics;
 - **Project Milestone Management** at `d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a`, implementing Milestone creation, derived current-scope progress, Issue assignment/unassignment, and delete-with-Issue-preservation through existing Domain/Application owners;
 - **Cycle Planning & Rollover** at `826424ff673499d3aaef1669875db2719b1d9e5a`, implementing explicit Cycle opening/membership/closing, optional rollover, and retained closed history without changing Issue facts;
-- the Cycle checkpoint passed 72/72 test files and 244/244 tests, zero-warning lint, TypeScript, production build, `git diff --check`, and GitHub verification of the exact 11-file pushed scope;
+- **Project / Cycle Board & List Interaction Foundation** at `c87723486e95c2915ff02388540e2fd189010b63`, introducing one shared Workflow presentation owner, Status-only Board drag over Atlassian Pragmatic Drag and Drop, Project swimlanes for Current Cycle, and the existing Status/Estimate mutation path as the non-drag and completion authority;
+- the Board/List checkpoint passed 74/74 test files and 250/250 tests, zero-warning lint, TypeScript, production build, `git diff --check`, dependency audit with zero vulnerabilities, representative Obsidian drag/persistence validation, and GitHub verification of the exact 15-file pushed scope;
+- Board/List completion records the interaction foundation only: final Board/card/column sizing, density, pane proportions, and any future List drag behavior remain later UI/interaction design work;
+- **Workflow Issue Peek & Planning Properties** is completed in this checkpoint, adding the canonical planning-property edit path for title, description, Priority, Estimate, Due, and Labels; enforcing Completed-Estimate retention and safe managed-Markdown descriptions; and exposing one shared lightweight Issue-details carrier from Project/Cycle List and Board;
+- the Peek checkpoint passed 78/78 test files and 261/261 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; representative Obsidian validation confirmed property persistence, Priority editing, Completed-Estimate protection, reload convergence, and a clean Runtime with no pending or source-health residue;
+- the current Radix Dialog is only a temporary carrier for the verified Peek content/editing contract. Final Linear-style Peek positioning, non-blocking interaction, keyboard traversal, dimensions, density, responsive behavior, and broader Selection/Context Menu/Command Menu integration remain later interaction/UI work;
+- repository-root `Trail/` is versioned only as disposable host-test observation data so real Obsidian Markdown write effects are visible in Git diffs. Its concrete contents are not Product facts, are not a stable fixture baseline, and may be created, changed, or deleted as a test requires;
 - lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
 Push-triggered GitHub Actions status for the recent Gate 8 commits was not available through the connected GitHub workflow lookup, so this document does not invent CI run numbers for those commits.
@@ -85,7 +91,7 @@ Current reusable capability areas include:
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
 - shared structural and explicitly defined derived Query capabilities;
 - currently executable Application use cases;
-- UI action-result handling, local time conversion, Runtime write gating, feedback patterns, shared Status selection, and shared overlay mechanics;
+- UI action-result handling, local time conversion, Runtime write gating, feedback patterns, shared Status selection, shared overlay mechanics, and shared Workflow List/Board presentation;
 - Diagnostics and architecture guards.
 
 Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. UI must keep drafts/continuous interaction local and emit only Application intents for authoritative changes.
@@ -105,42 +111,46 @@ Completed Gate 8 slices:
 - **Project Lifecycle Closure** at `844728131f0a0acf7df4213322a7837c16b47dab`;
 - **Initiative Focus & Project Assignment** at `4b5171e67c1dd483f3812a618d3386a3725204ae`;
 - **Project Milestone Management** at `d775e94aacbb8e8970e72f7f2dc8e1cf9f9e2d7a`;
-- **Cycle Planning & Rollover** at `826424ff673499d3aaef1669875db2719b1d9e5a`.
+- **Cycle Planning & Rollover** at `826424ff673499d3aaef1669875db2719b1d9e5a`;
+- **Project / Cycle Board & List Interaction Foundation** at `c87723486e95c2915ff02388540e2fd189010b63`;
+- **Workflow Issue Peek & Planning Properties** in this checkpoint.
 
-The active slice is **Project / Cycle Board & List Execution**. It turns the already-established Project and Current Cycle workflows into two consumers of one shared Workflow presentation capability:
+The completed **Workflow Issue Peek & Planning Properties** slice closes the concrete editing gap exposed by the Project/Cycle execution consumers before Home Focus, saved Views, or richer filtering are composed over those facts:
 
 ```text
-same Workflow Issue facts
--> List for explicit property editing
--> Board grouped by configured Issue Status definitions
--> drag within the same Project lane changes Status only
--> Status picker remains the accessible non-drag path
+Workflow Issue in Project or Cycle
+-> open one shared lightweight Peek without leaving context
+-> edit planning properties
+-> canonical Semantic Plan / Application Replace
+-> authoritative Markdown persistence
+-> same effective Issue visible from every consumer
 ```
 
 The slice:
 
-1. introduces one shared `TrailWorkflowPresentation` used by both Project Workspace and Current Cycle execution;
-2. preserves List as the default presentation so existing explicit Project/Milestone/Status editing remains available without another Details surface;
-3. renders Board columns from configured Issue Status definitions in canonical category/definition order rather than hard-coded columns;
-4. uses Project as one implicit Board lane and Current Cycle as Project swimlanes, including a first-class `No Project` lane for project-less Workflow Issues;
-5. makes Issue-card drag mean only `IssueApplication.changeStatus`; a cross-Project-lane drop is invalid and cannot mutate Project, Milestone, or Cycle membership;
-6. preserves the existing Estimate `NeedsInput` completion gate for both Status pickers and drag-to-Completed instead of inventing a Board-specific completion path;
-7. keeps the Status picker on every Board card as the non-drag and keyboard-accessible Status action;
-8. uses Atlassian Pragmatic Drag and Drop core for pointer/drag mechanics rather than implementing a Trail-specific drag engine;
-9. keeps presentation mode, drag-over state, and Board instance identity local/rebuildable; no rank, Board state, or relationship state is persisted;
-10. adds local horizontal Board scrolling so variable-width Obsidian panes do not force the entire Trail App wider.
+1. adds a canonical Workflow Issue planning-property edit planner rather than mutating Domain objects from UI;
+2. exposes one `IssueApplication.editProperties` use case with command normalization and no-op detection;
+3. edits the complete lightweight planning-property snapshot: title, description, priority, estimate, due, and Labels;
+4. preserves identity, Status, Project, Milestone, Cycle membership, creation/start/terminal lifecycle facts, and all unrelated canonical fields;
+5. refuses to clear Estimate from an already Completed Issue and continues to rely on existing Domain label applicability/single-select rules;
+6. closes the exposed physical-write gap by rejecting a Workflow Issue description that would create root H1/H2 managed structure while still allowing ordinary Markdown, H3-H6, and fenced examples;
+7. keeps Project, Milestone, and Status editing on their existing explicit controls rather than duplicating those mechanisms inside Peek;
+8. introduces one shared Workflow Issue Peek opened from both List rows and Board cards, so Project and Current Cycle consume the same interaction owner;
+9. reuses the existing Trail Dialog primitive as the current Peek carrier and configured-timezone local date/time conversion for Due;
+10. keeps Peek draft/focus state local and rebuildable; only accepted Application actions become authoritative;
+11. extends diagnostics so real-host validation can correlate planning-property UI actions with the existing mutation/persistence/runtime evidence chain.
 
-This slice does not introduce drag reordering within a Status, Project/Cycle relationship dragging, Selection/Bulk Actions, Context Menu, Peek, Custom View persistence, or a generic Board builder. Those remain separate consumer-driven capabilities.
-
-This slice validates the shared execution mechanics, not final UI completeness. Final Board/card/column sizing, information density, wide/narrow-pane proportions, and any future decision to add drag behavior in List remain deferred to later UI/interaction design; their absence here is not treated as a completed product requirement.
+This slice establishes the Peek content/editing contract and planning-property mutation path, not final Peek UI design. The current Dialog carrier is intentionally temporary; final Linear-style Peek placement, non-blocking behavior, keyboard traversal, dimensions, visual density, responsive treatment, and broader Selection/Context Menu/Command Menu composition remain later UI/interaction work. No next Gate 8 slice is preselected in this checkpoint; select it only after re-auditing the pushed repository baseline.
 
 ### 4.2 Current verified gaps
 
 Current Product gaps split into three groups:
 
-- Product composition gaps whose lower-layer owners already exist, including later Home/View composition and remaining lightweight entity editing surfaces;
-- consumer-driven shared UI gaps such as Peek, Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state;
-- real lower-layer gaps that must be repaired at their canonical owners when reached, including general editing use cases for several entity properties and the current Triage Application narrowing that requires a Project even though Domain Accept permits project-less Workflow creation.
+- Product composition gaps whose lower-layer owners already exist, including later Home/View composition and additional lightweight entity editing surfaces beyond Workflow Issue planning properties;
+- consumer-driven shared UI gaps such as Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state;
+- real lower-layer gaps that must be repaired at their canonical owners when reached, including the current Triage Application narrowing that requires a Project even though Domain Accept permits project-less Workflow creation.
+
+Home Focus and saved Views remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Trail should not invent those schemas merely to surface a page early.
 
 The project-less Triage Accept gap remains deferred because the current Product contract does not yet freeze a complete discovery/management surface for project-less Workflow Issues. Trail should not invent a page merely to expose a lower-layer capability.
 
@@ -183,11 +193,13 @@ Completed:
 - Project Lifecycle Closure;
 - Initiative Focus & Project Assignment;
 - Project Milestone Management;
-- Cycle Planning & Rollover.
+- Cycle Planning & Rollover;
+- Project / Cycle Board & List Interaction Foundation;
+- Workflow Issue Peek & Planning Properties.
 
 Active:
 
-- Project / Cycle Board & List Execution.
+- no Gate 8 slice is preselected; choose the next coherent workflow from the latest pushed repository facts.
 
 ### 5.3 Gate 9 - V1 hardening
 
@@ -206,7 +218,7 @@ For each active Gate 8 slice:
 - keep `npm audit` clean when dependency state changes or a security advisory is encountered;
 - use representative real Obsidian validation when the slice changes host-specific, persistence, focus/portal, drag/pointer, keyboard, or other behavior that jsdom/pure tests cannot establish reliably.
 
-This Board/List slice changes drag/pointer and responsive presentation behavior, so automated tests are necessary but not sufficient: final validation must include a real Obsidian Project Board drag, Current Cycle same-lane drag, invalid cross-lane attempt, and the drag-to-Completed Estimate gate using a diagnostics build.
+The completed Peek checkpoint reused the existing Radix portal/focus primitive while adding a new cross-workspace consumer and a new authoritative Issue property mutation. Automated coverage and representative real-Obsidian validation both passed. Host evidence covered Project/Cycle access to the same Issue state, planning-property persistence, Priority editing, Completed-Estimate protection, plugin reload convergence, and clean Runtime settlement. The current Dialog was validated only as a temporary functional carrier, not as final Peek interaction or visual design.
 
 Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 
