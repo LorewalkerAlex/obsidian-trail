@@ -86,7 +86,6 @@ export function TrailTriageIssueRow({
   if (issue === undefined) return null;
 
   const actionsDisabled = !writable || pending || !sourceIsHealthy;
-  const acceptAvailable = projectIds.length > 0;
 
   const cancelAccept = (): void => {
     setAcceptBaseline(undefined);
@@ -107,16 +106,15 @@ export function TrailTriageIssueRow({
 
   const submitAccept = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
+    if (acceptBaseline === undefined || actionsDisabled) return;
+    const targetProjectId = acceptProjectId === "" ? undefined : acceptProjectId;
     if (
-      acceptBaseline === undefined
-      || actionsDisabled
-      || acceptProjectId === ""
-      || !projectIds.includes(acceptProjectId)
-      || targetHasIssues
+      targetProjectId !== undefined
+      && (!projectIds.includes(targetProjectId) || targetHasIssues)
     ) return;
 
     const receipt = runTrailReceipt(
-      () => actions.accept(acceptBaseline, acceptProjectId),
+      () => actions.accept(acceptBaseline, targetProjectId),
       onError,
     );
     if (receipt !== undefined) cancelAccept();
@@ -188,9 +186,8 @@ export function TrailTriageIssueRow({
           </div>
           <div className="trail-issue-row__actions">
             <button
-              disabled={actionsDisabled || !acceptAvailable}
+              disabled={actionsDisabled}
               onClick={beginAccept}
-              title={projectIds.length === 0 ? "Create a Project before accepting" : undefined}
               type="button"
             >
               Accept
@@ -253,15 +250,15 @@ export function TrailTriageIssueRow({
       {acceptBaseline !== undefined ? (
         <form className="trail-issue-editor" onSubmit={submitAccept}>
           <label>
-            <span>Accept into Project</span>
+            <span>Accept into Workflow</span>
             <select
-              disabled={actionsDisabled || !acceptAvailable}
+              disabled={actionsDisabled}
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 setAcceptProjectId(event.target.value);
               }}
               value={acceptProjectId}
             >
-              <option value="">Choose Project</option>
+              <option value="">No Project</option>
               {projectIds.map((projectId) => (
                 <TrailAcceptProjectOption
                   key={projectId}
@@ -276,13 +273,12 @@ export function TrailTriageIssueRow({
               className="mod-cta"
               disabled={
                 actionsDisabled
-                || acceptProjectId === ""
-                || !projectIds.includes(acceptProjectId)
+                || (acceptProjectId !== "" && !projectIds.includes(acceptProjectId))
                 || targetHasIssues
               }
               type="submit"
             >
-              Accept to Project
+              Accept
             </button>
             <button onClick={cancelAccept} type="button">Cancel</button>
           </div>

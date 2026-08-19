@@ -4,17 +4,22 @@ import { useStore } from "zustand";
 import { selectTrailReadableConfiguration } from "../../query/shared/trail-effective-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TrailCyclesPage } from "../pages/cycles/trail-cycles-page";
-import { TrailProjectsPage } from "../pages/projects/trail-projects-page";
+import {
+  TrailProjectsPage,
+  type TrailProjectsNavigationRequest,
+} from "../pages/projects/trail-projects-page";
+import { TrailSearchPage } from "../pages/search/trail-search-page";
 import { TrailTriagePage } from "../pages/triage/trail-triage-page";
 import { TrailStatusPanel } from "../patterns/trail-feedback";
 import type { TrailUiActions } from "./trail-ui-actions";
 
-type TrailPage = "cycles" | "projects" | "triage";
+type TrailPage = "cycles" | "projects" | "search" | "triage";
 
 function pageTitle(page: TrailPage): string {
   switch (page) {
     case "cycles": return "Cycles";
     case "projects": return "Projects";
+    case "search": return "Search";
     case "triage": return "Triage";
   }
 }
@@ -25,6 +30,8 @@ function pageSubtitle(page: TrailPage): string {
       return "Plan the period explicitly, then execute the Current Cycle through the same Workflow Status system.";
     case "projects":
       return "Organize outcomes by Initiative and Milestone, then execute Issues in List or Board.";
+    case "search":
+      return "Find current Trail work, inspect Issues in place, or route directly to structural context.";
     case "triage":
       return "Capture now. Decide what it becomes when you are ready.";
   }
@@ -44,8 +51,30 @@ export function TrailApp(props: {
     selectTrailReadableConfiguration,
   );
   const [activePage, setActivePage] = useState<TrailPage>("triage");
+  const [projectsNavigation, setProjectsNavigation] = useState<TrailProjectsNavigationRequest>();
   const writable = control.kind === "ready";
   const hasReadableSnapshot = committedRevision > 0 && configuration !== null;
+
+  const openProjectsRoot = (): void => {
+    setProjectsNavigation(undefined);
+    setActivePage("projects");
+  };
+
+  const openProject = (projectId: string): void => {
+    setProjectsNavigation((current) => ({
+      requestId: (current?.requestId ?? 0) + 1,
+      target: { kind: "project", projectId },
+    }));
+    setActivePage("projects");
+  };
+
+  const openInitiative = (initiativeId: string): void => {
+    setProjectsNavigation((current) => ({
+      requestId: (current?.requestId ?? 0) + 1,
+      target: { initiativeId, kind: "initiative" },
+    }));
+    setActivePage("projects");
+  };
 
   return (
     <div className="trail-app" data-runtime-control={control.kind}>
@@ -89,9 +118,17 @@ export function TrailApp(props: {
               Triage
             </button>
             <button
+              aria-current={activePage === "search" ? "page" : undefined}
+              className={activePage === "search" ? "is-active" : undefined}
+              onClick={() => setActivePage("search")}
+              type="button"
+            >
+              Search
+            </button>
+            <button
               aria-current={activePage === "projects" ? "page" : undefined}
               className={activePage === "projects" ? "is-active" : undefined}
-              onClick={() => setActivePage("projects")}
+              onClick={openProjectsRoot}
               type="button"
             >
               Projects
@@ -113,6 +150,14 @@ export function TrailApp(props: {
               timezone={configuration.temporal.timezone}
               writable={writable}
             />
+          ) : activePage === "search" ? (
+            <TrailSearchPage
+              actions={{ issues: props.actions.issues, triage: props.actions.triage }}
+              onOpenInitiative={openInitiative}
+              onOpenProject={openProject}
+              runtimeStore={props.runtimeStore}
+              writable={writable}
+            />
           ) : activePage === "projects" ? (
             <TrailProjectsPage
               actions={{
@@ -121,6 +166,7 @@ export function TrailApp(props: {
                 milestones: props.actions.milestones,
                 projects: props.actions.projects,
               }}
+              navigationRequest={projectsNavigation}
               runtimeStore={props.runtimeStore}
               writable={writable}
             />

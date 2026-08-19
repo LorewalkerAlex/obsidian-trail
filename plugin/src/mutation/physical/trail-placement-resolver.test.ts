@@ -43,4 +43,35 @@ describe("Trail placement resolver", () => {
       sourceKind: "project",
     });
   });
+
+  it("places project-less Workflow Issues in the canonical shared carrier", async () => {
+    const committed = { ...buildTrailCommittedRuntimeCandidate({
+      pluginData: {
+        configuration: createTrailTestConfiguration(),
+        workspaceState: createTrailTestWorkspaceState(),
+      },
+      sources: [{
+        issues: [],
+        kind: "project",
+        milestones: [],
+        project: projectA,
+        sourcePath: "Trail/Projects/0001 Project A.md",
+      }],
+    }), revision: 1 };
+    const placement = await resolveTrailDesiredEntityPlacement({
+      kind: "issue",
+      value: {
+        context: "workflow",
+        createdAt: 1,
+        id: "issue-projectless",
+        labelIds: [],
+        statusDefinitionId: "issue-backlog",
+        title: "Loose work",
+      },
+    }, committed, { list: async () => [] });
+    expect(placement).toEqual({
+      path: "Trail/Collections/Projectless Issues.md",
+      sourceKind: "projectless-issues",
+    });
+  });
 });

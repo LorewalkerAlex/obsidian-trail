@@ -189,8 +189,16 @@ export function appendMarkdownBlock(markdown: string, block: string): string {
   return `${base}${lineEnding}${lineEnding}${normalizedBlock}${lineEnding}`;
 }
 
+/**
+ * Removes one parsed record range without leaving its structural separator as
+ * a blank line when the removed record reaches EOF. Middle-record deletion
+ * stays byte-local; only terminal line breaks are canonicalized at EOF.
+ */
 export function removeMarkdownRange(markdown: string, startOffset: number, endOffset: number): string {
-  return markdown.slice(0, startOffset) + markdown.slice(endOffset);
+  const next = markdown.slice(0, startOffset) + markdown.slice(endOffset);
+  if (endOffset !== markdown.length || next === "") return next;
+  const lineEnding = markdownLineEnding(markdown);
+  return next.replace(/(?:\r\n|\r|\n)+$/, "") + lineEnding;
 }
 
 /** Replaces only one record heading line and its immediate metadata marker. */

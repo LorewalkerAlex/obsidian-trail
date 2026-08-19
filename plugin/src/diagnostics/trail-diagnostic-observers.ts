@@ -412,7 +412,7 @@ export function createDiagnosticTrailUiActions(
     },
     triage: {
       accept(expectedIssue, projectId): TrailEntityMutationReceipt {
-        const data = { projectId, sourceIssueId: expectedIssue.id };
+        const data = { projectId: projectId ?? null, sourceIssueId: expectedIssue.id };
         try {
           return observeReceipt(
             diagnostics,

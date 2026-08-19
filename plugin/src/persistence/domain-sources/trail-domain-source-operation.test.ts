@@ -55,4 +55,45 @@ describe("Trail Domain Source logical mutation", () => {
     ].join("\r\n"));
     expect(next).not.toContain("\n## Second\n");
   });
+  it("deletes the final record without leaving the separator blank line at EOF", () => {
+    const markdown = [
+      "---",
+      "kind: triage",
+      "---",
+      "",
+      "# Issues",
+      "",
+      "## Last",
+      '<!-- data {"id":"last","context":"triage","due":1800000000000} -->',
+      "",
+    ].join("\r\n");
+    const before = {
+      context: "triage" as const,
+      due: 1_800_000_000_000,
+      id: "last",
+      labelIds: [],
+      title: "Last",
+    };
+
+    const next = applyTrailDomainSourceMutation({
+      kind: "triage",
+      markdown,
+      mutation: {
+        before: { kind: "issue", value: before },
+        kind: "delete",
+      },
+      parseYaml: parseTrailTestYaml,
+      sourcePath: "Trail/Collections/Triage.md",
+    });
+
+    expect(next).toBe([
+      "---",
+      "kind: triage",
+      "---",
+      "",
+      "# Issues",
+      "",
+    ].join("\r\n"));
+  });
+
 });

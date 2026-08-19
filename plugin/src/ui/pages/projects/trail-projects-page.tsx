@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
   type ChangeEvent,
   type SyntheticEvent,
@@ -38,8 +39,16 @@ import { TrailStatusPicker } from "../../patterns/trail-status-picker";
 import { TrailWorkflowPresentation } from "../../patterns/trail-workflow-presentation";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
+export interface TrailProjectsNavigationRequest {
+  readonly requestId: number;
+  readonly target:
+    | { readonly initiativeId: string; readonly kind: "initiative" }
+    | { readonly kind: "project"; readonly projectId: string };
+}
+
 export function TrailProjectsPage(props: {
   readonly actions: Pick<TrailUiActions, "initiatives" | "issues" | "milestones" | "projects">;
+  readonly navigationRequest?: TrailProjectsNavigationRequest;
   readonly runtimeStore: TrailRuntimeStore;
   readonly writable: boolean;
 }) {
@@ -63,11 +72,28 @@ export function TrailProjectsPage(props: {
     props.runtimeStore,
     useShallow(selectTrailProjectSourceIssues),
   );
-  const [selectedInitiativeId, setSelectedInitiativeId] = useState<string>();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>();
+  const initialTarget = props.navigationRequest?.target;
+  const [selectedInitiativeId, setSelectedInitiativeId] = useState<string | undefined>(
+    initialTarget?.kind === "initiative" ? initialTarget.initiativeId : undefined,
+  );
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(
+    initialTarget?.kind === "project" ? initialTarget.projectId : undefined,
+  );
   const [initiativeDraft, setInitiativeDraft] = useState("");
   const [projectDraft, setProjectDraft] = useState("");
   const [workflowError, setWorkflowError] = useState<string>();
+
+  useEffect(() => {
+    const target = props.navigationRequest?.target;
+    if (target === undefined) return;
+    if (target.kind === "project") {
+      setSelectedInitiativeId(undefined);
+      setSelectedProjectId(target.projectId);
+      return;
+    }
+    setSelectedProjectId(undefined);
+    setSelectedInitiativeId(target.initiativeId);
+  }, [props.navigationRequest]);
 
   const effectiveSelectedProjectId = selectedProjectId !== undefined
     && projectIds.includes(selectedProjectId)

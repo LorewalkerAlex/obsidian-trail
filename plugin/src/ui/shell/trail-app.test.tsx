@@ -35,6 +35,25 @@ describe("TrailApp", () => {
     view.unmount();
   });
 
+  it("routes Search structural results into their existing Project hierarchy context", () => {
+    const harness = createTrailUiTestHarness();
+    render(<TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.change(screen.getByPlaceholderText("Search Trail"), {
+      target: { value: "Project B" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Open Project B" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Project B" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.change(screen.getByPlaceholderText("Search Trail"), {
+      target: { value: "Initiative A" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Open Initiative A" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Initiative A" })).toBeInTheDocument();
+  });
+
   it("routes Triage, Project, Milestone, Workflow, and Cycle interactions through Application", () => {
     const harness = createTrailUiTestHarness();
     render(<TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />);

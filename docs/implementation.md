@@ -4,14 +4,14 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The pushed Gate 8 checkpoint immediately preceding the current Milestone Details Editing checkpoint is:
+The pushed Gate 8 checkpoint immediately preceding the current Global Search & Project-less Workflow checkpoint is:
 
 ```text
-4ff7898e6add44b4d7dd7a441dda6d4543a94079
-feat: add status configuration management
+05a9aa25db09acb6c1c20e554435962efb567728
+feat: add milestone details editing
 ```
 
-This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, and Status Configuration & Management slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, and Milestone Details Editing slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -54,8 +54,10 @@ Gate 8 evidence now includes:
 - the Label Configuration checkpoint passed 91/91 test files and 285/285 tests, zero-warning lint, TypeScript, production build, and `git diff --check`; representative Obsidian validation confirmed LabelGroup/Label create/edit/delete, Single/Multiple applicability, stable-ID rename behavior, destructive Multiple-to-Single reference repair across Project/Issue Markdown, Configuration persistence in `data.json`, Settings refresh after Runtime initialization, reload convergence, and a clean Runtime with no pending or source-health residue;
 - **Status Configuration & Management** at `4ff7898e6add44b4d7dd7a441dda6d4543a94079`, extending the same Trail Settings surface with fixed-category Issue/Project Status create, rename, in-category reorder, default selection, and explicit destructive replacement while preserving the existing Configuration planner, Source Sync, plugin-data persistence, and Status consumers;
 - the Status Configuration checkpoint passed focused zero-warning lint, focused Application/Label-regression/codec tests, TypeScript, a full `npm run check`, and `git diff --check`; representative Obsidian validation confirmed Status create/rename/reorder/default behavior, live picker/default-consumer refresh, destructive default/reference replacement, and reload convergence. Final read-only persistence evidence confirmed the deleted test Status had no Configuration or Markdown residue, the test Issue resolved to the replacement Backlog default, and `firstStartedAt`/`terminalAt` remained absent during definition-reference repair;
-- **Milestone Details Editing** is completed in this checkpoint, adding canonical lightweight Milestone editing for title, description, and Due while preserving stable Milestone identity, owning Project, linked Workflow Issues, and derived progress;
+- **Milestone Details Editing** at `05a9aa25db09acb6c1c20e554435962efb567728`, adding canonical lightweight Milestone editing for title, description, and Due while preserving stable Milestone identity, owning Project, linked Workflow Issues, and derived progress;
 - the Milestone Details checkpoint passed focused zero-warning lint, mechanism-focused planner/Application/materialization/UI/diagnostics coverage, a full `npm run check`, `git diff --check`, and diagnostics-bundle restoration. Representative Obsidian validation created `M-EDIT`, linked `HOST-Q Issue2`, edited the Milestone to `M-EDIT Renamed` with persisted description and Due, preserved the Issue's Milestone reference and progress across the edit, and converged after plugin reload with Runtime `ready`, empty pending state, and no source-health issues;
+- **Global Search & Project-less Workflow** is completed in this checkpoint, adding deterministic read-only Runtime search across Initiative, Project, Milestone, Triage Issue, and Workflow Issue while reusing existing structural navigation, Workflow Peek, entity rows, and canonical Issue mutation owners;
+- the Global Search checkpoint passed focused zero-warning lint, focused Search/project-less Application/placement/UI/diagnostics tests, TypeScript, representative Obsidian validation, a full `npm run check`, and final `git diff --check` after repairing a common Markdown EOF-deletion formatting edge. The host flow captured `SEARCH-PL`, accepted it with `projectId: null` into `Trail/Collections/Projectless Issues.md`, discovered and inspected it through Search, moved it from the project-less carrier into `BOARD-A`, opened `M-EDIT Renamed` through the existing Project hierarchy, and reloaded to Runtime `ready` with empty pending state and no source-health issues. The exposed EOF edge is fixed at the shared Markdown range-removal owner so deleting the final record canonicalizes only terminal line breaks while middle-record deletion stays byte-local;
 - repository-root `Trail/` remains versioned as disposable host-test observation data. The repository development Vault also versions `.obsidian/plugins/trail/data.json` so its Configuration/Workspace State reference IDs remain coherent with checked-in `Trail/` observations across machines; generated plugin bundles, diagnostics, graph state, and workspace state remain ignored. These development-Vault values are not Product facts or production defaults;
 - lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
@@ -128,7 +130,8 @@ Completed Gate 8 slices:
 - **Initiative Details Editing** at `f24879238a705605f7d125621c60c40e6062a3f2`;
 - **Label Configuration & Management** at `f23aa36b6327759fecc872510ae6c5546577c73e`;
 - **Status Configuration & Management** at `4ff7898e6add44b4d7dd7a441dda6d4543a94079`;
-- **Milestone Details Editing** in this checkpoint.
+- **Milestone Details Editing** at `05a9aa25db09acb6c1c20e554435962efb567728`;
+- **Global Search & Project-less Workflow** in this checkpoint.
 
 The completed **Project Details Editing** slice closes the lightweight Project-facts editing gap without merging Status or Initiative relationship changes into the same interaction:
 
@@ -243,13 +246,43 @@ The slice adds `MilestoneApplication.editProperties`, stale-baseline protection 
 
 Representative host validation created `M-EDIT`, assigned `HOST-Q Issue2`, edited the Milestone to `M-EDIT Renamed` with description `Milestone host detail check` and a new Due, and then reloaded the plugin. Diagnostics showed `workflow.milestone.edit-properties` as one `replace-entity`, authoritative processing of `Trail/Projects/0001 BOARD-A.md`, Runtime publication, mutation commit, and UI completion. After reload, authoritative Markdown and Runtime retained the edited Milestone under the same stable ID and Project ID, `HOST-Q Issue2` still referenced that Milestone, pending state was empty, and source health was clean.
 
+The completed **Global Search & Project-less Workflow** slice closes the known discovery gap for Workflow Issues that intentionally have no Project without inventing another page-specific data model or saved-view schema:
+
+```text
+Search
+-> read current readable Runtime
+-> deterministic title / description matching
+-> Initiative / Project / Milestone -> existing Projects hierarchy
+-> Workflow Issue -> existing row + Peek
+-> Triage Issue -> existing Triage row
+
+Triage -> Accept -> No Project
+-> existing Projectless Issues Markdown carrier
+-> Search discovery / Peek
+-> existing move-to-Project mutation
+-> owning Project Markdown carrier
+```
+
+The slice:
+
+1. adds a product-specific read-only Search query over the current readable Runtime instead of introducing another persistence layer, background index, fuzzy-search dependency, or Workspace State schema;
+2. searches title-bearing Initiative, Project, Milestone, Triage Issue, and Workflow Issue records by normalized title and description, with deterministic exact/prefix/title-contains/description ordering; Cycles remain on their time-oriented surface because they do not own a canonical user-facing title;
+3. routes Initiative and Project results into the existing Projects hierarchy, opens a Milestone through its owning Project, and reuses the established Workflow Issue row/Peek and Triage row rather than creating a second details surface;
+4. restores the Domain's existing optional-Project Triage Accept contract at the Application/UI boundary and exposes an explicit `No Project` choice instead of requiring a Project only because the earlier UI lacked discovery;
+5. reuses the existing `Trail/Collections/Projectless Issues.md` carrier and generic cross-source move-to-Project mutation. A project-less Workflow Issue therefore remains a normal Issue and becomes Project-owned through the same existing `moveToProject` capability;
+6. keeps Search transient and read-only. It does not freeze Home, Custom View, Favorites, Filter, Group, Sort, or saved-presentation contracts that remain intentionally deferred;
+7. extends diagnostics for Triage Accept so `projectId: null` is explicit, while Search itself does not emit mutation telemetry because query/open actions are read-only;
+8. fixes the shared Markdown EOF record-deletion edge exposed by the host flow: when a deleted record reaches EOF, `removeMarkdownRange` now reduces terminal separators to the source's single line ending, while middle-record deletion remains byte-local. Direct Domain Source regression coverage prevents empty Triage/Projectless carriers from accumulating a blank line at EOF.
+
+Representative host validation captured `SEARCH-PL` in Triage, accepted it with `No Project`, found it through Global Search, opened the existing Workflow Peek, reassigned it to `BOARD-A` from Search, opened `M-EDIT Renamed` through the existing Project hierarchy, and reloaded the plugin. Diagnostics recorded `ui.triage.accept.*` with `projectId: null`, authoritative creation in `Projectless Issues.md`, `ui.workflow.issue-project.*` from `sourceProjectId: null` to `BOARD-A`, processing of both old/new carriers, committed Runtime publication, and empty pending state. Reloaded evidence showed `SEARCH-PL` owned by `Trail/Projects/0001 BOARD-A.md`, empty Triage/Projectless containers, Runtime `ready`, and no source-health issues.
+
 ### 4.2 Current verified gaps
 
 Current Product gaps split into three groups:
 
 - Product composition gaps whose lower-layer owners already exist, including later Home/View composition and other workflow surfaces selected from the current Product contract rather than a pre-ordered component list;
 - consumer-driven shared UI gaps such as Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state;
-- real lower-layer gaps that must be repaired at their canonical owners when reached, including the current Triage Application narrowing that requires a Project even though Domain Accept permits project-less Workflow creation.
+- lower-layer gaps newly exposed by concrete Product consumers, which must still be repaired at their canonical owners rather than hidden behind Page-local workarounds.
 
 Label Configuration & Management is no longer a verified gap. Workspace Configuration now has a user-facing Label management surface, and Initiative/Project/Issue Label selection has representative host evidence through `data.json`, Markdown persistence, explicit reference repair, and Runtime convergence.
 
@@ -257,9 +290,9 @@ Status Configuration & Management is also no longer a verified gap. Issue and Pr
 
 Milestone Details Editing is no longer a verified gap. Title, description, and Due now have a canonical Milestone edit path while Project ownership, stable identity, linked Workflow Issues, and derived progress remain unchanged.
 
-Home Focus and saved Views remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Trail should not invent those schemas merely to surface a page early.
+Global Search and project-less Workflow discovery are no longer verified gaps. Triage Accept now preserves the Domain's optional Project contract, project-less Workflow Issues remain discoverable through Search and existing Peek, and the existing move-to-Project path can later attach them to a Project without introducing a dedicated project-less page.
 
-The project-less Triage Accept gap remains deferred because the current Product contract does not yet freeze a complete discovery/management surface for project-less Workflow Issues. Trail should not invent a page merely to expose a lower-layer capability.
+Home Focus and saved Views remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Global Search is a transient Runtime query and does not freeze or substitute for those future Workspace State contracts.
 
 The next Gate 8 slice is intentionally not frozen in this checkpoint. Select it by re-auditing the remaining Product composition and interaction gaps against the latest repository rather than carrying forward a stale component-first sequence.
 
@@ -309,7 +342,8 @@ Completed:
 - Initiative Details Editing;
 - Label Configuration & Management;
 - Status Configuration & Management;
-- Milestone Details Editing.
+- Milestone Details Editing;
+- Global Search & Project-less Workflow.
 
 Active:
 
@@ -344,6 +378,8 @@ The completed Label Configuration checkpoint reused the existing Configuration A
 The completed Status Configuration checkpoint reused the same Configuration planner, Source Sync, plugin-data, Runtime, and Status consumer owners while adding Status-specific Application intents and the combined Trail Settings surface. Focused owner-level checks and the full repository `npm run check` passed, followed by `git diff --check`; the development bundle was then restored with `npm run build:diagnostics`. Representative host evidence covered fixed-category create/rename/reorder/default behavior, real Workflow Issue default consumption, explicit delete-time default/reference replacement, reload convergence, and final persistence showing no deleted-Status residue or lifecycle-timestamp side effects.
 
 The completed Milestone Details checkpoint reused the existing Milestone Domain record, generic identity-preserving Replace materialization, Project Markdown carrier, Runtime reconciliation, Trail Dialog, and derived progress query rather than adding a second editing or persistence mechanism. Focused owner-level checks and the full repository `npm run check` passed, followed by `git diff --check`; the development bundle was then restored and explicitly verified to contain the diagnostics evidence command. Real-host diagnostics correlated Milestone UI submission/completion with one `workflow.milestone.edit-properties` Replace, Project-source processing, Runtime publication, and mutation commit. Reload evidence retained `M-EDIT Renamed`, its description/Due, the same stable Milestone and Project IDs, and the `HOST-Q Issue2` reference with Runtime `ready`, empty pending state, and no source-health issues.
+
+The completed Global Search & Project-less Workflow checkpoint reused readable Runtime state, existing entity rows/Peek, structural Project routing, the existing project-less carrier, and the canonical move-to-Project mutation instead of introducing search persistence or another Issue lifecycle. Focused Search/project-less tests, TypeScript, and representative real-host validation passed. The first full `npm run check` also passed, while `git diff --check` exposed an EOF separator left by deleting the last record from Triage and Projectless managed collections. That lower-layer Markdown-core edge was repaired at `removeMarkdownRange`, covered by direct Domain Source regression, and the final full `npm run check` plus `git diff --check` passed with diagnostics rebuilt afterward. Host evidence confirmed No-Project Accept, project-less Search/Peek discovery, cross-carrier reassignment to `BOARD-A`, structural Milestone routing, reload convergence, empty pending state, and clean source health.
 
 Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 

@@ -6,6 +6,23 @@ import { createTrailUiTestHarness } from "../../../test/trail-ui-test-harness";
 import { TrailTriagePage } from "./trail-triage-page";
 
 describe("TrailTriagePage", () => {
+  it("accepts Triage into project-less Workflow when No Project is selected", () => {
+    const harness = createTrailUiTestHarness();
+    render(
+      <TrailTriagePage
+        actions={harness.actions.triage}
+        runtimeStore={harness.runtimeStore}
+        timezone="Asia/Singapore"
+        writable
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+    expect(screen.getByRole("combobox", { name: "Accept into Workflow" })).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+    expect(harness.actions.triage.accept).toHaveBeenCalledWith(harness.triage, undefined);
+  });
+
   it("maps Defer to seven configured-zone calendar days", () => {
     const harness = createTrailUiTestHarness();
     render(
