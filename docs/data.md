@@ -538,6 +538,8 @@ V1 structure:
 ...
 ```
 
+`# Current` and `# Archive` are H1 structural boundaries, and dated Archive entries are H2 structural records. Weekly Note user content may contain ordinary Markdown and H3-H6 headings, but not H1/H2 headings because those depths are reserved by the utility structure.
+
 Its two product operations are replacing Current content and manually archiving Current into a dated H2 while clearing Current. It has no stable Domain ID, Status, Due, runtime index, or automatic Issue/Cycle linkage.
 
 ### 4.12 Field carriers and canonical metadata order
