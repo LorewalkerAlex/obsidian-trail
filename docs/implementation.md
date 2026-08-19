@@ -4,14 +4,14 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The pushed Gate 8 checkpoint immediately preceding the current Global Search & Project-less Workflow checkpoint is:
+The latest pushed Gate 8 implementation checkpoint is:
 
 ```text
-05a9aa25db09acb6c1c20e554435962efb567728
-feat: add milestone details editing
+0b41143ba40843e3858249a1825f513366d03a3b
+weekly note
 ```
 
-This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, and Milestone Details Editing slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search & Project-less Workflow, and Home Routing & Weekly Note slices plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -56,8 +56,10 @@ Gate 8 evidence now includes:
 - the Status Configuration checkpoint passed focused zero-warning lint, focused Application/Label-regression/codec tests, TypeScript, a full `npm run check`, and `git diff --check`; representative Obsidian validation confirmed Status create/rename/reorder/default behavior, live picker/default-consumer refresh, destructive default/reference replacement, and reload convergence. Final read-only persistence evidence confirmed the deleted test Status had no Configuration or Markdown residue, the test Issue resolved to the replacement Backlog default, and `firstStartedAt`/`terminalAt` remained absent during definition-reference repair;
 - **Milestone Details Editing** at `05a9aa25db09acb6c1c20e554435962efb567728`, adding canonical lightweight Milestone editing for title, description, and Due while preserving stable Milestone identity, owning Project, linked Workflow Issues, and derived progress;
 - the Milestone Details checkpoint passed focused zero-warning lint, mechanism-focused planner/Application/materialization/UI/diagnostics coverage, a full `npm run check`, `git diff --check`, and diagnostics-bundle restoration. Representative Obsidian validation created `M-EDIT`, linked `HOST-Q Issue2`, edited the Milestone to `M-EDIT Renamed` with persisted description and Due, preserved the Issue's Milestone reference and progress across the edit, and converged after plugin reload with Runtime `ready`, empty pending state, and no source-health issues;
-- **Global Search & Project-less Workflow** is completed in this checkpoint, adding deterministic read-only Runtime search across Initiative, Project, Milestone, Triage Issue, and Workflow Issue while reusing existing structural navigation, Workflow Peek, entity rows, and canonical Issue mutation owners;
+- **Global Search & Project-less Workflow** at `9aa3fcd5d1dff72954cd7d5fc95a844da0890d79`, adding deterministic read-only Runtime search across Initiative, Project, Milestone, Triage Issue, and Workflow Issue while reusing existing structural navigation, Workflow Peek, entity rows, and canonical Issue mutation owners;
 - the Global Search checkpoint passed focused zero-warning lint, focused Search/project-less Application/placement/UI/diagnostics tests, TypeScript, representative Obsidian validation, a full `npm run check`, and final `git diff --check` after repairing a common Markdown EOF-deletion formatting edge. The host flow captured `SEARCH-PL`, accepted it with `projectId: null` into `Trail/Collections/Projectless Issues.md`, discovered and inspected it through Search, moved it from the project-less carrier into `BOARD-A`, opened `M-EDIT Renamed` through the existing Project hierarchy, and reloaded to Runtime `ready` with empty pending state and no source-health issues. The exposed EOF edge is fixed at the shared Markdown range-removal owner so deleting the final record canonicalizes only terminal line breaks while middle-record deletion stays byte-local;
+- **Home Routing & Weekly Note** at `0b41143ba40843e3858249a1825f513366d03a3b`, making Home the default Trail entry point, composing configured time plus Current Cycle and work-structure summaries from readable Runtime, reusing existing Projects/Cycles routing, and adding Weekly Note as a lazy non-Domain Markdown utility through existing SourceIO and host write-guard boundaries;
+- the Home checkpoint passed focused zero-warning lint, 6 focused test files with 14 tests including the architecture guard, TypeScript, diagnostics build, representative Obsidian validation, a full `npm run check`, final `git diff --check`, and diagnostics-bundle restoration. Host validation confirmed that opening Home did not eagerly create `Weekly Update.md`, first Save created it, re-entry and plugin reload preserved content, Archive wrote the configured-zone `2026-08-19` entry and cleared Current, Trail-owned create/modify events were suppressed by the write guard, and final Runtime was `ready` with empty pending state and no source-health issues; the temporary Weekly Note fixture was removed afterward;
 - repository-root `Trail/` remains versioned as disposable host-test observation data. The repository development Vault also versions `.obsidian/plugins/trail/data.json` so its Configuration/Workspace State reference IDs remain coherent with checked-in `Trail/` observations across machines; generated plugin bundles, diagnostics, graph state, and workspace state remain ignored. These development-Vault values are not Product facts or production defaults;
 - lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
@@ -131,7 +133,8 @@ Completed Gate 8 slices:
 - **Label Configuration & Management** at `f23aa36b6327759fecc872510ae6c5546577c73e`;
 - **Status Configuration & Management** at `4ff7898e6add44b4d7dd7a441dda6d4543a94079`;
 - **Milestone Details Editing** at `05a9aa25db09acb6c1c20e554435962efb567728`;
-- **Global Search & Project-less Workflow** in this checkpoint.
+- **Global Search & Project-less Workflow** at `9aa3fcd5d1dff72954cd7d5fc95a844da0890d79`;
+- **Home Routing & Weekly Note** at `0b41143ba40843e3858249a1825f513366d03a3b`.
 
 The completed **Project Details Editing** slice closes the lightweight Project-facts editing gap without merging Status or Initiative relationship changes into the same interaction:
 
@@ -276,11 +279,44 @@ The slice:
 
 Representative host validation captured `SEARCH-PL` in Triage, accepted it with `No Project`, found it through Global Search, opened the existing Workflow Peek, reassigned it to `BOARD-A` from Search, opened `M-EDIT Renamed` through the existing Project hierarchy, and reloaded the plugin. Diagnostics recorded `ui.triage.accept.*` with `projectId: null`, authoritative creation in `Projectless Issues.md`, `ui.workflow.issue-project.*` from `sourceProjectId: null` to `BOARD-A`, processing of both old/new carriers, committed Runtime publication, and empty pending state. Reloaded evidence showed `SEARCH-PL` owned by `Trail/Projects/0001 BOARD-A.md`, empty Triage/Projectless containers, Runtime `ready`, and no source-health issues.
 
+The completed **Home Routing & Weekly Note** slice closes the executable Home-shell and Weekly Note gap without turning Home into a separate data system or freezing deferred Workspace State contracts:
+
+```text
+Trail open
+-> Home default route
+-> configured Date / Time
+-> readable Runtime Home query
+   -> Current Cycle summary
+   -> Initiative / Project counts
+-> existing Projects / Cycles routing
+
+Weekly Note
+-> lazy Trail/Collections/Weekly Update.md
+-> load Current + dated Archive entries
+-> Save Current -> SourceIO create/process
+-> Archive Current -> ## YYYY-MM-DD
+-> existing host write guard suppresses Trail-owned Vault events
+```
+
+The slice:
+
+1. makes Home the default Trail page while keeping Triage, Search, Projects, and Cycles as existing sibling surfaces rather than introducing another navigation or workspace model;
+2. adds a read-only Home query over readable Runtime for Initiative/Project counts and the current open Cycle summary, so Home composition does not introduce another persisted projection or index;
+3. renders Date/Time from Trail's configured timezone and routes Home summary actions into the existing Projects and Cycles pages;
+4. keeps Weekly Note explicitly outside the Domain model. Its canonical structured shape lives with Markdown schema ownership while a persistence utility repository owns physical `Trail/Collections/Weekly Update.md` parsing and writing;
+5. keeps Weekly Note reads lazy: a missing file produces an empty snapshot and merely opening Home does not create the source. The first Save creates the canonical file, while later Save/Archive operations use the existing SourceIO process path;
+6. keeps Application independent from Persistence through a Weekly Note gateway capability. Weekly Note writes reuse Runtime write gating, while reads remain available without introducing Domain mutation planning for a non-Domain utility;
+7. preserves user drafts locally in the Home UI rather than reloading them on unrelated Runtime revisions; explicit Home re-entry or plugin reload rereads authoritative Markdown;
+8. reuses the existing host write guard for Trail-owned create/modify events, preventing Weekly Note persistence from causing an unnecessary managed-source refresh loop;
+9. does not freeze Home Focus, Activity Heatmap, saved Views, Favorites, generic Filter/Group/Sort, or Home customization persistence. Those remain separate Product/Workspace-State work with their own future consumers and contracts.
+
+Representative host validation opened Trail directly on Home, exercised the existing Projects/Cycles routes, created Current through the first Weekly Note Save, reread the note after navigation, archived it under `2026-08-19` using the development Vault's configured timezone, and reloaded the plugin with the archived state intact. Diagnostics recorded SourceIO `create` and `process` completion together with matching `trail-write-suppressed` host events. Final validation evidence showed Runtime `ready`, empty pending state, no source-health issues, and the expected archived Markdown; the host fixture was then removed so versioned `Trail/` data returned to its checkpoint baseline.
+
 ### 4.2 Current verified gaps
 
 Current Product gaps split into three groups:
 
-- Product composition gaps whose lower-layer owners already exist, including later Home/View composition and other workflow surfaces selected from the current Product contract rather than a pre-ordered component list;
+- Product composition gaps whose lower-layer owners already exist, including remaining Home composition such as Focus and Activity Heatmap, saved View composition, and other workflow surfaces selected from the current Product contract rather than a pre-ordered component list;
 - consumer-driven shared UI gaps such as Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state;
 - lower-layer gaps newly exposed by concrete Product consumers, which must still be repaired at their canonical owners rather than hidden behind Page-local workarounds.
 
@@ -292,7 +328,9 @@ Milestone Details Editing is no longer a verified gap. Title, description, and D
 
 Global Search and project-less Workflow discovery are no longer verified gaps. Triage Accept now preserves the Domain's optional Project contract, project-less Workflow Issues remain discoverable through Search and existing Peek, and the existing move-to-Project path can later attach them to a Project without introducing a dedicated project-less page.
 
-Home Focus and saved Views remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Global Search is a transient Runtime query and does not freeze or substitute for those future Workspace State contracts.
+Home Routing & Weekly Note are no longer verified gaps. Trail now has a default Home route, configured Date/Time, Current Cycle and work-structure summaries, existing Projects/Cycles routing, and a lazy non-Domain Weekly Note backed by canonical Markdown and existing SourceIO/write-guard boundaries.
+
+Home Focus, Activity Heatmap, saved Views, Favorites, and any Home customization persistence remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Global Search and the current Home query remain transient Runtime projections and do not freeze or substitute for those future Workspace State contracts.
 
 The next Gate 8 slice is intentionally not frozen in this checkpoint. Select it by re-auditing the remaining Product composition and interaction gaps against the latest repository rather than carrying forward a stale component-first sequence.
 
@@ -343,7 +381,8 @@ Completed:
 - Label Configuration & Management;
 - Status Configuration & Management;
 - Milestone Details Editing;
-- Global Search & Project-less Workflow.
+- Global Search & Project-less Workflow;
+- Home Routing & Weekly Note.
 
 Active:
 
@@ -380,6 +419,8 @@ The completed Status Configuration checkpoint reused the same Configuration plan
 The completed Milestone Details checkpoint reused the existing Milestone Domain record, generic identity-preserving Replace materialization, Project Markdown carrier, Runtime reconciliation, Trail Dialog, and derived progress query rather than adding a second editing or persistence mechanism. Focused owner-level checks and the full repository `npm run check` passed, followed by `git diff --check`; the development bundle was then restored and explicitly verified to contain the diagnostics evidence command. Real-host diagnostics correlated Milestone UI submission/completion with one `workflow.milestone.edit-properties` Replace, Project-source processing, Runtime publication, and mutation commit. Reload evidence retained `M-EDIT Renamed`, its description/Due, the same stable Milestone and Project IDs, and the `HOST-Q Issue2` reference with Runtime `ready`, empty pending state, and no source-health issues.
 
 The completed Global Search & Project-less Workflow checkpoint reused readable Runtime state, existing entity rows/Peek, structural Project routing, the existing project-less carrier, and the canonical move-to-Project mutation instead of introducing search persistence or another Issue lifecycle. Focused Search/project-less tests, TypeScript, and representative real-host validation passed. The first full `npm run check` also passed, while `git diff --check` exposed an EOF separator left by deleting the last record from Triage and Projectless managed collections. That lower-layer Markdown-core edge was repaired at `removeMarkdownRange`, covered by direct Domain Source regression, and the final full `npm run check` plus `git diff --check` passed with diagnostics rebuilt afterward. Host evidence confirmed No-Project Accept, project-less Search/Peek discovery, cross-carrier reassignment to `BOARD-A`, structural Milestone routing, reload convergence, empty pending state, and clean source health.
+
+The completed Home Routing & Weekly Note checkpoint reused readable Runtime state, configured-time conversion, existing Projects/Cycles routing, the canonical Weekly Update path, SourceIO, and the host write guard rather than introducing a Home data store, Domain entity, or second persistence path. Focused lint and tests passed after correcting two test-only contract mistakes, followed by TypeScript, diagnostics build, representative real-host validation, a full `npm run check`, final `git diff --check`, and diagnostics-bundle restoration. Host evidence covered lazy source creation, Current persistence, navigation/reload reread, dated Archive persistence, SourceIO create/process completion, suppression of matching Trail-owned Vault events, Runtime `ready`, empty pending state, clean source health, and restoration of the versioned `Trail/` host-test baseline.
 
 Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 
