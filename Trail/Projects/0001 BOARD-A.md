@@ -10,6 +10,11 @@ id: "66467e01-a144-4cca-86c2-1a5ce7f8297a"
 
 # Milestones
 
+## M-EDIT Renamed
+<!-- data {"id":"39b73e8a-241f-454c-a2a4-b34d07ec18dc","projectId":"66467e01-a144-4cca-86c2-1a5ce7f8297a","due":1787811240000} -->
+
+Milestone host detail check
+
 # Issues
 
 ## A-MOVE-PEEK
@@ -27,4 +32,4 @@ Keep this issue moving.
 <!-- data {"id":"f9f1625b-ac34-4f60-933b-731dcad9ffc0","context":"workflow","statusDefinitionId":"354abdb1-31fb-4ffb-95cc-40f65c6d3525","projectId":"66467e01-a144-4cca-86c2-1a5ce7f8297a","createdAt":1787114947457} -->
 
 ## HOST-Q Issue2
-<!-- data {"id":"388329fa-4bf2-4e59-b2e4-ac4ba6e676e7","context":"workflow","statusDefinitionId":"354abdb1-31fb-4ffb-95cc-40f65c6d3525","projectId":"66467e01-a144-4cca-86c2-1a5ce7f8297a","createdAt":1787115005132} -->
+<!-- data {"id":"388329fa-4bf2-4e59-b2e4-ac4ba6e676e7","context":"workflow","statusDefinitionId":"354abdb1-31fb-4ffb-95cc-40f65c6d3525","projectId":"66467e01-a144-4cca-86c2-1a5ce7f8297a","milestoneId":"39b73e8a-241f-454c-a2a4-b34d07ec18dc","createdAt":1787115005132} -->

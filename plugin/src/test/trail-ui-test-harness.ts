@@ -131,6 +131,7 @@ export function createTrailUiTestHarness(input: {
     milestones: {
       create: vi.fn(() => receipt("new-milestone")),
       delete: vi.fn(() => receipt(milestone.id)),
+      editProperties: vi.fn(() => ({ kind: "unchanged" as const, entityId: milestone.id })),
     },
     projects: {
       changeInitiative: vi.fn(() => ({ kind: "unchanged" as const, entityId: project.id })),

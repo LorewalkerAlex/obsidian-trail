@@ -10,6 +10,7 @@ import {
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { runTrailReceipt } from "../interactions/trail-action";
 import { formatTrailLocalDateTime } from "../interactions/trail-local-date-time";
+import { TrailMilestonePropertiesDialog } from "../patterns/trail-milestone-properties-dialog";
 import {
   TrailAlertDialog,
   TrailAlertDialogAction,
@@ -39,6 +40,7 @@ export function TrailMilestoneRow(props: {
     props.runtimeStore,
     (state) => selectIsTrailEntityPending(state, props.milestoneId),
   );
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string>();
 
   if (milestone === undefined) return null;
@@ -61,49 +63,69 @@ export function TrailMilestoneRow(props: {
           {dueLabel === undefined ? "" : ` · Due ${dueLabel}`}
         </span>
       </div>
-      <TrailAlertDialog
-        description="Linked Workflow Issues stay in their Project and are detached from this Milestone."
-        title="Delete Milestone?"
-        trigger={(
-          <button
-            aria-label={`Delete ${milestone.title}`}
-            disabled={actionsDisabled}
-            onClick={() => setDeleteError(undefined)}
-            type="button"
-          >
-            Delete
-          </button>
-        )}
-      >
-        <p className="trail-dialog__detail">{milestone.title}</p>
-        {deleteError === undefined ? null : (
-          <p className="trail-inline-error" role="alert">{deleteError}</p>
-        )}
-        <TrailDialogActions>
-          <TrailAlertDialogCancel>
-            <button type="button">Cancel</button>
-          </TrailAlertDialogCancel>
-          <TrailAlertDialogAction>
+      <div className="trail-issue-row__actions">
+        <button
+          aria-label={`Edit ${milestone.title}`}
+          disabled={actionsDisabled}
+          onClick={() => setDetailsOpen(true)}
+          type="button"
+        >
+          Edit
+        </button>
+        <TrailAlertDialog
+          description="Linked Workflow Issues stay in their Project and are detached from this Milestone."
+          title="Delete Milestone?"
+          trigger={(
             <button
-              className="mod-warning"
+              aria-label={`Delete ${milestone.title}`}
               disabled={actionsDisabled}
-              onClick={(event) => {
-                const receipt = runTrailReceipt(
-                  () => props.actions.delete(milestone),
-                  (message) => {
-                    setDeleteError(message);
-                    props.onError(message);
-                  },
-                );
-                if (receipt === undefined) event.preventDefault();
-              }}
+              onClick={() => setDeleteError(undefined)}
               type="button"
             >
-              Confirm delete
+              Delete
             </button>
-          </TrailAlertDialogAction>
-        </TrailDialogActions>
-      </TrailAlertDialog>
+          )}
+        >
+          <p className="trail-dialog__detail">{milestone.title}</p>
+          {deleteError === undefined ? null : (
+            <p className="trail-inline-error" role="alert">{deleteError}</p>
+          )}
+          <TrailDialogActions>
+            <TrailAlertDialogCancel>
+              <button type="button">Cancel</button>
+            </TrailAlertDialogCancel>
+            <TrailAlertDialogAction>
+              <button
+                className="mod-warning"
+                disabled={actionsDisabled}
+                onClick={(event) => {
+                  const receipt = runTrailReceipt(
+                    () => props.actions.delete(milestone),
+                    (message) => {
+                      setDeleteError(message);
+                      props.onError(message);
+                    },
+                  );
+                  if (receipt === undefined) event.preventDefault();
+                }}
+                type="button"
+              >
+                Confirm delete
+              </button>
+            </TrailAlertDialogAction>
+          </TrailDialogActions>
+        </TrailAlertDialog>
+      </div>
+      <TrailMilestonePropertiesDialog
+        actions={props.actions}
+        milestoneId={milestone.id}
+        onError={props.onError}
+        onOpenChange={setDetailsOpen}
+        open={detailsOpen}
+        runtimeStore={props.runtimeStore}
+        timezone={props.timezone}
+        writable={props.writable && props.sourceIsHealthy}
+      />
     </li>
   );
 }

@@ -98,7 +98,7 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly milestones: Pick<
     TrailApplicationSession["milestones"],
-    "create" | "delete"
+    "create" | "delete" | "editProperties"
   >;
   readonly projects: Pick<
     TrailApplicationSession["projects"],
@@ -320,6 +320,25 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.milestone.delete", error, data);
+        }
+      },
+      editProperties(expectedMilestone, input): TrailMutationActionResult {
+        const data = {
+          descriptionProvided: input.description !== undefined && input.description.trim() !== "",
+          due: input.due ?? null,
+          milestoneId: expectedMilestone.id,
+          projectId: expectedMilestone.projectId,
+          titleLength: input.title.length,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.milestone.properties",
+            session.milestones.editProperties(expectedMilestone, input),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.milestone.properties", error, data);
         }
       },
     },

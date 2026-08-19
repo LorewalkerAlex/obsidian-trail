@@ -16,7 +16,7 @@ export interface TrailUiActions {
   >;
   readonly milestones: Pick<
     TrailApplicationSession["milestones"],
-    "create" | "delete"
+    "create" | "delete" | "editProperties"
   >;
   readonly projects: Pick<
     TrailApplicationSession["projects"],

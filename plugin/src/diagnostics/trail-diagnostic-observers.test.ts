@@ -139,7 +139,7 @@ describe("Trail diagnostic observers", () => {
     }]);
   });
 
-  it("observes Milestone management and Issue Milestone assignment on the UI boundary", () => {
+  it("observes Milestone management, details editing, and Issue Milestone assignment on the UI boundary", () => {
     const { diagnostics, events } = recorder();
     const milestone: TrailMilestone = {
       id: "milestone-a",
@@ -158,21 +158,32 @@ describe("Trail diagnostic observers", () => {
     };
     const create = vi.fn(() => pendingReceipt("new-milestone"));
     const deleteMilestone = vi.fn(() => pendingReceipt(milestone.id));
+    const editProperties = vi.fn(() => ({
+      entityId: milestone.id,
+      kind: "unchanged" as const,
+    }));
     const changeMilestone = vi.fn(() => ({
       entityId: issue.id,
       kind: "unchanged" as const,
     }));
     const session = {
       issues: { changeMilestone },
-      milestones: { create, delete: deleteMilestone },
+      milestones: { create, delete: deleteMilestone, editProperties },
     } as unknown as TrailApplicationSession;
     const actions = createDiagnosticTrailUiActions(session, diagnostics);
+    const detailsInput = {
+      description: "Private checkpoint notes",
+      due: 456,
+      title: "Updated Milestone",
+    };
 
     actions.milestones.create(milestone.projectId, "Checkpoint", 123);
+    actions.milestones.editProperties(milestone, detailsInput);
     actions.milestones.delete(milestone);
     actions.issues.changeMilestone(issue, undefined);
 
     expect(create).toHaveBeenCalledWith(milestone.projectId, "Checkpoint", 123);
+    expect(editProperties).toHaveBeenCalledWith(milestone, detailsInput);
     expect(deleteMilestone).toHaveBeenCalledWith(milestone, undefined);
     expect(changeMilestone).toHaveBeenCalledWith(issue, undefined);
     expect(events).toEqual([
@@ -185,6 +196,19 @@ describe("Trail diagnostic observers", () => {
             entityId: "new-milestone",
             projectId: milestone.projectId,
             titleLength: 10,
+          },
+        },
+      },
+      {
+        name: "ui.milestone.properties.unchanged",
+        options: {
+          data: {
+            descriptionProvided: true,
+            due: 456,
+            entityId: milestone.id,
+            milestoneId: milestone.id,
+            projectId: milestone.projectId,
+            titleLength: 17,
           },
         },
       },
