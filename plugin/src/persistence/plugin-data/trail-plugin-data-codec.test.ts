@@ -24,6 +24,41 @@ describe("Trail plugin-data codec", () => {
     expect(parsed.value).toEqual(snapshot);
   });
 
+  it("preserves Status order and default within one fixed Category", () => {
+    const base = createTrailTestConfiguration();
+    const ready = {
+      category: "unstarted" as const,
+      entityType: "issue" as const,
+      id: "issue-ready",
+      name: "Ready",
+    };
+    const snapshot = {
+      configuration: {
+        ...base,
+        statusDefinitions: base.statusDefinitions.flatMap((definition) => (
+          definition.id === "issue-unstarted" ? [ready, definition] : [definition]
+        )),
+        workflowStatuses: {
+          ...base.workflowStatuses,
+          issue: {
+            ...base.workflowStatuses.issue,
+            unstarted: {
+              defaultId: ready.id,
+              definitionIds: [ready.id, "issue-unstarted"],
+            },
+          },
+        },
+      },
+      workspaceState: createTrailTestWorkspaceState(),
+    };
+
+    const parsed = parseTrailPluginData(serializeTrailPluginData(snapshot));
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) throw new Error("expected valid plugin data");
+    expect(parsed.value).toEqual(snapshot);
+  });
+
   it("preserves Favorites order while canonicalizing unordered definitions", () => {
     const snapshot = {
       configuration: createTrailTestConfiguration(),

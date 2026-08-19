@@ -2,6 +2,7 @@ import {
   Modal,
   Notice,
   PluginSettingTab,
+  Setting,
   type App,
   type Plugin,
   type SettingDefinitionItem,
@@ -10,24 +11,49 @@ import {
 
 import type { TrailConfigurationApplication } from "../../application/configuration/trail-configuration-application";
 import type { TrailMutationCommandResult } from "../../application/trail-application-support";
-import type { TrailConfiguration } from "../../domain/model/trail-configuration";
+import type {
+  TrailConfiguration,
+  TrailStatusDefinition,
+} from "../../domain/model/trail-configuration";
 import {
   TRAIL_LABEL_ENTITY_TYPES,
+  TRAIL_STATUS_CATEGORIES,
+  TRAIL_STATUS_ENTITY_TYPES,
   type TrailLabelEntityType,
   type TrailLabelSelectionMode,
+  type TrailStatusCategory,
+  type TrailStatusEntityType,
 } from "../../domain/model/trail-values";
-import { selectTrailReadableConfiguration } from "../../query/shared/trail-effective-query";
+import {
+  selectTrailReadableConfiguration,
+  selectTrailReadableEntityIdsByStatusDefinition,
+} from "../../query/shared/trail-effective-query";
+import { selectTrailStatusOptionGroups } from "../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function entityTypeLabel(entityType: TrailLabelEntityType): string {
+function labelEntityTypeLabel(entityType: TrailLabelEntityType): string {
   switch (entityType) {
     case "initiative": return "Initiatives";
     case "project": return "Projects";
     case "issue": return "Issues";
+  }
+}
+
+function statusEntityTypeLabel(entityType: TrailStatusEntityType): string {
+  return entityType === "issue" ? "Issue" : "Project";
+}
+
+function statusCategoryLabel(category: TrailStatusCategory): string {
+  switch (category) {
+    case "backlog": return "Backlog";
+    case "unstarted": return "Unstarted";
+    case "started": return "Started";
+    case "completed": return "Completed";
+    case "canceled": return "Canceled";
   }
 }
 
@@ -71,14 +97,108 @@ class TrailSettingsConfirmationModal extends Modal {
   }
 }
 
+interface TrailStatusDeleteChoices {
+  readonly newDefaultStatusDefinitionId?: string;
+  readonly replacementStatusDefinitionId?: string;
+}
+
+class TrailStatusDeleteModal extends Modal {
+  private confirmButton: HTMLButtonElement | null = null;
+  private newDefaultStatusDefinitionId: string | undefined;
+  private replacementStatusDefinitionId: string | undefined;
+
+  public constructor(
+    app: App,
+    private readonly definition: TrailStatusDefinition,
+    private readonly remainingDefinitions: readonly TrailStatusDefinition[],
+    private readonly requiresNewDefault: boolean,
+    private readonly affectedReferenceCount: number,
+    private readonly confirmDelete: (choices: TrailStatusDeleteChoices) => void,
+  ) {
+    super(app);
+  }
+
+  public onOpen(): void {
+    this.contentEl.empty();
+    this.contentEl.createEl("h2", { text: `Delete ${this.definition.name}?` });
+    this.contentEl.createEl("p", {
+      text: "This removes the status definition. Existing work items are preserved and can only be moved to another status in the same fixed category.",
+    });
+
+    if (this.requiresNewDefault) {
+      new Setting(this.contentEl)
+        .setName("New category default")
+        .setDesc("Choose which remaining status future category-level actions should use.")
+        .addDropdown((dropdown) => {
+          dropdown.addOption("", "Choose a status");
+          for (const definition of this.remainingDefinitions) {
+            dropdown.addOption(definition.id, definition.name);
+          }
+          dropdown.setValue("");
+          dropdown.onChange((value) => {
+            this.newDefaultStatusDefinitionId = value === "" ? undefined : value;
+            this.updateConfirmAvailability();
+          });
+        });
+    }
+
+    if (this.affectedReferenceCount > 0) {
+      new Setting(this.contentEl)
+        .setName("Replace existing references")
+        .setDesc(
+          `Choose the status for ${this.affectedReferenceCount} current ${statusEntityTypeLabel(this.definition.entityType).toLowerCase()} reference(s).`,
+        )
+        .addDropdown((dropdown) => {
+          dropdown.addOption("", "Choose a status");
+          for (const definition of this.remainingDefinitions) {
+            dropdown.addOption(definition.id, definition.name);
+          }
+          dropdown.setValue("");
+          dropdown.onChange((value) => {
+            this.replacementStatusDefinitionId = value === "" ? undefined : value;
+            this.updateConfirmAvailability();
+          });
+        });
+    }
+
+    const actions = this.contentEl.createDiv();
+    const cancel = actions.createEl("button", { text: "Cancel" });
+    cancel.addEventListener("click", () => this.close());
+    this.confirmButton = actions.createEl("button", { text: "Delete status" });
+    this.confirmButton.addClass("mod-warning");
+    this.confirmButton.addEventListener("click", () => {
+      if (this.confirmButton?.disabled === true) return;
+      this.confirmDelete({
+        newDefaultStatusDefinitionId: this.newDefaultStatusDefinitionId,
+        replacementStatusDefinitionId: this.replacementStatusDefinitionId,
+      });
+      this.close();
+    });
+    this.updateConfirmAvailability();
+  }
+
+  public onClose(): void {
+    this.confirmButton = null;
+    this.contentEl.empty();
+  }
+
+  private updateConfirmAvailability(): void {
+    if (this.confirmButton === null) return;
+    this.confirmButton.disabled = (
+      (this.requiresNewDefault && this.newDefaultStatusDefinitionId === undefined)
+      || (this.affectedReferenceCount > 0 && this.replacementStatusDefinitionId === undefined)
+    );
+  }
+}
+
 function confirmTrailSettingsChange(app: App, title: string, message: string): Promise<boolean> {
   return new Promise((resolve) => {
     new TrailSettingsConfirmationModal(app, title, message, resolve).open();
   });
 }
 
-/** Obsidian-native Workspace Configuration surface for structured Trail Labels. */
-export class TrailLabelSettingsTab extends PluginSettingTab {
+/** Obsidian-native Workspace Configuration surface for Trail workflow Statuses and Labels. */
+export class TrailSettingsTab extends PluginSettingTab {
   public constructor(
     app: App,
     plugin: Plugin,
@@ -103,10 +223,10 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
     const configuration = selectTrailReadableConfiguration(runtime);
     const items: SettingDefinitionItem[] = [
       {
-        heading: "Labels",
+        heading: "Statuses",
         items: [{
-          desc: "Label groups define structured workspace classification. Single groups allow one label per item; multiple groups allow several.",
-          name: "Structured labels",
+          desc: "Issue and project workflows keep fixed semantic categories. Customize the named statuses inside each category.",
+          name: "Workflow statuses",
         }],
         type: "group",
       },
@@ -129,18 +249,211 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
       items.push({
         heading: "Availability",
         items: [{
-          desc: `Trail is currently ${runtime.control.kind}; label changes are temporarily disabled.`,
-          name: "Label editing",
+          desc: `Trail is currently ${runtime.control.kind}; configuration changes are temporarily disabled.`,
+          name: "Configuration editing",
         }],
         type: "group",
       });
     }
 
+    for (const entityType of TRAIL_STATUS_ENTITY_TYPES) {
+      for (const category of TRAIL_STATUS_CATEGORIES) {
+        items.push(this.statusCategoryDefinition(configuration, entityType, category, writable));
+      }
+    }
+
+    items.push({
+      heading: "Labels",
+      items: [{
+        desc: "Label groups define structured workspace classification. Single groups allow one label per item; multiple groups allow several.",
+        name: "Structured labels",
+      }],
+      type: "group",
+    });
     items.push(this.createGroupDefinition(configuration, writable));
     for (const group of configuration.labelGroups) {
       items.push(this.groupDefinition(configuration, group.id, writable));
     }
     return items;
+  }
+
+  private statusCategoryDefinition(
+    configuration: TrailConfiguration,
+    entityType: TrailStatusEntityType,
+    category: TrailStatusCategory,
+    writable: boolean,
+  ): SettingDefinitionItem {
+    const optionGroup = selectTrailStatusOptionGroups(configuration, entityType)
+      .find((group) => group.category === category);
+    const definitions = optionGroup?.definitions ?? [];
+    const categoryConfiguration = configuration.workflowStatuses[entityType][category];
+    const items = definitions.map((definition, index) => this.statusDefinitionItem(
+      configuration,
+      definition,
+      definitions,
+      categoryConfiguration.defaultId,
+      index,
+      writable,
+    ));
+
+    let newStatusName = "";
+    items.push({
+      name: "Add status",
+      render: (setting) => {
+        setting
+          .addText((text) => {
+            text.setPlaceholder("Status name");
+            text.setDisabled(!writable);
+            text.onChange((value) => {
+              newStatusName = value;
+            });
+          })
+          .addButton((button) => {
+            button.setButtonText("Add");
+            button.setDisabled(!writable);
+            button.onClick(() => {
+              void this.runStatusMutation(() => this.configurationApplication.createStatusDefinition({
+                category,
+                entityType,
+                expectedConfiguration: configuration,
+                name: newStatusName,
+              }), "Status created");
+            });
+          });
+      },
+    });
+
+    return {
+      heading: `${statusEntityTypeLabel(entityType)} statuses · ${statusCategoryLabel(category)}`,
+      items,
+      type: "group",
+    };
+  }
+
+  private statusDefinitionItem(
+    configuration: TrailConfiguration,
+    definition: TrailStatusDefinition,
+    definitions: readonly TrailStatusDefinition[],
+    defaultId: string,
+    index: number,
+    writable: boolean,
+  ): SettingGroupItem {
+    let name = definition.name;
+    const isDefault = definition.id === defaultId;
+    return {
+      desc: isDefault ? "Default for category-level actions." : undefined,
+      name: definition.name,
+      render: (setting) => {
+        setting
+          .addText((text) => {
+            text.setValue(definition.name);
+            text.setDisabled(!writable);
+            text.onChange((value) => {
+              name = value;
+            });
+          })
+          .addButton((button) => {
+            button.setButtonText("Save");
+            button.setDisabled(!writable);
+            button.onClick(() => {
+              void this.runStatusMutation(() => this.configurationApplication.renameStatusDefinition({
+                expectedConfiguration: configuration,
+                name,
+                statusDefinitionId: definition.id,
+              }), "Status saved");
+            });
+          })
+          .addButton((button) => {
+            button.setButtonText("Move up");
+            button.setDisabled(!writable || index === 0);
+            button.onClick(() => {
+              if (index === 0) return;
+              const definitionIds = definitions.map(({ id }) => id);
+              [definitionIds[index - 1], definitionIds[index]] = [
+                definitionIds[index],
+                definitionIds[index - 1],
+              ];
+              void this.runStatusMutation(() => this.configurationApplication.reorderStatusDefinitions({
+                category: definition.category,
+                definitionIds,
+                entityType: definition.entityType,
+                expectedConfiguration: configuration,
+              }), "Status order saved");
+            });
+          })
+          .addButton((button) => {
+            button.setButtonText("Move down");
+            button.setDisabled(!writable || index >= definitions.length - 1);
+            button.onClick(() => {
+              if (index >= definitions.length - 1) return;
+              const definitionIds = definitions.map(({ id }) => id);
+              [definitionIds[index], definitionIds[index + 1]] = [
+                definitionIds[index + 1],
+                definitionIds[index],
+              ];
+              void this.runStatusMutation(() => this.configurationApplication.reorderStatusDefinitions({
+                category: definition.category,
+                definitionIds,
+                entityType: definition.entityType,
+                expectedConfiguration: configuration,
+              }), "Status order saved");
+            });
+          })
+          .addButton((button) => {
+            button.setButtonText(isDefault ? "Default" : "Set default");
+            button.setDisabled(!writable || isDefault);
+            button.onClick(() => {
+              if (isDefault) return;
+              void this.runStatusMutation(() => this.configurationApplication.setStatusCategoryDefault({
+                category: definition.category,
+                entityType: definition.entityType,
+                expectedConfiguration: configuration,
+                statusDefinitionId: definition.id,
+              }), "Status default saved");
+            });
+          })
+          .addButton((button) => {
+            button.setButtonText("Delete");
+            button.setDestructive();
+            button.setDisabled(!writable);
+            button.onClick(() => {
+              this.openStatusDeleteModal(configuration, definition, definitions, defaultId);
+            });
+          });
+      },
+    };
+  }
+
+  private openStatusDeleteModal(
+    configuration: TrailConfiguration,
+    definition: TrailStatusDefinition,
+    definitions: readonly TrailStatusDefinition[],
+    defaultId: string,
+  ): void {
+    const remainingDefinitions = definitions.filter(({ id }) => id !== definition.id);
+    if (remainingDefinitions.length === 0) {
+      new Notice("Each fixed status category must keep at least one status.");
+      return;
+    }
+    const affectedReferenceCount = selectTrailReadableEntityIdsByStatusDefinition(
+      this.runtimeStore.getState(),
+      definition.id,
+    ).length;
+    new TrailStatusDeleteModal(
+      this.app,
+      definition,
+      remainingDefinitions,
+      definition.id === defaultId,
+      affectedReferenceCount,
+      (choices) => {
+        void this.runStatusMutation(() => this.configurationApplication.deleteStatusDefinition({
+          expectedConfiguration: configuration,
+          newDefaultStatusDefinitionId: choices.newDefaultStatusDefinitionId,
+          replacementStatusDefinitionId: choices.replacementStatusDefinitionId,
+          statusDefinitionId: definition.id,
+        }), "Status deleted");
+      },
+    ).open();
   }
 
   private createGroupDefinition(
@@ -182,8 +495,8 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
 
     for (const entityType of TRAIL_LABEL_ENTITY_TYPES) {
       items.push({
-        desc: `Allow this group on ${entityTypeLabel(entityType).toLowerCase()}.`,
-        name: entityTypeLabel(entityType),
+        desc: `Allow this group on ${labelEntityTypeLabel(entityType).toLowerCase()}.`,
+        name: labelEntityTypeLabel(entityType),
         render: (setting) => {
           setting.addToggle((toggle) => {
             toggle.setValue(true);
@@ -205,7 +518,7 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
           button.setCta();
           button.setDisabled(!writable);
           button.onClick(() => {
-            void this.runMutation(() => this.configurationApplication.createLabelGroup({
+            void this.runLabelMutation(() => this.configurationApplication.createLabelGroup({
               expectedConfiguration: configuration,
               name,
               registeredEntityTypes: [...registeredEntityTypes],
@@ -271,7 +584,7 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
 
     for (const entityType of TRAIL_LABEL_ENTITY_TYPES) {
       items.push({
-        name: entityTypeLabel(entityType),
+        name: labelEntityTypeLabel(entityType),
         render: (setting) => {
           setting.addToggle((toggle) => {
             toggle.setValue(registeredEntityTypes.has(entityType));
@@ -294,7 +607,7 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
           button.setCta();
           button.setDisabled(!writable);
           button.onClick(() => {
-            void this.runMutation(
+            void this.runLabelMutation(
               () => this.configurationApplication.editLabelGroup({
                 expectedConfiguration: configuration,
                 groupId: group.id,
@@ -326,7 +639,7 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
           button.setDestructive();
           button.setDisabled(!writable);
           button.onClick(() => {
-            void this.confirmDeleteAndRun(
+            void this.confirmDeleteAndRunLabelMutation(
               `Delete ${group.name}?`,
               "The label group and its labels will be removed. Existing work items are preserved; any now-invalid label selections require explicit cleanup confirmation.",
               () => this.configurationApplication.deleteLabelGroup({
@@ -365,7 +678,7 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
             button.setButtonText("Add");
             button.setDisabled(!writable);
             button.onClick(() => {
-              void this.runMutation(() => this.configurationApplication.createLabel({
+              void this.runLabelMutation(() => this.configurationApplication.createLabel({
                 expectedConfiguration: configuration,
                 groupId: group.id,
                 name: newLabelName,
@@ -419,7 +732,7 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
             button.setButtonText("Save");
             button.setDisabled(!writable);
             button.onClick(() => {
-              void this.runMutation(
+              void this.runLabelMutation(
                 () => this.configurationApplication.editLabel({
                   expectedConfiguration: configuration,
                   groupId,
@@ -442,7 +755,7 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
             button.setDestructive();
             button.setDisabled(!writable);
             button.onClick(() => {
-              void this.confirmDeleteAndRun(
+              void this.confirmDeleteAndRunLabelMutation(
                 `Delete ${label.name}?`,
                 "The label definition will be removed. Existing work items are preserved; any now-invalid label selections require explicit cleanup confirmation.",
                 () => this.configurationApplication.deleteLabel({
@@ -462,7 +775,7 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
     };
   }
 
-  private async confirmDeleteAndRun(
+  private async confirmDeleteAndRunLabelMutation(
     title: string,
     message: string,
     action: () => TrailMutationCommandResult,
@@ -471,10 +784,32 @@ export class TrailLabelSettingsTab extends PluginSettingTab {
   ): Promise<void> {
     const confirmed = await confirmTrailSettingsChange(this.app, title, message);
     if (!confirmed) return;
-    await this.runMutation(action, successMessage, cleanupAction);
+    await this.runLabelMutation(action, successMessage, cleanupAction);
   }
 
-  private async runMutation(
+  private async runStatusMutation(
+    action: () => TrailMutationCommandResult,
+    successMessage: string,
+  ): Promise<void> {
+    try {
+      const result = action();
+      if (result.kind === "needs-input") {
+        new Notice(result.input.message);
+        return;
+      }
+      if (result.kind === "unchanged") {
+        new Notice("No Trail status changes to save.");
+        return;
+      }
+      await result.receipt.completion;
+      new Notice(successMessage);
+      this.update();
+    } catch (error: unknown) {
+      new Notice(`Trail status change failed: ${errorMessage(error)}`);
+    }
+  }
+
+  private async runLabelMutation(
     action: () => TrailMutationCommandResult,
     successMessage: string,
     cleanupAction?: () => TrailMutationCommandResult,

@@ -2,15 +2,21 @@ import type {
   TrailConfiguration,
   TrailLabel,
   TrailLabelGroup,
+  TrailStatusDefinition,
 } from "../../domain/model/trail-configuration";
 import {
   TRAIL_LABEL_ENTITY_TYPES,
+  TRAIL_STATUS_CATEGORIES,
+  TRAIL_STATUS_ENTITY_TYPES,
   type TrailLabelEntityType,
   type TrailLabelSelectionMode,
+  type TrailStatusCategory,
+  type TrailStatusEntityType,
 } from "../../domain/model/trail-values";
 import { planChangeTrailConfiguration } from "../../domain/planning/trail-configuration-planning";
 import { sameTrailConfiguration } from "../../domain/rules/trail-domain-equality";
 import { findTrailLabelSelectionViolations } from "../../domain/rules/trail-label-rules";
+import { findTrailStatusDefinition } from "../../domain/rules/trail-status-rules";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import type { TrailAuthoritativeSourceSync } from "../../source-sync/trail-authoritative-source-sync";
 import {
@@ -32,6 +38,40 @@ export interface ChangeTrailConfigurationInput {
   readonly nextConfiguration: TrailConfiguration;
   readonly resolvedLabelIdsByEntityId?: Readonly<Record<string, readonly string[]>>;
   readonly resolvedStatusDefinitionIdsByEntityId?: Readonly<Record<string, string>>;
+}
+
+export interface CreateTrailStatusDefinitionInput {
+  readonly category: TrailStatusCategory;
+  readonly entityType: TrailStatusEntityType;
+  readonly expectedConfiguration: TrailConfiguration;
+  readonly name: string;
+}
+
+export interface RenameTrailStatusDefinitionInput {
+  readonly expectedConfiguration: TrailConfiguration;
+  readonly name: string;
+  readonly statusDefinitionId: string;
+}
+
+export interface ReorderTrailStatusDefinitionsInput {
+  readonly category: TrailStatusCategory;
+  readonly definitionIds: readonly string[];
+  readonly entityType: TrailStatusEntityType;
+  readonly expectedConfiguration: TrailConfiguration;
+}
+
+export interface SetTrailStatusCategoryDefaultInput {
+  readonly category: TrailStatusCategory;
+  readonly entityType: TrailStatusEntityType;
+  readonly expectedConfiguration: TrailConfiguration;
+  readonly statusDefinitionId: string;
+}
+
+export interface DeleteTrailStatusDefinitionInput {
+  readonly expectedConfiguration: TrailConfiguration;
+  readonly newDefaultStatusDefinitionId?: string;
+  readonly replacementStatusDefinitionId?: string;
+  readonly statusDefinitionId: string;
 }
 
 export interface CreateTrailLabelGroupInput {
@@ -93,6 +133,14 @@ function normalizeRegisteredEntityTypes(
   return TRAIL_LABEL_ENTITY_TYPES.filter((entityType) => values.includes(entityType));
 }
 
+function normalizeOrderedStatusDefinitionIds(values: readonly string[]): readonly string[] {
+  const normalized = values.map((value) => normalizeTrailCommandId(value, "StatusDefinition ID"));
+  if (new Set(normalized).size !== normalized.length) {
+    throw new TrailCommandValidationError("StatusDefinition order must not contain duplicate IDs");
+  }
+  return normalized;
+}
+
 function sortByStableId<T extends { readonly id: string }>(values: readonly T[]): readonly T[] {
   return [...values].sort((left, right) => left.id.localeCompare(right.id));
 }
@@ -104,6 +152,94 @@ function canonicalizeLabelConfiguration(configuration: TrailConfiguration): Trai
     labelGroups: sortByStableId(configuration.labelGroups),
     labels: sortByStableId(configuration.labels),
   };
+}
+
+/**
+ * Plugin-data persists StatusDefinitions nested by entity type/category and then
+ * rebuilds the flat logical array in that same order during authoritative reread.
+ */
+function canonicalizeStatusConfiguration(configuration: TrailConfiguration): TrailConfiguration {
+  const definitionsById = new Map(
+    configuration.statusDefinitions.map((definition) => [definition.id, definition] as const),
+  );
+  const referenced = new Set<string>();
+  const statusDefinitions: TrailStatusDefinition[] = [];
+
+  for (const entityType of TRAIL_STATUS_ENTITY_TYPES) {
+    for (const category of TRAIL_STATUS_CATEGORIES) {
+      for (const definitionId of configuration.workflowStatuses[entityType][category].definitionIds) {
+        const definition = definitionsById.get(definitionId);
+        if (definition !== undefined) statusDefinitions.push(definition);
+        referenced.add(definitionId);
+      }
+    }
+  }
+
+  // Preserve invalid/unregistered definitions for validation rather than silently
+  // repairing them in this ordering helper.
+  for (const definition of configuration.statusDefinitions) {
+    if (!referenced.has(definition.id)) statusDefinitions.push(definition);
+  }
+
+  return { ...configuration, statusDefinitions };
+}
+
+function requireStatusDefinition(
+  configuration: TrailConfiguration,
+  statusDefinitionId: string,
+): TrailStatusDefinition {
+  const normalizedId = normalizeTrailCommandId(statusDefinitionId, "StatusDefinition ID");
+  const definition = findTrailStatusDefinition(configuration, normalizedId);
+  if (definition === undefined) {
+    throw new TrailApplicationPlanningError(
+      "status-definition-missing",
+      `StatusDefinition does not exist: ${normalizedId}`,
+    );
+  }
+  return definition;
+}
+
+function requireStatusDefinitionInCategory(
+  configuration: TrailConfiguration,
+  entityType: TrailStatusEntityType,
+  category: TrailStatusCategory,
+  statusDefinitionId: string,
+): TrailStatusDefinition {
+  const definition = requireStatusDefinition(configuration, statusDefinitionId);
+  const categoryConfiguration = configuration.workflowStatuses[entityType][category];
+  if (
+    definition.entityType !== entityType
+    || definition.category !== category
+    || !categoryConfiguration.definitionIds.includes(definition.id)
+  ) {
+    throw new TrailApplicationPlanningError(
+      "status-definition-scope-invalid",
+      `StatusDefinition ${definition.id} does not belong to ${entityType}.${category}`,
+    );
+  }
+  return definition;
+}
+
+function replaceStatusCategoryConfiguration(
+  configuration: TrailConfiguration,
+  entityType: TrailStatusEntityType,
+  category: TrailStatusCategory,
+  categoryConfiguration: TrailConfiguration["workflowStatuses"][TrailStatusEntityType][TrailStatusCategory],
+): TrailConfiguration {
+  return {
+    ...configuration,
+    workflowStatuses: {
+      ...configuration.workflowStatuses,
+      [entityType]: {
+        ...configuration.workflowStatuses[entityType],
+        [category]: categoryConfiguration,
+      },
+    },
+  };
+}
+
+function statusMutationNeedsInput(code: string, message: string): TrailMutationCommandResult {
+  return { input: { code, message }, kind: "needs-input" };
 }
 
 function requireLabelGroup(
@@ -210,6 +346,184 @@ export class TrailConfigurationApplication {
     };
   }
 
+  public createStatusDefinition(input: CreateTrailStatusDefinitionInput): TrailMutationCommandResult {
+    const categoryConfiguration = input.expectedConfiguration.workflowStatuses[input.entityType][input.category];
+    const definition: TrailStatusDefinition = {
+      category: input.category,
+      entityType: input.entityType,
+      id: normalizeTrailCommandId(this.environment.createId(), "StatusDefinition ID"),
+      name: normalizeName(input.name, "StatusDefinition name"),
+    };
+    const nextConfiguration = replaceStatusCategoryConfiguration(
+      {
+        ...input.expectedConfiguration,
+        statusDefinitions: [...input.expectedConfiguration.statusDefinitions, definition],
+      },
+      input.entityType,
+      input.category,
+      {
+        ...categoryConfiguration,
+        definitionIds: [...categoryConfiguration.definitionIds, definition.id],
+      },
+    );
+    return this.changeStatuses(input.expectedConfiguration, nextConfiguration);
+  }
+
+  public renameStatusDefinition(input: RenameTrailStatusDefinitionInput): TrailMutationCommandResult {
+    const current = requireStatusDefinition(input.expectedConfiguration, input.statusDefinitionId);
+    const nextConfiguration: TrailConfiguration = {
+      ...input.expectedConfiguration,
+      statusDefinitions: input.expectedConfiguration.statusDefinitions.map((definition) => (
+        definition.id === current.id
+          ? { ...definition, name: normalizeName(input.name, "StatusDefinition name") }
+          : definition
+      )),
+    };
+    return this.changeStatuses(input.expectedConfiguration, nextConfiguration);
+  }
+
+  public reorderStatusDefinitions(input: ReorderTrailStatusDefinitionsInput): TrailMutationCommandResult {
+    const definitionIds = normalizeOrderedStatusDefinitionIds(input.definitionIds);
+    const current = input.expectedConfiguration.workflowStatuses[input.entityType][input.category];
+    if (
+      definitionIds.length !== current.definitionIds.length
+      || definitionIds.some((definitionId) => !current.definitionIds.includes(definitionId))
+    ) {
+      throw new TrailApplicationPlanningError(
+        "status-order-invalid",
+        `StatusDefinition order must be an exact permutation of ${input.entityType}.${input.category}`,
+      );
+    }
+    const nextConfiguration = replaceStatusCategoryConfiguration(
+      input.expectedConfiguration,
+      input.entityType,
+      input.category,
+      { ...current, definitionIds },
+    );
+    return this.changeStatuses(input.expectedConfiguration, nextConfiguration);
+  }
+
+  public setStatusCategoryDefault(input: SetTrailStatusCategoryDefaultInput): TrailMutationCommandResult {
+    const target = requireStatusDefinitionInCategory(
+      input.expectedConfiguration,
+      input.entityType,
+      input.category,
+      input.statusDefinitionId,
+    );
+    const current = input.expectedConfiguration.workflowStatuses[input.entityType][input.category];
+    const nextConfiguration = replaceStatusCategoryConfiguration(
+      input.expectedConfiguration,
+      input.entityType,
+      input.category,
+      { ...current, defaultId: target.id },
+    );
+    return this.changeStatuses(input.expectedConfiguration, nextConfiguration);
+  }
+
+  public deleteStatusDefinition(input: DeleteTrailStatusDefinitionInput): TrailMutationCommandResult {
+    const current = requireStatusDefinition(input.expectedConfiguration, input.statusDefinitionId);
+    const currentCategory = input.expectedConfiguration
+      .workflowStatuses[current.entityType][current.category];
+    if (currentCategory.definitionIds.length === 1) {
+      throw new TrailApplicationPlanningError(
+        "status-category-last-definition",
+        `Cannot delete the last StatusDefinition in ${current.entityType}.${current.category}`,
+      );
+    }
+
+    const remainingIds = currentCategory.definitionIds.filter((id) => id !== current.id);
+    const deletingDefault = currentCategory.defaultId === current.id;
+    let nextDefaultId = currentCategory.defaultId;
+    if (deletingDefault) {
+      if (input.newDefaultStatusDefinitionId === undefined) {
+        return statusMutationNeedsInput(
+          "status-default-replacement-required",
+          `Choose a new default StatusDefinition for ${current.entityType}.${current.category} before deleting ${current.name}`,
+        );
+      }
+      const nextDefault = requireStatusDefinitionInCategory(
+        input.expectedConfiguration,
+        current.entityType,
+        current.category,
+        input.newDefaultStatusDefinitionId,
+      );
+      if (!remainingIds.includes(nextDefault.id)) {
+        throw new TrailApplicationPlanningError(
+          "status-default-replacement-invalid",
+          "The deleted StatusDefinition cannot remain the category default",
+        );
+      }
+      nextDefaultId = nextDefault.id;
+    } else if (input.newDefaultStatusDefinitionId !== undefined) {
+      throw new TrailApplicationPlanningError(
+        "status-default-replacement-unexpected",
+        "A new category default may only be supplied when deleting the current default",
+      );
+    }
+
+    const state = readTrailPlanningState(this.runtimeStore);
+    const affectedEntityIds: string[] = [];
+    if (current.entityType === "project") {
+      for (const project of state.domain.projectsById.values()) {
+        if (project.statusDefinitionId === current.id) affectedEntityIds.push(project.id);
+      }
+    } else {
+      for (const issue of state.domain.issuesById.values()) {
+        if (issue.context === "workflow" && issue.statusDefinitionId === current.id) {
+          affectedEntityIds.push(issue.id);
+        }
+      }
+    }
+    affectedEntityIds.sort();
+
+    let resolvedStatusDefinitionIdsByEntityId: Readonly<Record<string, string>> | undefined;
+    if (affectedEntityIds.length > 0) {
+      if (input.replacementStatusDefinitionId === undefined) {
+        return statusMutationNeedsInput(
+          "status-reference-replacement-required",
+          `Choose a replacement StatusDefinition for ${affectedEntityIds.length} current ${current.entityType} reference(s) before deleting ${current.name}`,
+        );
+      }
+      const replacement = requireStatusDefinitionInCategory(
+        input.expectedConfiguration,
+        current.entityType,
+        current.category,
+        input.replacementStatusDefinitionId,
+      );
+      if (!remainingIds.includes(replacement.id)) {
+        throw new TrailApplicationPlanningError(
+          "status-reference-replacement-invalid",
+          "Existing references cannot be moved to the StatusDefinition being deleted",
+        );
+      }
+      resolvedStatusDefinitionIdsByEntityId = Object.fromEntries(
+        affectedEntityIds.map((entityId) => [entityId, replacement.id] as const),
+      );
+    } else if (input.replacementStatusDefinitionId !== undefined) {
+      throw new TrailApplicationPlanningError(
+        "status-reference-replacement-unexpected",
+        "A reference replacement may only be supplied when current entities use this StatusDefinition",
+      );
+    }
+
+    const nextConfiguration = replaceStatusCategoryConfiguration(
+      {
+        ...input.expectedConfiguration,
+        statusDefinitions: input.expectedConfiguration.statusDefinitions.filter(
+          ({ id }) => id !== current.id,
+        ),
+      },
+      current.entityType,
+      current.category,
+      { defaultId: nextDefaultId, definitionIds: remainingIds },
+    );
+    return this.changeStatuses(
+      input.expectedConfiguration,
+      nextConfiguration,
+      resolvedStatusDefinitionIdsByEntityId,
+    );
+  }
+
   public createLabelGroup(input: CreateTrailLabelGroupInput): TrailMutationCommandResult {
     const group: TrailLabelGroup = {
       id: normalizeTrailCommandId(this.environment.createId(), "LabelGroup ID"),
@@ -312,6 +626,18 @@ export class TrailConfigurationApplication {
       },
       input.clearInvalidSelections === true,
     );
+  }
+
+  private changeStatuses(
+    expectedConfiguration: TrailConfiguration,
+    nextConfiguration: TrailConfiguration,
+    resolvedStatusDefinitionIdsByEntityId?: Readonly<Record<string, string>>,
+  ): TrailMutationCommandResult {
+    return this.change({
+      expectedConfiguration,
+      nextConfiguration: canonicalizeStatusConfiguration(nextConfiguration),
+      resolvedStatusDefinitionIdsByEntityId,
+    });
   }
 
   private changeLabels(

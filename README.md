@@ -62,7 +62,7 @@ obsidian-trail/
 └─ ...
 ```
 
-`Trail/` is disposable test data for the repository development Vault. It is versioned so real Obsidian persistence effects can be inspected through ordinary Git diffs. The development Vault also versions `.obsidian/plugins/trail/data.json` because Trail Domain Markdown can reference Configuration IDs stored there; keeping both persistence classes in the same checkpoint prevents cross-machine host validation from combining incompatible IDs. These checked-in development-Vault values are not Product facts or production defaults. Generated plugin bundles, diagnostics, graph state, and workspace state remain machine-local/ignored.
+`Trail/` is disposable test data for the repository development Vault. It is versioned so real Obsidian persistence effects can be inspected through ordinary Git diffs. The development Vault also versions its `data.json` alongside `Trail/` observation data so those two authoritative persistence classes stay coherent during cross-machine host validation. These checked-in development-Vault values are not Product facts or production defaults. Generated plugin bundles, diagnostics, graph state, and workspace state remain machine-local/ignored.
 
 ## Development environment
 
@@ -109,6 +109,8 @@ npm run check
 - `npm run check` runs lint, tests, typecheck, and the production build.
 
 During implementation, use focused owner-level validation while iterating. Run the full `npm run check` at a coherent checkpoint rather than after every small internal change.
+
+For interactive development-host work, keep a diagnostics-enabled bundle loaded. `npm run check` ends with the production build and therefore disables diagnostics; after any production `npm run check` or `npm run build`, run `npm run build:diagnostics` before returning to manual Obsidian interaction so the development operation trace remains available.
 
 ## Real Obsidian verification
 
