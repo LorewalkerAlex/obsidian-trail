@@ -11,9 +11,13 @@ export type { TrailWeeklyNoteSnapshot } from "../../markdown/schema/trail-weekly
 
 /** Application-owned capability contract; persistence provides the concrete utility-source owner. */
 export interface TrailWeeklyNoteGateway {
-  archiveCurrent(date: string, current: string): Promise<TrailWeeklyNoteSnapshot>;
+  archiveCurrent(
+    date: string,
+    expectedCurrent: string,
+    current: string,
+  ): Promise<TrailWeeklyNoteSnapshot>;
   load(): Promise<TrailWeeklyNoteSnapshot>;
-  replaceCurrent(current: string): Promise<TrailWeeklyNoteSnapshot>;
+  replaceCurrent(expectedCurrent: string, current: string): Promise<TrailWeeklyNoteSnapshot>;
 }
 
 function padTwo(value: number): string {
@@ -37,16 +41,23 @@ export class TrailWeeklyNoteApplication {
     return this.gateway.load();
   }
 
-  public replaceCurrent(current: string): Promise<TrailWeeklyNoteSnapshot> {
+  public replaceCurrent(
+    expectedCurrent: string,
+    current: string,
+  ): Promise<TrailWeeklyNoteSnapshot> {
     readTrailPlanningState(this.runtimeStore);
-    return this.gateway.replaceCurrent(current);
+    return this.gateway.replaceCurrent(expectedCurrent, current);
   }
 
-  public archiveCurrent(current: string): Promise<TrailWeeklyNoteSnapshot> {
+  public archiveCurrent(
+    expectedCurrent: string,
+    current: string,
+  ): Promise<TrailWeeklyNoteSnapshot> {
     const state = readTrailPlanningState(this.runtimeStore);
     const effectiveAt = normalizeTrailCommandTime(this.environment);
     return this.gateway.archiveCurrent(
       archiveDateFor(effectiveAt, state.configuration.temporal.timezone),
+      expectedCurrent,
       current,
     );
   }

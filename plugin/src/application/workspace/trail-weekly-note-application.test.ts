@@ -9,20 +9,28 @@ import {
 } from "./trail-weekly-note-application";
 
 function createGateway() {
-  const archiveCurrent = vi.fn(async (date: string, current: string) => ({
+  const archiveCurrent = vi.fn(async (
+    date: string,
+    _expectedCurrent: string,
+    current: string,
+  ) => ({
     archives: [{ content: current, date }],
     current: "",
+  }));
+  const replaceCurrent = vi.fn(async (_expectedCurrent: string, current: string) => ({
+    archives: [],
+    current,
   }));
   const gateway: TrailWeeklyNoteGateway = {
     archiveCurrent,
     load: vi.fn(async () => ({ archives: [], current: "" })),
-    replaceCurrent: vi.fn(async (current: string) => ({ archives: [], current })),
+    replaceCurrent,
   };
-  return { archiveCurrent, gateway };
+  return { archiveCurrent, gateway, replaceCurrent };
 }
 
 describe("Trail Weekly Note Application", () => {
-  it("archives using the configured Trail timezone rather than the host timezone", async () => {
+  it("archives using the configured Trail timezone and the loaded Current precondition", async () => {
     const harness = createTrailUiTestHarness();
     const { archiveCurrent, gateway } = createGateway();
     const application = new TrailWeeklyNoteApplication(
@@ -34,8 +42,25 @@ describe("Trail Weekly Note Application", () => {
       },
     );
 
-    await application.archiveCurrent("This week");
-    expect(archiveCurrent).toHaveBeenCalledWith("2026-08-19", "This week");
+    await application.archiveCurrent("Loaded current", "This week");
+    expect(archiveCurrent).toHaveBeenCalledWith(
+      "2026-08-19",
+      "Loaded current",
+      "This week",
+    );
+  });
+
+  it("passes the loaded Current precondition through replaceCurrent", async () => {
+    const harness = createTrailUiTestHarness();
+    const { gateway, replaceCurrent } = createGateway();
+    const application = new TrailWeeklyNoteApplication(
+      harness.runtimeStore,
+      gateway,
+      { createId: () => "unused", now: () => 1_800_000_000_000 },
+    );
+
+    await application.replaceCurrent("Loaded current", "Edited current");
+    expect(replaceCurrent).toHaveBeenCalledWith("Loaded current", "Edited current");
   });
 
   it("allows reads but blocks utility writes while Runtime is not writable", async () => {
@@ -49,6 +74,7 @@ describe("Trail Weekly Note Application", () => {
     setTrailRuntimeControl(harness.runtimeStore, { kind: "refreshing" });
 
     await expect(application.load()).resolves.toEqual({ archives: [], current: "" });
-    expect(() => application.replaceCurrent("Blocked")).toThrow(TrailApplicationUnavailableError);
+    expect(() => application.replaceCurrent("Loaded", "Blocked"))
+      .toThrow(TrailApplicationUnavailableError);
   });
 });

@@ -88,11 +88,17 @@ export function TrailHomePage(props: {
   };
 
   const saveCurrent = (): void => {
-    void runWeeklyAction(() => props.actions.replaceCurrent(draft));
+    void runWeeklyAction(() => props.actions.replaceCurrent(
+      snapshot?.current ?? "",
+      draft,
+    ));
   };
 
   const archiveCurrent = (): void => {
-    void runWeeklyAction(() => props.actions.archiveCurrent(draft));
+    void runWeeklyAction(() => props.actions.archiveCurrent(
+      snapshot?.current ?? "",
+      draft,
+    ));
   };
 
   const archiveCount = snapshot?.archives.length ?? 0;

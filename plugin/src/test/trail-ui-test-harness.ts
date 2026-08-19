@@ -148,12 +148,15 @@ export function createTrailUiTestHarness(input: {
       edit: vi.fn(() => ({ kind: "unchanged" as const, entityId: triage.id })),
     },
     weeklyNote: {
-      archiveCurrent: vi.fn(async (current: string) => ({
+      archiveCurrent: vi.fn(async (_expectedCurrent: string, current: string) => ({
         archives: [{ content: current, date: "2026-08-19" }],
         current: "",
       })),
       load: vi.fn(async () => ({ archives: [], current: "Weekly current" })),
-      replaceCurrent: vi.fn(async (current: string) => ({ archives: [], current })),
+      replaceCurrent: vi.fn(async (_expectedCurrent: string, current: string) => ({
+        archives: [],
+        current,
+      })),
     },
   };
 

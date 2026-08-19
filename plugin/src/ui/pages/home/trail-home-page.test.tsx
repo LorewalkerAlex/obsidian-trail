@@ -33,16 +33,41 @@ describe("TrailHomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save Current" }));
     await waitFor(() => {
       expect(harness.actions.weeklyNote.replaceCurrent)
-        .toHaveBeenCalledWith("Updated weekly note");
+        .toHaveBeenCalledWith("Weekly current", "Updated weekly note");
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Archive Current" }));
     await waitFor(() => {
       expect(harness.actions.weeklyNote.archiveCurrent)
-        .toHaveBeenCalledWith("Updated weekly note");
+        .toHaveBeenCalledWith("Updated weekly note", "Updated weekly note");
     });
     await waitFor(() => {
       expect(screen.getByLabelText("Current")).toHaveValue("");
     });
+  });
+
+  it("keeps the local draft visible when persistence reports a stale Current conflict", async () => {
+    const harness = createTrailUiTestHarness();
+    const replaceCurrent = vi.fn(async () => {
+      throw new Error("Weekly Note Current changed on disk. Reopen Home before saving.");
+    });
+    render(
+      <TrailHomePage
+        actions={{ ...harness.actions.weeklyNote, replaceCurrent }}
+        onOpenCycles={vi.fn()}
+        onOpenProjects={vi.fn()}
+        runtimeStore={harness.runtimeStore}
+        timezone="Asia/Singapore"
+        writable
+      />,
+    );
+
+    const editor = await screen.findByLabelText("Current");
+    fireEvent.change(editor, { target: { value: "Local unsaved draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save Current" }));
+
+    expect(await screen.findByRole("alert"))
+      .toHaveTextContent("Weekly Note Current changed on disk. Reopen Home before saving.");
+    expect(screen.getByLabelText("Current")).toHaveValue("Local unsaved draft");
   });
 });
