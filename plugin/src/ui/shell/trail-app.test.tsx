@@ -7,11 +7,14 @@ import { parseTrailLocalDateTime } from "../interactions/trail-local-date-time";
 import { TrailApp } from "./trail-app";
 
 describe("TrailApp", () => {
-  it("keeps last-known-good pages visible but read-only during refresh and errors", () => {
+  it("opens Home by default and keeps last-known-good pages visible but read-only during refresh and errors", () => {
     const harness = createTrailUiTestHarness();
     const view = render(
       <TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />,
     );
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Triage" }));
     expect(screen.getByRole("heading", { level: 2, name: "Captured" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("What needs your attention?")).toBeEnabled();
 
@@ -58,6 +61,7 @@ describe("TrailApp", () => {
     const harness = createTrailUiTestHarness();
     render(<TrailApp actions={harness.actions} runtimeStore={harness.runtimeStore} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Triage" }));
     fireEvent.change(screen.getByPlaceholderText("What needs your attention?"), {
       target: { value: "New capture" },
     });

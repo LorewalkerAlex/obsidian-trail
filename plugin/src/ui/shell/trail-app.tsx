@@ -4,6 +4,7 @@ import { useStore } from "zustand";
 import { selectTrailReadableConfiguration } from "../../query/shared/trail-effective-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TrailCyclesPage } from "../pages/cycles/trail-cycles-page";
+import { TrailHomePage } from "../pages/home/trail-home-page";
 import {
   TrailProjectsPage,
   type TrailProjectsNavigationRequest,
@@ -13,11 +14,12 @@ import { TrailTriagePage } from "../pages/triage/trail-triage-page";
 import { TrailStatusPanel } from "../patterns/trail-feedback";
 import type { TrailUiActions } from "./trail-ui-actions";
 
-type TrailPage = "cycles" | "projects" | "search" | "triage";
+type TrailPage = "cycles" | "home" | "projects" | "search" | "triage";
 
 function pageTitle(page: TrailPage): string {
   switch (page) {
     case "cycles": return "Cycles";
+    case "home": return "Home";
     case "projects": return "Projects";
     case "search": return "Search";
     case "triage": return "Triage";
@@ -28,6 +30,8 @@ function pageSubtitle(page: TrailPage): string {
   switch (page) {
     case "cycles":
       return "Plan the period explicitly, then execute the Current Cycle through the same Workflow Status system.";
+    case "home":
+      return "See the current Trail context, route into work, and keep the weekly working note close at hand.";
     case "projects":
       return "Organize outcomes by Initiative and Milestone, then execute Issues in List or Board.";
     case "search":
@@ -50,7 +54,7 @@ export function TrailApp(props: {
     props.runtimeStore,
     selectTrailReadableConfiguration,
   );
-  const [activePage, setActivePage] = useState<TrailPage>("triage");
+  const [activePage, setActivePage] = useState<TrailPage>("home");
   const [projectsNavigation, setProjectsNavigation] = useState<TrailProjectsNavigationRequest>();
   const writable = control.kind === "ready";
   const hasReadableSnapshot = committedRevision > 0 && configuration !== null;
@@ -110,6 +114,14 @@ export function TrailApp(props: {
         <>
           <nav className="trail-page-nav" aria-label="Trail pages">
             <button
+              aria-current={activePage === "home" ? "page" : undefined}
+              className={activePage === "home" ? "is-active" : undefined}
+              onClick={() => setActivePage("home")}
+              type="button"
+            >
+              Home
+            </button>
+            <button
               aria-current={activePage === "triage" ? "page" : undefined}
               className={activePage === "triage" ? "is-active" : undefined}
               onClick={() => setActivePage("triage")}
@@ -143,7 +155,16 @@ export function TrailApp(props: {
             </button>
           </nav>
 
-          {activePage === "triage" ? (
+          {activePage === "home" ? (
+            <TrailHomePage
+              actions={props.actions.weeklyNote}
+              onOpenCycles={() => setActivePage("cycles")}
+              onOpenProjects={openProjectsRoot}
+              runtimeStore={props.runtimeStore}
+              timezone={configuration.temporal.timezone}
+              writable={writable}
+            />
+          ) : activePage === "triage" ? (
             <TrailTriagePage
               actions={props.actions.triage}
               runtimeStore={props.runtimeStore}

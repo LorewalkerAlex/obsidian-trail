@@ -1,4 +1,5 @@
 import type { TrailApplicationSession } from "../../application/trail-application-session";
+import type { TrailWeeklyNoteApplication } from "../../application/workspace/trail-weekly-note-application";
 
 /** UI-facing use-case surface; host/source-sync mechanics never cross this boundary. */
 export interface TrailUiActions {
@@ -25,5 +26,9 @@ export interface TrailUiActions {
   readonly triage: Pick<
     TrailApplicationSession["triage"],
     "accept" | "capture" | "convertToProject" | "defer" | "delete" | "edit"
+  >;
+  readonly weeklyNote: Pick<
+    TrailWeeklyNoteApplication,
+    "archiveCurrent" | "load" | "replaceCurrent"
   >;
 }

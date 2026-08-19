@@ -14,11 +14,11 @@ import {
   createTrailRuntimeStore,
   setTrailRuntimeControl,
 } from "../runtime/store/trail-runtime-store";
+import type { TrailUiActions } from "../ui/shell/trail-ui-actions";
 import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "./trail-test-fixtures";
-import type { TrailUiActions } from "../ui/shell/trail-ui-actions";
 
 export function createTrailUiTestHarness(input: {
   readonly projectStatusDefinitionId?: string;
@@ -146,6 +146,14 @@ export function createTrailUiTestHarness(input: {
       defer: vi.fn(() => receipt(triage.id)),
       delete: vi.fn(() => receipt(triage.id)),
       edit: vi.fn(() => ({ kind: "unchanged" as const, entityId: triage.id })),
+    },
+    weeklyNote: {
+      archiveCurrent: vi.fn(async (current: string) => ({
+        archives: [{ content: current, date: "2026-08-19" }],
+        current: "",
+      })),
+      load: vi.fn(async () => ({ archives: [], current: "Weekly current" })),
+      replaceCurrent: vi.fn(async (current: string) => ({ archives: [], current })),
     },
   };
 

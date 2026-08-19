@@ -9,15 +9,14 @@ import {
   type WorkspaceLeaf,
 } from "obsidian";
 
-import { createTrailApplicationSession } from "./application/trail-application-session";
 import {
   createObsidianDiagnosticStorage,
   type TrailDiagnosticStorage,
 } from "./adapters/obsidian/trail-diagnostics-storage-obsidian";
-import { createObsidianPluginDataIO } from "./adapters/obsidian/trail-plugin-data-io-obsidian";
 import type { TrailObsidianFileKinds } from "./adapters/obsidian/trail-obsidian-file-kinds";
-import { createObsidianSourceIO } from "./adapters/obsidian/trail-source-io-obsidian";
+import { createObsidianPluginDataIO } from "./adapters/obsidian/trail-plugin-data-io-obsidian";
 import { TrailSettingsTab } from "./adapters/obsidian/trail-settings-tab";
+import { createObsidianSourceIO } from "./adapters/obsidian/trail-source-io-obsidian";
 import {
   createObsidianVaultEventAdapter,
   createTrailHostWriteGuard,
@@ -30,6 +29,8 @@ import {
   TrailView,
 } from "./adapters/obsidian/trail-view";
 import { createObsidianWorkspaceLayoutIO } from "./adapters/obsidian/trail-workspace-layout-io-obsidian";
+import { createTrailApplicationSession } from "./application/trail-application-session";
+import { TrailWeeklyNoteApplication } from "./application/workspace/trail-weekly-note-application";
 import {
   createDiagnosticTrailPluginDataIO,
   createDiagnosticTrailSourceIO,
@@ -48,9 +49,11 @@ import {
 import { TrailMutationQueue } from "./mutation/queue/trail-mutation-queue";
 import { createTrailDomainSourceRepository } from "./persistence/domain-sources/trail-domain-source-repository";
 import { createTrailPluginDataRepository } from "./persistence/plugin-data/trail-plugin-data-repository";
+import { createTrailWeeklyNoteRepository } from "./persistence/utility-sources/trail-weekly-note-repository";
 import { createTrailRuntimeStore } from "./runtime/store/trail-runtime-store";
 import { TrailRefreshController } from "./source-sync/refresh/trail-refresh-controller";
 import { createTrailAuthoritativeSourceSync } from "./source-sync/trail-authoritative-source-sync";
+import type { TrailUiActions } from "./ui/shell/trail-ui-actions";
 
 declare const __TRAIL_DIAGNOSTICS_ENABLED__: boolean;
 
@@ -115,6 +118,7 @@ export default class TrailPlugin extends Plugin {
       sourceIO,
       (yaml) => parseYaml(yaml),
     );
+    const weeklyNoteRepository = createTrailWeeklyNoteRepository(sourceIO);
     const rawPluginDataIO = createObsidianPluginDataIO({
       loadData: () => this.loadData(),
       saveData: (data) => this.saveData(data),
@@ -125,6 +129,7 @@ export default class TrailPlugin extends Plugin {
     const pluginData = createTrailPluginDataRepository(pluginDataIO);
     const layout = createObsidianWorkspaceLayoutIO(this.app, fileKinds);
     const createId = () => crypto.randomUUID();
+    const environment = { createId, now: () => Date.now() };
     const refreshController = new TrailRefreshController({
       createId,
       domainSources,
@@ -145,13 +150,19 @@ export default class TrailPlugin extends Plugin {
       ? createDiagnosticTrailSourceSync(authoritativeSourceSync, diagnostics)
       : authoritativeSourceSync;
     const applicationSession = createTrailApplicationSession({
-      environment: { createId, now: () => Date.now() },
+      environment,
       runtimeStore,
       sourceSync,
     });
-    const actions = __TRAIL_DIAGNOSTICS_ENABLED__
+    const domainActions = __TRAIL_DIAGNOSTICS_ENABLED__
       ? createDiagnosticTrailUiActions(applicationSession, diagnostics)
       : applicationSession;
+    const weeklyNote = new TrailWeeklyNoteApplication(
+      runtimeStore,
+      weeklyNoteRepository,
+      environment,
+    );
+    const actions: TrailUiActions = { ...domainActions, weeklyNote };
     this.addSettingTab(new TrailSettingsTab(
       this.app,
       this,
