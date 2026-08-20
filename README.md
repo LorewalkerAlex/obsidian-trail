@@ -21,6 +21,8 @@ docs/data.md
     ↓
 docs/architecture.md
     ↓
+docs/ui.md
+    ↓
 docs/design-to-code-map.md
 ```
 
@@ -35,9 +37,10 @@ code
 - `docs/product.md` — user-facing product purpose, scope, model, experience, and product rules.
 - `docs/domain.md` — canonical terminology, domain model, relationships, lifecycle, invariants, and derived/historical facts.
 - `docs/data.md` — logical records, identity, references, authority, Markdown / plugin-data persistence, integrity, and schema evolution.
-- `docs/architecture.md` — system boundaries, shared capabilities, dependency direction, runtime/write flows, reliability, and target architecture.
-- `docs/design-to-code-map.md` — traceability from design responsibilities to canonical code owners and the target code tree.
-- `docs/implementation.md` — current execution baseline, active changes, dependency-ordered build plan, and verification state.
+- `docs/architecture.md` — system boundaries, shared capabilities, dependency direction, runtime/write flows, reliability, host responsibility, and target architecture.
+- `docs/ui.md` — resolved target UI presentation and interaction answers that consume Product and Architecture; current implementation appearance is not an authority for this document.
+- `docs/design-to-code-map.md` — traceability from resolved design responsibilities to canonical code owners and the target code tree.
+- `docs/implementation.md` — current execution baseline, implementation evidence, active changes, dependency-ordered build plan, and verification state.
 
 Git history is the historical archive. Superseded POC code and documents are not duplicated in the active repository tree.
 

@@ -4,10 +4,10 @@
 >
 > This guide defines the engineering principles and questions used to take a project from intent to code.
 >
-> It does **not** define project-specific product, domain, data, architecture, mapping, or implementation facts. Those answers are produced through discussion and recorded in the project documents.
+> It does **not** define project-specific product, domain, data, architecture, UI design, mapping, or implementation facts. Those answers are produced through discussion and recorded in the project documents.
 >
 > Project answers:
-> `product.md` → `domain.md` → `data.md` → `architecture.md` → `design-to-code-map.md`
+> `product.md` → `domain.md` → `data.md` → `architecture.md` → `ui.md` when the product has a distinct UI design layer → `design-to-code-map.md`
 >
 > Current implementation work is planned in `implementation.md`, and code executes those answers and plans.
 
@@ -76,6 +76,8 @@ Data
 ↓
 Architecture
 ↓
+UI Design (when applicable)
+↓
 Design-to-Code Map
 ↓
 Implementation
@@ -129,6 +131,15 @@ Coding begins when the relevant chain is resolved.
 - State & Flows
 - Quality Strategy
 - Target Structure
+
+## UI Design (when applicable)
+
+- Host Composition
+- Navigation & Workspace
+- Core Surfaces
+- Interaction Model
+- Visual System
+- Responsive Behavior & Accessibility
 
 ## Design-to-Code Map
 

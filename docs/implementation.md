@@ -33,6 +33,8 @@ Gate 7 closure evidence includes:
 - shared Application action-result handling, local time conversion, Runtime write gating, feedback, and stable entity-row ownership remaining canonical;
 - the Gate 7 Exit Audit passing with no justified pre-consumer Slice B. Context Menu, Peek, Selection, Bulk Actions, Command Menu, property pickers, and later presentation primitives remain consumer-driven Gate 8 work.
 
+Gate 7 and Gate 8 UI checkpoints are implementation evidence, not a formal presentation baseline. They validate Product semantics, Application/Mutation paths, host/library mechanics, and representative integration behavior. Unless a target UI answer is explicitly recorded upstream, the current React layout, CSS treatment, native form controls, page-local navigation, modal Peek/details carriers, and presentation composition are functional validation carriers and may be replaced wholesale during UI closure.
+
 Gate 8 evidence now includes:
 
 - **Project Lifecycle Closure** at `844728131f0a0acf7df4213322a7837c16b47dab`, exposing explicit Project lifecycle control while preserving Domain/Application ownership of completion legality and reusing one configured Status picker across Project and Workflow Issue consumers;
@@ -69,7 +71,7 @@ Gate 8 evidence now includes:
 
 Push-triggered GitHub Actions status for the recent Gate 8 commits was not available through the connected GitHub workflow lookup, so this document does not invent CI run numbers for those commits.
 
-Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents.
+Current implementation facts in this document are expected to move as work advances; stable target answers remain in the upstream project documents, including `ui.md` for resolved target presentation and interaction answers.
 
 ## 2. Objective
 
@@ -82,6 +84,7 @@ product.md
 -> domain.md
 -> data.md
 -> architecture.md
+-> ui.md
 -> design-to-code-map.md
 ```
 
@@ -109,8 +112,10 @@ Current reusable capability areas include:
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
 - shared structural and explicitly defined derived Query capabilities;
 - currently executable Application use cases;
-- UI action-result handling, local time conversion, Runtime write gating, feedback patterns, shared Status selection, shared overlay mechanics, shared Label editing, Obsidian Settings integration, and shared Workflow List/Board presentation;
+- validated UI-side mechanisms and evidence such as action-result handling, local time conversion, Runtime write gating, Application-backed Status/Label/property paths, Status-only Board drag semantics with the proven drag-and-drop mechanism, Obsidian Settings integration, and Radix modal mechanics for genuinely modal consumers;
 - Diagnostics and architecture guards.
+
+Reuse of current UI work means reuse the canonical mechanism or evidence when it still fits the resolved target, not preservation of the current POC presentation. The present shell layout, CSS treatment, native select/form composition, page-local navigation, modal Peek/details carriers, and Workflow List/Board presentation are non-authoritative and may be replaced rather than migrated.
 
 Implementation must preserve unrelated canonical fields and relations even when the current use case does not expose them. UI must keep drafts/continuous interaction local and emit only Application intents for authoritative changes.
 
@@ -122,7 +127,7 @@ A shared UI owner is introduced when there is real reuse pressure, a sufficientl
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-Gate 8 is planned around user workflows rather than component inventories. Shared UI capabilities may continue to be added, but only when a real Product consumer freezes enough of the contract to justify a canonical shared owner.
+Gate 8 is planned around user workflows rather than component inventories. During formal UI closure, target design starts from Product responsibilities and Architecture ownership, maps equivalent Linear behavior onto Obsidian/browser host capabilities first, records resolved Trail presentation and interaction answers in `ui.md`, and only then maps those answers to implementation owners. Current Trail rendering is not a design input; it is consulted afterward only for reusable mechanisms and evidence.
 
 Completed Gate 8 slices:
 
@@ -365,9 +370,9 @@ The Integrity Batch unsafe-prefix audit finding is no longer a verified lower-la
 
 Home V1 now has a frozen composition: Date/Time, Current Cycle Summary, Triage Summary, Projects/Initiatives Summary, Activity Heatmap, and Weekly Note. Current implementation still needs Triage Summary and Activity Heatmap. Focus is not a current Trail V1 concept. Saved Views, Favorites, and any Home customization persistence remain deferred until real use establishes a concrete need and contract. Global Search and the current Home query remain transient Runtime projections and do not freeze or substitute for future Workspace State contracts.
 
-The next Gate 8 direction is UI closure against Linear as Trail's primary visual and interaction baseline. Start from the existing Product surfaces and remaining Home V1 composition; introduce lower-layer work only when a concrete UI consumer exposes a real gap rather than carrying forward a component-first infrastructure sequence.
+The next Gate 8 direction is formal UI closure against Linear as Trail's primary visual and interaction reference. UI design is target-state work: start from Product responsibilities, apply Architecture ownership, map equivalent Linear behavior onto Obsidian/browser host capabilities first, record the resolved Trail presentation and interaction answer in `ui.md`, and only then map it to code. Current Trail rendering is functional evidence, not a visual, layout, or component baseline. Lower-layer work is introduced only when the resolved target exposes a concrete gap.
 
-Product and Domain now clarify Home V1 composition, Activity Heatmap derivation, and the removal of the previously ambiguous Home Focus concept. Data, Architecture, and Design-to-Code Map need no ownership or persistence-model change for that clarification. Architecture continues to carry the established Integrity Batch safe staged-cutover and recovery contract.
+Product and Domain now clarify Home V1 composition, Activity Heatmap derivation, and the removal of the previously ambiguous Home Focus concept. Data and Architecture need no ownership or persistence-model change for that clarification. `ui.md` is the dedicated authority for resolved target presentation and interaction answers, while Design-to-Code Map traces those answers to implementation owners. Architecture continues to carry the established Integrity Batch safe staged-cutover and recovery contract.
 
 ## 5. Build Order
 
@@ -395,7 +400,7 @@ Implementation proceeds through dependency-ordered gates. Within Gate 8, slices 
 
 ### 5.1 Gates 1-7
 
-Complete. The frozen V1 Domain, semantic planning, persistence/mutation, Runtime/index, Query, Application, and justified pre-consumer shared UI foundations have canonical implementation/test ownership.
+Complete. The frozen V1 Domain, semantic planning, persistence/mutation, Runtime/index, Query, Application, and justified pre-consumer shared UI foundations have canonical implementation/test ownership. For UI-related checkpoints, completion means the required mechanisms and evidence exist; it does not freeze their current POC presentation as the formal UI target.
 
 ### 5.2 Gate 8 - Product workspaces
 
@@ -419,7 +424,7 @@ Completed:
 
 Active:
 
-- UI closure is the active Gate 8 direction: align existing Trail surfaces to Linear's primary visual/interaction baseline, complete Triage Summary and Activity Heatmap on Home, and repair only concrete lower-layer gaps exposed by those consumers.
+- UI closure is the active Gate 8 direction: define and implement the formal Trail UI target from Product, Architecture, and `ui.md`, using Linear as the presentation/interaction reference and Obsidian/browser host reuse first; complete Triage Summary and Activity Heatmap on Home; and repair only concrete lower-layer gaps exposed by resolved target consumers.
 
 ### 5.3 Gate 9 - V1 hardening
 
@@ -430,6 +435,8 @@ Complete integration, recovery, performance, responsive behavior, diagnostics bo
 For each active Gate 8 slice:
 
 - verify the current repository and the concrete Product workflow before defining changes;
+- for formal UI work, derive the target from Product, Architecture, `ui.md`, Linear reference evidence, and Obsidian/browser capabilities rather than from current Trail rendering;
+- inspect current UI only after the target is resolved, and reuse only mechanisms/evidence that still fit that target;
 - reuse existing Query/Application/shared UI owners before adding another mechanism;
 - repair exposed lower-layer gaps at the canonical owner instead of Page-local workarounds;
 - run focused tests for changed owners and directly affected shared owners while iterating;
@@ -459,7 +466,7 @@ The `926c6ee7714c4171a91c53ead76848a325c321cf` Weekly Note integrity checkpoint 
 
 The `eb6d98fb28be81d8153aca0429705b05846499de` Integrity Batch Failure-Safety checkpoint hardened the existing shared Mutation/Runtime boundaries rather than adding a feature-specific recovery path. Focused owner tests first established Runtime effect projection reuse, bridgeable mixed Configuration/Domain materialization, fixed physical stage contents, executor rejection of malformed batches, and durable-prefix evidence across prepare/destructive/commit failure points. A second consumer matrix passed across Status and Label Configuration Application, generic Configuration planning, destructive planners, Mutation coordination, Project Delete materialization, Integrity Batch settlement, and Authoritative Source Sync. Zero-warning lint, TypeScript, diagnostics build, full `npm run check`, final `git diff --check`, and diagnostics-bundle restoration then passed on the frozen seven-file code scope. Because the independent risk is synthetic persistence failure ordering rather than a host-specific interaction, this checkpoint intentionally reuses existing repository/Source Sync host evidence instead of adding a redundant manual Obsidian scenario.
 
-Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
+Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, UI Design, and Design-to-Code Map change only when their corresponding project answers truly change.
 
 ## 7. Final State
 

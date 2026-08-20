@@ -9,6 +9,7 @@ Product behavior
 → Domain semantics / invariants
 → Data representation / authority
 → Architecture capability / flow
+→ UI Design answer when presentation or interaction is involved
 → Canonical code owner
 → Owner-level verification
 ```
@@ -29,7 +30,7 @@ Representative mappings:
 | Home | derived facts from same Runtime | shared/page-specific selectors + modules | `query`, `ui/pages/home` | query + UI |
 | External managed-file change | current physical schema + authoritative persistence | Refresh / source-health convergence | `source-sync`, `runtime`, adapters | source-sync + representative host |
 
-The table is traceability, not a duplicate feature specification. Product, Domain, Data, and Architecture remain the authorities for behavior/semantics/representation/mechanisms.
+The table is traceability, not a duplicate feature specification. Product, Domain, Data, Architecture, and UI Design remain the authorities for their respective behavior, semantics, representation, mechanisms, presentation, and interaction answers.
 
 ## 2. Capability Map
 
@@ -87,10 +88,10 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 
 | Capability | Inputs / dependencies | Owner |
 |---|---|---|
-| Product pages/workspaces | Query + Application | `ui/pages` |
-| Stable entity presentation | entity IDs + effective Runtime selection | `ui/entities` |
-| Reusable interactions | UI state + Application intents | `ui/interactions` |
-| Reusable visual primitives/patterns | design-system tokens | `ui/primitives`, `ui/patterns`, `ui/design-system` |
+| Product pages/workspaces | UI Design + Query + Application | `ui/pages` |
+| Stable entity presentation | UI Design + entity IDs + effective Runtime selection | `ui/entities` |
+| Reusable interactions | UI Design + UI state + Application intents | `ui/interactions` |
+| Reusable visual primitives/patterns | UI Design + design-system tokens | `ui/primitives`, `ui/patterns`, `ui/design-system` |
 | Obsidian source/plugin-data/workspace/file-event bridge | Obsidian API | `adapters/obsidian` |
 | Development technical observability | architecture events | `diagnostics` |
 | Breaking schema upgrade | Data migration requirements + Persistence | `migration` |
