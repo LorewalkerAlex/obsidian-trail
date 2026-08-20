@@ -181,15 +181,51 @@ Contextual submenus should use a mature pointer-grace/safe-triangle pattern wher
 
 Trail is designed for desktop Obsidian, but it must work in variable pane widths. Product composition should support expanded, compact, and narrow presentations with progressive disclosure and local horizontal scrolling/layout changes where appropriate.
 
-### 4.8 UI Design Reference
+### 4.8 UI Design Reference and host composition
 
-Linear is Trail's primary visual and interaction baseline for V1.
+Linear is Trail's primary visual and interaction baseline for V1. V1 UI closure targets Linear-style **Dark** presentation only; a future light theme may reuse the same component and token structure, but Trail does not design or maintain a parallel light presentation in V1.
 
-Where Linear already provides an equivalent UI pattern, Trail should closely match its layout, spacing, typography hierarchy, information density, component treatment, interaction states, and behavior. Trail should deviate only when its personal product semantics, Obsidian host constraints, or an explicitly resolved Trail UI answer require a different result.
+Where Linear already provides an equivalent UI pattern, Trail should closely match its layout, spacing, typography hierarchy, information density, component treatment, interaction states, and behavior. Trail should deviate only when its personal product semantics, Obsidian host constraints, accessibility/technical requirements, or an explicitly resolved Trail UI answer require a different result.
 
-This baseline does not import Linear's team or collaboration product semantics or its branding assets. Product concepts remain Trail-owned even when the UI presentation follows Linear closely.
+This baseline does not import Linear's team or collaboration product semantics or its branding assets. Product concepts remain Trail-owned even when the UI presentation follows Linear closely. As Trail's own UI Design answers become explicit, those answers replace the Linear reference only for the specific areas they cover.
 
-As Trail's own UI Design answers become explicit, those answers replace the Linear reference only for the specific areas they cover.
+Trail remains an ordinary Obsidian workspace view rather than becoming a separate full-screen application. The desired experience is **Obsidian-native architecture with Linear presentation**: first reuse Obsidian's existing window chrome, tabs, Ribbon, sidebars, splits, panes, resize/collapse behavior, menus, overlays, and host interaction space; only place a control inside Trail's main view when no host surface has the right responsibility or stable behavior.
+
+The top native window/tab chrome and the narrow Ribbon remain the global Obsidian shell. Trail can use its Ribbon entry as the Trail-context entry point while preserving Obsidian's own actions and escape routes. The left sidebar is not duplicated inside the main Trail view: Trail contributes a Trail Navigation view to Obsidian's existing left sidebar and lets the host keep ownership of sidebar width, collapse, resize, and layout behavior. Existing File Explorer/Search/Bookmark/plugin sidebar views remain intact rather than being destroyed or rewritten; Trail context selects the Trail Navigation view, while normal Obsidian context can return to the native sidebar content.
+
+The Trail Navigation sidebar uses a compact Linear-like hierarchy:
+
+```text
+Trail                         Search  Capture
+
+Home
+Triage                        attention indicator optional
+
+WORKSPACE
+Projects
+  ongoing Project shortcuts
+Cycles
+```
+
+Search and Quick Capture are high-frequency global actions rather than ordinary peer navigation rows. Project children are dynamic shortcuts to ongoing Projects, not Favorites and not a canonical hierarchy browser; the exact ongoing-selection contract is resolved by the relevant Query/UI consumer. Initiative is not expanded into the sidebar tree. Cycles does not expand Previous Cycle history. Triage may later show a compact attention indicator derived from workload/time urgency; whether that presentation uses color, count, or both remains a UI-detail answer rather than a new persisted fact.
+
+The main Trail workspace uses a stable composition:
+
+```text
+Location Bar
+optional View Bar
+Content
+```
+
+The **Location Bar** answers “where am I?” and owns the current location/breadcrumb plus object-level actions such as Details or overflow actions. The **View Bar** answers “how am I viewing this collection?” and owns collection-level presentation/actions such as List/Board and, when their contracts are implemented, Filter, Group, Sort, Display options, and collection actions. A page does not render an empty View Bar merely for symmetry. Deferred capabilities should have a compatible place in this shared structure, but their behavior is not implemented speculatively before a real consumer freezes the contract.
+
+Peek, Details, and Full Item View are distinct surfaces even when they share the same underlying entity properties and actions:
+
+- **Peek** is a temporary, non-blocking preview that keeps the current workspace/layout in place and should not repurpose a persistent Obsidian sidebar merely to appear.
+- **Details** is the user-facing name for a persistent contextual inspector. Obsidian's right sidebar is the preferred host when that responsibility fits, so the user can keep the main List/Board visible while viewing or editing entity details.
+- **Full Item View** makes the entity the main workspace content for deeper work. Its content should remain reusable so a future “open in new Obsidian tab/split” capability can host the same view without redefining the entity UI.
+
+These surfaces compose shared property/entity capabilities instead of cloning fields per page or collapsing every entity into one universal details component.
 
 ### 4.9 Obsidian-native documents
 

@@ -309,6 +309,77 @@ Generic interaction/rendering mechanisms should be shared when multiple behavior
 
 Shared primitives provide interaction/accessibility mechanics. Product-specific candidates and rules remain in Query/Application/Domain rather than becoming a giant generic component API.
 
+### 3.8 UI shell, host reuse, and surface ownership
+
+Trail's UI shell follows a host-first placement rule:
+
+```text
+Obsidian/browser native capability
+→ existing Obsidian host surface/container
+→ shared Trail primitive/pattern
+→ page-local composition only when the responsibility is genuinely local
+```
+
+Trail does not build a parallel window, tab, sidebar, split, resize, or collapse system inside its main view when Obsidian already owns that mechanism. The top native window/tab chrome and Ribbon remain host-level UI. Trail contributes context-specific views into Obsidian's existing layout containers:
+
+```text
+Obsidian Host
+├─ Window / Tabs          host-owned global workspace chrome
+├─ Ribbon                 host-owned global/context entry rail
+├─ Left Split             TrailNavigationView or normal Obsidian views
+├─ Main Split             TrailView / ordinary Obsidian leaves
+└─ Right Split            TrailInspectorView when persistent Details are shown
+```
+
+Entering Trail context should select/reveal Trail's left-sidebar navigation view rather than destroy, replace, or mutate the canonical state of File Explorer/Search/Bookmark/plugin views. Sidebar width, resize, and collapse remain Obsidian-owned. Trail-specific styling may hide or quiet redundant host controls while Trail is active, but presentation must not require destructive workspace-state rewrites to recover the user's normal Obsidian layout.
+
+Trail-owned visual tokens are the canonical visual source for the Linear-inspired Dark presentation. Obsidian host skinning and Trail components map from the same token ownership rather than depending on each other's implementation variables:
+
+```text
+             Trail design tokens
+              /               \
+Obsidian semantic-variable map  Trail primitives/patterns
+```
+
+V1 implements the Dark presentation only. Token/component structure should remain theme-extensible without requiring a second light implementation or light-specific parallel component tree now.
+
+The main Trail workspace has one reusable shell contract:
+
+```text
+TrailWorkspaceShell
+├─ LocationBar
+├─ optional ViewBar
+└─ Content
+```
+
+`LocationBar` owns current location/breadcrumb and object-level actions. `ViewBar` owns collection presentation and collection actions. Its contract must allow compatible capability slots such as Filter, Group, Sort, Display, layout selection, and collection actions even when only a subset is implemented by the current consumer. Deferring a capability must not force a future shell or state-ownership rewrite; conversely, an unimplemented future capability does not justify building a generic view-builder framework now.
+
+UI state ownership is orthogonal by responsibility:
+
+```text
+Navigation State       where am I?
+Collection View State  how am I viewing this collection?
+Inspector State        what persistent context is shown beside it?
+Peek State             what am I temporarily previewing?
+```
+
+These are transient UI concerns, not Domain or authoritative Runtime facts. Navigation can be shared across separate Obsidian/React view roots so `TrailNavigationView` and the main `TrailView` consume one location owner. Collection presentation state is separate from navigation so List/Board and future filter/group/sort/display choices do not redefine location. Inspector and Peek targets are separate from both, allowing a Project board, an open Project Details inspector, and an Issue Peek to coexist without conflating selection or navigation.
+
+Navigation locations should represent stable product locations rather than today's component tree, for example Home, Triage, Search, Projects Root, Initiative, Project, Cycles, and a Full Item location where supported. Components request navigation through a navigation capability instead of scattering page-specific `setState` chains, leaving a natural extension point for future host choices such as opening the same Full Item content in a new Obsidian tab or split.
+
+Entity fields and actions are shared capabilities, while Peek, Inspector/Details, and Full Item View are separate surface compositions:
+
+```text
+shared entity/property/content/action capabilities
+        ├─ Peek composition
+        ├─ Inspector composition
+        └─ Full Item composition
+```
+
+Shared capabilities include reusable property rows/pickers, title/description presentation, labels, status, priority, due, estimate, project/milestone relationships, and entity actions where semantically applicable. Surfaces select the subset and depth they need rather than cloning property behavior per page. Avoid a giant `UniversalEntityDetails` component with many booleans; reuse stable parts and let each surface own its composition.
+
+Peek is a transient non-modal overlay that leaves the current workspace layout in place. Inspector is the persistent contextual side surface, with Obsidian's right split as the preferred host when appropriate. Full Item View is main-workspace content for deeper work and should remain host-agnostic enough that future tab/split hosting can reuse the same content. Focus/highlight, multi-selection, Peek target, Inspector target, and navigation location remain distinct interaction concepts.
+
 ## 4. Dependencies
 
 ### 4.1 Intended direction
