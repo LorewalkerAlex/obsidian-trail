@@ -394,7 +394,7 @@ Examples:
 - Due Soon / Overdue / Reminder = derived temporal capability;
 - Project/Milestone/Initiative Progress = Issue aggregation;
 - actual activity timeline = Issue lifecycle aggregation;
-- Home Focus / Current Cycle / Projects / Custom Views = read selection/presentation;
+- Home summaries / Current Cycle / Triage / Projects / Custom Views = read selection/presentation;
 - duplicate detection = create-time guardrail;
 - Activity Heatmap = derived visualization.
 
@@ -452,12 +452,18 @@ Actual work end is derived primarily from real Completed Issue terminal facts. A
 
 The user's Project Complete action time is not the Project actual work end.
 
-### 6.4 Health and attention
+### 6.4 Activity Heatmap
+
+Activity Heatmap is derived from currently retained Workflow Issue lifecycle facts. For each calendar day in the configured timezone, the activity count is the number of present `createdAt`, `firstStartedAt`, and `terminalAt` facts that fall on that day.
+
+The heatmap is not an immutable event log. Because `terminalAt` represents the current terminal lifecycle fact and may be cleared or replaced by later lifecycle transitions, historical heatmap cells may change accordingly. Trail does not persist a second activity-history source solely for the visualization.
+
+### 6.5 Health and attention
 
 Health must be explainable from current facts and historical evidence; insufficient evidence yields Unknown/Insufficient Data rather than fabricated certainty.
 
-Attention, Due Soon, Overdue, reminders, and Home Focus are derived at runtime from canonical facts + configuration + current time.
+Attention, Due Soon, Overdue, and reminders are derived at runtime from canonical facts + configuration + current time.
 
-### 6.5 Diagnostics are not product history
+### 6.6 Diagnostics are not product history
 
 Development diagnostics may record detailed commands, mutation plans, writes, rereads, reconciliation, rollback, refresh, and errors. That observability is not Canonical Domain history and must not become an authoritative product event log.

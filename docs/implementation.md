@@ -312,7 +312,7 @@ The slice:
 6. keeps Application independent from Persistence through a Weekly Note gateway capability. Weekly Note writes reuse Runtime write gating, while reads remain available without introducing Domain mutation planning for a non-Domain utility;
 7. preserves user drafts locally in the Home UI rather than reloading them on unrelated Runtime revisions; explicit Home re-entry or plugin reload rereads authoritative Markdown;
 8. reuses the existing host write guard for Trail-owned create/modify events, preventing Weekly Note persistence from causing an unnecessary managed-source refresh loop;
-9. does not freeze Home Focus, Activity Heatmap, saved Views, Favorites, generic Filter/Group/Sort, or Home customization persistence. Those remain separate Product/Workspace-State work with their own future consumers and contracts.
+9. leaves Triage Summary and Activity Heatmap as the remaining Home V1 composition work; saved Views, Favorites, generic Filter/Group/Sort, and Home customization persistence remain deferred until concrete Product consumers justify their contracts.
 
 Representative host validation opened Trail directly on Home, exercised the existing Projects/Cycles routes, created Current through the first Weekly Note Save, reread the note after navigation, archived it under `2026-08-19` using the development Vault's configured timezone, and reloaded the plugin with the archived state intact. Diagnostics recorded SourceIO `create` and `process` completion together with matching `trail-write-suppressed` host events. Final validation evidence showed Runtime `ready`, empty pending state, no source-health issues, and the expected archived Markdown; the host fixture was then removed so versioned `Trail/` data returned to its checkpoint baseline.
 
@@ -347,7 +347,7 @@ This slice is verified entirely at the shared mechanism and consumer-contract la
 
 Current Product gaps split into three groups:
 
-- Product composition gaps whose lower-layer owners already exist, including remaining Home composition such as Focus and Activity Heatmap, saved View composition, and other workflow surfaces selected from the current Product contract rather than a pre-ordered component list;
+- Product composition gaps whose lower-layer owners already exist, including remaining Home composition (Triage Summary and Activity Heatmap), future saved View composition, and other workflow surfaces selected from the current Product contract rather than a pre-ordered component list;
 - consumer-driven shared UI gaps such as Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state;
 - lower-layer gaps newly exposed by concrete Product consumers, which must still be repaired at their canonical owners rather than hidden behind Page-local workarounds.
 
@@ -363,11 +363,11 @@ Home Routing & Weekly Note are no longer verified gaps. Trail now has a default 
 
 The Integrity Batch unsafe-prefix audit finding is no longer a verified lower-layer gap. Bridgeable mixed repairs now have an explicit safe cutover, non-bridgeable repairs fail before I/O, malformed stage plans are rejected by execution, and ordinary failure prefixes are surfaced to the existing authoritative recovery path without introducing a parallel transaction system.
 
-Home Focus, Activity Heatmap, saved Views, Favorites, and any Home customization persistence remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Global Search and the current Home query remain transient Runtime projections and do not freeze or substitute for those future Workspace State contracts.
+Home V1 now has a frozen composition: Date/Time, Current Cycle Summary, Triage Summary, Projects/Initiatives Summary, Activity Heatmap, and Weekly Note. Current implementation still needs Triage Summary and Activity Heatmap. Focus is not a current Trail V1 concept. Saved Views, Favorites, and any Home customization persistence remain deferred until real use establishes a concrete need and contract. Global Search and the current Home query remain transient Runtime projections and do not freeze or substitute for future Workspace State contracts.
 
-The next Gate 8 slice is intentionally not frozen in this checkpoint. Select it by re-auditing the remaining Product composition and interaction gaps against the latest repository rather than carrying forward a stale component-first sequence.
+The next Gate 8 direction is UI closure against Linear as Trail's primary visual and interaction baseline. Start from the existing Product surfaces and remaining Home V1 composition; introduce lower-layer work only when a concrete UI consumer exposes a real gap rather than carrying forward a component-first infrastructure sequence.
 
-Product, Domain, Data, and Design-to-Code Map remain unchanged. Architecture now clarifies the already-established Integrity Batch topology with its safe staged-cutover and recovery contract; no Product/Domain/Data semantics or code ownership changed.
+Product and Domain now clarify Home V1 composition, Activity Heatmap derivation, and the removal of the previously ambiguous Home Focus concept. Data, Architecture, and Design-to-Code Map need no ownership or persistence-model change for that clarification. Architecture continues to carry the established Integrity Batch safe staged-cutover and recovery contract.
 
 ## 5. Build Order
 
@@ -419,7 +419,7 @@ Completed:
 
 Active:
 
-- No next Gate 8 feature slice is frozen in this checkpoint. Re-audit the current repository and remaining Product gaps before selecting the next coherent user-value slice.
+- UI closure is the active Gate 8 direction: align existing Trail surfaces to Linear's primary visual/interaction baseline, complete Triage Summary and Activity Heatmap on Home, and repair only concrete lower-layer gaps exposed by those consumers.
 
 ### 5.3 Gate 9 - V1 hardening
 

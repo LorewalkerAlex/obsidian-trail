@@ -103,18 +103,22 @@ Favorites are user-maintained navigation shortcuts to high-value Trail targets. 
 
 ### 3.10 Home
 
-Home is a global summary and routing surface, not another independent data system.
+Home is a compact global summary and routing surface, not another independent data system or an Issue execution view.
 
-V1 Home composition is:
+It combines high-frequency entry points with lightweight derived Workspace statistics. V1 Home composition is:
 
 ```text
 Date / Time
-Focus
 Current Cycle Summary
+Triage Summary
 Projects / Initiatives Summary
 Activity Heatmap
 Weekly Note
 ```
+
+Current Cycle, Triage, and Projects / Initiatives summaries are both overview and routing surfaces. Activity Heatmap is a lightweight derived visualization from retained Workflow Issue lifecycle facts; it is not a complete activity/event log.
+
+Home does not define a separate Focus concept in V1. Issue-level execution focus remains in existing workflow surfaces such as Cycles, Projects, and Search; a future Focus view/grouping may be introduced only if real use establishes a distinct need.
 
 ## 4. Experience
 
@@ -167,7 +171,7 @@ Search finds objects. Command Menu is primarily for actions. Custom Views save u
 
 Peek is a cross-workspace interaction capability for inspecting or editing lightweight information without losing the current context.
 
-Focus, Peek, Selection, Bulk Actions, Context Menu, Command Menu, keyboard shortcuts, Search, and Undo/Recovery form one interaction system rather than separate per-page inventions.
+Peek, Selection, Bulk Actions, Context Menu, Command Menu, keyboard shortcuts, Search, and Undo/Recovery form one interaction system rather than separate per-page inventions.
 
 Fast operations should provide immediate visible feedback and a low-cost recovery path. Interactive elements require clear hover, focus, pressed, selected, disabled, and focus-visible states without excessive motion.
 
@@ -179,11 +183,13 @@ Trail is designed for desktop Obsidian, but it must work in variable pane widths
 
 ### 4.8 UI Design Reference
 
-Linear is the current reference for Trail's UI and interaction design quality, especially its visual language, information density, interaction clarity, and execution-oriented polish.
+Linear is Trail's primary visual and interaction baseline for V1.
 
-This reference does not import Linear's team product model, collaboration semantics, branding, or visual identity. Trail remains a personal, Obsidian-native product.
+Where Linear already provides an equivalent UI pattern, Trail should closely match its layout, spacing, typography hierarchy, information density, component treatment, interaction states, and behavior. Trail should deviate only when its personal product semantics, Obsidian host constraints, or an explicitly resolved Trail UI answer require a different result.
 
-As Trail's own UI Design answers become explicit, those answers replace the reference for the areas they cover.
+This baseline does not import Linear's team or collaboration product semantics or its branding assets. Product concepts remain Trail-owned even when the UI presentation follows Linear closely.
+
+As Trail's own UI Design answers become explicit, those answers replace the Linear reference only for the specific areas they cover.
 
 ### 4.9 Obsidian-native documents
 
