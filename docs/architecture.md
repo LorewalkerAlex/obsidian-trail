@@ -480,7 +480,21 @@ Low-frequency multi-source/reference repair for operations such as:
 - deleting Cycle while preserving Issues;
 - other operations that must update related authoritative references together.
 
-Integrity Batch is a known architecture topology even before all product consumers exist. It does not imply a general transaction graph.
+Integrity Batch uses a fixed ordered stage vocabulary rather than arbitrary operation ordering; empty stages are omitted:
+
+```text
+prepare
+→ destructive
+→ commit
+```
+
+- `prepare` may establish non-destructive Domain state required by the final result;
+- `destructive` removes authoritative Domain carriers only after preparation has succeeded;
+- `commit` is the final plugin-data cutover and occurs at most once.
+
+When an Integrity Batch mixes Plugin Data with Domain repairs, materialization projects the ordered Domain effects before any I/O and proves each pre-commit Domain prefix remains legal under the currently committed Configuration/Workspace State; it then validates the final Plugin Data cutover. A mixed Configuration/Domain repair is therefore allowed only when the Entity repairs can first produce a state legal under both the old and new configuration, after which plugin data may commit last. If no safe staged bridge exists, the mutation is rejected before persistence rather than relying on write order or rollback to make an illegal prefix acceptable.
+
+The executor validates this topology independently of the materializer, stops at the first failed operation, and reports the durable operation prefix that completed before the error. Existing Source Sync recovery then clears invalid optimism and rereads authoritative state. Integrity Batch does not add general rollback, recursive compensation, a transaction graph, or an all-or-nothing filesystem guarantee. For destination-first destructive flows such as Project deletion, a detectable duplicate/error prefix remains preferable to silent source loss when a later destructive step fails.
 
 ### 5.8 Placement resolution
 

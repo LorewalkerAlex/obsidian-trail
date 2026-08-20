@@ -4,14 +4,14 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The latest pushed Gate 8 implementation checkpoint is:
+The latest pushed implementation checkpoint is:
 
 ```text
-926c6ee7714c4171a91c53ead76848a325c321cf
-fix: protect weekly note integrity
+eb6d98fb28be81d8153aca0429705b05846499de
+fix: harden integrity batch failure safety
 ```
 
-This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search & Project-less Workflow, and Home Routing & Weekly Note slices, including the follow-up Weekly Note integrity hardening, plus the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
+This baseline includes the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search & Project-less Workflow, and Home Routing & Weekly Note slices, including the follow-up Weekly Note integrity hardening, plus the repository-audit-driven Integrity Batch Failure-Safety hardening and the quality-baseline cleanup between them. Earlier repository states remain available through Git history and are not repeated as competing execution baselines.
 
 Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion are complete foundations for the current stage.
 
@@ -62,6 +62,8 @@ Gate 8 evidence now includes:
 - the Home checkpoint passed focused zero-warning lint, 6 focused test files with 14 tests including the architecture guard, TypeScript, diagnostics build, representative Obsidian validation, a full `npm run check`, final `git diff --check`, and diagnostics-bundle restoration. Host validation confirmed that opening Home did not eagerly create `Weekly Update.md`, first Save created it, re-entry and plugin reload preserved content, Archive wrote the configured-zone `2026-08-19` entry and cleared Current, Trail-owned create/modify events were suppressed by the write guard, and final Runtime was `ready` with empty pending state and no source-health issues; the temporary Weekly Note fixture was removed afterward;
 - **Weekly Note Integrity Hardening** at `926c6ee7714c4171a91c53ead76848a325c321cf`, closing two post-implementation audit findings without changing Home or Weekly Note product scope: the utility repository now rejects H1/H2 headings in Current and Archive bodies before persistence, and Save/Archive carry the loaded Current snapshot as a write-time precondition so an external edit causes an explicit conflict instead of a stale overwrite; Application only carries that precondition while Home preserves the local draft and surfaces the error;
 - the integrity checkpoint passed zero-warning lint, focused Weekly Note Application/repository/Home/Shell tests, TypeScript, diagnostics build, a full `npm run check`, final `git diff --check`, diagnostics-bundle restoration, and GitHub verification of the exact 7-file code scope. Representative Obsidian validation confirmed that reserved H2 content never reached persistence, H3 remained valid, an external `Weekly Update.md` edit triggered `external-refresh` and Runtime `ready -> refreshing -> ready`, the stale Home save failed with `Weekly Note Current changed on disk. Reopen Home before saving.`, the externally edited Current remained authoritative, and final Runtime was `ready` with empty pending state and no source-health issues; the temporary Weekly Note fixture was removed afterward;
+- **Integrity Batch Failure-Safety Hardening** at `eb6d98fb28be81d8153aca0429705b05846499de` closes the repository-audit finding that a logically atomic multi-carrier repair could previously persist an unsafe ordinary-failure prefix. Physical Integrity Batch plans now use the ordered `prepare -> destructive -> commit` stage contract, mixed Plugin Data + Domain materialization proves a safe pre-commit bridge before I/O, plugin-data cutover occurs last when that bridge is valid, and the executor rejects malformed stage contents while retaining durable-prefix evidence for recovery;
+- the Integrity Batch hardening passed zero-warning lint, focused projection/materialization/executor/Source Sync owner tests, a cross-consumer matrix covering Status and Label configuration, generic configuration repair, destructive planners, Mutation coordination, Project Delete materialization, and Source Sync settlement/recovery, TypeScript, diagnostics build, a full `npm run check`, final `git diff --check`, and diagnostics-bundle restoration. The hardening deliberately preserves the existing destination-first Project Delete duplicate-over-loss policy and does not introduce a general rollback framework, transaction graph, or new Product/Domain/Data model;
 - repository-root `Trail/` remains versioned as disposable host-test observation data. The repository development Vault also versions `.obsidian/plugins/trail/data.json` so its Configuration/Workspace State reference IDs remain coherent with checked-in `Trail/` observations across machines; generated plugin bundles, diagnostics, graph state, and workspace state remain ignored. These development-Vault values are not Product facts or production defaults;
 - lint fails on warnings through `eslint . --max-warnings=0`, and the dev-only transitive `nanoid` resolution remains at the audited fixed version `3.3.18`.
 
@@ -316,6 +318,31 @@ Representative host validation opened Trail directly on Home, exercised the exis
 
 The `926c6ee7714c4171a91c53ead76848a325c321cf` integrity follow-up hardens the same existing owners rather than adding another persistence or state mechanism. Weekly Note H1/H2 structure is validated before any create/process write, H3-H6 remain valid body content, and Save/Archive compare the latest parsed Current against the snapshot originally loaded by Home before transforming the source. A conflict rejects the write while preserving the local draft for explicit user reconciliation. The corrective Host pass verified both boundaries against the real Vault: invalid H2 input never reached `Weekly Update.md`, and a native external edit remained authoritative when a stale Home draft attempted to save; navigating away and back then reread the external Current.
 
+The `eb6d98fb28be81d8153aca0429705b05846499de` **Integrity Batch Failure-Safety Hardening** checkpoint is a lower-layer corrective slice discovered by repository-wide audit, not a new Product feature. It strengthens the existing Mutation topology while preserving the already-established planner, persistence, Source Sync, and Runtime ownership model:
+
+```text
+logical multi-carrier repair
+-> dequeue-time materialization
+-> classify prepare / destructive / commit stages
+-> for mixed Plugin Data + Domain repair, prove the pre-commit bridge before I/O
+-> prepare non-destructive Domain changes
+-> destructive Domain carrier removal when required
+-> commit plugin data last when present
+-> authoritative settlement or full recovery
+```
+
+The hardening:
+
+1. centralizes logical-effect projection so optimistic Runtime replay and materialization bridge checks consume the same state-effect semantics rather than maintaining parallel mutation interpretations;
+2. fixes Integrity Batch to the ordered `prepare -> destructive -> commit` contract, omitting empty stages while giving each present stage a narrow operation responsibility;
+3. projects mixed Configuration/Domain repairs before I/O and permits them only when Entity repair can first reach a state valid under both the current and next Configuration/Workspace State. A non-bridgeable cutover is rejected before persistence rather than partially writing and relying on rollback;
+4. moves plugin-data replacement to the final commit stage for bridgeable mixed repairs while preserving ordinary single plugin-data replacement as a Single Transaction;
+5. makes the executor independently validate stage topology, stop on the first failed operation, and surface the durable completed prefix so existing Source Sync recovery has concrete persistence evidence;
+6. retains Project Delete's existing destination-first safety tradeoff. If target Issue preparation succeeds but later source destruction fails, a detectable duplicate/error is still preferred to silent loss and authoritative recovery remains the convergence boundary;
+7. deliberately does not add a general transaction graph, batch filesystem transaction, recursive rollback state machine, or speculative compensation policy.
+
+This slice is verified entirely at the shared mechanism and consumer-contract layers because its independent risks are injected persistence failures and illegal stage/cutover shapes, not an Obsidian-only UI or host behavior. No additional manual Host scenario is required for this checkpoint.
+
 ### 4.2 Current verified gaps
 
 Current Product gaps split into three groups:
@@ -334,11 +361,13 @@ Global Search and project-less Workflow discovery are no longer verified gaps. T
 
 Home Routing & Weekly Note are no longer verified gaps. Trail now has a default Home route, configured Date/Time, Current Cycle and work-structure summaries, existing Projects/Cycles routing, and a lazy non-Domain Weekly Note backed by canonical Markdown and existing SourceIO/write-guard boundaries. The `926c6ee7714c4171a91c53ead76848a325c321cf` integrity follow-up also closes the known Weekly Note structural-heading and stale-Current overwrite findings without adding Domain or Runtime state.
 
+The Integrity Batch unsafe-prefix audit finding is no longer a verified lower-layer gap. Bridgeable mixed repairs now have an explicit safe cutover, non-bridgeable repairs fail before I/O, malformed stage plans are rejected by execution, and ordinary failure prefixes are surfaced to the existing authoritative recovery path without introducing a parallel transaction system.
+
 Home Focus, Activity Heatmap, saved Views, Favorites, and any Home customization persistence remain deferred while their exact composition/filter contracts are intentionally unfrozen in Workspace State. Global Search and the current Home query remain transient Runtime projections and do not freeze or substitute for those future Workspace State contracts.
 
 The next Gate 8 slice is intentionally not frozen in this checkpoint. Select it by re-auditing the remaining Product composition and interaction gaps against the latest repository rather than carrying forward a stale component-first sequence.
 
-Product, Domain, Architecture, and Design-to-Code Map remain unchanged. Data only clarifies the already-required Weekly Note H1/H2 structural boundary exposed by the integrity audit; no Domain or Product semantics changed.
+Product, Domain, Data, and Design-to-Code Map remain unchanged. Architecture now clarifies the already-established Integrity Batch topology with its safe staged-cutover and recovery contract; no Product/Domain/Data semantics or code ownership changed.
 
 ## 5. Build Order
 
@@ -427,6 +456,8 @@ The completed Global Search & Project-less Workflow checkpoint reused readable R
 The completed Home Routing & Weekly Note checkpoint reused readable Runtime state, configured-time conversion, existing Projects/Cycles routing, the canonical Weekly Update path, SourceIO, and the host write guard rather than introducing a Home data store, Domain entity, or second persistence path. Focused lint and tests passed after correcting two test-only contract mistakes, followed by TypeScript, diagnostics build, representative real-host validation, a full `npm run check`, final `git diff --check`, and diagnostics-bundle restoration. Host evidence covered lazy source creation, Current persistence, navigation/reload reread, dated Archive persistence, SourceIO create/process completion, suppression of matching Trail-owned Vault events, Runtime `ready`, empty pending state, clean source health, and restoration of the versioned `Trail/` host-test baseline.
 
 The `926c6ee7714c4171a91c53ead76848a325c321cf` Weekly Note integrity checkpoint then repaired the two audit findings at the utility repository boundary and passed zero-warning lint, focused Weekly Note/Application/Home/Shell tests, TypeScript, a full `npm run check`, `git diff --check`, and diagnostics-bundle restoration. Real-host evidence showed the reserved-heading guard prevented H2 from reaching persistence and the stale-Current precondition rejected an overwrite after an external managed-file edit. Diagnostics captured the external `modify` as `external-refresh`, Runtime convergence back to `ready`, and the rejected SourceIO process with the explicit conflict message; final evidence retained the external Current with empty pending state and clean source health.
+
+The `eb6d98fb28be81d8153aca0429705b05846499de` Integrity Batch Failure-Safety checkpoint hardened the existing shared Mutation/Runtime boundaries rather than adding a feature-specific recovery path. Focused owner tests first established Runtime effect projection reuse, bridgeable mixed Configuration/Domain materialization, fixed physical stage contents, executor rejection of malformed batches, and durable-prefix evidence across prepare/destructive/commit failure points. A second consumer matrix passed across Status and Label Configuration Application, generic Configuration planning, destructive planners, Mutation coordination, Project Delete materialization, Integrity Batch settlement, and Authoritative Source Sync. Zero-warning lint, TypeScript, diagnostics build, full `npm run check`, final `git diff --check`, and diagnostics-bundle restoration then passed on the frozen seven-file code scope. Because the independent risk is synthetic persistence failure ordering rather than a host-specific interaction, this checkpoint intentionally reuses existing repository/Source Sync host evidence instead of adding a redundant manual Obsidian scenario.
 
 Gate completion is recorded only after repository-grounded audit plus passing implementation evidence. Product, Domain, Data, Architecture, and Design-to-Code Map change only when their corresponding project answers truly change.
 
