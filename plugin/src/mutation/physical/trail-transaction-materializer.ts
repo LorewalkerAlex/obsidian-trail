@@ -4,14 +4,20 @@ import {
   sameTrailDomainEntity,
   sameTrailWorkspaceState,
 } from "../../domain/rules/trail-domain-equality";
+import {
+  validateTrailWorkspaceGraph,
+  type TrailWorkspaceValidationIssue,
+} from "../../domain/validation/trail-workspace-validation";
 import type {
   TrailMutationPlan,
   TrailStateEffect,
 } from "../plans/trail-mutation-plan";
 import type { TrailDomainSourceRepository } from "../../persistence/domain-sources/trail-domain-source-repository";
 import type { TrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
+import { projectTrailAuthoritativeStateWithEffects } from "../../runtime/projection/trail-runtime-projection";
 import {
   findTrailDomainEntity,
+  type TrailAuthoritativeState,
   type TrailCommittedRuntime,
 } from "../../runtime/store/trail-runtime-store";
 import {
@@ -23,6 +29,16 @@ import type {
   TrailPersistenceTransactionPlan,
   TrailSourceTransitionPlan,
 } from "./trail-persistence-transaction-plan";
+
+export class TrailIntegrityBatchMaterializationError extends Error {
+  public constructor(
+    message: string,
+    readonly validationIssues: readonly TrailWorkspaceValidationIssue[],
+  ) {
+    super(message);
+    this.name = "TrailIntegrityBatchMaterializationError";
+  }
+}
 
 function assertPlanPreconditions(plan: TrailMutationPlan, committed: TrailCommittedRuntime): void {
   for (const condition of plan.preconditions) {
@@ -456,8 +472,12 @@ async function tryCreateDeleteSourceTransition(
   repository: Pick<TrailDomainSourceRepository, "list">,
 ): Promise<TrailSourceTransitionPlan | undefined> {
   if (effects.length !== 2) return undefined;
-  const create = effects.find((effect): effect is Extract<TrailStateEffect, { kind: "create-entity" }> => effect.kind === "create-entity");
-  const remove = effects.find((effect): effect is Extract<TrailStateEffect, { kind: "delete-entity" }> => effect.kind === "delete-entity");
+  const create = effects.find((effect): effect is Extract<TrailStateEffect, { kind: "create-entity" }> => (
+    effect.kind === "create-entity"
+  ));
+  const remove = effects.find((effect): effect is Extract<TrailStateEffect, { kind: "delete-entity" }> => (
+    effect.kind === "delete-entity"
+  ));
   if (create === undefined || remove === undefined) return undefined;
 
   const targetOperations = await createEntityOperations(create.after, committed, repository);
@@ -493,6 +513,58 @@ async function tryCreateDeleteSourceTransition(
     source: [source],
     target: [target],
   };
+}
+
+function requireValidWorkspace(
+  authoritative: TrailAuthoritativeState,
+  context: string,
+): void {
+  if (authoritative.configuration === null || authoritative.workspaceState === null) {
+    throw new TrailIntegrityBatchMaterializationError(
+      `Integrity Batch ${context} requires loaded Configuration and Workspace State`,
+      [],
+    );
+  }
+  const issues = validateTrailWorkspaceGraph({
+    configuration: authoritative.configuration,
+    domain: authoritative.domain,
+    workspaceState: authoritative.workspaceState,
+  });
+  if (issues.length === 0) return;
+  const first = issues[0];
+  if (first === undefined) throw new Error("Integrity Batch validation issue disappeared");
+  throw new TrailIntegrityBatchMaterializationError(
+    `Integrity Batch ${context} is not safely stageable: ${first.code}: ${first.message}`,
+    issues,
+  );
+}
+
+/**
+ * Mixed Plugin Data + Domain batches use one V1 bridge: Domain changes first,
+ * Plugin Data cutover last. Every logical Domain prefix must stay valid under
+ * the current Plugin Data so a failed prefix can be authoritatively reloaded.
+ */
+function assertPluginDataCommitBridge(
+  committed: TrailCommittedRuntime,
+  pluginDataOperation: Extract<TrailPersistenceOperation, { kind: "save-plugin-data" }>,
+  orderedDomainEffects: readonly TrailStateEffect[],
+): void {
+  let staged: TrailAuthoritativeState = {
+    ...committed.authoritative,
+    configuration: pluginDataOperation.before.configuration,
+    workspaceState: pluginDataOperation.before.workspaceState,
+  };
+
+  for (const effect of orderedDomainEffects) {
+    staged = projectTrailAuthoritativeStateWithEffects(staged, [effect]);
+    requireValidWorkspace(staged, "pre-commit Domain prefix");
+  }
+
+  requireValidWorkspace({
+    ...staged,
+    configuration: pluginDataOperation.after.configuration,
+    workspaceState: pluginDataOperation.after.workspaceState,
+  }, "final Plugin Data cutover");
 }
 
 /** Materializes against the latest committed Runtime after dequeuing. */
@@ -546,7 +618,8 @@ export async function materializeTrailPersistenceTransactionPlan(
 
   const prepare: TrailPersistenceOperation[] = [];
   const destructive: TrailPersistenceOperation[] = [];
-  if (pluginData.operation !== undefined) prepare.push(pluginData.operation);
+  const prepareEffects: TrailStateEffect[] = [];
+  const destructiveEffects: TrailStateEffect[] = [];
 
   for (const effect of pluginData.remaining) {
     if (effect.kind === "replace-entity") {
@@ -562,11 +635,25 @@ export async function materializeTrailPersistenceTransactionPlan(
         throw new Error("Moving Replace inside an Integrity Batch requires a dedicated staged planner");
       }
       prepare.push(...materialized.operations);
+      prepareEffects.push(effect);
     } else if (effect.kind === "create-entity") {
       prepare.push(...await createEntityOperations(effect.after, committed, repository));
+      prepareEffects.push(effect);
     } else if (effect.kind === "delete-entity") {
       destructive.push(...deleteEntityOperations(effect.before, committed, true));
+      destructiveEffects.push(effect);
     }
+  }
+
+  if (pluginData.operation !== undefined) {
+    if (pluginData.operation.kind !== "save-plugin-data") {
+      throw new Error("Plugin Data materialization produced an unexpected operation");
+    }
+    assertPluginDataCommitBridge(
+      committed,
+      pluginData.operation,
+      [...prepareEffects, ...destructiveEffects],
+    );
   }
 
   return {
@@ -576,6 +663,9 @@ export async function materializeTrailPersistenceTransactionPlan(
     stages: [
       ...(prepare.length === 0 ? [] : [{ name: "prepare" as const, operations: prepare }]),
       ...(destructive.length === 0 ? [] : [{ name: "destructive" as const, operations: destructive }]),
+      ...(pluginData.operation === undefined
+        ? []
+        : [{ name: "commit" as const, operations: [pluginData.operation] }]),
     ],
   };
 }

@@ -109,16 +109,26 @@ function applyEffect(
   }
 }
 
-function projectAuthoritativeState(state: TrailRuntimeState): TrailAuthoritativeState {
-  const projected = {
-    configuration: state.committed.authoritative.configuration,
-    domain: cloneDomain(state.committed.authoritative.domain),
-    workspaceState: state.committed.authoritative.workspaceState,
+/**
+ * Projects a logical effect sequence without mutating its authoritative base.
+ * Runtime optimistic replay and physical preflight share this exact state logic.
+ */
+export function projectTrailAuthoritativeStateWithEffects(
+  authoritative: TrailAuthoritativeState,
+  effects: readonly TrailStateEffect[],
+): TrailAuthoritativeState {
+  const projected: MutableTrailAuthoritativeState = {
+    configuration: authoritative.configuration,
+    domain: cloneDomain(authoritative.domain),
+    workspaceState: authoritative.workspaceState,
   };
-  for (const plan of state.pending) {
-    for (const effect of plan.effects) applyEffect(projected, effect);
-  }
+  for (const effect of effects) applyEffect(projected, effect);
   return projected;
+}
+
+function projectAuthoritativeState(state: TrailRuntimeState): TrailAuthoritativeState {
+  const effects = state.pending.flatMap((plan) => plan.effects);
+  return projectTrailAuthoritativeStateWithEffects(state.committed.authoritative, effects);
 }
 
 export interface TrailEffectiveRuntimeSnapshot {

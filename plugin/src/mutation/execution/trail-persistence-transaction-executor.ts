@@ -13,6 +13,7 @@ import type {
 } from "../../persistence/plugin-data/trail-plugin-data-repository";
 import type { TrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
 import type {
+  TrailIntegrityBatchStage,
   TrailPersistenceOperation,
   TrailPersistenceTransactionPlan,
 } from "../physical/trail-persistence-transaction-plan";
@@ -66,6 +67,19 @@ export class TrailSourceTransitionExecutionError extends Error {
   ) {
     super(message);
     this.name = "TrailSourceTransitionExecutionError";
+  }
+}
+
+export class TrailIntegrityBatchExecutionError extends Error {
+  public constructor(
+    readonly stage: TrailIntegrityBatchStage["name"],
+    readonly completedOperations: readonly TrailPersistenceOperationResult[],
+    readonly cause: unknown,
+  ) {
+    super(
+      `Integrity Batch ${stage} stage failed after ${completedOperations.length} completed operation(s)`,
+    );
+    this.name = "TrailIntegrityBatchExecutionError";
   }
 }
 
@@ -318,6 +332,74 @@ async function executeOperations(
   return results;
 }
 
+function isPrepareOperation(operation: TrailPersistenceOperation): boolean {
+  return operation.kind === "create-domain-source"
+    || operation.kind === "rename-domain-source"
+    || (
+      operation.kind === "mutate-domain-source"
+      && operation.mutation.kind !== "delete"
+    );
+}
+
+function isDestructiveOperation(operation: TrailPersistenceOperation): boolean {
+  return operation.kind === "delete-domain-source"
+    || (
+      operation.kind === "mutate-domain-source"
+      && operation.mutation.kind === "delete"
+    );
+}
+
+function assertIntegrityBatchTopology(
+  plan: Extract<TrailPersistenceTransactionPlan, { kind: "integrity-batch" }>,
+): void {
+  if (plan.stages.length === 0 || plan.stages.some((stage) => stage.operations.length === 0)) {
+    throw new TrailPersistenceOperationError(
+      "Integrity Batch requires non-empty execution stages",
+    );
+  }
+
+  const order: Readonly<Record<TrailIntegrityBatchStage["name"], number>> = {
+    prepare: 0,
+    destructive: 1,
+    commit: 2,
+  };
+  const seen = new Set<TrailIntegrityBatchStage["name"]>();
+  let previous = -1;
+
+  for (const stage of plan.stages) {
+    const current = order[stage.name];
+    if (seen.has(stage.name) || current <= previous) {
+      throw new TrailPersistenceOperationError(
+        "Integrity Batch stages must be unique and ordered prepare -> destructive -> commit",
+      );
+    }
+    seen.add(stage.name);
+    previous = current;
+
+    if (stage.name === "prepare" && !stage.operations.every(isPrepareOperation)) {
+      throw new TrailPersistenceOperationError(
+        "Integrity Batch prepare stage may contain only non-destructive Domain operations",
+      );
+    }
+    if (stage.name === "destructive" && !stage.operations.every(isDestructiveOperation)) {
+      throw new TrailPersistenceOperationError(
+        "Integrity Batch destructive stage may contain only Domain delete operations",
+      );
+    }
+    if (
+      stage.name === "commit"
+      && (
+        stage.operations.length !== 1
+        || stage.operations[0]?.kind !== "save-plugin-data"
+      )
+    ) {
+      throw new TrailPersistenceOperationError(
+        "Integrity Batch commit stage requires exactly one Plugin Data save",
+      );
+    }
+  }
+}
+
 function assertExecutableTopology(plan: TrailPersistenceTransactionPlan): void {
   switch (plan.kind) {
     case "single":
@@ -333,11 +415,7 @@ function assertExecutableTopology(plan: TrailPersistenceTransactionPlan): void {
       }
       return;
     case "integrity-batch":
-      if (plan.stages.length === 0 || plan.stages.some((stage) => stage.operations.length === 0)) {
-        throw new TrailPersistenceOperationError(
-          "Integrity Batch requires non-empty execution stages",
-        );
-      }
+      assertIntegrityBatchTopology(plan);
   }
 }
 
@@ -425,7 +503,17 @@ export async function executeTrailPersistenceTransaction(
     case "integrity-batch": {
       const results: TrailPersistenceOperationResult[] = [];
       for (const stage of plan.stages) {
-        results.push(...await executeOperations(stage.operations, environment));
+        for (const operation of stage.operations) {
+          try {
+            results.push(await executeOperation(operation, environment));
+          } catch (error: unknown) {
+            throw new TrailIntegrityBatchExecutionError(
+              stage.name,
+              [...results],
+              error,
+            );
+          }
+        }
       }
       return { commandId: plan.commandId, operations: results, topology: plan.kind };
     }

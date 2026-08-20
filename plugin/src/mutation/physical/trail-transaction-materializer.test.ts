@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import { createTrailMutationPlan } from "../plans/trail-mutation-plan";
 import { buildTrailCommittedRuntimeCandidate } from "../../runtime/reconcile/trail-runtime-reconciler";
 import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../../test/trail-test-fixtures";
-import { materializeTrailPersistenceTransactionPlan } from "./trail-transaction-materializer";
+import {
+  materializeTrailPersistenceTransactionPlan,
+  TrailIntegrityBatchMaterializationError,
+} from "./trail-transaction-materializer";
 
 const configuration = createTrailTestConfiguration();
 const workspaceState = createTrailTestWorkspaceState();
@@ -24,9 +28,9 @@ const issueA = {
   title: "Issue A",
 };
 
-function committed() {
+function committed(activeConfiguration: TrailConfiguration = configuration) {
   return { ...buildTrailCommittedRuntimeCandidate({
-    pluginData: { configuration, workspaceState },
+    pluginData: { configuration: activeConfiguration, workspaceState },
     sources: [
       {
         issues: [issueA],
@@ -49,6 +53,47 @@ function committed() {
       },
     ],
   }), revision: 1 };
+}
+
+function configurationWithIssueReady(includeUnstarted = true): TrailConfiguration {
+  const readyDefinition = {
+    category: "unstarted" as const,
+    entityType: "issue" as const,
+    id: "issue-ready",
+    name: "Ready",
+  };
+  const statusDefinitions = configuration.statusDefinitions
+    .filter(({ id }) => includeUnstarted || id !== "issue-unstarted");
+  return {
+    ...configuration,
+    statusDefinitions: [...statusDefinitions, readyDefinition],
+    workflowStatuses: {
+      ...configuration.workflowStatuses,
+      issue: {
+        ...configuration.workflowStatuses.issue,
+        unstarted: {
+          defaultId: includeUnstarted ? "issue-unstarted" : readyDefinition.id,
+          definitionIds: includeUnstarted
+            ? ["issue-unstarted", readyDefinition.id]
+            : [readyDefinition.id],
+        },
+      },
+    },
+  };
+}
+
+function configurationAfterIssueReadyCutover(current: TrailConfiguration): TrailConfiguration {
+  return {
+    ...current,
+    statusDefinitions: current.statusDefinitions.filter(({ id }) => id !== "issue-unstarted"),
+    workflowStatuses: {
+      ...current.workflowStatuses,
+      issue: {
+        ...current.workflowStatuses.issue,
+        unstarted: { defaultId: "issue-ready", definitionIds: ["issue-ready"] },
+      },
+    },
+  };
 }
 
 describe("Trail persistence transaction materializer", () => {
@@ -191,7 +236,8 @@ describe("Trail persistence transaction materializer", () => {
     expect(transaction.operations).toHaveLength(1);
     expect(transaction.operations[0]).toMatchObject({ kind: "save-plugin-data" });
   });
-  it("materializes mixed independent effects as the fixed Integrity Batch topology", async () => {
+
+  it("commits Plugin Data only after a bridgeable mixed Domain prepare stage", async () => {
     const nextConfiguration = { ...configuration, temporal: { timezone: "UTC" } };
     const plan = createTrailMutationPlan({
       commandId: "batch",
@@ -214,11 +260,84 @@ describe("Trail persistence transaction materializer", () => {
     );
     expect(transaction.kind).toBe("integrity-batch");
     if (transaction.kind !== "integrity-batch") throw new Error("expected Integrity Batch");
-    expect(transaction.stages.map((stage) => stage.name)).toEqual(["prepare"]);
+    expect(transaction.stages.map((stage) => stage.name)).toEqual(["prepare", "commit"]);
     expect(transaction.stages[0]?.operations.map((operation) => operation.kind)).toEqual([
-      "save-plugin-data",
       "mutate-domain-source",
+    ]);
+    expect(transaction.stages[1]?.operations.map((operation) => operation.kind)).toEqual([
+      "save-plugin-data",
     ]);
   });
 
+  it("stages Status reference repair while both old and new Configuration remain valid", async () => {
+    const currentConfiguration = configurationWithIssueReady();
+    const nextConfiguration = configurationAfterIssueReadyCutover(currentConfiguration);
+    const repairedIssue = { ...issueA, statusDefinitionId: "issue-ready" };
+    const plan = createTrailMutationPlan({
+      commandId: "status-repair",
+      effects: [
+        {
+          after: nextConfiguration,
+          before: currentConfiguration,
+          kind: "replace-configuration",
+        },
+        {
+          after: { kind: "issue", value: repairedIssue },
+          before: { kind: "issue", value: issueA },
+          kind: "replace-entity",
+        },
+      ],
+      intent: "configuration.change",
+    });
+
+    const transaction = await materializeTrailPersistenceTransactionPlan(
+      plan,
+      committed(currentConfiguration),
+      { list: async () => [] },
+    );
+
+    expect(transaction.kind).toBe("integrity-batch");
+    if (transaction.kind !== "integrity-batch") throw new Error("expected Integrity Batch");
+    expect(transaction.stages.map((stage) => stage.name)).toEqual(["prepare", "commit"]);
+    expect(transaction.stages[0]?.operations[0]).toMatchObject({
+      kind: "mutate-domain-source",
+      mutation: { kind: "replace" },
+      path: "Trail/Projects/0001 Project A.md",
+    });
+    expect(transaction.stages[1]?.operations[0]).toMatchObject({ kind: "save-plugin-data" });
+  });
+
+  it("rejects a non-bridgeable Configuration cutover before persistence planning completes", async () => {
+    const nextConfiguration = configurationWithIssueReady(false);
+    const repairedIssue = { ...issueA, statusDefinitionId: "issue-ready" };
+    const plan = createTrailMutationPlan({
+      commandId: "unsafe-status-cutover",
+      effects: [
+        {
+          after: nextConfiguration,
+          before: configuration,
+          kind: "replace-configuration",
+        },
+        {
+          after: { kind: "issue", value: repairedIssue },
+          before: { kind: "issue", value: issueA },
+          kind: "replace-entity",
+        },
+      ],
+      intent: "configuration.change",
+    });
+
+    await expect(materializeTrailPersistenceTransactionPlan(
+      plan,
+      committed(),
+      { list: async () => [] },
+    )).rejects.toMatchObject({
+      name: "TrailIntegrityBatchMaterializationError",
+    } satisfies Partial<TrailIntegrityBatchMaterializationError>);
+    await expect(materializeTrailPersistenceTransactionPlan(
+      plan,
+      committed(),
+      { list: async () => [] },
+    )).rejects.toThrow("pre-commit Domain prefix");
+  });
 });

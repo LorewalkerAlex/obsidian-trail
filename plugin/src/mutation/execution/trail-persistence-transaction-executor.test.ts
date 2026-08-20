@@ -1,12 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { TrailDomainSourceRepository } from "../../persistence/domain-sources/trail-domain-source-repository";
+import type { TrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
 import type { TrailPluginDataRepository } from "../../persistence/plugin-data/trail-plugin-data-repository";
+import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../../test/trail-test-fixtures";
 import type { TrailPersistenceOperation } from "../physical/trail-persistence-transaction-plan";
 import {
   executeTrailPersistenceTransaction,
+  TrailIntegrityBatchExecutionError,
+  type TrailPersistenceOperationResult,
   TrailSourceTransitionExecutionError,
 } from "./trail-persistence-transaction-executor";
+
+const pluginDataSnapshot: TrailPluginDataSnapshot = {
+  configuration: createTrailTestConfiguration(),
+  workspaceState: createTrailTestWorkspaceState(),
+};
 
 function accepted(path: string) {
   return {
@@ -16,7 +25,20 @@ function accepted(path: string) {
   };
 }
 
-function environment(events: string[], failSource = false, sourceIssue = false) {
+function mutatedDomainSourceResult(path: string): TrailPersistenceOperationResult {
+  return {
+    change: { kind: "mutated" },
+    kind: "domain-source",
+    result: accepted(path),
+  };
+}
+
+function environment(
+  events: string[],
+  failSource = false,
+  sourceIssue = false,
+  failPluginData = false,
+) {
   const domainSources: TrailDomainSourceRepository = {
     create: async () => accepted("created"),
     createSource: async (source) => { events.push(`create:${source.path}`); return accepted(source.path); },
@@ -48,10 +70,14 @@ function environment(events: string[], failSource = false, sourceIssue = false) 
     read: async (_kind, path) => accepted(path),
     renameSource: async (_kind, from, to) => { events.push(`rename:${from}->${to}`); return accepted(to); },
   };
-  const pluginData = {
-    read: vi.fn(),
-    save: vi.fn(),
-  } as unknown as TrailPluginDataRepository;
+  const pluginData: TrailPluginDataRepository = {
+    read: vi.fn(async () => ({ kind: "valid" as const, snapshot: pluginDataSnapshot })),
+    save: vi.fn(async (snapshot: TrailPluginDataSnapshot): Promise<TrailPluginDataSnapshot> => {
+      events.push("save-plugin-data");
+      if (failPluginData) throw new Error("plugin data failed");
+      return snapshot;
+    }),
+  };
   return { domainSources, pluginData };
 }
 
@@ -75,6 +101,14 @@ function mutate(path: string, kind: "create" | "delete"): TrailPersistenceOperat
         },
     path,
     sourceKind: "triage",
+  };
+}
+
+function savePluginData(): TrailPersistenceOperation {
+  return {
+    after: pluginDataSnapshot,
+    before: pluginDataSnapshot,
+    kind: "save-plugin-data",
   };
 }
 
@@ -257,6 +291,126 @@ describe("Trail persistence transaction executor", () => {
     }, environment([]))).rejects.toThrow(
       "Single Transaction requires at least one operation",
     );
+  });
+
+  it("rejects malformed Integrity Batch stage ordering before any I/O", async () => {
+    const events: string[] = [];
+    await expect(executeTrailPersistenceTransaction({
+      commandId: "invalid-order",
+      intent: "invalid-order",
+      kind: "integrity-batch",
+      stages: [
+        { name: "commit", operations: [savePluginData()] },
+        { name: "prepare", operations: [mutate("target.md", "create")] },
+      ],
+    }, environment(events))).rejects.toThrow(
+      "ordered prepare -> destructive -> commit",
+    );
+    expect(events).toEqual([]);
+  });
+
+  it("rejects Plugin Data writes outside the Integrity Batch commit stage", async () => {
+    const events: string[] = [];
+    await expect(executeTrailPersistenceTransaction({
+      commandId: "invalid-prepare",
+      intent: "invalid-prepare",
+      kind: "integrity-batch",
+      stages: [{ name: "prepare", operations: [savePluginData()] }],
+    }, environment(events))).rejects.toThrow(
+      "prepare stage may contain only non-destructive Domain operations",
+    );
+    expect(events).toEqual([]);
+  });
+
+  it("executes a canonical Integrity Batch in prepare, destructive, commit order", async () => {
+    const events: string[] = [];
+    const result = await executeTrailPersistenceTransaction({
+      commandId: "batch-success",
+      intent: "batch-success",
+      kind: "integrity-batch",
+      stages: [
+        { name: "prepare", operations: [mutate("target.md", "create")] },
+        { name: "destructive", operations: [mutate("source.md", "delete")] },
+        { name: "commit", operations: [savePluginData()] },
+      ],
+    }, environment(events));
+
+    expect(events).toEqual([
+      "create:target.md",
+      "delete:source.md",
+      "save-plugin-data",
+    ]);
+    expect(result.operations).toHaveLength(3);
+  });
+
+  it("stops an Integrity Batch after prepare failure and does not enter later stages", async () => {
+    const events: string[] = [];
+    const execution = executeTrailPersistenceTransaction({
+      commandId: "batch-prepare-fail",
+      intent: "batch-prepare-fail",
+      kind: "integrity-batch",
+      stages: [
+        { name: "prepare", operations: [mutate("target.md", "create")] },
+        { name: "destructive", operations: [mutate("source.md", "delete")] },
+        { name: "commit", operations: [savePluginData()] },
+      ],
+    }, environment(events, false, true));
+
+    await expect(execution).rejects.toMatchObject({
+      completedOperations: [],
+      name: "TrailIntegrityBatchExecutionError",
+      stage: "prepare",
+    } satisfies Partial<TrailIntegrityBatchExecutionError>);
+    expect(events).toEqual(["create:target.md"]);
+  });
+
+  it("reports the durable prefix when an Integrity Batch destructive stage fails", async () => {
+    const events: string[] = [];
+    const execution = executeTrailPersistenceTransaction({
+      commandId: "batch-destructive-fail",
+      intent: "batch-destructive-fail",
+      kind: "integrity-batch",
+      stages: [
+        { name: "prepare", operations: [mutate("target.md", "create")] },
+        { name: "destructive", operations: [mutate("source.md", "delete")] },
+        { name: "commit", operations: [savePluginData()] },
+      ],
+    }, environment(events, true));
+
+    await expect(execution).rejects.toMatchObject({
+      completedOperations: [mutatedDomainSourceResult("target.md")],
+      name: "TrailIntegrityBatchExecutionError",
+      stage: "destructive",
+    } satisfies Partial<TrailIntegrityBatchExecutionError>);
+    expect(events).toEqual(["create:target.md", "delete:source.md"]);
+  });
+
+  it("reports the complete Domain prefix when the final Integrity Batch commit fails", async () => {
+    const events: string[] = [];
+    const execution = executeTrailPersistenceTransaction({
+      commandId: "batch-commit-fail",
+      intent: "batch-commit-fail",
+      kind: "integrity-batch",
+      stages: [
+        { name: "prepare", operations: [mutate("target.md", "create")] },
+        { name: "destructive", operations: [mutate("source.md", "delete")] },
+        { name: "commit", operations: [savePluginData()] },
+      ],
+    }, environment(events, false, false, true));
+
+    await expect(execution).rejects.toMatchObject({
+      completedOperations: [
+        mutatedDomainSourceResult("target.md"),
+        mutatedDomainSourceResult("source.md"),
+      ],
+      name: "TrailIntegrityBatchExecutionError",
+      stage: "commit",
+    } satisfies Partial<TrailIntegrityBatchExecutionError>);
+    expect(events).toEqual([
+      "create:target.md",
+      "delete:source.md",
+      "save-plugin-data",
+    ]);
   });
 
   it("compensates target only after a clean reread proves source remained unchanged", async () => {

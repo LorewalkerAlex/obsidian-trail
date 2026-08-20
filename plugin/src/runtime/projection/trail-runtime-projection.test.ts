@@ -9,6 +9,7 @@ import { createTrailRuntimeStore } from "../store/trail-runtime-store";
 import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../../test/trail-test-fixtures";
 import {
   addTrailPendingPlan,
+  projectTrailAuthoritativeStateWithEffects,
   projectTrailEffectiveAuthoritativeState,
   projectTrailEffectiveRuntimeSnapshot,
   removeTrailPendingPlan,
@@ -123,6 +124,45 @@ describe("Trail runtime projection", () => {
     expect(effective.indexes.entityRefsByLabelId.get("label-focus")).toEqual(["issue-a"]);
     expect(effective.indexes.entityRefsByStatusDefinitionId.get("issue-unstarted")).toBeUndefined();
     expect(effective.indexes.entityRefsByStatusDefinitionId.get("issue-started")).toEqual(["issue-a"]);
+  });
+
+  it("projects an explicit effect set without mutating the authoritative base", () => {
+    const configuration = createTrailTestConfiguration();
+    const workspaceState = createTrailTestWorkspaceState();
+    const originalProject = project("Original").value;
+    const committed = buildTrailCommittedRuntimeCandidate({
+      pluginData: { configuration, workspaceState },
+      sources: [{
+        issues: [],
+        kind: "project",
+        milestones: [],
+        project: originalProject,
+        sourcePath: "Trail/Projects/0001 Original.md",
+      }],
+    });
+    const nextConfiguration = { ...configuration, temporal: { timezone: "UTC" } };
+    const nextProject = { ...originalProject, title: "Projected" };
+
+    const projected = projectTrailAuthoritativeStateWithEffects(
+      committed.authoritative,
+      [
+        {
+          after: { kind: "project", value: nextProject },
+          before: { kind: "project", value: originalProject },
+          kind: "replace-entity",
+        },
+        {
+          after: nextConfiguration,
+          before: configuration,
+          kind: "replace-configuration",
+        },
+      ],
+    );
+
+    expect(projected.domain.projectsById.get(originalProject.id)).toEqual(nextProject);
+    expect(projected.configuration).toEqual(nextConfiguration);
+    expect(committed.authoritative.domain.projectsById.get(originalProject.id)).toEqual(originalProject);
+    expect(committed.authoritative.configuration).toEqual(configuration);
   });
 
   it("rejects duplicate pending command IDs", () => {

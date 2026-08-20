@@ -53,7 +53,12 @@ export interface TrailSourceTransitionPlan extends TrailPersistencePlanBase {
 }
 
 export interface TrailIntegrityBatchStage {
-  readonly name: "prepare" | "destructive";
+  /**
+   * prepare: compatibility-preserving creates/replaces/renames
+   * destructive: Domain deletes after preparation
+   * commit: final Plugin Data cutover after the Domain bridge is durable
+   */
+  readonly name: "prepare" | "destructive" | "commit";
   readonly operations: readonly TrailPersistenceOperation[];
 }
 
