@@ -18,6 +18,7 @@ Trail V1 architecture is shaped by the following constraints and goals.
 - Trail must not silently lose, overwrite, or reinterpret authoritative Markdown/configuration on conflict or invalid data.
 - Cross-source changes prefer a detectable duplicate/error outcome over silent source deletion/data loss.
 - External managed-data changes are treated as authoritative persistence changes and are revalidated before becoming writable runtime state.
+- Lifecycle/capability rules must be enforced centrally enough that a different UI surface cannot bypass them.
 
 ### 1.3 Scale
 
@@ -62,8 +63,9 @@ Owns:
 
 - Core Entity/configuration/workspace-state types;
 - values and invariants;
+- legal Project/Issue lifecycle and relationship rules;
 - reference/workspace validation;
-- pure derived rules;
+- pure derived rules such as Project/Milestone Progress and explainable Attention inputs;
 - pure semantic mutation planning.
 
 Domain is independent of React, Obsidian, Markdown parsing, file paths/ranges, persistence implementations, runtime stores, and host APIs.
@@ -78,7 +80,7 @@ Owns physical grammar and schema mechanisms:
 - explicit carrier codecs;
 - parse/serialize field mapping.
 
-Markdown does not own product behavior, runtime state, persistence orchestration, or Obsidian API calls.
+Markdown does not own product behavior, runtime state, persistence orchestration, capability policy, or Obsidian API calls.
 
 ### 2.3 Persistence
 
@@ -134,12 +136,15 @@ Owns read-side derived logic and reusable selection:
 
 - effective-state selection;
 - status/configuration interpretation;
+- effective Project/Issue capability projection;
+- entity presentation/Inspector projection;
+- Progress/Attention/Health inputs and other rebuildable summaries;
 - source-health selection;
 - structural narrowing;
 - shared filter/sort/group/search helpers;
 - page-specific selectors when product pages need them.
 
-Query does not mutate persistence or create a second entity state model.
+Query does not mutate persistence, create a second entity state model, or turn a derived capability/score into authority.
 
 ### 2.8 Application
 
@@ -152,6 +157,8 @@ normalize input
 → map result to UI-facing outcome
 ```
 
+Application accepts semantic intent such as `move issue`, `change project status`, `create workflow issue`, or `delete milestone`; it does not trust a UI-hidden/disabled control as the only guard. It must route mutations through Domain planning/validation so the same rule applies from Board, Search, Full Item, Command Menu, keyboard actions, or future surfaces.
+
 Application does not parse Markdown, call Vault APIs, write persistence directly, or hand-edit Runtime.
 
 ### 2.9 UI
@@ -160,11 +167,11 @@ Owns product composition and interaction/presentation:
 
 - pages/workspaces;
 - reusable entity components;
-- interaction capabilities;
+- capability-driven affordances;
 - primitives/patterns/design system;
 - local drafts and continuous interaction state.
 
-UI reads effective runtime/query state and emits Application intents. It does not call Vault/plugin-data persistence directly.
+UI reads effective runtime/query state and emits Application intents. It does not call Vault/plugin-data persistence directly and does not independently reimplement lifecycle legality with scattered `if project.status === ...` logic.
 
 ### 2.10 Obsidian adapters
 
@@ -182,7 +189,7 @@ Adapters implement lower-level ports and do not own Trail business semantics.
 ### 2.11 Diagnostics, migration, performance
 
 - **Diagnostics** owns development-only structured technical observability.
-- **Migration** owns explicit breaking-schema upgrade workflows separate from normal product mutation.
+- **Migration** owns explicit breaking-schema/configuration upgrade workflows separate from normal product mutation.
 - **Performance** owns benchmarks/profiling and evidence-driven optimization.
 
 None of these becomes Canonical Domain history or a second persistence authority.
@@ -209,6 +216,8 @@ plan(planningState, command)
 Planner is pure. It produces a complete legal logical state transition rather than a partial field patch that relies on a writer to discover business rules later.
 
 `NeedsInput` is returned before creating an illegal optimistic state. Example: entering Completed without an Estimate requests the missing Estimate first.
+
+Project lifecycle/capability constraints are planner-visible semantic rules. For example, a command cannot advance a Backlog Issue to Todo inside an Unstarted Project merely because one UI surface accidentally exposed that action.
 
 ### 3.2 Mutation Plan
 
@@ -289,7 +298,72 @@ Application/Feature code does not duplicate `Vault.process → reread → parse 
 
 Weekly Note uses a separate utility-source repository because it is not Domain Data, while still reusing appropriate Markdown/source I/O mechanisms.
 
-### 3.7 Shared UI capabilities
+### 3.7 Effective entity capability projection
+
+Effective capability is a read-side projection used to make every surface expose the same legal actions.
+
+Conceptually:
+
+```text
+Effective Runtime
++ Project lifecycle category (when present)
++ Issue lifecycle category (when present)
++ relationship/context
++ source/control health when relevant
+→ EffectiveCapabilities
+```
+
+Examples include:
+
+```text
+canCreateIssueInProject
+canAcceptIssueIntoProject
+canMoveIssueOut
+canEditIssuePlanningFields
+canAdvanceIssueStatus
+canCancelIssue
+canUseProjectBoard
+canCreateMilestone
+canEditMilestone
+legalProjectStatusTargets
+```
+
+The projection may be represented as explicit capability fields/queries in implementation; it is not persisted Domain data.
+
+Important rules:
+
+- Projectless Workflow resolves to execution-enabled Issue capability without creating a synthetic Project.
+- Unstarted Project enables Backlog planning but blocks execution advancement.
+- Started Project enables normal planning + execution.
+- Completed/Canceled Projects block normal new child work; Canceled unresolved work exposes cleanup actions such as Cancel/Move Out.
+- Project Status transitions use legal destination sets rather than hard-coded UI names.
+
+UI surfaces consume this result rather than each implementing their own lifecycle matrix. Domain/Application still enforce legality when an intent is submitted; capability projection is not a security/consistency boundary by itself.
+
+### 3.8 Entity presentation projection
+
+Inspector/summary rendering must be based on entity meaning rather than physical carrier shape.
+
+Conceptually:
+
+```text
+Effective Runtime entity
++ inverse/current relationships
++ derived summaries
++ applicable capabilities
+→ EntityPresentationProjection
+```
+
+This allows, for example:
+
+- Project Inspector to show Progress/Attention not stored on Project;
+- Issue Inspector to show current Cycle context although Cycle membership is physically stored by Cycle;
+- UI to omit opaque IDs, Markdown source paths/ranges, raw metadata markers, or unhelpful lifecycle timestamps;
+- storage direction to remain independent from presentation direction.
+
+The projection is page/entity-specific enough to remain meaningful. Do not build a schema-driven universal Inspector that blindly renders every runtime field.
+
+### 3.9 Shared UI capabilities
 
 Generic interaction/rendering mechanisms should be shared when multiple behaviors need them, for example:
 
@@ -309,7 +383,7 @@ Generic interaction/rendering mechanisms should be shared when multiple behavior
 
 Shared primitives provide interaction/accessibility mechanics. Product-specific candidates and rules remain in Query/Application/Domain rather than becoming a giant generic component API.
 
-### 3.8 UI shell, host reuse, and surface ownership
+### 3.10 UI shell, host reuse, and surface ownership
 
 Trail's UI shell follows a host-first placement rule:
 
@@ -348,11 +422,12 @@ The main Trail workspace has one reusable shell contract:
 ```text
 TrailWorkspaceShell
 ├─ LocationBar
+├─ optional contextual disclosure
 ├─ optional ViewBar
 └─ Content
 ```
 
-`LocationBar` owns current location/breadcrumb and object-level actions. `ViewBar` owns collection presentation and collection actions. Its contract must allow compatible capability slots such as Filter, Group, Sort, Display, layout selection, and collection actions even when only a subset is implemented by the current consumer. Deferring a capability must not force a future shell or state-ownership rewrite; conversely, an unimplemented future capability does not justify building a generic view-builder framework now.
+`LocationBar` owns current location/breadcrumb and object-level actions. `ViewBar` owns collection presentation controls. Its contract allows compatible capability slots such as Filter, Group, Sort, Display, layout selection, and collection actions when the consumer actually supports them. A lifecycle capability can remove an unavailable layout (for example Board on a non-Started Project) without changing the underlying Project data projection.
 
 UI state ownership is orthogonal by responsibility:
 
@@ -411,7 +486,7 @@ Composition Root assembles the graph.
 - Mutation must not depend on Application/UI/host adapters; execution uses Persistence contracts rather than Markdown internals.
 - Query must not mutate persistence.
 - Application must not directly parse Markdown or call raw persistence/host APIs.
-- UI must not directly use Vault/plugin-data write mechanisms.
+- UI must not directly use Vault/plugin-data write mechanisms or become the only owner/enforcer of lifecycle legality.
 
 Architectural restrictions should be enforced through module shape, types, lint, and tests where practical rather than relying on documentation alone.
 
@@ -458,7 +533,7 @@ Markdown + plugin data
 → Domain/reference/workspace validation
 → committed Runtime + ownership/indexes
 → effective Runtime
-→ Query/selectors
+→ Query/selectors/capabilities/presentation projections
 → UI
 ```
 
@@ -537,6 +612,8 @@ Source Transition uses a data-loss-averse **destination-first (target-first)** o
 5. authoritative reread/verify source
 6. reconcile resulting authoritative state
 ```
+
+Target capability/relationship legality is resolved before physical movement. Source Transition never changes Issue Status merely to make a Project target acceptable unless the user invoked an explicit compound semantic command that says so.
 
 If source destruction fails after target success, one bounded compensation is attempted only when safety can be established. If safe compensation cannot complete, Trail stops guessing, rereads authoritative state, clears invalid optimism, and surfaces a partial/Data Issue. Detectable duplicate identity is preferred to silent loss.
 
@@ -628,7 +705,7 @@ Current architecture permits source-scoped gating where ownership is reliable an
 
 ```text
 Effective Runtime + temporal context
-→ derived logic
+→ derived rules / capabilities / presentation summaries
 → structural narrowing
 → shared filter/sort/group/search helpers
 → page-specific selection
@@ -646,7 +723,7 @@ Backlog Workflow: Priority → createdAt → stable ID
 Started/Active Workflow: Priority → firstStartedAt → stable ID
 ```
 
-Project Board columns = Status. Current Cycle Board can use Status columns × Project swimlanes. Normal Label is primarily a filter facet; promoted dimensions such as Area may be curated grouping dimensions.
+Project Board columns = Issue Status and Board is exposed only for Started Projects. Projectless is execution-enabled for Issue capabilities but is not represented as a Project Board unless a later dedicated Projectless consumer requires one. Current Cycle Board can use Status columns × Project swimlanes. Normal Label is primarily a filter facet; promoted dimensions such as Area may be curated grouping dimensions.
 
 ### 5.13 Continuous, discrete, and input interaction
 
@@ -662,7 +739,7 @@ Tests follow capability ownership:
 
 ```text
 Domain / Planner
-→ semantics, invariants, plans
+→ semantics, invariants, legal lifecycle transitions, plans
 
 Markdown Core / Codec / Schema
 → grammar, field mapping, canonical serialization
@@ -683,16 +760,18 @@ Application
 → use-case normalization/wiring and semantic outcomes
 
 Query
-→ derived/read behavior
+→ derived/read behavior, effective capabilities, presentation summaries
 
 UI
-→ user interaction and presentation contracts
+→ user interaction and presentation contracts driven by capabilities
 
 Real Obsidian
 → independent host-specific mechanisms and representative end-to-end evidence
 ```
 
 Shared mechanism evidence is reused. Features test new semantics and independent risks rather than reproducing the same host/persistence failure matrix.
+
+Project capability tests should exercise the category matrix at Domain/Query/Application boundaries so a surface-level test is not the only evidence that forbidden mutations stay forbidden.
 
 ### 6.2 Reliability
 
@@ -705,7 +784,8 @@ V1 protects strongly against:
 - duplicate/ambiguous identity;
 - unsafe cross-source destruction;
 - writing with invalid authoritative configuration;
-- optimistic state diverging silently from persistence.
+- optimistic state diverging silently from persistence;
+- UI surfaces bypassing lifecycle/relationship legality.
 
 V1 does not build recursive recovery state machines for low-probability multi-failure combinations. When reliable continuation cannot be established, authoritative reload and explicit read-only/Data Issue boundaries are preferred.
 
@@ -754,6 +834,8 @@ Trail UI and any Obsidian shell-theme integration should share the same token ow
 
 Interactive primitives must support accessible focus-visible behavior, keyboard use where appropriate, clear disabled/selected/pending/error states, and restrained motion.
 
+Capability-driven omission/disablement must still provide enough explanation for blocked high-value actions. For example, attempting/inspecting Done when a Project has non-terminal children should expose the blocking reason and a route to those Issues rather than presenting an unexplained dead control.
+
 ### 6.6 Reuse before build
 
 For generic technical mechanisms prefer:
@@ -769,7 +851,7 @@ Current library choice is an implementation concern; Architecture preserves the 
 
 ### 6.7 Migration
 
-Breaking schema migration is explicit and separated from normal optimistic mutation flow:
+Breaking schema/configuration migration is explicit and separated from normal optimistic mutation flow:
 
 ```text
 preflight
@@ -780,6 +862,8 @@ preflight
 ```
 
 Migration may reuse persistence, codecs, validation, and diagnostics, but does not justify long-term dual parser/version branches.
+
+The Project lifecycle change that removes Project Backlog from logical Status configuration is handled through this explicit configuration-evolution boundary if an existing workspace contains Project Backlog definitions/references.
 
 ## 7. Target Structure
 
@@ -807,6 +891,7 @@ The target preserves these structural properties:
 - Persistence and physical Markdown remain below runtime/application concerns.
 - Runtime distinguishes committed, optimistic, control, and health state.
 - Source Sync owns convergence and external refresh.
+- Query/Application expose shared effective capability and presentation projections so UI surfaces do not fork lifecycle logic.
 - UI/pages compose reusable capabilities rather than each owning a private data stack.
 - `main.ts` remains a thin composition root.
 - Architecture-significant code locations are defined in `design-to-code-map.md`; current implementation gaps are defined only in `implementation.md`.

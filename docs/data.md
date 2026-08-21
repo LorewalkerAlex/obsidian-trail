@@ -26,7 +26,7 @@ C. User Workspace State
 └─ Home composition
 ```
 
-Runtime indexes, optimistic state, source health, progress, attention, usage counts, selector results, and other rebuildable projections are not authoritative persistence.
+Runtime indexes, optimistic state, source health, effective capabilities, progress, attention, health, usage counts, selector results, and other rebuildable projections are not authoritative persistence.
 
 ### 1.1 Common value types
 
@@ -68,7 +68,7 @@ ProjectRecord {
 }
 ```
 
-Project does not persist Issue/Milestone collections, derived Progress/Health, or Project actual-start/actual-end timestamps.
+Project does not persist Issue/Milestone collections, derived Progress/Attention/Health, effective capability flags, previous/reopen Status, manual rank, or Project actual-start/actual-end timestamps.
 
 ### 1.4 Milestone record
 
@@ -82,7 +82,7 @@ MilestoneRecord {
 }
 ```
 
-Milestone does not persist Issue IDs, Labels, Priority, Estimate, Status, completion, or activity timeline.
+Milestone does not persist Issue IDs, Labels, Priority, Estimate, Status, completion, manual order/rank, or activity timeline.
 
 ### 1.5 Issue record
 
@@ -161,6 +161,18 @@ StatusDefinitionRecord {
 }
 ```
 
+`category` uses the shared system enum, but validation constrains entity-type applicability:
+
+```text
+Issue definition category
+→ Backlog | Unstarted | Started | Completed | Canceled
+
+Project definition category
+→ Unstarted | Started | Completed | Canceled
+```
+
+Project Status configuration therefore has no Backlog bucket.
+
 Default and ordering are category-scoped configuration:
 
 ```text
@@ -170,12 +182,26 @@ StatusCategoryConfig {
 }
 
 WorkflowStatusConfig {
-  issue: Map<StatusCategory, StatusCategoryConfig>
-  project: Map<StatusCategory, StatusCategoryConfig>
+  issue: {
+    Backlog: StatusCategoryConfig
+    Unstarted: StatusCategoryConfig
+    Started: StatusCategoryConfig
+    Completed: StatusCategoryConfig
+    Canceled: StatusCategoryConfig
+  }
+
+  project: {
+    Unstarted: StatusCategoryConfig
+    Started: StatusCategoryConfig
+    Completed: StatusCategoryConfig
+    Canceled: StatusCategoryConfig
+  }
 }
 ```
 
-Each entity type/category has at least one definition. `defaultId` must be a member of the same category's ordered definitions.
+Each applicable entity type/category has at least one definition. `defaultId` must be a member of the same entity type/category's ordered definitions.
+
+No `previousStatusDefinitionId`, lifecycle-transition history, or persisted capability mask is required for Project reopen/capability behavior.
 
 ### 1.8 Label configuration
 
@@ -247,6 +273,8 @@ Favorite array order is authoritative user ordering.
 
 Home composition belongs to User Workspace State. V1's product layout is fixed enough that a full free-form widget-builder schema is not required; persisted Home shape is extended only when a supported Home customization requires it.
 
+Future Project focus/health ranking remains a runtime/query policy and does not add persisted Project score/rank fields merely to drive Home.
+
 ## 2. Identity & References
 
 ### 2.1 Core identity
@@ -291,6 +319,12 @@ Favorites and similar workspace-state references store enough target identity to
 
 Native Obsidian links are navigational/document relationships and do not become a competing stable-ID Domain relationship unless the Domain explicitly defines one.
 
+### 2.5 Projectless is absence, not synthetic identity
+
+Projectless Workflow Issue is represented only by absent `Issue.projectId` (and therefore absent `milestoneId`). Trail does not persist a hidden Project record or synthetic Project ID to obtain execution capability.
+
+The execution-enabled behavior of Projectless is derived from relationship context at runtime.
+
 ## 3. Authority & Derivation
 
 ### 3.1 Domain Data
@@ -304,6 +338,8 @@ Configuration defines current system semantics/defaults and may be edited/replac
 A configuration mutation is complete only when all affected Domain Data and Workspace State references remain legal.
 
 Changing a Status name/default/order does not reinterpret existing Entity IDs. Removing or semantically changing a referenced definition requires reference resolution.
+
+Project configuration cannot introduce a Project StatusDefinition in Backlog; Issue configuration continues to require Backlog definitions/defaults because every new Workflow Issue begins there.
 
 ### 3.3 User Workspace State
 
@@ -319,7 +355,12 @@ The following are rebuildable and are not authoritative persistence:
 - current Cycle lookup;
 - label usage counts;
 - Status/category lookup indexes;
-- Progress, Health, Attention, Due Soon, Overdue, Reminder;
+- Project/Issue effective capability projections;
+- entity presentation/Inspector projections;
+- Project/Milestone Progress;
+- Project temporal Attention and cleanup-attention reasons;
+- Health, Due Soon, Overdue, Reminder;
+- future consumer-specific Project focus/ranking scores;
 - actual activity timelines;
 - selector/result caches;
 - optimistic/pending state;
@@ -345,7 +386,6 @@ Vault
 │  │     └─ Cycles.md
 │  └─ Utility Markdown
 │     └─ Collections/Weekly Update.md
-│
 └─ ordinary Obsidian Markdown
 
 .obsidian/plugins/trail/data.json
@@ -492,7 +532,7 @@ A Project file contains:
 
 Milestones and Issues retain explicit `projectId`; physical placement is validated against that reference but does not replace it.
 
-Physical record order is not business sorting/rank.
+Project lifecycle does not move Issue/Milestone records to different physical sections/files or rewrite their logical content. Physical record order is not business sorting/rank.
 
 ### 4.8 Triage carrier
 
@@ -511,6 +551,8 @@ milestoneId absent
 ```
 
 Triage and project-less Workflow Issues remain separate carriers because their Domain context/lifecycle semantics differ.
+
+Projectless execution capability is not serialized into this carrier; it is derived from missing Project relationship plus Domain capability rules.
 
 ### 4.10 Cycle carrier
 
@@ -603,6 +645,8 @@ File-backed Initiative/Project IDs live in frontmatter and are not repeated in t
 
 Conditional Domain requiredness is not misrepresented as unconditional physical requiredness. For example, Issue `statusDefinitionId` is structurally optional in the shared Issue grammar but required for Workflow context by Domain validation.
 
+No physical Project carrier field changes are required for the four-state lifecycle because `statusDefinitionId` already references configuration; legality is validated through the referenced Project StatusDefinition category.
+
 ### 4.13 Optional values and set serialization
 
 Unset optional metadata is omitted instead of serialized as `null`.
@@ -613,7 +657,7 @@ Set-backed values serialize as deterministic arrays. ID sets use lexical seriali
 
 All persisted Timestamp fields use Unix epoch milliseconds numbers.
 
-Persistence does not store timezone offset, temporal precision, date-only flags, display formatting, overdue/due-soon flags, or derived duration.
+Persistence does not store timezone offset, temporal precision, date-only flags, display formatting, overdue/due-soon flags, progress, attention, health, or derived duration.
 
 ### 4.15 Plugin `data.json`
 
@@ -628,11 +672,11 @@ Logical top level:
 
 Configuration conceptually contains statuses, labels, cycle settings, and temporal settings. Workspace state contains Custom Views, Favorites, and Home state.
 
-Within Status persistence, fixed hierarchy (`issue/project` → category) may encode entity type/category context so individual definition entries need not repeat those fields. Definition IDs remain opaque and stable.
+Within Status persistence, fixed hierarchy (`issue/project` → applicable category) may encode entity type/category context so individual definition entries need not repeat those fields. Definition IDs remain opaque and stable. Project status persistence has no Backlog category branch.
 
 LabelGroups/Labels are stored as mutable definitions with explicit group IDs. Favorites use authoritative array ordering. Set-backed arrays have no business order unless their contract explicitly says otherwise.
 
-Machine/session-local UI state does not become synchronized workspace state merely because `data.json` exists.
+Machine/session-local UI state, capability state, Inspector state, and derived Project summary state do not become synchronized workspace state merely because `data.json` exists.
 
 ### 4.16 Physical Schema Registry
 
@@ -683,7 +727,7 @@ Field Validation
 → IDs/timestamps/enums/arrays/text
 
 Domain Validation
-→ context/lifecycle/field invariants
+→ context/lifecycle/field/capability invariants
 
 Reference Validation
 → stable reference existence and scope
@@ -706,7 +750,9 @@ How much of the product remains writable under a known Data Issue is an Architec
 
 `data.json` is referenced by Domain records, so invalid configuration is not silently replaced with fresh defaults.
 
-Configuration load/update must reject states that would leave missing/invalid Status, Label, default, Custom View, or Favorite references. Old last-known-good runtime data may be useful to Architecture for viewing/recovery, but is not authority for further writes after persistence becomes invalid.
+Configuration load/update must reject states that would leave missing/invalid Status, Label, default, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog.
+
+Old last-known-good runtime data may be useful to Architecture for viewing/recovery, but is not authority for further writes after persistence becomes invalid.
 
 ### 5.5 Canonical normalization
 
@@ -736,6 +782,8 @@ old persisted data
 ```
 
 Normal startup does not maintain long-term dual parsers or silently migrate a subset of files. Migration execution/recovery mechanics belong to Architecture/Implementation; the Data contract is one current schema after a successful migration.
+
+The Project four-state lifecycle changes the logical Status configuration contract. If existing persisted Project configuration contains a Backlog branch or Project definitions in Backlog, implementation must treat removal as an explicit configuration migration/reference-resolution concern rather than silently reinterpret those definitions.
 
 ### 5.8 Native links
 

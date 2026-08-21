@@ -11,7 +11,7 @@ Trail V1 targets **Obsidian-native architecture with Linear presentation**:
 - Obsidian owns the window, tabs, Ribbon, sidebars, splits, resize/collapse behavior, and other host workspace mechanics.
 - Linear is the primary visual and interaction reference where Trail has an equivalent responsibility.
 - Trail owns product-specific composition, semantics, and the gaps that neither Obsidian nor an existing reusable primitive already solves.
-- UI design must not introduce new persisted Domain facts merely to support presentation, ranking, attention, color, or ordering when those answers can be derived from existing facts.
+- UI design must not introduce new persisted Domain facts merely to support presentation, ranking, attention, color, ordering, or capability when those answers can be derived from existing facts.
 
 ### 1.1 Reference priority
 
@@ -36,7 +36,7 @@ For each UI area that benefits from visual evidence, future documentation may ad
 - where Trail intentionally differs;
 - which dimensions or colors remain subject to full-shell calibration.
 
-Useful current Linear references include:
+Useful current Linear visual anchors include:
 
 - UI refresh: <https://linear.app/changelog/2026-03-12-ui-refresh>
 - Design-refresh process and header system: <https://linear.app/now/behind-the-latest-design-refresh>
@@ -45,9 +45,12 @@ Useful current Linear references include:
 - Filters: <https://linear.app/docs/filters>
 - Peek: <https://linear.app/docs/peek>
 - Priority: <https://linear.app/docs/priority>
+- Project overview/details: <https://linear.app/docs/project-overview>
 - Project milestones: <https://linear.app/docs/project-milestones>
 - Due dates: <https://linear.app/docs/due-dates>
 - Issue selection: <https://linear.app/docs/select-issues>
+
+For Project UI specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model.
 
 ## 2. Visual System and Calibration
 
@@ -73,7 +76,37 @@ The V1 reference environment is **Obsidian Default Dark + Trail Linear-inspired 
 
 Exact pixel dimensions, color values, opacity, spacing, and breakpoints should be frozen only after the relevant shell exists in real Obsidian and can be compared side by side with current Linear references.
 
-### 2.2 Reuse before new visual primitives
+### 2.2 Transferable Linear token family
+
+A useful starting token family from maintained Linear references is:
+
+```text
+primary           #5e6ad2
+on-primary        #ffffff
+primary-hover     #828fff
+primary-focus     #5e69d1
+
+ink               #f7f8f8
+ink-muted         #d0d6e0
+ink-subtle        #8a8f98
+ink-tertiary      #62666d
+
+canvas            #010102
+surface-1         #0f1011
+surface-2         #141516
+surface-3         #18191a
+surface-4         #191a1b
+
+hairline          #23252a
+hairline-strong   #34343a
+hairline-tertiary #3e3e44
+```
+
+Useful radius anchors are `4 / 6 / 8 / 12 / 16 / 24 / pill`; useful spacing anchors are `4 / 8 / 12 / 16 / 24 / 32 / 48 / 96`.
+
+These are calibration inputs rather than an obligation to reproduce every source value unchanged inside Obsidian.
+
+### 2.3 Reuse before new visual primitives
 
 Trail should not create new glyphs or interaction primitives when an existing mature equivalent is suitable.
 
@@ -88,7 +121,7 @@ Obsidian-native capability / icon
 
 When Linear uses a recognizable visual concept and an equivalent existing Obsidian/Lucide glyph is available, Trail should use the existing glyph and tune size, stroke, opacity, state, and placement to match the target presentation rather than drawing a new icon set.
 
-### 2.3 Stable visual identity for Domain concepts
+### 2.4 Stable visual identity for Domain concepts
 
 The same Domain concept uses the same visual identity everywhere. Information density may change by surface, but the symbol itself must not change.
 
@@ -149,11 +182,11 @@ Search and Capture are high-frequency global actions in the navigation header, n
 
 Project children under `Projects` are navigation shortcuts, not the canonical Project hierarchy and not Favorites.
 
-The sidebar should show a bounded set of Projects that are currently most relevant rather than every ongoing Project or a manual user-maintained ordering.
+The sidebar should show a bounded set of Projects that are currently most relevant rather than every Project or a manual user-maintained ordering.
 
-Ranking should derive from existing canonical and derived facts whenever practical. Candidate signals may include Project Priority/Due/Status and aggregate Issue facts such as Priority, Due, Cycle relevance, non-terminal work, and retained lifecycle timestamps.
+Ranking should derive from existing canonical and derived facts whenever practical. Candidate signals may include Project Priority/Due/Status, Progress/Health/Attention when those derived policies exist, and aggregate Issue facts such as Priority, Due, Cycle relevance, non-terminal work, and retained lifecycle timestamps.
 
-Do not add a persisted `rank`, `activityPriority`, `updatedAt`, or similar fact solely to drive this sidebar ordering.
+Do not add a persisted `rank`, `activityPriority`, `focusScore`, `healthScore`, `updatedAt`, or similar fact solely to drive this sidebar or future Home focus ordering.
 
 The exact top-N size, signal weights, decay rules, and tie-breakers remain consumer-specific Query/UI decisions to be resolved when the ranking is implemented and calibrated.
 
@@ -180,6 +213,7 @@ The main Trail workspace uses:
 
 ```text
 Location Bar
+optional Context disclosure
 optional View Bar
 Content
 ```
@@ -205,17 +239,39 @@ Breadcrumbs describe Trail product structure, not visit history. Ancestors are n
 
 Back/forward history remains an Obsidian/browser host responsibility and is not duplicated in the Trail Location Bar.
 
-The right side contains only actions that belong to the current location/object, such as Inspector/Details toggle or a low-frequency overflow menu when applicable. If a location has no such action, no empty action shell is rendered merely for symmetry.
+The right side contains only actions that belong to the current location/object, such as Inspector/Details toggle, Project context disclosure, or a low-frequency overflow menu when applicable. If a location has no such action, no empty action shell is rendered merely for symmetry.
 
 A large repeated page title is not required when the Location Bar already establishes the current object and the content does not need an additional title hierarchy.
 
 In narrow panes, preserve the terminal location first and progressively collapse middle ancestry and low-priority actions rather than allowing the bar to overflow horizontally.
 
-### 5.2 View Bar
+### 5.2 Project context disclosure
+
+Project description is narrative context, not an Inspector property row and not a separate heavyweight Overview page.
+
+Project Workspace may expose a lightweight context/info affordance in the Location Bar. When opened, the Project's lightweight Markdown description appears inline below the Location Bar and above the View Bar/content:
+
+```text
+Projects / Trail                         [context]  ···
+──────────────────────────────────────────────
+
+Trail is an Obsidian-native personal project...
+[[UI Design]]
+[[Technical Notes]]
+
+──────────────────────────────────────────────
+Filter                 [layout]        Display
+```
+
+Collapsed state removes the description region without changing Project location.
+
+The description may use ordinary lightweight Markdown and Obsidian wikilinks. Trail does not introduce `relatedNoteIds[]` merely to imitate Linear Resources/Documents; ordinary Obsidian notes/backlinks remain the document layer.
+
+### 5.3 View Bar
 
 The View Bar exists only when the current content is a collection with meaningful presentation controls.
 
-For Project Workspace, the V1 target is intentionally small:
+For an In Progress Project, the V1 target is intentionally small:
 
 ```text
 Filter        [single List/Board toggle]        Display
@@ -223,31 +279,48 @@ Filter        [single List/Board toggle]        Display
 
 The List/Board switch occupies one control slot. Its icon changes with layout state and the tooltip states the action clearly. Whether the visible glyph represents current state or target state is a visual-calibration detail; the control must never require two permanent peer buttons merely to represent a binary toggle.
 
-`Create Issue` is not a View Bar control. Contextual creation belongs to the collection/group surface itself.
+Not Started, Done, and Cancelled Projects are List-only because Board is an execution workflow surface. Their View Bar therefore omits the List/Board toggle rather than showing an enabled path to a presentation the current Project cannot use.
+
+`Create Issue` is not a generic View Bar configuration control. Exact placement of the Project-local create affordance is a composition detail, but it must not visually imply that creation inherits a Todo/Started/Completed group.
 
 `Display` is not a generic view builder. In Project Workspace it primarily controls which supported secondary properties are visible on Issue rows/cards. V1 does not need user-configurable Grouping, Sub-grouping, manual ordering, or a generic Sort builder here.
 
 ## 6. Project Workspace
 
-### 6.1 One underlying Issue collection
+### 6.1 Data projection is lifecycle-independent
 
-Project Workspace is one Project-scoped Workflow Issue collection presented as List or Board.
+Project Workspace always describes the actual current Project data. Project lifecycle changes available mutations/presentations, not the child facts shown.
 
 ```text
-current Project Workflow Issues
-→ layout Status projection
+actual Project Workflow Issues
+→ Status projection
 → optional Filter visibility
 → automatic ordering inside each visible Status
-→ List or Board presentation
+→ supported presentation for current Project capability
 ```
 
-Status is the fixed primary classifier. Filter does not redefine Status structure; it only decides whether an otherwise eligible Issue is visible.
+A Project can therefore be Cancelled while still showing Backlog/Todo/Started child Issues. Those children are unresolved cleanup work, not hidden merely because the Project was cancelled.
 
-### 6.2 Board Status projection
+Project Status must not be used as a shortcut for rewriting, filtering away, or fabricating child data.
 
-Board is the execution-focused presentation.
+### 6.2 Lifecycle-dependent workspace role
 
-Its visible Status projection contains the active workflow categories:
+Project lifecycle has four UI roles:
+
+| Project lifecycle | Workspace role | Layout |
+| --- | --- | --- |
+| Not Started | planning-only | List |
+| In Progress | planning + execution | List / Board |
+| Done | settled review | List |
+| Cancelled | cleanup/review | List |
+
+Projectless is not a Project UI, but for Issue operation capability it behaves like an execution-enabled In Progress context.
+
+### 6.3 Board Status projection
+
+Board is the execution-focused presentation and is available only for In Progress Projects.
+
+Its visible Status projection contains:
 
 ```text
 Unstarted   → default presentation example: Todo
@@ -257,15 +330,15 @@ Completed   → default presentation example: Done
 
 Backlog and Canceled work do not appear as normal Board columns.
 
-If the Workspace config defines multiple concrete Issue StatusDefinitions inside one of these categories, the Board preserves the concrete configured Statuses and configured order inside the included categories rather than collapsing Domain identity into a hard-coded three-string schema.
-
-Board columns therefore remain concrete Status presentation while the category projection decides which parts of the lifecycle the Board is intended to surface.
+If Workspace configuration defines multiple concrete Issue StatusDefinitions inside one included category, Board preserves those concrete configured Statuses and configured order rather than collapsing Domain identity into hard-coded strings.
 
 Dragging an Issue card across columns means **Status change only**. Same-column drag does not create a persisted manual order.
 
-### 6.3 List Status projection
+Board does not become a creation-by-column mechanism. New normal Workflow Issues are always created in Backlog, so a Todo/Started/Done column `+` must not silently create directly into that Status.
 
-List is the complete planning/review presentation and includes the full workflow lifecycle.
+### 6.4 List Status projection
+
+List is the complete planning/review presentation and includes the full Workflow Issue lifecycle.
 
 Default category order is:
 
@@ -277,7 +350,7 @@ Backlog
 Canceled
 ```
 
-With the default Status names this reads naturally as:
+With default Status names this reads naturally as:
 
 ```text
 Done
@@ -287,13 +360,11 @@ Backlog
 Cancelled
 ```
 
-Concrete StatusDefinitions retain their configured order inside the relevant category.
-
-List therefore answers “how is all Project work arranged?” while Board emphasizes the work that is queued, active, or completed in the execution flow.
+Concrete StatusDefinitions retain configured order inside the relevant category.
 
 Status sections may be collapsible UI state. Collapse state is presentation state, not Domain data.
 
-### 6.4 Filter
+### 6.5 Filter
 
 Project Filter is deliberately simpler than Linear's general filter system.
 
@@ -310,38 +381,81 @@ A filter does not:
 - redefine Status grouping;
 - define ordering;
 - mutate entity properties;
-- automatically seed arbitrary properties during creation;
+- seed arbitrary properties during creation;
 - justify new canonical data fields.
 
-Precise combination semantics remain a page-specific filtering contract rather than a generic expression engine.
+Milestone and derived attention entries may apply a temporary Project Filter as a navigation shortcut. The resulting filter remains represented by the normal Filter UI/chip and is cleared there rather than maintaining a second hidden Inspector filter state.
 
-### 6.5 Contextual creation
+### 6.6 Workflow Issue creation
 
-Global Capture and collection-local creation are separate intents.
+Global Capture and Project-local creation are separate intents:
 
 ```text
 Navigation Capture
-→ create Triage Issue
+→ Triage Issue
 
-Project Status +
-→ create Workflow Issue in current Project and explicit Status
+Project-local Create Issue
+→ Workflow Issue
+→ current Project relation
+→ default Issue Backlog StatusDefinition
 ```
 
-A Board column `+` or List Status-section `+` may seed the structural context explicitly represented by that creation surface: current Project and current Status.
+The creation surface does **not** seed Todo/Started/Completed Status from a nearby List section or Board column.
 
-Arbitrary active filters such as Priority, Label, Due, or other display criteria are not silently inherited by a newly created Issue.
+This replaces the earlier idea that a `+` in a Status section/column would inherit that Status. Every normal Workflow Issue is born in Backlog first; execution advancement is a separate user action subject to Project capability.
 
-### 6.6 Automatic ordering
+In a Not Started Project, the new Backlog Issue can be planned but cannot advance into Todo/Started execution. In an In Progress Project, it can later advance normally. Done/Cancelled Projects do not expose Project-local creation.
+
+Exact final placement of the create affordance remains a calibration/composition decision; the semantic contract above is fixed.
+
+### 6.7 Automatic ordering
 
 V1 does not expose manual ordering for Project Issues and does not persist rank/position facts solely to preserve UI order.
 
 Within each visible Status, default ordering starts with explicit **Priority**.
 
-Within the same Priority level, the ordering policy should keep related work visually coherent by clustering Milestone- and Label-related Issues instead of interleaving equivalent groups unnecessarily. Within a coherent cluster, existing temporal facts such as Due and `createdAt` provide lower-level ordering signals/tie-breakers.
+Within the same Priority level, ordering should keep related work visually coherent by clustering Milestone- and Label-related Issues instead of interleaving equivalent groups unnecessarily. Within a coherent cluster, existing temporal facts such as Due and `createdAt` provide lower-level ordering signals/tie-breakers.
 
-The exact algorithm is intentionally not frozen yet. It must remain replaceable behind Query/page-specific ordering policy so later evidence can improve clustering, time weighting, or tie-breakers without changing Domain data, persistence schema, or Issue presentation components.
+The exact algorithm remains replaceable behind Query/page-specific ordering policy so later evidence can improve clustering, time weighting, or tie-breakers without changing Domain data, persistence schema, or Issue presentation components.
 
-The extension point is an **algorithm/policy seam**, not a new user-maintained ranking field and not a speculative generic sorting framework.
+### 6.8 Effective Project/Issue capability
+
+UI controls are driven by one effective capability projection rather than component-local Status checks.
+
+Conceptually:
+
+```text
+Project lifecycle
++ Issue lifecycle
++ relationship/context
++ requested action
+→ effective capabilities
+→ visible/enabled UI controls
+```
+
+High-level Project capability matrix:
+
+| Capability | Not Started | In Progress | Done | Cancelled |
+| --- | ---: | ---: | ---: | ---: |
+| Read/filter/inspect current child data | yes | yes | yes | yes |
+| Create child Issue | yes → Backlog | yes → Backlog | no | no |
+| Accept moved-in Backlog Issue | yes | yes | no | no |
+| Accept moved-in Todo/Started Issue | no | yes | no | no |
+| Edit/plan Backlog child | yes | yes | no | no |
+| Advance Backlog → execution | no | yes | no | no |
+| Normal Issue workflow | no | yes | no | no |
+| Cancel child Issue | yes where legal | yes | normally unnecessary | yes for unresolved cleanup |
+| Move child Issue out | yes | yes | yes | yes |
+| Create/edit Milestone | yes | yes | no | no |
+| Board | no | yes | no | no |
+
+Not Started is therefore **planning-capable, execution-disabled**, not read-only.
+
+If a Not Started Project contains an Issue already in Todo/Started because the Project was reopened from a terminal state, Trail does not rewrite it. Normal execution controls remain unavailable; legal cleanup such as Cancel or Move Out remains available.
+
+A target Project picker also consumes effective capability. If the current Issue cannot legally move to a target Project without changing Status, that target is unavailable. Normal Move never silently rewrites Status.
+
+Projectless Issue context resolves to normal execution-enabled Issue capabilities without inventing a synthetic Project.
 
 ## 7. Issue Row and Board Card
 
@@ -463,13 +577,56 @@ Peek
 → read hidden detail without leaving the collection
 
 Full Item
-→ edit the entity
+→ deeply edit the entity/content
 
 Inspector
-→ edit structured properties for the current primary context/entity
+→ structured information/actions for the current primary context/entity
 ```
 
-### 8.1 Peek
+### 8.1 Inspector reads entity meaning, not physical Markdown metadata
+
+Inspector is built from the meaningful effective entity presentation projection, not by rendering whichever fields happen to appear in the entity's HTML JSON metadata block.
+
+Conceptually:
+
+```text
+canonical Domain facts
++ effective Runtime relationships
++ query-derived information
++ current lifecycle/context
+→ entity presentation projection
+→ Inspector
+```
+
+Consequences:
+
+- a value may appear in Inspector even when physically stored on another authoritative record, for example current Cycle membership derived from `Cycle.issueIds`;
+- physical identifiers, carrier paths, markers, parser ranges, and implementation timestamps do not appear merely because they exist;
+- derived Progress/Attention may appear even though they are not persisted fields;
+- storage relationship direction does not dictate the UI's presentation direction;
+- Inspector must not become a runtime/debugger dump.
+
+General rule:
+
+> Having data is not sufficient reason to display it.
+
+Useful semantic Inspector sections are:
+
+```text
+Properties
+→ editable canonical facts
+
+Context
+→ important relationships where useful
+
+Progress / Attention / other summaries
+→ explainable derived information
+
+Info
+→ read-only lifecycle/history only when it has real product value
+```
+
+### 8.2 Peek
 
 Peek exists primarily to show Issue detail that List/Board intentionally omit.
 
@@ -482,29 +639,50 @@ It is:
 - opened/closed without navigating away from the current collection;
 - hosted as a floating Trail surface inside the main workspace rather than by repurposing Obsidian's persistent right sidebar.
 
-Peek may show title, full lightweight description, Status, Priority, Milestone, full Label names, Due, Estimate, Cycle, Project where useful, and retained temporal facts such as creation time when useful for inspection.
+Peek may show title, full lightweight description, Status, Priority, Milestone, full Label names, Due, Estimate, Cycle, Project where useful, and retained temporal facts when genuinely useful for inspection.
 
-Peek is not the primary editing surface. V1 does not require it to host the complete property-editing system merely because those properties are visible there.
+Peek is not the primary editing surface. It does **not** change the persistent Inspector target.
 
-When Peek is open, moving focus among adjacent supported items may update the preview. Peek does **not** change the persistent Inspector target.
+Space/Esc and adjacent-item keyboard browsing are desirable mature patterns, with exact shortcut binding verified during implementation.
 
-### 8.2 Full Item
+### 8.3 Issue Full Item
 
 Full Item is entered when the user intends to edit/deeply work on an entity rather than merely inspect it.
 
 In V1 it replaces the main content inside the same Trail tab. It does not normally create a new Obsidian tab.
 
-For Issue Full Item, the main view is editing-first:
+Issue Full Item uses:
 
-- title and description/content dominate the main surface;
-- long-form editing decisions are resolved separately from this current slice;
-- structured properties do not turn the main editor into a large form.
+```text
+Main View
+→ inline-editable title
+→ lightweight Markdown body/content
 
-### 8.3 Inspector
+Right Inspector
+→ Status
+→ Priority
+→ Milestone
+→ Labels
+→ Due
+→ Estimate
+→ Cycle/context as applicable
+```
 
-Inspector is persistent contextual structured-property UI hosted in Obsidian's right split when appropriate.
+The title is directly editable without permanent Edit/Save/Cancel chrome.
 
-It follows the **current primary Trail location/entity**, not transient hover, keyboard focus, multi-selection, or Peek target.
+The body is an Obsidian-like Markdown editing surface that reuses mature Obsidian/CodeMirror conventions where possible: keyboard behavior, cursor/selection, Markdown syntax, lists/checklists, code, wikilinks, and host context-menu expectations. Trail owns the entity/body boundary; it is not a native whole-note leaf because an Issue may be an embedded H2 record inside a managed carrier.
+
+Markdown checklists inside Issue body remain ordinary execution notes/steps. They are not Sub-issues, Board items, Status-bearing entities, or automatic Progress contributors.
+
+Native `[[wikilinks]]` can connect an Issue body to ordinary Obsidian notes. Long-form knowledge remains in those notes rather than creating a second Trail document domain.
+
+Property edits in Inspector must not remount/reload the whole Full Item editor or destroy cursor/scroll state.
+
+Physical heading translation between user-facing body heading depth and reserved managed H1/H2 structure remains deferred until the editor implementation is closed.
+
+### 8.4 Persistent Inspector targeting
+
+Inspector follows the **current primary Trail location/entity**, not transient hover, keyboard focus, multi-selection, or Peek target.
 
 Examples:
 
@@ -515,22 +693,241 @@ Cycle               → Cycle Inspector
 Issue Full Item     → Issue Inspector
 ```
 
-Therefore, peeking an Issue while remaining in Project Workspace leaves the right sidebar as Project Inspector. Entering Issue Full Item changes the editing context and may show Issue Inspector.
-
-For Issue Full Item:
-
-```text
-Main View
-→ title / description / content editing
-
-Issue Inspector
-→ Status / Priority / Milestone / Labels / Due / Estimate / Cycle
-   and other structured actions appropriate to the side surface
-```
+Peeking Issue B while remaining in Project A Workspace leaves Project A Inspector visible. Entering Issue B Full Item changes the editing context and may show Issue B Inspector.
 
 Inspector property rows reuse the same visual grammar and picker primitives used everywhere else. Browsing state should be symbol-heavy and compact; precise editing state includes explicit value names.
 
-## 9. Responsive Behavior
+## 9. Project Inspector
+
+Project Inspector is the persistent structured side view for the current Project. It complements the main Issue collection rather than duplicating Project description or building a separate Overview page.
+
+Target composition:
+
+```text
+Project Inspector
+
+Properties
+────────────
+◉ In Progress
+◇ Initiative A
+▥ High
+● ●
+◷ Sep 15
+
+Progress
+────────────
+████████████░░░░░░    67%
+
+Attention
+────────────
+██ ███ █████████
+
+Milestones                                  +
+────────────
+◇ Foundation                           100%
+◇ UI baseline                           67%
+◇ Release                                —
+```
+
+### 9.1 Properties
+
+Normal Project property rows are:
+
+- Status;
+- Initiative;
+- Priority;
+- Labels;
+- Due.
+
+Project title/description remain narrative/main-context content rather than duplicating every field in Inspector.
+
+Project metadata such as title/description/Initiative/Priority/Due/Labels can remain editable in terminal Projects where the operation is organization/correction rather than resumed execution.
+
+### 9.2 Project Status dropdown and transition matrix
+
+Status is changed by clicking the visible Project Status row and choosing among legal destination statuses. There is no need for a separate lifecycle wizard when a normal dropdown can present the legal actions clearly.
+
+The category-level transition matrix is:
+
+```text
+Not Started → In Progress | Cancelled
+In Progress → Done | Cancelled
+Done        → Not Started | In Progress
+Cancelled   → Not Started | In Progress
+```
+
+Concrete StatusDefinitions belonging to the legal target categories can be presented according to configured names/order.
+
+`In Progress → Not Started` is unavailable.
+
+Selecting Done is guarded by Domain rules. If non-terminal child Issues remain, the option must explain why completion is unavailable and offer a direct route/filter to those blocking Issues rather than silently completing/cancelling them.
+
+Reopening Done/Cancelled simply means selecting a legal Not Started or In Progress status. No hidden previous status is restored.
+
+Changing Project Status never rewrites child Issue Status or relations.
+
+### 9.3 Progress
+
+Project Progress uses a Linear-like simple horizontal progress bar plus compact percentage:
+
+```text
+Progress
+────────────────────
+████████████░░░░░░    67%
+```
+
+The bar answers only:
+
+> How much current non-cancelled Project work is complete?
+
+Computation is owned by Domain/Query:
+
+```text
+Completed
+──────────────
+all current child Issues except Canceled
+```
+
+Canceled Issues are ignored completely. Started work receives no partial completion weight; Estimate/Priority/Due do not weight the result.
+
+If the effective denominator is empty, display `—`/unavailable rather than fabricated 0%/100%.
+
+Hover/focus may expose exact counts such as `8 / 12 completed`. The default Inspector need not spell those counts out in permanent prose.
+
+Project Status remains independent. An In Progress Project can legitimately show 100% until the user explicitly marks the Project Done.
+
+### 9.4 Temporal Attention bar
+
+Temporal Attention is a second horizontal visualization with a different question from Progress:
+
+> Of unfinished work that already has a Due, how is time pressure distributed?
+
+Input:
+
+```text
+child Issue
+AND StatusCategory not Completed/Canceled
+AND Due present
+```
+
+Backlog participates whenever it has Due; whether an Issue has started is irrelevant.
+
+The mutually exclusive segments are:
+
+```text
+[ Overdue ][ Due This Week ][ Later Due ]
+```
+
+Done/Canceled/Due-less Issues do not participate.
+
+Default rendering is graphical and low-text, for example:
+
+```text
+Attention
+────────────────────
+███ █████ ███████████
+```
+
+Semantic color/emphasis distinguishes Overdue, Due This Week, and Later Due. Exact colors are calibrated with the dark design system rather than hard-coded by this document.
+
+Permanent legends/count sentences are not required in the compact Inspector. Hover/focus provides exact segment name/count/accessibility text. Clicking a segment applies the corresponding temporary Project Filter so the user can immediately inspect the work represented by that segment.
+
+This is not a persisted `Health` score and is not a Status chart.
+
+### 9.5 Broader Project Attention and future Health
+
+Temporal Attention is one projection, not the complete definition of “things needing attention.”
+
+A Cancelled Project with unresolved non-terminal child Issues should expose a compact Project-attention indicator/reason because the Project lifecycle has ended while work still needs disposition. Clicking the signal can filter to unresolved child Issues.
+
+Future Health may combine explainable evidence such as Progress, temporal pressure, Project/Milestone Due, lifecycle context, and activity. The score/weighting is intentionally not frozen until an actual consumer such as Home Project focus needs it.
+
+Do not persist `health`, `healthScore`, or `focusScore` merely to support future ranking.
+
+### 9.6 Milestone summary and quick filter
+
+Project Inspector Milestones are compact Project checkpoint summaries:
+
+```text
+Milestones                                  +
+──────────────────────────────────────────────
+◇ Foundation                           100%
+◇ UI baseline                           67%
+◇ Release                                —
+```
+
+Rules:
+
+- Milestone name is always visible; it is not reduced to an anonymous marker.
+- Progress uses the same simple Completed/non-Canceled formula within the Milestone's associated Issue scope.
+- No manual completion checkbox/status exists.
+- No persisted manual Milestone ordering/rank is introduced.
+- If ordering needs a default, use existing semantics such as Due followed by a stable deterministic fallback rather than a new rank field.
+
+Clicking a Milestone applies a temporary Milestone filter to the current Project Issue collection; it does not navigate into a permanent Milestone workspace.
+
+The active filter is represented by normal Filter UI/chips. Inspector does not maintain a second private filter state.
+
+### 9.7 Milestone create/edit/delete
+
+While Project capability allows Milestone planning (Not Started/In Progress), the section header may expose a compact `+`.
+
+Quick create stays small:
+
+```text
+New milestone
+
+Name
+Due        optional
+
+Create
+```
+
+Description can be added through edit rather than making quick-create heavy.
+
+Milestone row hover may reveal an overflow action with at least:
+
+```text
+Edit
+Delete
+```
+
+Edit is a compact dedicated surface rather than an Issue-weight Full Item:
+
+```text
+Edit milestone
+
+Name
+Due
+Description
+
+Progress     read-only/derived where shown
+```
+
+Owning Project is not normally reparented.
+
+Deleting a Milestone preserves its Issues. Confirmation should explain that linked Issues remain and lose/replace the Milestone relation; it must not imply cascade deletion of Issues.
+
+In Done/Cancelled Projects the Milestone section remains readable summary context; create/edit/delete/assignment affordances are not normally shown.
+
+### 9.8 Delete Project
+
+Delete is not Project Status and does not belong inside the Status picker.
+
+It lives in low-frequency Project overflow/destructive actions and requires confirmation because its relation effects are material:
+
+```text
+Delete Project
+├─ remove Project
+├─ remove Project-scoped Milestones
+├─ preserve child Workflow Issues
+├─ move preserved Issues to Projectless
+└─ clear their Milestone relation
+```
+
+The confirmation should state useful concrete consequences/counts rather than generic dramatic wording. Recovery/undo claims must match actual implementation capability.
+
+## 10. Responsive Behavior
 
 Trail must work across variable Obsidian pane widths using progressive disclosure rather than a second mobile layout.
 
@@ -541,13 +938,15 @@ General priority:
 - preserve semantic icons before repeated text labels when meaning remains clear;
 - collapse/overflow low-priority actions before forcing horizontal page overflow;
 - compress Label display before increasing Card height without bound;
-- keep exact text available through tooltip, picker, Peek, Inspector, and accessibility labels.
+- keep exact text available through tooltip, picker, Peek, Inspector, and accessibility labels;
+- preserve Progress/Attention semantic readability even when exact numeric/tooltip detail moves behind interaction;
+- let the right Inspector collapse through normal Obsidian host behavior rather than building a second custom pane system.
 
 Exact breakpoints remain visual-calibration decisions.
 
-## 10. Explicitly Deferred UI Decisions
+## 11. Explicitly Deferred UI Decisions
 
-The following are deliberately not frozen by this slice:
+The following are deliberately not frozen yet:
 
 - final pixel values, color values, opacity, radius, and spacing;
 - final icon choice where multiple existing Obsidian/Lucide equivalents are plausible;
@@ -555,11 +954,13 @@ The following are deliberately not frozen by this slice:
 - exact number and formula for dynamic Project shortcuts;
 - exact lower-level Project Issue ordering/clustering algorithm;
 - exact default optional property set for List vs Board beyond the hierarchy defined above;
-- Full Item description/editor and Obsidian Markdown/note integration details;
+- exact final placement/shortcut for Project-local Create Issue, beyond the fixed `create → Backlog` semantic contract;
+- exact user-facing body-heading mapping required by managed Markdown's reserved H1/H2 structure;
 - complete keyboard shortcut map;
-- Cycle-specific creation/filter/presentation details;
+- Cycle-specific creation/filter/presentation/capability details;
 - Triage-specific Row/detail behavior beyond the shared primitives;
 - Home, Projects Root, Initiative Focus, Search, and Custom View detailed compositions;
+- final Health formula or Home Project-focus ranking policy;
 - final full-shell screenshots and calibrated UI measurements.
 
 These items should be resolved consumer by consumer, using current Product/Domain/Architecture facts and the visual-reference rules in this document rather than by introducing speculative generic frameworks.
