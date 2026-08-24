@@ -42,6 +42,9 @@ Useful current Linear visual anchors include:
 - Design-refresh process and header system: <https://linear.app/now/behind-the-latest-design-refresh>
 - Board layout: <https://linear.app/docs/board-layout>
 - Display options: <https://linear.app/docs/display-options>
+- Projects: <https://linear.app/docs/projects>
+- Initiatives: <https://linear.app/docs/initiatives>
+- Timeline: <https://linear.app/docs/timeline>
 - Filters: <https://linear.app/docs/filters>
 - Peek: <https://linear.app/docs/peek>
 - Priority: <https://linear.app/docs/priority>
@@ -50,7 +53,7 @@ Useful current Linear visual anchors include:
 - Due dates: <https://linear.app/docs/due-dates>
 - Issue selection: <https://linear.app/docs/select-issues>
 
-For Project UI specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model.
+For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root and Initiative Focus, current Linear Project/Initiative collection arrangement, density, grouping, and Timeline presentation are the primary visual references. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model, and Trail Project filters continue to reuse Trail's Issue Filter interaction model rather than importing a second Linear-specific filter system.
 
 ## 2. Visual System and Calibration
 
@@ -137,7 +140,7 @@ General rule:
 
 V1 uses one primary native Obsidian tab/leaf for Trail. Its native tab identity remains **Trail**.
 
-Home, Triage, Search, Projects Root, Initiative Focus, Project Workspace, Cycles, and Full Item locations navigate **inside that Trail tab**. Obsidian tabs are not used as Trail page navigation.
+Home, Triage, Search, Issues, Projects Root, Initiative Focus, Project Workspace, Cycles, and Full Item locations navigate **inside that Trail tab**. Obsidian tabs are not used as Trail page navigation.
 
 A future explicit “open this item in a new tab/split” capability may reuse Full Item content, but it is not the V1 navigation model and should not shape current page composition.
 
@@ -169,8 +172,8 @@ Home
 Triage                              optional attention indicator
 
 Workspace
+Issues
 Projects
-  dynamic Project shortcuts
 Cycles
 ```
 
@@ -178,19 +181,13 @@ Cycles
 
 Search and Capture are high-frequency global actions in the navigation header, not ordinary peer navigation rows. Trail does not show a fake workspace-switcher chevron because V1 has one implicit Workspace.
 
-### 4.2 Project shortcuts
+### 4.2 Workspace entries and Projectless visibility
 
-Project children under `Projects` are navigation shortcuts, not the canonical Project hierarchy and not Favorites.
+`Issues` is the Workspace-level browse location for normal Workflow Issues. It includes Project-scoped and Projectless Issues. `No Project` is a relationship/filter/grouping state inside Issue collections, not a synthetic Project and not a separate sidebar entry.
 
-The sidebar should show a bounded set of Projects that are currently most relevant rather than every Project or a manual user-maintained ordering.
+`Projects` is the single top-level entry for Project portfolio browsing and Initiative context. Initiative remains an independent Domain entity, but the UI reaches Initiative Focus through Projects rather than exposing a parallel top-level Initiatives entry. A Project can still be opened directly from Projects Root, Search, Home, or another supported deep link without navigating through Initiative Focus first.
 
-Ranking should derive from existing canonical and derived facts whenever practical. Candidate signals may include Project Priority/Due/Status, Progress/Health/Attention when those derived policies exist, and aggregate Issue facts such as Priority, Due, Cycle relevance, non-terminal work, and retained lifecycle timestamps.
-
-Do not add a persisted `rank`, `activityPriority`, `focusScore`, `healthScore`, `updatedAt`, or similar fact solely to drive this sidebar or future Home focus ordering.
-
-The exact top-N size, signal weights, decay rules, and tie-breakers remain consumer-specific Query/UI decisions to be resolved when the ranking is implemented and calibrated.
-
-Projects may expose a compact disclosure affordance for showing/hiding these shortcuts. The Projects row itself navigates to Projects Root; disclosure is a separate interaction target.
+The previously proposed dynamic Project children under `Projects` are removed from the current target navigation. Trail therefore does not need sidebar-specific Project ranking, top-N selection, focus scoring, or activity-decay policy merely to populate navigation. Favorites remain a supported workspace-state concept, but their sidebar presentation is deferred until the Favorites interaction itself is designed.
 
 ### 4.3 Navigation visual language
 
@@ -229,6 +226,7 @@ Examples:
 ```text
 Home
 Triage
+Issues
 Projects
 Projects / Initiative Alpha
 Projects / Initiative Alpha / Project Trail
@@ -271,19 +269,132 @@ The description may use ordinary lightweight Markdown and Obsidian wikilinks. Tr
 
 The View Bar exists only when the current content is a collection with meaningful presentation controls.
 
-For an In Progress Project, the V1 target is intentionally small:
+For Projects Root and Initiative Focus, the V1 target is:
 
 ```text
-Filter        [single List/Board toggle]        Display
+Filter        [single List/Timeline toggle]        Display
 ```
 
-The List/Board switch occupies one control slot. Its icon changes with layout state and the tooltip states the action clearly. Whether the visible glyph represents current state or target state is a visual-calibration detail; the control must never require two permanent peer buttons merely to represent a binary toggle.
+For an In Progress Project Workspace, the V1 target remains:
 
-Not Started, Done, and Cancelled Projects are List-only because Board is an execution workflow surface. Their View Bar therefore omits the List/Board toggle rather than showing an enabled path to a presentation the current Project cannot use.
+```text
+Filter        [single List/Board toggle]           Display
+```
+
+The binary layout switch occupies one control slot rather than two permanent peer buttons. Not Started, Done, and Cancelled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation.
+
+Project-collection Filter reuses Trail's Issue Filter interaction model, visual primitives, applied-filter treatment, and temporary view-state behavior. It is not a second filter system copied from Linear. The Project property set is intentionally smaller: Projects Root supports Status, Initiative, Priority, Labels, and Due; Initiative Focus omits Initiative because the current location already supplies that scope. Filtering changes visibility only. It does not define grouping, ordering, or entity mutation.
+
+`Display` is not a generic view builder. In Project collections it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace it controls supported secondary Issue Row/Card properties. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
 
 `Create Issue` is not a generic View Bar configuration control. Exact placement of the Project-local create affordance is a composition detail, but it must not visually imply that creation inherits a Todo/Started/Completed group.
 
-`Display` is not a generic view builder. In Project Workspace it primarily controls which supported secondary properties are visible on Issue rows/cards. V1 does not need user-configurable Grouping, Sub-grouping, manual ordering, or a generic Sort builder here.
+### 5.4 Projects Root and Initiative Focus
+
+Projects is one unified workspace rather than separate Projects and Initiatives application areas.
+
+Projects Root is a Project-first collection whose default List presentation groups Projects by Initiative:
+
+```text
+Projects
+
+Filter                 [List / Timeline]       Display
+
+▾ Initiative Alpha                              3 projects
+  Project A
+  Project B
+  Project C
+
+▾ Initiative Beta                               2 projects
+  Project D
+  Project E
+
+▾ No Initiative                                 2 projects
+  Project F
+  Project G
+```
+
+Initiative is therefore a Project organization/display/focus dimension in this workspace, while remaining a real Domain entity. The Initiative group header is intentionally quiet: disclosure state, Initiative identity, and Project count only. It does not become a mini-dashboard for Initiative Priority, Due, Labels, Progress, Attention, description, or Project lifecycle distribution. Groups are expanded by default; collapse is page presentation state. `No Initiative` uses the same structural treatment but does not navigate to a fake Initiative.
+
+Clicking the Initiative title enters Initiative Focus. Clicking a Project row opens that Project directly:
+
+```text
+Projects Root
+├─ Projects / Initiative Alpha
+└─ Project Workspace
+```
+
+Initiative Focus is the same Project collection grammar with one Initiative scope and no Initiative grouping:
+
+```text
+Projects / Initiative Alpha
+
+Filter                 [List / Timeline]       Display
+
+Project A
+Project B
+Project C
+```
+
+The current Initiative may expose lightweight description/context below the Location Bar and a persistent Initiative Inspector through Details. Root and Focus reuse the same Project Row, filter mechanics, automatic ordering, context menu, and List/Timeline presentation. Project and Initiative summary activation navigates; V1 does not add a separate Project/Initiative Peek merely for these collections.
+
+`+ Project` on Projects Root creates a Project with optional Initiative membership. `+ Project` in Initiative Focus creates in the current Initiative context. Low-frequency Initiative creation belongs to a secondary Projects action rather than requiring a separate top-level navigation area.
+
+### 5.5 Project Summary Row
+
+Project Row is the primary scanning unit in Projects Root and Initiative Focus. It stays compact and normally single-line rather than becoming a card or a table of every Project fact.
+
+Wide conceptual form:
+
+```text
+[Status glyph] Project title    Status    Priority    Progress    Due    Attention
+```
+
+Information priority is Project identity first, then lifecycle Status, normal execution/time summaries, and exception-driven Attention. Because Projects Root is grouped by Initiative rather than by Project Status, lifecycle identity cannot be delegated to the surrounding structure: the Project Row must carry Status itself. Wide layouts show Status glyph plus configured Status name; compact layouts may reduce this to the stable glyph plus tooltip/accessibility text.
+
+Default row semantics are:
+
+- Title is the strongest visual anchor; description is not shown in the row.
+- Status uses the shared Status glyph/name grammar and opens the normal legal-transition picker when activated.
+- Priority uses the shared compact Priority glyph and picker.
+- Progress is derived and read-only. Wide rows may show a thin bar plus percentage; compact rows may reduce to percentage. Undefined Progress displays `—` rather than fabricated 0%/100%.
+- Due is the Project's own Due and uses the shared temporal emphasis grammar. It may open the normal date picker.
+- Attention is exception-driven rather than a permanently occupied column. No meaningful attention means no visual footprint. Temporal pressure or Cancelled-Project cleanup may expose a compact signal/reason; when that signal identifies a concrete attention bucket/reason, activating it opens the Project Workspace with the corresponding temporary Issue Filter.
+- Labels are optional secondary display and use the shared compact dot grammar. They are off by default in the Projects Root row unless enabled through Display.
+
+The row itself is a navigation surface: activating the title or ordinary row area opens Project Workspace. Activating an inline property edits that property and does not trigger row navigation. Progress remains read-only. Right-click or a low-noise overflow affordance opens Project actions such as status/priority/due changes, Initiative movement, and destructive actions where legal. V1 does not require drag-between-Initiative-groups as a second relationship-editing mechanism.
+
+Done and Cancelled Projects remain in their current Initiative group rather than moving to a separate Archive surface. Terminal rows settle below active work and use reduced visual weight. A Cancelled Project with unresolved non-terminal child Issues keeps its cleanup Attention prominent even when the rest of the row is muted.
+
+Default Project collection ordering is deterministic and explainable:
+
+```text
+Project lifecycle category
+→ configured StatusDefinition order
+→ Priority
+→ Due
+→ stable deterministic fallback
+```
+
+The default lifecycle order is In Progress, Not Started, Done, then Cancelled. V1 does not use activity, Progress, Attention score, manual rank, or persisted focus score as hidden ordering state.
+
+Responsive reduction preserves title and Status identity first, then meaningful exception Attention and Priority. Progress bar may collapse to a percentage; ordinary Due, optional Labels, and other secondary text progressively disappear rather than wrapping the row into a mini details view. An overdue Due may receive higher preservation priority because its current semantic emphasis is exceptional.
+
+### 5.6 Actual Activity Timeline
+
+Projects Root and Initiative Focus may switch the same filtered Project set from List to a lightweight Timeline. This Timeline is an **actual activity** visualization, not a planning Gantt and not a new source of canonical schedule facts.
+
+Project spans consume the existing Domain-derived activity timeline:
+
+```text
+bar start = derived actualStart from relevant Issue lifecycle evidence
+bar end   = derived actual work end when available
+active work without a derived end extends visually to the current-time marker
+```
+
+A Project with no relevant started activity has no fabricated activity span. Project Due is a separate deadline marker rather than the end of the activity bar. Initiative Focus shows the current Initiative's Projects; Projects Root preserves the same quiet Initiative grouping used by List.
+
+V1 Timeline is read-oriented. It does not provide drag-to-reschedule, duration resizing, dependency arrows, resource planning, manual start/end dates, or manual positioning. A small set of time scales such as Month/Quarter/Year may live under Display; exact scale defaults and calibrated geometry remain visual implementation details.
 
 ## 6. Project Workspace
 
@@ -364,17 +475,15 @@ Concrete StatusDefinitions retain configured order inside the relevant category.
 
 Status sections may be collapsible UI state. Collapse state is presentation state, not Domain data.
 
-### 6.5 Filter
+### 6.5 Issue Filter in Project Workspace
 
-Project Filter is deliberately simpler than Linear's general filter system.
-
-It answers only:
+The Filter in Project Workspace answers only:
 
 > Which Issues from this Project collection are visible?
 
-The UI may reuse Linear's compact popover, checkbox/list, hover, focus, and chip treatment, but Trail does not expose a generic operator language, nested boolean builder, or reusable query DSL.
+It uses Trail's shared Issue Filter interaction/presentation model. Projects Root and Initiative Focus reuse the same filter primitives and behavior with a smaller Project-specific property registry; they do not define a parallel filtering system.
 
-Filter choices are based on supported existing Issue facts and useful derived buckets, for example Status, Priority, Milestone, Cycle membership, Labels, Due, and Estimate where the current consumer supports them.
+Project Workspace filter choices are based on supported existing Issue facts and useful derived buckets, for example Status, Priority, Milestone, Cycle membership, Labels, Due, and Estimate where the current consumer supports them. Trail does not expose a generic operator language, nested boolean builder, or reusable query DSL merely to power these page filters.
 
 A filter does not:
 
@@ -384,7 +493,7 @@ A filter does not:
 - seed arbitrary properties during creation;
 - justify new canonical data fields.
 
-Milestone and derived attention entries may apply a temporary Project Filter as a navigation shortcut. The resulting filter remains represented by the normal Filter UI/chip and is cleared there rather than maintaining a second hidden Inspector filter state.
+Milestone and derived attention entries may apply a temporary Issue Filter in Project Workspace as a navigation shortcut. The resulting filter remains represented by the normal Filter UI and is cleared there rather than maintaining a second hidden Inspector filter state.
 
 ### 6.6 Workflow Issue creation
 
@@ -657,7 +766,6 @@ Issue Full Item uses:
 Main View
 → inline-editable title
 → lightweight Markdown body/content
-
 Right Inspector
 → Status
 → Priority
@@ -830,7 +938,7 @@ Attention
 
 Semantic color/emphasis distinguishes Overdue, Due This Week, and Later Due. Exact colors are calibrated with the dark design system rather than hard-coded by this document.
 
-Permanent legends/count sentences are not required in the compact Inspector. Hover/focus provides exact segment name/count/accessibility text. Clicking a segment applies the corresponding temporary Project Filter so the user can immediately inspect the work represented by that segment.
+Permanent legends/count sentences are not required in the compact Inspector. Hover/focus provides exact segment name/count/accessibility text. Clicking a segment applies the corresponding temporary Issue Filter in Project Workspace so the user can immediately inspect the work represented by that segment.
 
 This is not a persisted `Health` score and is not a Status chart.
 
@@ -876,26 +984,6 @@ Quick create stays small:
 
 ```text
 New milestone
-
-Name
-Due        optional
-
-Create
-```
-
-Description can be added through edit rather than making quick-create heavy.
-
-Milestone row hover may reveal an overflow action with at least:
-
-```text
-Edit
-Delete
-```
-
-Edit is a compact dedicated surface rather than an Issue-weight Full Item:
-
-```text
-Edit milestone
 
 Name
 Due
@@ -951,15 +1039,16 @@ The following are deliberately not frozen yet:
 - final pixel values, color values, opacity, radius, and spacing;
 - final icon choice where multiple existing Obsidian/Lucide equivalents are plausible;
 - final Label palette and color-assignment function;
-- exact number and formula for dynamic Project shortcuts;
 - exact lower-level Project Issue ordering/clustering algorithm;
-- exact default optional property set for List vs Board beyond the hierarchy defined above;
+- exact default optional Issue property set for Project Workspace List vs Board beyond the hierarchy defined above;
 - exact final placement/shortcut for Project-local Create Issue, beyond the fixed `create → Backlog` semantic contract;
 - exact user-facing body-heading mapping required by managed Markdown's reserved H1/H2 structure;
 - complete keyboard shortcut map;
 - Cycle-specific creation/filter/presentation/capability details;
 - Triage-specific Row/detail behavior beyond the shared primitives;
-- Home, Projects Root, Initiative Focus, Search, and Custom View detailed compositions;
+- Issues, Home, Search, and Custom View detailed compositions;
+- Favorites navigation presentation and interaction;
+- exact Timeline scale defaults, date-axis geometry, and final visual calibration;
 - final Health formula or Home Project-focus ranking policy;
 - final full-shell screenshots and calibrated UI measurements.
 

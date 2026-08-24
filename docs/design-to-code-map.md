@@ -22,7 +22,9 @@ Representative mappings:
 | Accept Triage | new Workflow identity; source removed only after legal target exists | Source Transition | `domain/planning`, `application/triage`, `mutation`, `source-sync` | planner + transition/source-sync + representative host |
 | Change Issue Status | StatusDefinition + lifecycle/Estimate invariants | Replace plan + Single Transaction | `domain/planning`, `application/issues`, shared mutation | planner + application/UI |
 | Move Issue between Projects | stable Issue identity + Project/Milestone invariants + placement integrity | Source Transition | `domain/planning`, `application/issues`, `mutation` | planner + application + representative host |
-| Project Board/List | same Project Issue set, Status presentation | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
+| Workspace Issues | all readable Workflow Issues including Projectless | effective query + shared Issue filter/presentation | `query`, `ui/pages/issues`, reusable Issue entity/filter components | query + UI |
+| Projects portfolio / Initiative Focus | Project→Initiative relation + derived Project summaries/activity | effective query + Project collection presentation | `query`, `ui/pages/projects`, reusable Project entity/filter/timeline components | query + UI |
+| Project Workspace Board/List | same Project Issue set, Status presentation | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
 | Milestone management | Project-scoped Milestone + same-Project Issue relation | semantic plans + same-source/Integrity operations | `domain/planning`, `application/milestones`, shared mutation | planner + application + UI |
 | Initiative organization | Project→Initiative relation; derived Initiative progress | semantic plans + derived query | `domain/planning`, `application/initiatives`, `query` | planner + query + UI |
 | Current Cycle | open Cycle + Workflow Issue membership | semantic plans + Cycle selectors | `domain/planning`, `application/cycles`, `query`, `ui/pages/cycles` | planner + query + UI |
@@ -208,6 +210,7 @@ plugin/src/
 │  ├─ shell/
 │  ├─ pages/
 │  │  ├─ home/
+│  │  ├─ issues/
 │  │  ├─ projects/
 │  │  ├─ triage/
 │  │  └─ cycles/

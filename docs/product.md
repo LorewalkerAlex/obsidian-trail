@@ -19,7 +19,7 @@ Trail V1 covers:
 - Projects, Milestones, and Initiatives;
 - personal planning Cycles;
 - Status, Priority, Estimate, Due, and structured Labels;
-- Board and List presentations;
+- Board, List, and lightweight Project Timeline presentations;
 - Filter, Group, Sort, Search, Custom Views, and Favorites as needed by the supported workflows;
 - Home as a global summary and routing surface;
 - Peek, Context Menu, Selection, Bulk Actions, Command Menu, and keyboard-oriented interaction;
@@ -106,6 +106,8 @@ Projectless Workflow Issues are not children of a hidden or synthetic Project.
 
 For Issue execution capability, Projectless behaves like an always execution-enabled context: a Projectless Issue can follow its normal Issue lifecycle without waiting for a Project lifecycle transition. Projectless does not gain Project properties, Milestones, Project progress, or Project lifecycle.
 
+Projectless Workflow Issues remain visible in the Workspace-level Issues collection. `No Project` is a relationship/filter/grouping state, not a synthetic Project or a separate top-level workspace.
+
 ### 3.7 Triage
 
 Triage is the intake context for captured Issues that are not yet ready to enter the normal workflow.
@@ -165,17 +167,19 @@ Accept creates new normal Workflow work; it is not a hidden mutation of the Tria
 
 ### 4.2 Projects workspace
 
-Projects is a drill-down workspace:
+Projects is the single top-level workspace for both Project portfolio browsing and Initiative context. Initiative remains a real Domain entity, but in navigation and collection presentation it primarily acts as an organizational, filtering, and focus dimension over Projects rather than a separate top-level application area.
+
+Projects Root is Project-first. It shows all Projects and groups them by Initiative by default, with a `No Initiative` group for unassigned Projects. From the same Root the user may either focus an Initiative or open a Project directly:
 
 ```text
 Projects Root
-→ Initiative Focus
-→ Project Workspace
+├─ Initiative Focus
+└─ Project Workspace
 ```
 
-Users may also deep-link directly to a Project from Home, Search, Favorites, or normal navigation.
+Initiative Focus is a scoped Projects location that shows only Projects contributing to the current Initiative. It is not a mandatory parent path for a Project. Projects may still be deep-linked directly from Home, Search, or other supported navigation.
 
-Projects Root emphasizes Initiative/Project distribution. Initiative Focus emphasizes the Projects contributing to that Initiative. Project Workspace emphasizes planning or execution according to the Project's current lifecycle capability.
+Projects Root and Initiative Focus share the same Project collection semantics. Both support List plus a lightweight actual-activity Timeline over the same filtered Project set. Timeline uses derived Issue lifecycle evidence rather than manually maintained Project or Initiative start/end facts.
 
 ### 4.3 Project Workspace
 
@@ -287,7 +291,9 @@ Closing a Cycle is explicit. If unfinished work remains, creating the next Cycle
 
 Trail should first use mature page-specific filters, groups, sorting, and presentations rather than exposing a generic query language.
 
-Search finds objects. Command Menu is primarily for actions. Custom Views save useful supported combinations. Favorites provide a small high-frequency navigation layer.
+The Workspace-level navigation exposes `Issues`, `Projects`, and `Cycles` as separate browse locations. `Issues` is the stable collection entry for normal Workflow Issues, including Project-scoped and Projectless work. `Projects` is the single top-level entry for the Project portfolio and Initiative focus. Initiative does not need a parallel top-level navigation entry, and `No Project` does not become a synthetic navigation object.
+
+Search finds objects. Command Menu is primarily for actions. Custom Views save useful supported combinations. Favorites remain a supported workspace-state concept, but their final navigation presentation is deferred until that interaction is designed rather than being used to shape the current sidebar.
 
 ### 4.10 Peek and interaction model
 
@@ -324,17 +330,18 @@ Home
 Triage                        attention indicator optional
 
 Workspace
+Issues
 Projects
-  ongoing Project shortcuts
 Cycles
 ```
 
-Search and Quick Capture are high-frequency global actions rather than ordinary peer navigation rows. Project children are dynamic shortcuts to ongoing Projects, not Favorites and not a canonical hierarchy browser; the exact ongoing-selection contract is resolved by the relevant Query/UI consumer. Initiative is not expanded into the sidebar tree. Cycles does not expand Previous Cycle history. Triage may later show a compact attention indicator derived from workload/time urgency; whether that presentation uses color, count, or both remains a UI-detail answer rather than a new persisted fact.
+Search and Quick Capture are high-frequency global actions rather than ordinary peer navigation rows. `Issues` opens the Workspace-level Workflow Issue collection and therefore gives Projectless work a normal browse location without inventing a synthetic Project. `Projects` opens the unified project-first Projects workspace; Initiative focus is reached from that workspace rather than through a separate top-level Initiative entry. `No Project` and `No Initiative` remain relationship/grouping states, not sidebar objects. Favorites are not part of the currently resolved sidebar composition; their eventual presentation remains deferred. Cycles does not expand Previous Cycle history. Triage may later show a compact attention indicator derived from workload/time urgency; whether that presentation uses color, count, or both remains a UI-detail answer rather than a new persisted fact.
 
 The main Trail workspace uses a stable composition:
 
 ```text
 Location Bar
+optional Context disclosure
 optional View Bar
 Content
 ```
