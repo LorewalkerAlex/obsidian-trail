@@ -6,7 +6,7 @@ Trail uses the following canonical terms.
 
 - **Workspace** — the singleton personal Trail boundary that owns shared configuration and user workspace state.
 - **Initiative** — a long-term goal advanced through multiple Projects.
-- **Project** — a clear, completable outcome/deliverable.
+- **Project** — a coherent planning/execution context for related work, often a completable outcome but allowed to be long-lived.
 - **Milestone** — a Project-scoped intermediate outcome/checkpoint.
 - **Issue** — the smallest structured unit of work.
 - **Triage Issue** — an Issue in intake context, before normal workflow.
@@ -21,6 +21,7 @@ Trail uses the following canonical terms.
 - **Label** — a selectable value belonging to exactly one LabelGroup.
 - **Custom View** — persisted user workspace state describing a supported saved selection and presentation.
 - **Favorite** — an ordered navigation reference to a supported Trail target.
+- **Default Project** — an optional Workspace State reference to one ordinary Project used for high-frequency navigation and initial Project selection.
 
 Names displayed to the user may change without changing stable identity or canonical semantics.
 
@@ -36,7 +37,7 @@ Workspace owns:
 - LabelGroups, Labels, and registrations;
 - Cycle default planning rule;
 - temporal/timezone policy;
-- Custom Views, Favorites, and Home composition.
+- Custom Views, Favorites, Home composition, and the optional Default Project reference.
 
 ### 2.2 Core Entities
 
@@ -66,6 +67,8 @@ Canonical Initiative facts:
 Initiative does not own an independent workflow Status, manual Progress/Health, or manual completion action.
 
 ### 2.4 Project
+
+A Project may represent either a bounded deliverable or a long-lived work container. That distinction is usage, not a subtype: every Project has the same fields, lifecycle, relationships, and mutation rules.
 
 Canonical Project facts:
 
@@ -112,14 +115,21 @@ Canonical Issue facts:
 - optional lightweight description;
 - context: Triage or Workflow;
 - context-conditioned StatusDefinition;
-- optional Project;
-- optional same-Project Milestone;
+- context-conditioned Project relationship;
+- optional same-Project Milestone for Workflow context;
 - optional Priority;
 - optional Estimate;
 - context-conditioned Due;
 - applicable Labels;
 - Workflow creation fact `createdAt`;
 - minimal lifecycle historical facts `firstStartedAt` and `terminalAt`.
+
+Relationship applicability is context-conditioned:
+
+```text
+Triage Issue   → Project none; Milestone none
+Workflow Issue → Project exactly 1; Milestone 0..1 within that Project
+```
 
 Workflow Issues may use all five StatusCategories:
 
@@ -163,18 +173,22 @@ A value does not become an Entity merely because many Entities use it.
 
 ### 2.10 User workspace state
 
-Custom Views, Favorites, and Home composition are persisted user workspace state. They describe how the user organizes, navigates, and presents Trail; they are not Core Domain Data and do not redefine system behavior.
+Custom Views, Favorites, Home composition, and the optional Default Project reference are persisted user workspace state. They describe how the user organizes, navigates, and presents Trail; they are not Core Domain Data and do not redefine Project behavior.
+
+The Default Project, when present, references one ordinary Project by stable identity. The reference does not make that Project a subtype, does not constrain its Status or Initiative membership, and does not prevent rename or deletion. A fresh Workspace may seed an ordinary Project titled `Standalone` and store its ID as the initial Default Project, but `Standalone` is not canonical Domain identity.
 
 ## 3. Relationships
 
 Canonical relationships are:
 
 ```text
-Project   → Initiative   0..1
-Milestone → Project      exactly 1
-Issue     → Project      0..1
-Issue     → Milestone    0..1, within Issue.project scope
-Cycle     ↔ Issue        planning membership
+Project        → Initiative   0..1
+Milestone      → Project      exactly 1
+Triage Issue   → Project      none
+Triage Issue   → Milestone    none
+Workflow Issue → Project      exactly 1
+Workflow Issue → Milestone    0..1, within WorkflowIssue.project scope
+Cycle          ↔ Workflow Issue planning membership
 ```
 
 ### 3.1 Project and Initiative
@@ -189,34 +203,34 @@ A Milestone belongs to exactly one Project. Normal domain behavior does not supp
 
 ### 3.3 Issue and Project
 
-A Workflow Issue may be project-less or belong to one Project. Moving an Issue between Projects preserves Issue identity and does not silently change Issue Status.
+A Triage Issue has no Project relationship. A Workflow Issue belongs to exactly one Project. Moving a Workflow Issue between Projects preserves Issue identity and does not silently change Issue Status.
 
 Project acceptance rules are lifecycle-dependent:
 
 - an Unstarted Project accepts a newly created or moved-in Workflow Issue only when that Issue is in Backlog;
 - a Started Project is the normal execution-capable Project context and may accept Workflow Issues whose current state is otherwise legal;
-- Completed and Canceled Projects do not accept new Issue membership;
-- Projectless is not a Project Entity and does not impose a Project lifecycle gate on normal Issue execution.
+- Completed and Canceled Projects do not accept new Issue membership under the normal workflow capability rules.
 
 If a target Project cannot accept an Issue in its current Status, normal Move rejects/hides that target rather than silently rewriting the Issue Status. A future explicit compound action may combine relation and Status changes, but that would be a different user intent.
 
-Moving an Issue out of any Project remains legal when the resulting graph is otherwise valid. This includes cleanup/reorganization from Completed or Canceled Projects.
+Moving an Issue out of one Project therefore means moving it to another legal Project. This includes cleanup/reorganization from Completed or Canceled Projects; there is no Projectless Workflow state.
 
 ### 3.4 Issue and Milestone
 
-An Issue may reference at most one Milestone, and that Milestone must belong to the same Project as the Issue.
+A Triage Issue has no Milestone relationship. A Workflow Issue may reference at most one Milestone, and that Milestone must belong to the same Project as the Workflow Issue.
 
 Therefore:
 
 ```text
-Issue.projectId absent
-→ Issue.milestoneId absent
+Triage Issue
+→ no Project
+→ no Milestone
 
-Issue.milestoneId present
-→ Milestone.projectId == Issue.projectId
+Workflow Issue.milestoneId present
+→ Milestone.projectId == WorkflowIssue.projectId
 ```
 
-When an Issue changes Project, an old Milestone from the previous Project must be cleared or replaced with a valid Milestone from the target Project in the same logical mutation.
+When a Workflow Issue changes Project, an old Milestone from the previous Project must be cleared or replaced with a valid Milestone from the target Project in the same logical mutation.
 
 ### 3.5 Cycle membership
 
@@ -269,7 +283,7 @@ Normal Workflow Issue creation:
 
 This rule is independent of UI creation location. A Board/List group or nearby Status surface does not silently seed another Issue Status.
 
-A Workflow Issue may be created with or without a Project, subject to Project acceptance rules. Therefore an Unstarted or Started Project may create a new child Issue because the new Issue begins in Backlog; Completed/Canceled Projects may not.
+A Workflow Issue is created with exactly one explicit Project relationship, subject to Project acceptance rules. Therefore an Unstarted or Started Project may create a new child Issue because the new Issue begins in Backlog; Completed/Canceled Projects may not. A UI may preselect the Workspace Default Project, but Domain creation never interprets an omitted Project as a hidden fallback.
 
 ### 4.3 Triage Issue creation and defer
 
@@ -295,7 +309,7 @@ Issue A (Triage)
 → remove A only after B is safely established
 ```
 
-Applicable source content may seed the new Workflow Issue, but Triage Due does not automatically become Workflow Due.
+Applicable source content may seed the new Workflow Issue, but Triage Due does not automatically become Workflow Due. Accept also supplies exactly one explicit target Project; any Default Project behavior belongs to Workspace/UI selection before the Domain command is planned.
 
 ### 4.5 Issue lifecycle timestamps
 
@@ -390,13 +404,7 @@ Completed Project has no non-terminal child Issues at the moment completion is c
 
 Canceled Project does not accept new Issue membership or normal planning/execution mutation. A remaining non-terminal child Issue may be canceled or moved out to a legal target. Terminal children may also be moved out for organization when legal.
 
-### 4.10 Projectless Issue capability
-
-Projectless is not a Project and has no Project Status. For Issue execution capability it behaves as an execution-enabled context equivalent to a Started Project: normal Issue lifecycle progression is governed only by Issue rules and other applicable context, not by a missing Project lifecycle.
-
-This is a derived behavior rule, not a persisted synthetic Project.
-
-### 4.11 Milestone lifecycle and capability
+### 4.10 Milestone lifecycle and capability
 
 Milestone completion/progress is derived from current associated Issues. Milestone has no manually maintained workflow Status or completion flag.
 
@@ -404,7 +412,7 @@ Milestone planning is legal while the owning Project is Unstarted or Started. In
 
 Deleting a Milestone preserves Issues and clears/replaces their Milestone relationship according to the legal delete mutation.
 
-### 4.12 Cycle lifecycle
+### 4.11 Cycle lifecycle
 
 At most one Cycle may be Open at a time, and it is valid to have none.
 
@@ -414,7 +422,7 @@ Reaching `plannedEnd` does not automatically close the Cycle.
 
 Closing a Cycle sets actual `endedAt` and freezes normal planning membership. If unfinished/non-terminal Issues remain, a separate Create Next Cycle flow offers all of them as initially selected candidates. The user may deselect any candidates or cancel the entire flow, leaving no Current Cycle.
 
-### 4.13 Delete relation resolution
+### 4.12 Delete relation resolution
 
 Deletion is not a normal lifecycle Status. Archive is not a generic Core Entity lifecycle.
 
@@ -422,7 +430,7 @@ A delete operation resolves affected relationships as one legal domain mutation:
 
 - Delete Initiative: preserve Projects, normally clearing Initiative membership or reassigning as explicitly chosen.
 - Delete Milestone: preserve Issues, clearing or replacing their Milestone relation.
-- Delete Project: preserve Issues as project-less Workflow Issues and clear their Milestone relation; Project-scoped Milestones are removed with the Project.
+- Delete Project: if child Workflow Issues exist, require an explicit legal replacement Project, preserve those Issues by moving them to that Project, clear any old Project-scoped Milestone relation, remove the deleted Project's Milestones, then remove the Project. If Workspace State references the deleted Project as Default Project, clear that reference rather than silently choosing another default.
 - Delete Issue: remove the Issue and its Cycle memberships; do not delete unrelated entities.
 - Delete Cycle: preserve Issues and their Status/Project relationships; Cycle history context is intentionally removed.
 
@@ -450,21 +458,21 @@ The following must always hold:
 1. Core Entity identities are stable and unique in the Workspace.
 2. Project Status references a Project StatusDefinition whose category is Unstarted, Started, Completed, or Canceled.
 3. Workflow Issue Status references an Issue StatusDefinition whose category may be Backlog, Unstarted, Started, Completed, or Canceled.
-4. Triage Issue has no normal StatusDefinition, has required Due, and has no Workflow `createdAt`.
-5. Workflow Issue has a valid StatusDefinition and required immutable `createdAt`; Workflow Due is optional.
-6. Projectless Issue has no Milestone.
-7. Issue Milestone, when present, belongs to the same Project as the Issue.
-8. Completed Issue has an Estimate.
-9. New normal Workflow Issues begin in Backlog.
-10. Unstarted Projects accept new/moved-in Issue membership only for Backlog Issues.
-11. Completed/Canceled Projects accept no new Issue membership.
-12. Project completion requires every current child Issue to be Completed or Canceled.
-13. Project Status mutation does not implicitly mutate child Issue facts.
-14. At most one Cycle is Open.
-15. Triage Issue is never a Cycle member.
-16. Closed Cycle membership is not changed by normal planning actions.
-17. Label selection obeys registration and Single/Multiple semantics.
-18. Configuration defaults/reference targets match the intended entity type/category and do not leave dangling references.
+4. Triage Issue has no normal StatusDefinition, has required Due, has no Project or Milestone relationship, and has no Workflow `createdAt`.
+5. Workflow Issue has a valid StatusDefinition, exactly one valid Project, and required immutable `createdAt`; Workflow Due is optional.
+6. Workflow Issue Milestone, when present, belongs to the same Project as the Issue.
+7. Completed Issue has an Estimate.
+8. New normal Workflow Issues begin in Backlog.
+9. Unstarted Projects accept new/moved-in Issue membership only for Backlog Issues.
+10. Completed/Canceled Projects accept no new Issue membership under the normal workflow capability rules.
+11. Project completion requires every current child Issue to be Completed or Canceled.
+12. Project Status mutation does not implicitly mutate child Issue facts.
+13. At most one Cycle is Open.
+14. Triage Issue is never a Cycle member.
+15. Closed Cycle membership is not changed by normal planning actions.
+16. Label selection obeys registration and Single/Multiple semantics.
+17. Configuration defaults/reference targets match the intended entity type/category and do not leave dangling references.
+18. Default Project, when present, references an existing ordinary Project and adds no Project-specific invariant.
 
 ### 5.3 Label rules
 
@@ -487,7 +495,7 @@ Due is a canonical time fact:
 
 Due Soon, Overdue, Attention, and Reminder are derived capabilities based on canonical temporal facts, configuration, and current time. Time passing alone does not mutate entity lifecycle Status.
 
-A simple reminder can be represented by a project-less Workflow Issue + Due and optionally organized by Labels/Views; no Reminder entity is required.
+A simple reminder can be represented by a Workflow Issue + Due in an ordinary Project (often the current Default Project) and optionally organized by Labels/Views; no Reminder entity is required.
 
 ### 5.5 Capability is not a Domain field
 
@@ -516,6 +524,8 @@ V1 Canonical Domain does not include:
 - TriageItem/Fleeting Note entity;
 - Reminder entity/field;
 - Snooze state/field;
+- Projectless Workflow Issue state;
+- Standalone/System Project subtype, role flag, or special Project lifecycle;
 - Initiative/Milestone workflow Status;
 - generic manual Progress/Health/Attention facts;
 - Project Backlog lifecycle category;

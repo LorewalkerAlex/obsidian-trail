@@ -37,7 +37,7 @@ Heavy Project        500–1,000 Issues
 Large result list    thousands of Issues
 ```
 
-Cold full rebuild is acceptable at personal scale. Daily mutations should primarily scale with affected sources/entities rather than full historical size.
+Cold full rebuild is acceptable at personal scale. Daily mutations should primarily scale with affected sources/entities rather than full historical size. A long-lived Default Project may accumulate more Issues than an ordinary bounded Project, so its real carrier/query scale is benchmarked explicitly when evidence approaches or exceeds the current Heavy Project assumption rather than introducing a second storage model preemptively.
 
 ### 1.4 Engineering principles
 
@@ -142,7 +142,8 @@ Owns read-side derived logic and reusable selection:
 - source-health selection;
 - structural narrowing;
 - shared filter/sort/group/search helpers;
-- page-specific selectors when product pages need them.
+- page-specific selectors when product pages need them;
+- Workspace Default Project resolution and legal-target candidate selection for consumers that need an initial Project choice.
 
 Query does not mutate persistence, create a second entity state model, or turn a derived capability/score into authority.
 
@@ -157,7 +158,7 @@ normalize input
 → map result to UI-facing outcome
 ```
 
-Application accepts semantic intent such as `move issue`, `change project status`, `create workflow issue`, or `delete milestone`; it does not trust a UI-hidden/disabled control as the only guard. It must route mutations through Domain planning/validation so the same rule applies from Board, Search, Full Item, Command Menu, keyboard actions, or future surfaces.
+Application accepts semantic intent such as `move issue`, `change project status`, `create workflow issue`, or `delete milestone`; it does not trust a UI-hidden/disabled control as the only guard. Workflow Issue creation/movement reaches Application with an explicit Project target; Application does not interpret an omitted Project as `Standalone` or another hidden fallback. It must route mutations through Domain planning/validation so the same rule applies from Board, Search, Full Item, Command Menu, keyboard actions, or future surfaces.
 
 Application does not parse Markdown, call Vault APIs, write persistence directly, or hand-edit Runtime.
 
@@ -332,7 +333,8 @@ The projection may be represented as explicit capability fields/queries in imple
 
 Important rules:
 
-- Projectless Workflow resolves to execution-enabled Issue capability without creating a synthetic Project.
+- every Workflow Issue is evaluated inside one real owning Project; no Projectless capability branch exists;
+- the Workspace Default Project is ordinary Project state plus a workspace reference, so its capabilities are exactly the same as any other Project in the same lifecycle;
 - Unstarted Project enables Backlog planning but blocks execution advancement.
 - Started Project enables normal planning + execution.
 - Completed/Canceled Projects block normal new child work; Canceled unresolved work exposes cleanup actions such as Cancel/Move Out.
@@ -440,7 +442,7 @@ Peek State             what am I temporarily previewing?
 
 These are transient UI concerns, not Domain or authoritative Runtime facts. Navigation can be shared across separate Obsidian/React view roots so `TrailNavigationView` and the main `TrailView` consume one location owner. Collection presentation state is separate from navigation so List/Board and future filter/group/sort/display choices do not redefine location. Inspector and Peek targets are separate from both, allowing a Project board, an open Project Details inspector, and an Issue Peek to coexist without conflating selection or navigation.
 
-Navigation locations should represent stable product locations rather than today's component tree, for example Home, Triage, Search, Projects Root, Initiative, Project, Cycles, and a Full Item location where supported. Components request navigation through a navigation capability instead of scattering page-specific `setState` chains, leaving a natural extension point for future host choices such as opening the same Full Item content in a new Obsidian tab or split.
+Navigation locations should represent stable product locations rather than today's component tree, for example Home, Triage, Search, Projects Root, Initiative, Project, Cycles, and a Full Item location where supported. The sidebar Default Project shortcut resolves its stable `defaultProjectId` and navigates to the ordinary `Project(projectId)` location; it does not introduce a second Standalone route or Project component tree. Components request navigation through a navigation capability instead of scattering page-specific `setState` chains, leaving a natural extension point for future host choices such as opening the same Full Item content in a new Obsidian tab or split.
 
 Entity fields and actions are shared capabilities, while Peek, Inspector/Details, and Full Item View are separate surface compositions:
 
@@ -598,8 +600,7 @@ One authoritative carrier changes, for example:
 Physical placement changes or a target is established before destroying source state, including:
 
 - Issue Project A → Project B;
-- Projectless ↔ Project;
-- Triage Accept;
+- Triage Accept into an explicit Project;
 - Triage Convert to Project.
 
 Source Transition uses a data-loss-averse **destination-first (target-first)** order:
@@ -623,7 +624,7 @@ Low-frequency multi-source/reference repair for operations such as:
 
 - deleting/replacing a Label or StatusDefinition;
 - deleting Initiative while preserving Projects;
-- deleting Project while preserving Issues/projectless placement and clearing Milestones;
+- deleting Project while preserving Issues by moving them to an explicit legal replacement Project, clearing old Milestone relations, and clearing `workspaceState.defaultProjectId` when it referenced the deleted Project;
 - deleting Issue while removing Cycle membership;
 - deleting Cycle while preserving Issues;
 - other operations that must update related authoritative references together.
@@ -653,8 +654,7 @@ Initiative                      → Initiatives/<sequence> <title>.md
 Project                         → Projects/<sequence> <title>.md
 Milestone                       → owning Project source
 Triage Issue                    → Collections/Triage.md
-Workflow Issue + Project        → owning Project source
-Workflow Issue + no Project     → Collections/Projectless Issues.md
+Workflow Issue                → owning Project source (Project relationship required)
 Cycle                           → Collections/Cycles.md
 ```
 
@@ -676,7 +676,7 @@ load plugin data
 → ready
 ```
 
-Fresh installation can explicitly bootstrap required managed structure. Missing required containers in an established Workspace are Data Issues, not silently replaced empty state.
+Fresh installation explicitly bootstraps required managed structure and one ordinary Project seed titled `Standalone`, then stores that Project's stable ID as `workspaceState.defaultProjectId`. The seed uses the ordinary Project carrier, default Project-creation lifecycle semantics, and normal relationship/mutation rules; there is no Standalone source kind or lifecycle branch. Missing required containers in an established Workspace are Data Issues, not silently replaced empty state. A missing Project referenced by Workspace State is likewise surfaced as reference-integrity damage rather than silently recreated.
 
 ### 5.10 External managed-persistence change
 
@@ -723,7 +723,9 @@ Backlog Workflow: Priority → createdAt → stable ID
 Started/Active Workflow: Priority → firstStartedAt → stable ID
 ```
 
-Project Board columns = Issue Status and Board is exposed only for Started Projects. Projectless is execution-enabled for Issue capabilities but is not represented as a Project Board unless a later dedicated Projectless consumer requires one. Current Cycle Board can use Status columns × Project swimlanes. Normal Label is primarily a filter facet; promoted dimensions such as Area may be curated grouping dimensions.
+Project Board columns = Issue Status and Board is exposed only for Started Projects. The Default Project follows exactly the same Board/List/lifecycle rules as every other Project. Current Cycle Board can use Status columns × Project swimlanes. Normal Label is primarily a filter facet; promoted dimensions such as Area may be curated grouping dimensions.
+
+When a consumer needs an initial Project choice, Query may resolve `workspaceState.defaultProjectId` against Effective Runtime and the same target-capability rules used for all Projects. UI preselects it only when legal; otherwise the user must choose a legal Project. Query never manufactures a fallback Project or silently changes Project/Issue lifecycle.
 
 ### 5.13 Continuous, discrete, and input interaction
 
@@ -864,6 +866,8 @@ preflight
 Migration may reuse persistence, codecs, validation, and diagnostics, but does not justify long-term dual parser/version branches.
 
 The Project lifecycle change that removes Project Backlog from logical Status configuration is handled through this explicit configuration-evolution boundary if an existing workspace contains Project Backlog definitions/references.
+
+The removal of Projectless Workflow uses the same explicit migration boundary. Migration moves every legacy Projectless Workflow Issue into a real ordinary Project with an explicit `projectId`, establishes/repairs `workspaceState.defaultProjectId` where the migration plan calls for it, validates the full graph, and only then removes the legacy Projectless source kind/path. Normal runtime does not retain dual Projectless/required-Project branches after migration.
 
 ## 7. Target Structure
 

@@ -18,19 +18,24 @@ Representative mappings:
 
 | Product behavior | Domain / Data basis | Architecture capability | Canonical code owner | Verification owner |
 |---|---|---|---|---|
-| Quick Capture creates Triage work | Triage Issue context + required Due | semantic create plan + single-source persistence | `domain/planning`, `application/triage`, shared mutation/persistence | planner + application + representative host |
-| Accept Triage | new Workflow identity; source removed only after legal target exists | Source Transition | `domain/planning`, `application/triage`, `mutation`, `source-sync` | planner + transition/source-sync + representative host |
-| Change Issue Status | StatusDefinition + lifecycle/Estimate invariants | Replace plan + Single Transaction | `domain/planning`, `application/issues`, shared mutation | planner + application/UI |
-| Move Issue between Projects | stable Issue identity + Project/Milestone invariants + placement integrity | Source Transition | `domain/planning`, `application/issues`, `mutation` | planner + application + representative host |
-| Workspace Issues | all readable Workflow Issues including Projectless | effective query + shared Issue filter/presentation | `query`, `ui/pages/issues`, reusable Issue entity/filter components | query + UI |
+| Quick Capture creates Triage work | Triage Issue context + required Due; no Project/Milestone | semantic create plan + single-source persistence | `domain/planning`, `application/triage`, shared mutation/persistence | planner + application + representative host |
+| Accept Triage | new Workflow identity + required target Project; source removed only after legal target exists | legal-target selection + Source Transition | `domain/planning`, `application/triage`, `query`, `mutation`, `source-sync` | planner + query/application + transition/source-sync + representative host |
+| Create Workflow Issue | Workflow Issue requires exactly one Project and begins in Backlog | explicit target Project + semantic create plan | `domain/planning`, `application/issues`, `query` where a default candidate is needed, shared mutation | planner + application/UI |
+| Change Issue Status | StatusDefinition + lifecycle/Estimate + owning-Project capability invariants | Replace plan + Single Transaction | `domain/planning`, `application/issues`, shared mutation | planner + application/UI |
+| Move Issue between Projects | stable Issue identity + required target Project + Milestone scope + placement integrity | legal-target selection + Source Transition | `domain/planning`, `application/issues`, `query`, `mutation` | planner + application + representative host |
+| Default Project | Workspace State `defaultProjectId?` referencing an ordinary Project | bootstrap seed + reference resolution + normal Project navigation | `domain/model`, `source-sync/bootstrap`, `persistence/plugin-data`, `query`, `ui/shell` | workspace validation/bootstrap + query/navigation + representative host |
+| Delete Project | child Workflow Issues require an explicit legal replacement Project; old Project Milestones removed; Default Project reference cleared when applicable | semantic multi-entity plan + Integrity Batch | `domain/planning`, `application/projects`, `query`, `mutation`, `source-sync` | planner + materialization/execution + representative host |
 | Projects portfolio / Initiative Focus | Project→Initiative relation + derived Project summaries/activity | effective query + Project collection presentation | `query`, `ui/pages/projects`, reusable Project entity/filter/timeline components | query + UI |
-| Project Workspace Board/List | same Project Issue set, Status presentation | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
-| Milestone management | Project-scoped Milestone + same-Project Issue relation | semantic plans + same-source/Integrity operations | `domain/planning`, `application/milestones`, shared mutation | planner + application + UI |
+| Project Workspace Board/List | same Project Issue set, Status presentation; Default Project is not a separate workspace kind | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
+| Milestone management | Project-scoped Milestone + same-Project Workflow Issue relation | semantic plans + same-source/Integrity operations | `domain/planning`, `application/milestones`, shared mutation | planner + application + UI |
 | Initiative organization | Project→Initiative relation; derived Initiative progress | semantic plans + derived query | `domain/planning`, `application/initiatives`, `query` | planner + query + UI |
 | Current Cycle | open Cycle + Workflow Issue membership | semantic plans + Cycle selectors | `domain/planning`, `application/cycles`, `query`, `ui/pages/cycles` | planner + query + UI |
 | Labels and Status configuration | configuration definitions + reference integrity | configuration plans + Integrity Batch as needed | `domain/model`, `domain/validation`, `application/configuration`, `mutation` | validation + mutation + application |
 | Home | derived facts from same Runtime | shared/page-specific selectors + modules | `query`, `ui/pages/home` | query + UI |
 | External managed-file change | current physical schema + authoritative persistence | Refresh / source-health convergence | `source-sync`, `runtime`, adapters | source-sync + representative host |
+| Legacy Projectless schema upgrade | old Projectless Workflow records → ordinary Project ownership | explicit one-way migration; no dual normal-runtime model | `migration` plus existing persistence/validation owners | migration + full graph validation + representative fixture |
+
+A future Workspace Issues collection is intentionally not mapped as a V1 page. When introduced, it should query all Workflow Issues across real Projects and reuse the shared Issue collection/filter presentation; it must not reintroduce a Projectless state.
 
 The table is traceability, not a duplicate feature specification. Product, Domain, Data, Architecture, and UI Design remain the authorities for their respective behavior, semantics, representation, mechanisms, presentation, and interaction answers.
 
@@ -40,10 +45,12 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 
 | Capability | Inputs / dependencies | Owner |
 |---|---|---|
-| Core entity/config/workspace-state contracts | Product + Domain | `domain/model` |
+| Core entity/config/workspace-state contracts, including `defaultProjectId?` | Product + Domain | `domain/model` |
 | Value and state rules | Domain | `domain/rules` |
-| Field/domain/reference/workspace validation | Domain + Configuration | `domain/validation` |
+| Field/domain/reference/workspace validation | Domain + Configuration + Workspace State | `domain/validation` |
 | Pure semantic mutation planning | validated planning state + normalized command | `domain/planning` |
+
+Workflow Issue Project requiredness belongs to the Domain model/validation/planning owners. `Standalone` does not: it is the initial title of an ordinary bootstrapped Project, not a subtype or flag.
 
 ### 2.2 Persistence capabilities
 
@@ -57,6 +64,8 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 | Authoritative Domain source repository | ports + codecs/schema | `persistence/domain-sources` |
 | Plugin configuration/workspace-state repository | plugin-data port + Data contracts | `persistence/plugin-data` |
 | Weekly Note persistence | utility source contract | `persistence/utility-sources` |
+
+Normal runtime has no `Projectless Issues` path, source kind, codec, or repository branch. Every Workflow Issue is physically owned by its Project carrier.
 
 ### 2.3 Mutation and runtime capabilities
 
@@ -77,27 +86,31 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 
 | Capability | Inputs / dependencies | Owner |
 |---|---|---|
-| Workspace bootstrap/discovery | Persistence + managed paths | `source-sync/bootstrap`, `source-sync/discovery` |
+| Workspace bootstrap/discovery, including ordinary Default Project seed | Persistence + managed paths + default Configuration | `source-sync/bootstrap`, `source-sync/discovery` |
 | Trail-write settlement/convergence | Persistence result + Runtime | `source-sync` |
 | External authoritative refresh | managed host events + loader + Runtime | `source-sync/refresh` |
-| Effective/query helpers | Runtime + temporal/config context | `query/shared` |
+| Effective/query helpers | Runtime + temporal/config/workspace context | `query/shared` |
+| Legal Project target/default-candidate selection | Effective Runtime + Workspace State + Project/Issue capability | `query` |
 | Derived calculations | Domain facts + temporal/config context | `query/derived` |
 | Product page selectors | shared query + product page needs | `query` page-specific modules |
 | User use cases | Domain/Query/Mutation contracts | `application/<business-area>` |
 | Create-time similarity guard | effective Runtime + text/relation signals | `application/similarity` plus query/helper logic |
+
+Default selection is a UI/query concern. Application/Domain Workflow commands receive the explicit Project chosen for the operation rather than interpreting an absent Project as `Standalone`.
 
 ### 2.5 UI, host, and cross-cutting capabilities
 
 | Capability | Inputs / dependencies | Owner |
 |---|---|---|
 | Product pages/workspaces | UI Design + Query + Application | `ui/pages` |
+| Trail navigation + Default Project shortcut | UI Design + Workspace State/query + stable Project route | `ui/shell` |
 | Stable entity presentation | UI Design + entity IDs + effective Runtime selection | `ui/entities` |
 | Reusable interactions | UI Design + UI state + Application intents | `ui/interactions` |
 | Reusable visual primitives/patterns | UI Design + design-system tokens | `ui/primitives`, `ui/patterns`, `ui/design-system` |
 | Obsidian source/plugin-data/workspace/file-event bridge | Obsidian API | `adapters/obsidian` |
 | Development technical observability | architecture events | `diagnostics` |
 | Breaking schema upgrade | Data migration requirements + Persistence | `migration` |
-| Benchmarks/profiling | representative corpus/workflows | `performance` |
+| Benchmarks/profiling | representative corpus/workflows, including large long-lived Projects | `performance` |
 | Whole-graph composition | all ports/capabilities | `main.ts` |
 
 Shared mechanisms appear once in this map. A new feature consumes an existing capability unless it introduces a genuinely new mechanism.
@@ -107,6 +120,7 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Responsibility | Canonical owner | Must not be redefined in |
 |---|---|---|
 | Core Entity / Configuration / Workspace State shape | `plugin/src/domain/model/` | Markdown, UI, adapters |
+| Workflow Issue Project requiredness and relationship invariants | `plugin/src/domain/model/`, `domain/validation/`, `domain/planning/` | UI defaults or Persistence placement |
 | Pure domain/value rules | `plugin/src/domain/rules/` | UI or Persistence |
 | Domain/reference/workspace validation | `plugin/src/domain/validation/` | codecs or feature services as duplicate business rules |
 | Pure semantic planning | `plugin/src/domain/planning/` | Application or Persistence |
@@ -131,13 +145,16 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Runtime control/source health | `plugin/src/runtime/control/` and runtime state | Application-specific lifecycle systems |
 | Bootstrap/discovery/refresh/convergence | `plugin/src/source-sync/` | `main.ts` or feature services |
 | Derived/shared/page read selection | `plugin/src/query/` | UI rebuilding persistence/index logic |
+| Default Project resolution / legal default target candidate | `plugin/src/query/` | Domain Project subtype checks or title matching |
 | Business use cases | `plugin/src/application/` | UI or persistence |
 | Product composition | `plugin/src/ui/pages/` | Domain/Application |
+| Navigation and stable Project shortcut routing | `plugin/src/ui/shell/` | Project entity model or persistence filenames |
 | Entity components | `plugin/src/ui/entities/` | page-specific copies |
 | Shared interactions | `plugin/src/ui/interactions/` | per-page duplicated command/selection mechanics |
 | Visual primitives/patterns/design tokens | `plugin/src/ui/primitives/`, `patterns/`, `design-system/` | ad hoc per-page systems |
 | Obsidian integration | `plugin/src/adapters/obsidian/` | Domain/Application/Runtime |
 | Development diagnostics | `plugin/src/diagnostics/` | Product history |
+| Legacy Projectless one-way upgrade | `plugin/src/migration/` | normal Runtime/Domain dual-model branches |
 | Composition and host registration | `plugin/src/main.ts` | business logic or persistence policy |
 
 Code ownership is target ownership, not an implementation-progress indicator. If a target directory is not yet present, the responsibility is still mapped there; `docs/implementation.md` records whether the capability is currently implemented.
@@ -172,7 +189,6 @@ plugin/src/
 │     ├─ trail-initiative-codec.ts
 │     ├─ trail-project-codec.ts
 │     ├─ trail-triage-codec.ts
-│     ├─ trail-projectless-issues-codec.ts
 │     └─ trail-cycles-codec.ts
 │
 ├─ persistence/
@@ -210,7 +226,6 @@ plugin/src/
 │  ├─ shell/
 │  ├─ pages/
 │  │  ├─ home/
-│  │  ├─ issues/
 │  │  ├─ projects/
 │  │  ├─ triage/
 │  │  └─ cycles/
@@ -228,5 +243,7 @@ plugin/src/
 ├─ performance/
 └─ main.ts
 ```
+
+A future Workspace Issues page belongs under `ui/pages` only when that deferred product surface is designed. Normal runtime does not retain `trail-projectless-issues-codec.ts` or another Projectless compatibility branch; any legacy reader needed for a one-way upgrade is scoped to `migration`.
 
 The tree defines where established responsibilities belong. It is not a promise to create empty directories, placeholder services, compatibility facades, or speculative code before a capability is required by the dependency-ordered implementation plan.

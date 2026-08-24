@@ -21,6 +21,7 @@ B. System / Domain Configuration
 └─ temporal/timezone policy
 
 C. User Workspace State
+├─ Default Project reference
 ├─ Custom Views
 ├─ Favorites
 └─ Home composition
@@ -68,7 +69,7 @@ ProjectRecord {
 }
 ```
 
-Project does not persist Issue/Milestone collections, derived Progress/Attention/Health, effective capability flags, previous/reopen Status, manual rank, or Project actual-start/actual-end timestamps.
+Project does not persist Issue/Milestone collections, derived Progress/Attention/Health, effective capability flags, previous/reopen Status, manual rank, Project actual-start/actual-end timestamps, or any `Standalone`/system-role flag. A Project used as the Workspace Default Project has the same record shape as every other Project.
 
 ### 1.4 Milestone record
 
@@ -114,11 +115,15 @@ Context-conditioned data rules:
 ```text
 Triage
 → statusDefinitionId absent
+→ projectId absent
+→ milestoneId absent
 → due required
 → createdAt absent
 
 Workflow
 → valid Issue statusDefinitionId required
+→ projectId required
+→ milestoneId optional
 → createdAt required and immutable
 → due optional
 ```
@@ -126,8 +131,9 @@ Workflow
 Project/Milestone representation must satisfy:
 
 ```text
-projectId absent → milestoneId absent
-milestoneId present → referenced Milestone.projectId == Issue.projectId
+Triage → projectId absent and milestoneId absent
+Workflow → projectId present
+Workflow milestoneId present → referenced Milestone.projectId == Issue.projectId
 ```
 
 Completed Issue requires `estimate`.
@@ -256,7 +262,15 @@ CustomViewConfig {
 
 Relative temporal conditions, when supported, remain relative (for example “overdue” or “within next 7 days”) and are evaluated against current time rather than materialized to fixed dates when the View is saved.
 
-### 1.11 Favorites and Home
+### 1.11 Default Project, Favorites and Home
+
+Workspace State may contain one optional stable Project reference:
+
+```text
+defaultProjectId?: ProjectId
+```
+
+The referenced record is an ordinary Project. `defaultProjectId` is not Project identity, is not derived from title, and does not require a Project subtype or `systemRole` field. A fresh Workspace seeds a normal Project titled `Standalone` and stores its ID here; rename leaves the reference intact, while a legal delete clears the reference rather than inventing a replacement. A dedicated user-facing mechanism for changing the Default Project may be added when needed and does not change this data contract.
 
 ```text
 FavoritesState {
@@ -292,8 +306,9 @@ A relationship is stored in one authoritative direction whenever possible:
 ```text
 Project.initiativeId?
 Milestone.projectId
-Issue.projectId?
-Issue.milestoneId?
+WorkflowIssue.projectId
+WorkflowIssue.milestoneId?
+WorkspaceState.defaultProjectId?
 ```
 
 The following are not duplicated as authoritative collections:
@@ -319,11 +334,11 @@ Favorites and similar workspace-state references store enough target identity to
 
 Native Obsidian links are navigational/document relationships and do not become a competing stable-ID Domain relationship unless the Domain explicitly defines one.
 
-### 2.5 Projectless is absence, not synthetic identity
+### 2.5 Default Project is a workspace reference, not Project identity
 
-Projectless Workflow Issue is represented only by absent `Issue.projectId` (and therefore absent `milestoneId`). Trail does not persist a hidden Project record or synthetic Project ID to obtain execution capability.
+The Workspace Default Project is represented only by optional `WorkspaceState.defaultProjectId`. It points to the same stable ID used by an ordinary Project record and adds no second Project identity, path, kind, title convention, or lifecycle field.
 
-The execution-enabled behavior of Projectless is derived from relationship context at runtime.
+`Standalone` is only the title of the Project seeded for a fresh Workspace. The title may change without changing `defaultProjectId`, and another ordinary Project could legally have the same title.
 
 ## 3. Authority & Derivation
 
@@ -343,9 +358,9 @@ Project configuration cannot introduce a Project StatusDefinition in Backlog; Is
 
 ### 3.3 User Workspace State
 
-Custom Views, Favorites, and Home composition are authoritative user organization/navigation state, not Core Domain history.
+Default Project, Custom Views, Favorites, and Home composition are authoritative user organization/navigation state, not Core Domain history.
 
-Deleting a View does not delete referenced Entities.
+Deleting a View does not delete referenced Entities. Deleting the Project referenced by `defaultProjectId` clears that Workspace State reference as part of the legal delete mutation; Trail does not silently choose or create another default.
 
 ### 3.4 Derived and runtime state
 
@@ -382,7 +397,6 @@ Vault
 │  │  ├─ Projects/
 │  │  └─ Collections/
 │  │     ├─ Triage.md
-│  │     ├─ Projectless Issues.md
 │  │     └─ Cycles.md
 │  └─ Utility Markdown
 │     └─ Collections/Weekly Update.md
@@ -408,7 +422,6 @@ Trail/
 ├─ Projects/
 └─ Collections/
    ├─ Triage.md
-   ├─ Projectless Issues.md
    ├─ Cycles.md
    └─ Weekly Update.md
 ```
@@ -453,9 +466,10 @@ Singleton containers use fixed kinds without Entity IDs:
 
 ```yaml
 kind: triage
-kind: projectless-issues
 kind: cycles
 ```
+
+The fresh `Standalone` seed is not a singleton carrier kind. It uses the ordinary `kind: project` source and normal sequenced Project filename like any other Project.
 
 No `trail-` field namespace or per-file schema-version marker is required because managed scope and structural context already provide namespace/schema context.
 
@@ -484,7 +498,7 @@ Metadata marker form:
 
 ```markdown
 ## Implement Parser
-<!-- data {"id":"issue-id","context":"workflow","statusDefinitionId":"status-id","createdAt":1786464000000} -->
+<!-- data {"id":"issue-id","context":"workflow","statusDefinitionId":"status-id","projectId":"project-id","createdAt":1786464000000} -->
 ```
 
 Only a marker in a schema-approved structural position is a Trail record. Ordinary comments elsewhere do not become records.
@@ -538,23 +552,11 @@ Project lifecycle does not move Issue/Milestone records to different physical se
 
 `Collections/Triage.md` contains only Triage Issues.
 
-Triage Issues have required Due, no normal workflow status, and no Workflow `createdAt`.
+Triage Issues have required Due, no normal workflow status, no Project or Milestone relationship, and no Workflow `createdAt`.
 
-### 4.9 Projectless Workflow Issues carrier
+Every Workflow Issue is stored in its owning ordinary Project carrier. No Projectless Workflow carrier exists in the current schema.
 
-`Collections/Projectless Issues.md` contains only:
-
-```text
-context = Workflow
-projectId absent
-milestoneId absent
-```
-
-Triage and project-less Workflow Issues remain separate carriers because their Domain context/lifecycle semantics differ.
-
-Projectless execution capability is not serialized into this carrier; it is derived from missing Project relationship plus Domain capability rules.
-
-### 4.10 Cycle carrier
+### 4.9 Cycle carrier
 
 All Open and Closed Cycles live in `Collections/Cycles.md` under `# Cycles`.
 
@@ -562,7 +564,7 @@ Cycle H2 is a human-readable derived label from temporal facts; it is not Cycle 
 
 Closing a Cycle updates the same record; it is not moved into a separate history section.
 
-### 4.11 Weekly Note utility
+### 4.10 Weekly Note utility
 
 `Collections/Weekly Update.md` is not Domain Data and is not part of the Domain Physical Schema Registry.
 
@@ -584,7 +586,7 @@ V1 structure:
 
 Its two product operations are replacing Current content and manually archiving Current into a dated H2 while clearing Current. It has no stable Domain ID, Status, Due, runtime index, or automatic Issue/Cycle linkage.
 
-### 4.12 Field carriers and canonical metadata order
+### 4.11 Field carriers and canonical metadata order
 
 The current schema uses these metadata orders.
 
@@ -643,23 +645,23 @@ issueIds
 
 File-backed Initiative/Project IDs live in frontmatter and are not repeated in their record metadata.
 
-Conditional Domain requiredness is not misrepresented as unconditional physical requiredness. For example, Issue `statusDefinitionId` is structurally optional in the shared Issue grammar but required for Workflow context by Domain validation.
+Conditional Domain requiredness is not misrepresented as unconditional physical requiredness. In the shared Issue grammar, `statusDefinitionId` and `projectId` remain structurally optional because Triage and Workflow records share one physical record kind; Domain validation requires both for Workflow context and forbids Project/Milestone relationships for Triage context.
 
 No physical Project carrier field changes are required for the four-state lifecycle because `statusDefinitionId` already references configuration; legality is validated through the referenced Project StatusDefinition category.
 
-### 4.13 Optional values and set serialization
+### 4.12 Optional values and set serialization
 
 Unset optional metadata is omitted instead of serialized as `null`.
 
 Set-backed values serialize as deterministic arrays. ID sets use lexical serialized-ID order; enum sets use a stable schema-defined order. Input array ordering differences are acceptable and normalize on the next ordinary write.
 
-### 4.14 Timestamp encoding
+### 4.13 Timestamp encoding
 
 All persisted Timestamp fields use Unix epoch milliseconds numbers.
 
 Persistence does not store timezone offset, temporal precision, date-only flags, display formatting, overdue/due-soon flags, progress, attention, health, or derived duration.
 
-### 4.15 Plugin `data.json`
+### 4.14 Plugin `data.json`
 
 Logical top level:
 
@@ -670,7 +672,7 @@ Logical top level:
 }
 ```
 
-Configuration conceptually contains statuses, labels, cycle settings, and temporal settings. Workspace state contains Custom Views, Favorites, and Home state.
+Configuration conceptually contains statuses, labels, cycle settings, and temporal settings. Workspace state contains optional `defaultProjectId`, Custom Views, Favorites, and Home state.
 
 Within Status persistence, fixed hierarchy (`issue/project` → applicable category) may encode entity type/category context so individual definition entries need not repeat those fields. Definition IDs remain opaque and stable. Project status persistence has no Backlog category branch.
 
@@ -678,7 +680,7 @@ LabelGroups/Labels are stored as mutable definitions with explicit group IDs. Fa
 
 Machine/session-local UI state, capability state, Inspector state, and derived Project summary state do not become synchronized workspace state merely because `data.json` exists.
 
-### 4.16 Physical Schema Registry
+### 4.15 Physical Schema Registry
 
 Plugin code carries one current Physical Schema Registry used by parser, serializer, validator, and fixtures.
 
@@ -750,7 +752,7 @@ How much of the product remains writable under a known Data Issue is an Architec
 
 `data.json` is referenced by Domain records, so invalid configuration is not silently replaced with fresh defaults.
 
-Configuration load/update must reject states that would leave missing/invalid Status, Label, default, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog.
+Configuration/Workspace State load or update must reject states that would leave missing/invalid Status, Label, Default Project, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog.
 
 Old last-known-good runtime data may be useful to Architecture for viewing/recovery, but is not authority for further writes after persistence becomes invalid.
 
@@ -762,9 +764,9 @@ Parser may accept valid metadata with non-canonical property order or set array 
 
 ### 5.6 Initialization and missing data
 
-Fresh installation with no `Trail/` root is not corruption; explicit bootstrap may create required current containers.
+Fresh installation with no `Trail/` root is not corruption; explicit bootstrap creates the required current containers plus an ordinary seed Project titled `Standalone`, and persists that Project ID as the initial `workspaceState.defaultProjectId`. The seed uses the normal Project record/carrier and normal Project creation defaults; its title, lifecycle, Initiative membership, properties, and later deletion remain ordinary Project behavior.
 
-Once a Workspace exists, disappearance of a required singleton such as Triage/Projectless Issues/Cycles is a Data Issue rather than a reason to silently create a new empty container that hides possible data loss.
+Once a Workspace exists, disappearance of a required singleton such as Triage or Cycles is a Data Issue rather than a reason to silently create a new empty container that hides possible data loss. A missing Project referenced by `defaultProjectId` is likewise a reference-integrity issue when caused by external persistence damage; explicit Trail Project deletion clears the reference as part of the delete mutation.
 
 Weekly Update is lazy-created utility state and is not a required Domain bootstrap container.
 
@@ -784,6 +786,8 @@ old persisted data
 Normal startup does not maintain long-term dual parsers or silently migrate a subset of files. Migration execution/recovery mechanics belong to Architecture/Implementation; the Data contract is one current schema after a successful migration.
 
 The Project four-state lifecycle changes the logical Status configuration contract. If existing persisted Project configuration contains a Backlog branch or Project definitions in Backlog, implementation must treat removal as an explicit configuration migration/reference-resolution concern rather than silently reinterpret those definitions.
+
+The current removal of Projectless Workflow is also a breaking schema transition. Legacy `Collections/Projectless Issues.md` records must be moved to a real ordinary Project with explicit `projectId` before that carrier is removed. For the current pre-V1 transition, migration may create an ordinary Project titled `Standalone` when a legal target is needed and set it as `workspaceState.defaultProjectId`; the migration target's lifecycle must be chosen so existing Issue facts can be preserved without silently rewriting Issue Status. After successful validation, the Projectless source kind/path/codec is removed from normal runtime. Long-term dual parsing is not part of the target schema.
 
 ### 5.8 Native links
 

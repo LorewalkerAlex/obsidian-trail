@@ -140,7 +140,7 @@ General rule:
 
 V1 uses one primary native Obsidian tab/leaf for Trail. Its native tab identity remains **Trail**.
 
-Home, Triage, Search, Issues, Projects Root, Initiative Focus, Project Workspace, Cycles, and Full Item locations navigate **inside that Trail tab**. Obsidian tabs are not used as Trail page navigation.
+Home, Triage, Search, the Default Project shortcut, Projects Root, Initiative Focus, Project Workspace, Cycles, and Full Item locations navigate **inside that Trail tab**. Obsidian tabs are not used as Trail page navigation. A future Workspace Issues collection remains deferred and is not part of the V1 navigation structure.
 
 A future explicit “open this item in a new tab/split” capability may reuse Full Item content, but it is not the V1 navigation model and should not shape current page composition.
 
@@ -172,7 +172,7 @@ Home
 Triage                              optional attention indicator
 
 Workspace
-Issues
+Standalone                          fresh Default Project title
 Projects
 Cycles
 ```
@@ -181,13 +181,26 @@ Cycles
 
 Search and Capture are high-frequency global actions in the navigation header, not ordinary peer navigation rows. Trail does not show a fake workspace-switcher chevron because V1 has one implicit Workspace.
 
-### 4.2 Workspace entries and Projectless visibility
+### 4.2 Default Project shortcut and Projects
 
-`Issues` is the Workspace-level browse location for normal Workflow Issues. It includes Project-scoped and Projectless Issues. `No Project` is a relationship/filter/grouping state inside Issue collections, not a synthetic Project and not a separate sidebar entry.
+The first Workspace row is a shortcut to the current **Default Project**. On a fresh Workspace the seeded ordinary Project is titled `Standalone`, so the initial navigation appears as:
 
-`Projects` is the single top-level entry for Project portfolio browsing and Initiative context. Initiative remains an independent Domain entity, but the UI reaches Initiative Focus through Projects rather than exposing a parallel top-level Initiatives entry. A Project can still be opened directly from Projects Root, Search, Home, or another supported deep link without navigating through Initiative Focus first.
+```text
+Workspace
+Standalone
+Projects
+Cycles
+```
 
-The previously proposed dynamic Project children under `Projects` are removed from the current target navigation. Trail therefore does not need sidebar-specific Project ranking, top-N selection, focus scoring, or activity-decay policy merely to populate navigation. Favorites remain a supported workspace-state concept, but their sidebar presentation is deferred until the Favorites interaction itself is designed.
+The row is not a special Standalone location and does not identify a Project by title. Workspace State stores a stable `defaultProjectId`; when that reference resolves, the row renders the referenced Project's current title and opens the same normal `Project(projectId)` location used everywhere else. Renaming the Project therefore renames the shortcut automatically. Assigning it to an Initiative, changing lifecycle Status, or editing any other Project property does not change the navigation mechanism. If the referenced Project is deleted, the Default Project reference is cleared and this shortcut disappears; Trail does not silently create or choose another Project.
+
+The same Project continues to appear normally in Projects Root, grouped under its actual Initiative or `No Initiative`. The shortcut is only a high-frequency placement of a normal Project target, not a duplicate Project, collection, or workspace.
+
+`Projects` is the single top-level entry for Project portfolio browsing and Initiative context. Initiative remains an independent Domain entity, but the UI reaches Initiative Focus through Projects rather than exposing a parallel top-level Initiatives entry. A Project can still be opened directly from Projects Root, Search, Home, the Default Project shortcut, or another supported deep link without navigating through Initiative Focus first.
+
+The previously proposed dynamic Project children under `Projects` are removed from the current V1 target navigation. If Project children are introduced later, they should reuse the same stable `Project(projectId)` navigation target rather than a second Project model. Favorites remain a supported workspace-state concept, but their sidebar presentation is deferred until the Favorites interaction itself is designed.
+
+A future **Workspace Issues** location may provide an all-Workflow-Issue collection across Projects. It is deferred beyond the current V1 navigation and does not reintroduce a `No Project` Workflow state because every Workflow Issue belongs to exactly one Project.
 
 ### 4.3 Navigation visual language
 
@@ -226,7 +239,6 @@ Examples:
 ```text
 Home
 Triage
-Issues
 Projects
 Projects / Initiative Alpha
 Projects / Initiative Alpha / Project Trail
@@ -316,6 +328,8 @@ Filter                 [List / Timeline]       Display
 
 Initiative is therefore a Project organization/display/focus dimension in this workspace, while remaining a real Domain entity. The Initiative group header is intentionally quiet: disclosure state, Initiative identity, and Project count only. It does not become a mini-dashboard for Initiative Priority, Due, Labels, Progress, Attention, description, or Project lifecycle distribution. Groups are expanded by default; collapse is page presentation state. `No Initiative` uses the same structural treatment but does not navigate to a fake Initiative.
 
+The current Default Project participates in this collection exactly once like every other Project. If it has no Initiative it appears under `No Initiative`; if the user assigns it to an Initiative it appears in that Initiative group. The separate Workspace shortcut does not remove or duplicate the Project in this collection.
+
 Clicking the Initiative title enters Initiative Focus. Clicking a Project row opens that Project directly:
 
 ```text
@@ -366,7 +380,7 @@ The row itself is a navigation surface: activating the title or ordinary row are
 
 Done and Cancelled Projects remain in their current Initiative group rather than moving to a separate Archive surface. Terminal rows settle below active work and use reduced visual weight. A Cancelled Project with unresolved non-terminal child Issues keeps its cleanup Attention prominent even when the rest of the row is muted.
 
-Default Project collection ordering is deterministic and explainable:
+Default Project-collection ordering is deterministic and explainable:
 
 ```text
 Project lifecycle category
@@ -531,7 +545,7 @@ Project lifecycle has four UI roles:
 | Done | settled review | List |
 | Cancelled | cleanup/review | List |
 
-Projectless is not a Project UI, but for Issue operation capability it behaves like an execution-enabled In Progress context.
+The Default Project has no special workspace role. It uses the same lifecycle-dependent Project Workspace behavior, layouts, capabilities, Milestones, and Inspector as any other Project.
 
 ### 6.3 Board Status projection
 
@@ -601,9 +615,9 @@ A filter does not:
 
 Milestone and derived attention entries may apply a temporary Issue Filter in Project Workspace as a navigation shortcut. The resulting filter remains represented by the normal Filter UI and is cleared there rather than maintaining a second hidden Inspector filter state.
 
-### 6.6 Workflow Issue creation
+### 6.6 Workflow Issue creation and default Project selection
 
-Global Capture and Project-local creation are separate intents:
+Global Capture and Project-local creation remain separate intents:
 
 ```text
 Navigation Capture
@@ -615,11 +629,13 @@ Project-local Create Issue
 → default Issue Backlog StatusDefinition
 ```
 
-The creation surface does **not** seed Todo/Started/Completed Status from a nearby List section or Board column.
+Any context-less surface that creates a Workflow Issue directly must also submit an explicit Project relation. Its Project picker may initialize to the Workspace Default Project when that Project can legally accept the new Backlog Issue. If the Default Project is absent or not a legal target, no hidden fallback or lifecycle rewrite occurs; the user chooses another legal Project before submission.
 
-This replaces the earlier idea that a `+` in a Status section/column would inherit that Status. Every normal Workflow Issue is born in Backlog first; execution advancement is a separate user action subject to Project capability.
+Triage Accept follows the same interaction rule: Project is required, the Default Project is the initial selection only when legal, and the user may choose another legal Project from the picker. The selected Project ID is then submitted explicitly to Application/Domain; `undefined` does not mean "use Standalone" below the UI boundary.
 
-In a Not Started Project, the new Backlog Issue can be planned but cannot advance into Todo/Started execution. In an In Progress Project, it can later advance normally. Done/Cancelled Projects do not expose Project-local creation.
+The creation surface does **not** seed Todo/Started/Completed Status from a nearby List section or Board column. Every normal Workflow Issue is born in Backlog first; execution advancement is a separate user action subject to Project capability.
+
+In a Not Started Project, the new Backlog Issue can be planned but cannot advance into Todo/Started execution. In an In Progress Project, it can later advance normally. Done/Cancelled Projects do not expose Project-local creation and are not valid default targets for a new non-terminal child under the normal capability rules.
 
 Exact final placement of the create affordance remains a calibration/composition decision; the semantic contract above is fixed.
 
@@ -670,7 +686,7 @@ If a Not Started Project contains an Issue already in Todo/Started because the P
 
 A target Project picker also consumes effective capability. If the current Issue cannot legally move to a target Project without changing Status, that target is unavailable. Normal Move never silently rewrites Status.
 
-Projectless Issue context resolves to normal execution-enabled Issue capabilities without inventing a synthetic Project.
+The Default Project uses this same capability matrix as any other Project. Being the Workspace default never bypasses target legality or changes Issue Status implicitly.
 
 ## 7. Issue Row and Board Card
 
@@ -874,6 +890,7 @@ Main View
 → lightweight Markdown body/content
 Right Inspector
 → Status
+→ Project
 → Priority
 → Milestone
 → Labels
@@ -1108,18 +1125,23 @@ In Done/Cancelled Projects the Milestone section remains readable summary contex
 
 Delete is not Project Status and does not belong inside the Status picker.
 
-It lives in low-frequency Project overflow/destructive actions and requires confirmation because its relation effects are material:
+It lives in low-frequency Project overflow/destructive actions and requires confirmation because its relation effects are material. If the Project owns Workflow Issues, deletion requires an explicit legal replacement Project:
 
 ```text
 Delete Project
-├─ remove Project
-├─ remove Project-scoped Milestones
 ├─ preserve child Workflow Issues
-├─ move preserved Issues to Projectless
-└─ clear their Milestone relation
+├─ move them to the selected replacement Project
+├─ clear their old Project-scoped Milestone relation
+├─ remove Project-scoped Milestones
+├─ remove Project
+└─ if it was the Default Project, clear defaultProjectId
 ```
 
-The confirmation should state useful concrete consequences/counts rather than generic dramatic wording. Recovery/undo claims must match actual implementation capability.
+The replacement picker may initially select the current Default Project only when it exists, is not the Project being deleted, and can legally accept the affected Issues under normal Project capability rules. Otherwise the user must choose another legal Project. Delete never silently changes Issue Status merely to make a replacement Project acceptable. If the Project has no child Workflow Issues, no replacement Project is required.
+
+Deleting the current Default Project is otherwise an ordinary Project deletion. The replacement used for its Issues does not automatically become the new Default Project, and the sidebar shortcut disappears after the Default Project reference is cleared.
+
+The confirmation should state useful concrete consequences/counts and the selected destination rather than generic dramatic wording. Recovery/undo claims must match actual implementation capability.
 
 ## 10. Responsive Behavior
 
@@ -1152,7 +1174,8 @@ The following are deliberately not frozen yet:
 - complete keyboard shortcut map;
 - Cycle-specific creation/filter/presentation/capability details;
 - Triage-specific Row/detail behavior beyond the shared primitives;
-- Issues, Home, Search, and Custom View detailed compositions;
+- future Workspace Issues, Home, Search, and Custom View detailed compositions;
+- a dedicated user-facing interaction for changing the Default Project after bootstrap; the persisted reference, deletion behavior, and current shortcut are already resolved;
 - Favorites navigation presentation and interaction;
 - exact Timeline scale defaults, date-axis geometry, dense Due-marker collision/aggregation, and final visual calibration;
 - final Health formula or Home Project-focus ranking policy;

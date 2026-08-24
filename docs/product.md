@@ -59,7 +59,7 @@ It provides a higher-level way to understand a set of related Projects without b
 
 ### 3.3 Project
 
-A Project is a clear, completable outcome or deliverable.
+A Project is a coherent planning/execution context for related work. It often represents a clear, completable outcome or deliverable, but it may also be a long-lived work container when that better matches the user's organization.
 
 It is the primary planning/execution workspace for a coherent body of work and can contain Milestones and Issues. A Project has an explicit lifecycle Status chosen by the user.
 
@@ -98,15 +98,17 @@ Completed
 Canceled
 ```
 
-Every newly created normal Workflow Issue is born in `Backlog`, regardless of which UI surface initiated creation. A creation affordance may supply a Project relationship, but it does not silently seed Todo/Started/Completed status merely because it appeared near that group or Board column.
+Every newly created normal Workflow Issue is born in `Backlog`, regardless of which UI surface initiated creation. Every Workflow Issue belongs to exactly one Project. A creation affordance therefore supplies an explicit Project relationship, but it does not silently seed Todo/Started/Completed status merely because it appeared near that group or Board column.
 
-### 3.6 Projectless Workflow
+### 3.6 Default Project
 
-Projectless Workflow Issues are not children of a hidden or synthetic Project.
+A Workspace may hold one optional **Default Project** reference for high-frequency routing and initial selection. The referenced object is an ordinary Project with no special Domain type, lifecycle, relationship, or deletion rule.
 
-For Issue execution capability, Projectless behaves like an always execution-enabled context: a Projectless Issue can follow its normal Issue lifecycle without waiting for a Project lifecycle transition. Projectless does not gain Project properties, Milestones, Project progress, or Project lifecycle.
+A fresh Workspace seeds one normal Project titled `Standalone` and makes that Project the initial Default Project. The seed uses normal Project creation semantics and may immediately be renamed, assigned to an Initiative, moved through any legal Project lifecycle transition, given Milestones and properties, or deleted like any other Project.
 
-Projectless Workflow Issues remain visible in the Workspace-level Issues collection. `No Project` is a relationship/filter/grouping state, not a synthetic Project or a separate top-level workspace.
+`Standalone` is therefore a default title and starting arrangement, not identity or canonical Project semantics. The Default Project reference follows stable Project identity, so renaming the Project also changes the visible shortcut label. If the referenced Project is deleted, Trail clears the Default Project reference rather than silently recreating or replacing it.
+
+When a workflow needs an explicit Project target, Trail may preselect the Default Project only when it is a legal target for that operation. If it is not legal or no Default Project exists, the user chooses another legal Project. Trail does not reinterpret an omitted Project as a hidden fallback inside Domain logic.
 
 ### 3.7 Triage
 
@@ -118,7 +120,7 @@ Quick Capture creates Triage Issues. A Triage Issue can remain in Triage across 
 
 A Cycle is a user-opened personal planning timebox that answers: “what do I intend to focus on during this period?”
 
-Cycles are orthogonal to Issue Status and Project structure. They can contain Issues from multiple Projects and project-less Workflow Issues.
+Cycles are orthogonal to Issue Status and Project structure. They can contain Workflow Issues from multiple Projects.
 
 Project capability rules are resolved independently from Cycle design. Cycle-specific capability/presentation rules are closed separately rather than being inferred prematurely from Project UI.
 
@@ -163,13 +165,13 @@ Quick Capture is intentionally low-friction. It creates a Triage Issue with the 
 
 Triage is a focused List experience. Its primary operations include editing, changing the review Due, accepting into Workflow, converting to a Project when appropriate, and deleting. Triage does not become a generic Board or timeline workspace.
 
-Accept creates new normal Workflow work; it is not a hidden mutation of the Triage Issue into another context.
+Accept creates new normal Workflow work; it is not a hidden mutation of the Triage Issue into another context. Accept requires a Project target. The Project picker initially selects the current Default Project when that Project can legally receive the new Backlog Issue, and the user may choose another legal Project before confirmation.
 
 ### 4.2 Projects workspace
 
 Projects is the single top-level workspace for both Project portfolio browsing and Initiative context. Initiative remains a real Domain entity, but in navigation and collection presentation it primarily acts as an organizational, filtering, and focus dimension over Projects rather than a separate top-level application area.
 
-Projects Root is Project-first. It shows all Projects and groups them by Initiative by default, with a `No Initiative` group for unassigned Projects. From the same Root the user may either focus an Initiative or open a Project directly:
+Projects Root is Project-first. It shows all Projects, including the current Default Project, and groups them by Initiative by default, with a `No Initiative` group for unassigned Projects. From the same Root the user may either focus an Initiative or open a Project directly:
 
 ```text
 Projects Root
@@ -177,7 +179,7 @@ Projects Root
 └─ Project Workspace
 ```
 
-Initiative Focus is a scoped Projects location that shows only Projects contributing to the current Initiative. It is not a mandatory parent path for a Project. Projects may still be deep-linked directly from Home, Search, or other supported navigation.
+Initiative Focus is a scoped Projects location that shows only Projects contributing to the current Initiative. It is not a mandatory parent path for a Project. Projects may still be deep-linked directly from Home, Search, the Default Project shortcut, or other supported navigation.
 
 Projects Root and Initiative Focus share the same Project collection semantics. Both support List plus a lightweight Timeline derived from the current temporal evidence already present in Project, Issue, and Milestone data. Timeline uses Issue `createdAt`, `firstStartedAt`, and current `terminalAt` together with currently meaningful Due facts to show planning/execution evidence and known future constraints without introducing manual Project/Initiative start/end schedule fields. Projects without enough temporal evidence for a meaningful Timeline projection may be omitted from Timeline while remaining available in List.
 
@@ -206,9 +208,9 @@ A Not Started Project can create and accept Backlog Issues and plan them. It can
 
 An In Progress Project enables normal Issue execution and is the only Project lifecycle that exposes the execution Board.
 
-A Done Project contains no non-terminal child Issues at the moment it enters Done. It does not accept new Issues or resume child execution until explicitly reopened.
+A Done Project contains no non-terminal child Issues at the moment it enters Done. It does not accept new non-terminal work or resume child execution until explicitly reopened.
 
-A Cancelled Project may still contain unresolved child Issues. Cancellation does not silently cancel, complete, move, or otherwise rewrite those Issues. Such unresolved work becomes derived Project attention until the user cancels it or moves it to another legal execution context.
+A Cancelled Project may still contain unresolved child Issues. Cancellation does not silently cancel, complete, move, or otherwise rewrite those Issues. Such unresolved work becomes derived Project attention until the user cancels it or moves it to another legal Project.
 
 ### 4.4 Project Status transitions
 
@@ -239,12 +241,12 @@ Target acceptance is capability-based:
 
 - Not Started Project accepts new/moved-in Backlog Issues;
 - In Progress Project accepts Issues whose current lifecycle can legally continue there;
-- Done/Cancelled Projects do not accept new Issue membership;
-- Projectless is always available as an execution-capable relationship target where the Issue relationship is otherwise legal.
+- terminal Projects accept only relationship changes that are legal under the normal Project capability rules;
+- every Workflow Issue remains related to exactly one real Project.
 
 If the target cannot accept the Issue's current Status, that target is unavailable. A future explicit compound action may combine a Status change with a Project move, but normal Move does not hide that mutation.
 
-Move-out remains available as a repair/organization escape hatch even when the current Project is Done or Cancelled.
+Move-out from one Project therefore means moving to another legal Project. There is no `No Project` destination for Workflow Issues.
 
 ### 4.6 Project progress, attention, and future health
 
@@ -291,7 +293,9 @@ Closing a Cycle is explicit. If unfinished work remains, creating the next Cycle
 
 Trail should first use mature page-specific filters, groups, sorting, and presentations rather than exposing a generic query language.
 
-The Workspace-level navigation exposes `Issues`, `Projects`, and `Cycles` as separate browse locations. `Issues` is the stable collection entry for normal Workflow Issues, including Project-scoped and Projectless work. `Projects` is the single top-level entry for the Project portfolio and Initiative focus. Initiative does not need a parallel top-level navigation entry, and `No Project` does not become a synthetic navigation object.
+The V1 Workspace navigation exposes the current Default Project shortcut, `Projects`, and `Cycles`. The Default Project row opens the same normal Project Workspace reached from Projects Root; it is not a second workspace or duplicate collection. `Projects` is the single top-level entry for the Project portfolio and Initiative focus. Initiative does not need a parallel top-level navigation entry.
+
+A future Workspace-level `Issues` collection may provide an all-Workflow-Issue browse surface across Projects, but it is deferred and does not shape V1 sidebar composition or restore a `No Project` state.
 
 Search finds objects. Command Menu is primarily for actions. Custom Views save useful supported combinations. Favorites remain a supported workspace-state concept, but their final navigation presentation is deferred until that interaction is designed rather than being used to shape the current sidebar.
 
@@ -330,12 +334,12 @@ Home
 Triage                        attention indicator optional
 
 Workspace
-Issues
+Standalone                    fresh Default Project example
 Projects
 Cycles
 ```
 
-Search and Quick Capture are high-frequency global actions rather than ordinary peer navigation rows. `Issues` opens the Workspace-level Workflow Issue collection and therefore gives Projectless work a normal browse location without inventing a synthetic Project. `Projects` opens the unified project-first Projects workspace; Initiative focus is reached from that workspace rather than through a separate top-level Initiative entry. `No Project` and `No Initiative` remain relationship/grouping states, not sidebar objects. Favorites are not part of the currently resolved sidebar composition; their eventual presentation remains deferred. Cycles does not expand Previous Cycle history. Triage may later show a compact attention indicator derived from workload/time urgency; whether that presentation uses color, count, or both remains a UI-detail answer rather than a new persisted fact.
+Search and Quick Capture are high-frequency global actions rather than ordinary peer navigation rows. The row shown as `Standalone` in a fresh Workspace is the current Default Project shortcut: it resolves by stable Project ID and renders the Project's current title, so it may later display another name or disappear when no Default Project reference exists. Activating it opens the same Project Workspace as any other Project route. `Projects` opens the unified project-first Projects workspace; Initiative focus is reached from that workspace rather than through a separate top-level Initiative entry. Favorites are not part of the currently resolved sidebar composition; their eventual presentation remains deferred. Cycles does not expand Previous Cycle history. Triage may later show a compact attention indicator derived from workload/time urgency; whether that presentation uses color, count, or both remains a UI-detail answer rather than a new persisted fact.
 
 The main Trail workspace uses a stable composition:
 
@@ -375,14 +379,14 @@ Weekly Note is a lightweight Home utility backed by one Markdown file. Users can
 5. **Project Status controls capability, not child truth.** Changing Project Status never rewrites child Issues, and Project Workspace continues to report actual child data.
 6. **Project completion is guarded.** Done requires all current child Issues to be Completed or Canceled; Issue completion does not automatically complete the Project.
 7. **Milestone completion and Initiative completion are derived.** They are not manually maintained workflow Statuses.
-8. **Every normal Workflow Issue is born in Backlog.** Creation location does not silently choose another Issue lifecycle Status.
-9. **Projectless is execution-enabled context, not a hidden Project.** Projectless Issues follow normal Issue workflow without Project lifecycle.
+8. **Every normal Workflow Issue is born in Backlog and belongs to exactly one Project.** Creation location does not silently choose another Issue lifecycle Status, and `No Project` is not a valid Workflow state.
+9. **Default Project is routing state, not a Project subtype.** A fresh Workspace seeds `Standalone` as an ordinary Project and references it for default selection/navigation; the Project itself gains no special Domain behavior.
 10. **Cycle planning is explicit and independent of Status.** Joining/leaving a Cycle does not silently change the Issue Status.
 11. **Triage stays distinct from normal Workflow.** Accept creates a new Workflow Issue rather than turning the Triage Issue into another context; captured user content must not be lost during that conversion.
 12. **Drag has one global meaning for Issue cards: Status change.** Relationship changes use explicit actions.
 13. **Due is reused rather than duplicated.** Triage defer is a Due change; Reminder/Due Soon/Overdue are capabilities derived from time facts and policy.
 14. **Progress, Health, Attention, timeline, ranking, and analytics are derived when possible.** Trail does not ask the user to maintain duplicate facts.
-15. **Deletion preserves unrelated work by default.** Deleting a parent/classification target resolves references instead of cascading through independent business data unless the user explicitly chooses a stronger destructive action.
+15. **Deletion preserves unrelated work by default.** Deleting a parent/classification target resolves required references through an explicit legal replacement rather than cascading through independent business data or inventing a missing relationship.
 16. **Normal knowledge work stays Obsidian-native.** Trail does not create a parallel document domain.
 17. **Views compose existing facts and capabilities.** New ways of looking at data should first use existing fields, filters, groups, sorts, and presentations rather than creating new Domain entities.
 18. **Authoritative data changes are user-intent driven.** Automation or AI may assist analysis and creation workflows, but must not silently mutate authoritative data.
