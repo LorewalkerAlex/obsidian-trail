@@ -380,21 +380,127 @@ The default lifecycle order is In Progress, Not Started, Done, then Cancelled. V
 
 Responsive reduction preserves title and Status identity first, then meaningful exception Attention and Priority. Progress bar may collapse to a percentage; ordinary Due, optional Labels, and other secondary text progressively disappear rather than wrapping the row into a mini details view. An overdue Due may receive higher preservation priority because its current semantic emphasis is exceptional.
 
-### 5.6 Actual Activity Timeline
+### 5.6 Project Timeline
 
-Projects Root and Initiative Focus may switch the same filtered Project set from List to a lightweight Timeline. This Timeline is an **actual activity** visualization, not a planning Gantt and not a new source of canonical schedule facts.
+Projects Root and Initiative Focus may switch from List to a lightweight Timeline that projects the **current temporal evidence** already present in Effective Runtime. It is not a planning Gantt, immutable history, or a second source of schedule truth. Timeline does not infer the business story behind reopen, Issue movement, lifecycle mismatches, or other unusual data combinations; when current data changes, the projection changes with it.
 
-Project spans consume the existing Domain-derived activity timeline:
+Linear remains the primary visual/layout reference for the Timeline shell, Project rows, Initiative grouping, time axis, and density. Trail intentionally does not copy Linear's planning-timeframe, dependency, resource-planning, or drag-to-reschedule semantics.
+
+Timeline semantics are resolved through four independent questions.
+
+#### 5.6.1 Timeline eligibility
+
+Timeline does not render a Project merely because the Project exists. A Project with **no current child Workflow Issues** is omitted from Timeline even when the Project itself has Due.
+
+For a Project with current child Issues, render it when at least one of the following temporal signals exists:
+
+- at least one current child Issue has `firstStartedAt`;
+- the Project is currently in the Started/In Progress lifecycle category;
+- at least one currently eligible Project, Milestone, or Issue Due exists;
+- every current child Issue is terminal, allowing a closed never-started lifecycle envelope to be derived.
+
+Otherwise omit the Project from Timeline. In particular, a Not Started Project containing only never-started non-terminal Issues and no eligible Due does not appear in Timeline.
+
+Timeline eligibility is a presentation projection only. It does not mutate the underlying filtered Project collection or create a new Project lifecycle fact.
+
+#### 5.6.2 Left-side temporal span
+
+The historical/current span uses one of two evidence modes.
+
+**Execution evidence mode** applies as soon as any current child Issue has `firstStartedAt`. In this mode, Issue `createdAt` no longer contributes to the left-side span:
 
 ```text
-bar start = derived actualStart from relevant Issue lifecycle evidence
-bar end   = derived actual work end when available
-active work without a derived end extends visually to the current-time marker
+start = earliest current child Issue.firstStartedAt
 ```
 
-A Project with no relevant started activity has no fabricated activity span. Project Due is a separate deadline marker rather than the end of the activity bar. Initiative Focus shows the current Initiative's Projects; Projects Root preserves the same quiet Initiative grouping used by List.
+If any Issue that has `firstStartedAt` is currently non-terminal, the solid execution envelope extends to `today`. Otherwise it ends at the latest current `terminalAt` among Issues that also have `firstStartedAt`.
 
-V1 Timeline is read-oriented. It does not provide drag-to-reschedule, duration resizing, dependency arrows, resource planning, manual start/end dates, or manual positioning. A small set of time scales such as Month/Quarter/Year may live under Display; exact scale defaults and calibrated geometry remain visual implementation details.
+```text
+execution evidence     ━━━━━━━━━━━━━━━
+```
+
+A never-started Issue cannot extend the solid execution envelope merely because it later became Completed/Canceled and therefore has `terminalAt`.
+
+The solid bar is an **execution lifecycle envelope**, not continuous work duration, effort, utilization, or a complete event history. Trail retains only minimal lifecycle history, so reopen or later lifecycle changes may alter the current envelope.
+
+**Planning/lifecycle evidence mode** applies only when no current child Issue has `firstStartedAt`. Its origin is:
+
+```text
+origin = earliest current child Issue.createdAt
+```
+
+`createdAt` alone does not make a Project visible. Once the Project is otherwise Timeline-eligible, the faint span is derived from the current data shape:
+
+- current Started/In Progress Project: faint span from earliest `createdAt` through `today`;
+- all current child Issues terminal and never started: faint span from earliest `createdAt` through the latest current Issue `terminalAt`;
+- otherwise, eligible Due may provide the second temporal boundary; if at least one eligible Due lies in the future, the left-side faint span runs through `today` and the future portion follows the Today-to-Due rule below; if no eligible Due lies in the future, the faint span may end at the latest eligible Due that is later than the origin;
+- if a candidate endpoint is not later than the origin, do not fabricate a reverse or zero-length bar; retain only independently valid markers.
+
+```text
+planning/lifecycle evidence     ───────────────
+execution evidence              ━━━━━━━━━━━━━━━
+```
+
+Project Status does not rewrite Issue lifecycle evidence. A Not Started Project may therefore display a solid execution envelope when its current Issues contain `firstStartedAt`; an In Progress Project may display only faint planning evidence when none of its current Issues has started. Timeline presents the current facts rather than repairing such combinations.
+
+#### 5.6.3 Due markers
+
+Due is a separate marker layer rather than a source of canonical Project start/end dates. A Due is eligible only while its **own corresponding entity** remains non-terminal/currently incomplete:
+
+```text
+Project Due
+→ visible only while Project is Not Started / In Progress
+
+Issue Due
+→ visible only while Issue is non-terminal
+
+Milestone Due
+→ visible only while Milestone is not derived complete
+```
+
+Milestone has no independent Done/Cancelled workflow Status; completion remains derived from its current Issue scope.
+
+A parent becoming terminal does not silently erase an independently active child's Due. For example, a Cancelled Project hides the Project's own Due, while an unresolved child Issue may still expose its Issue Due. Conversely, Completed/Canceled Issues and derived-complete Milestones contribute no Due marker even if their stored Due remains present.
+
+Past eligible Due values remain visible and may receive normal Overdue emphasis. Timeline does not repair conflicting or unusual dates. Project, Milestone, and Issue Due markers use different visual weight while sharing the same temporal grammar; exact glyphs, collision handling, and dense-marker aggregation remain visual-calibration decisions.
+
+#### 5.6.4 Today-to-Due future span
+
+From the eligible Due marker set, derive:
+
+```text
+futureDueHorizon = latest eligible Due later than today
+```
+
+When `futureDueHorizon` exists, render a faint future span from `today` to that horizon:
+
+```text
+today ───────────────── futureDueHorizon
+```
+
+When no eligible future Due exists, render no Today-to-Due span. The future span is independent from the historical execution/planning envelope: if execution ended before today, the gap between the historical endpoint and today remains visually empty rather than being filled with invented activity.
+
+Because eligibility belongs to each corresponding entity, a terminal Project may still show a future span when an unresolved child Issue has an eligible future Due. This is an objective projection of current data, not an attempt to reinterpret the Project's business state.
+
+#### 5.6.5 Query and UI boundary
+
+Timeline projection is derived by Query directly from the current **Effective Runtime** Project/Issue/Milestone state plus temporal context. The current V1 baseline may scan that effective in-memory state directly; it does not introduce a Timeline-specific persisted fact, index, or materialized cache as part of this UI design. Any later performance optimization is a separate concern and must not change Timeline semantics.
+
+Conceptually:
+
+```text
+Effective Runtime + today
+→ Query Timeline projection
+   → Project eligibility
+   → left span kind/start/end
+   → eligible Due markers
+   → future Due horizon
+→ UI geometry / viewport / scale
+```
+
+UI consumes this projection and maps timestamps to the current Timeline geometry. It does not independently rescan/reinterpret Issue business rules inside rendering components. Month/Quarter/Year scaling, horizontal scrolling, `today` placement, marker layout, and responsive geometry are presentation concerns and must not change the derived temporal meaning.
+
+V1 Timeline is read-oriented. It does not provide drag-to-reschedule, duration resizing, dependency arrows, resource planning, manual Project/Initiative start/end dates, manual positioning, or another hidden planning-timeframe model.
 
 ## 6. Project Workspace
 
@@ -1048,7 +1154,7 @@ The following are deliberately not frozen yet:
 - Triage-specific Row/detail behavior beyond the shared primitives;
 - Issues, Home, Search, and Custom View detailed compositions;
 - Favorites navigation presentation and interaction;
-- exact Timeline scale defaults, date-axis geometry, and final visual calibration;
+- exact Timeline scale defaults, date-axis geometry, dense Due-marker collision/aggregation, and final visual calibration;
 - final Health formula or Home Project-focus ranking policy;
 - final full-shell screenshots and calibrated UI measurements.
 

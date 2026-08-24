@@ -179,7 +179,7 @@ Projects Root
 
 Initiative Focus is a scoped Projects location that shows only Projects contributing to the current Initiative. It is not a mandatory parent path for a Project. Projects may still be deep-linked directly from Home, Search, or other supported navigation.
 
-Projects Root and Initiative Focus share the same Project collection semantics. Both support List plus a lightweight actual-activity Timeline over the same filtered Project set. Timeline uses derived Issue lifecycle evidence rather than manually maintained Project or Initiative start/end facts.
+Projects Root and Initiative Focus share the same Project collection semantics. Both support List plus a lightweight Timeline derived from the current temporal evidence already present in Project, Issue, and Milestone data. Timeline uses Issue `createdAt`, `firstStartedAt`, and current `terminalAt` together with currently meaningful Due facts to show planning/execution evidence and known future constraints without introducing manual Project/Initiative start/end schedule fields. Projects without enough temporal evidence for a meaningful Timeline projection may be omitted from Timeline while remaining available in List.
 
 ### 4.3 Project Workspace
 
