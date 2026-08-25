@@ -13,7 +13,9 @@ import {
   TRAIL_LABEL_ENTITY_TYPES,
   TRAIL_LABEL_SELECTION_MODES,
   TRAIL_PRIORITIES,
+  TRAIL_PROJECT_STATUS_CATEGORIES,
   TRAIL_STATUS_CATEGORIES,
+  TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
   TRAIL_STATUS_ENTITY_TYPES,
 } from "./trail-values";
 import type { TrailWorkspaceState } from "./trail-workspace-state";
@@ -69,7 +71,6 @@ const configuration = {
     { id: "issue-started", name: "In Progress", entityType: "issue", category: "started" },
     { id: "issue-done", name: "Done", entityType: "issue", category: "completed" },
     { id: "issue-canceled", name: "Canceled", entityType: "issue", category: "canceled" },
-    { id: "project-backlog", name: "Backlog", entityType: "project", category: "backlog" },
     { id: "project-planned", name: "Planned", entityType: "project", category: "unstarted" },
     { id: "project-started", name: "In Progress", entityType: "project", category: "started" },
     { id: "project-done", name: "Completed", entityType: "project", category: "completed" },
@@ -84,7 +85,6 @@ const configuration = {
       canceled: { defaultId: "issue-canceled", definitionIds: ["issue-canceled"] },
     },
     project: {
-      backlog: { defaultId: "project-backlog", definitionIds: ["project-backlog"] },
       unstarted: { defaultId: "project-planned", definitionIds: ["project-planned"] },
       started: { defaultId: "project-started", definitionIds: ["project-started"] },
       completed: { defaultId: "project-done", definitionIds: ["project-done"] },
@@ -120,6 +120,16 @@ describe("rebuild Domain contracts", () => {
       "completed",
       "canceled",
     ]);
+    expect(TRAIL_PROJECT_STATUS_CATEGORIES).toEqual([
+      "unstarted",
+      "started",
+      "completed",
+      "canceled",
+    ]);
+    expect(TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE).toEqual({
+      issue: TRAIL_STATUS_CATEGORIES,
+      project: TRAIL_PROJECT_STATUS_CATEGORIES,
+    });
     expect(TRAIL_ISSUE_CONTEXTS).toEqual(["triage", "workflow"]);
     expect(TRAIL_STATUS_ENTITY_TYPES).toEqual(["issue", "project"]);
     expect(TRAIL_LABEL_ENTITY_TYPES).toEqual([
@@ -143,6 +153,7 @@ describe("rebuild Domain contracts", () => {
 
   it("keeps Configuration and Workspace State as separate authoritative contracts", () => {
     expect(configuration.cycle.defaultEndRule).toBe("end-of-next-week");
+    expect(configuration.workflowStatuses.project).not.toHaveProperty("backlog");
     expect(workspaceState.customViews[0]?.selection.entityType).toBe("issue");
     expect(workspaceState.favorites[0]).toEqual({
       targetType: "project",

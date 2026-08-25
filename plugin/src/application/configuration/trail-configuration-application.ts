@@ -2,14 +2,17 @@ import type {
   TrailConfiguration,
   TrailLabel,
   TrailLabelGroup,
+  TrailStatusCategoryConfiguration,
   TrailStatusDefinition,
 } from "../../domain/model/trail-configuration";
 import {
   TRAIL_LABEL_ENTITY_TYPES,
-  TRAIL_STATUS_CATEGORIES,
+  TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
   TRAIL_STATUS_ENTITY_TYPES,
+  isTrailStatusCategoryForEntityType,
   type TrailLabelEntityType,
   type TrailLabelSelectionMode,
+  type TrailProjectStatusCategory,
   type TrailStatusCategory,
   type TrailStatusEntityType,
 } from "../../domain/model/trail-values";
@@ -154,6 +157,30 @@ function canonicalizeLabelConfiguration(configuration: TrailConfiguration): Trai
   };
 }
 
+function requireStatusCategoryConfiguration(
+  configuration: TrailConfiguration,
+  entityType: TrailStatusEntityType,
+  category: TrailStatusCategory,
+): TrailStatusCategoryConfiguration {
+  if (!isTrailStatusCategoryForEntityType(entityType, category)) {
+    throw new TrailApplicationPlanningError(
+      "status-category-unsupported",
+      `Status Category ${category} is not supported for ${entityType}`,
+    );
+  }
+  const entityStatuses = configuration.workflowStatuses[entityType] as Readonly<
+    Partial<Record<TrailStatusCategory, TrailStatusCategoryConfiguration>>
+  >;
+  const categoryConfiguration = entityStatuses[category];
+  if (categoryConfiguration === undefined) {
+    throw new TrailApplicationPlanningError(
+      "status-category-missing",
+      `Status Category is not configured: ${entityType}.${category}`,
+    );
+  }
+  return categoryConfiguration;
+}
+
 /**
  * Plugin-data persists StatusDefinitions nested by entity type/category and then
  * rebuilds the flat logical array in that same order during authoritative reread.
@@ -166,8 +193,14 @@ function canonicalizeStatusConfiguration(configuration: TrailConfiguration): Tra
   const statusDefinitions: TrailStatusDefinition[] = [];
 
   for (const entityType of TRAIL_STATUS_ENTITY_TYPES) {
-    for (const category of TRAIL_STATUS_CATEGORIES) {
-      for (const definitionId of configuration.workflowStatuses[entityType][category].definitionIds) {
+    const categories = TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE[entityType] as readonly TrailStatusCategory[];
+    for (const category of categories) {
+      const categoryConfiguration = requireStatusCategoryConfiguration(
+        configuration,
+        entityType,
+        category,
+      );
+      for (const definitionId of categoryConfiguration.definitionIds) {
         const definition = definitionsById.get(definitionId);
         if (definition !== undefined) statusDefinitions.push(definition);
         referenced.add(definitionId);
@@ -206,7 +239,11 @@ function requireStatusDefinitionInCategory(
   statusDefinitionId: string,
 ): TrailStatusDefinition {
   const definition = requireStatusDefinition(configuration, statusDefinitionId);
-  const categoryConfiguration = configuration.workflowStatuses[entityType][category];
+  const categoryConfiguration = requireStatusCategoryConfiguration(
+    configuration,
+    entityType,
+    category,
+  );
   if (
     definition.entityType !== entityType
     || definition.category !== category
@@ -224,15 +261,29 @@ function replaceStatusCategoryConfiguration(
   configuration: TrailConfiguration,
   entityType: TrailStatusEntityType,
   category: TrailStatusCategory,
-  categoryConfiguration: TrailConfiguration["workflowStatuses"][TrailStatusEntityType][TrailStatusCategory],
+  categoryConfiguration: TrailStatusCategoryConfiguration,
 ): TrailConfiguration {
+  requireStatusCategoryConfiguration(configuration, entityType, category);
+  if (entityType === "issue") {
+    return {
+      ...configuration,
+      workflowStatuses: {
+        ...configuration.workflowStatuses,
+        issue: {
+          ...configuration.workflowStatuses.issue,
+          [category]: categoryConfiguration,
+        },
+      },
+    };
+  }
+  const projectCategory = category as TrailProjectStatusCategory;
   return {
     ...configuration,
     workflowStatuses: {
       ...configuration.workflowStatuses,
-      [entityType]: {
-        ...configuration.workflowStatuses[entityType],
-        [category]: categoryConfiguration,
+      project: {
+        ...configuration.workflowStatuses.project,
+        [projectCategory]: categoryConfiguration,
       },
     },
   };
@@ -347,12 +398,18 @@ export class TrailConfigurationApplication {
   }
 
   public createStatusDefinition(input: CreateTrailStatusDefinitionInput): TrailMutationCommandResult {
-    const categoryConfiguration = input.expectedConfiguration.workflowStatuses[input.entityType][input.category];
+    const categoryConfiguration = requireStatusCategoryConfiguration(
+      input.expectedConfiguration,
+      input.entityType,
+      input.category,
+    );
+    const id = normalizeTrailCommandId(this.environment.createId(), "StatusDefinition ID");
+    const name = normalizeName(input.name, "StatusDefinition name");
     const definition: TrailStatusDefinition = {
       category: input.category,
       entityType: input.entityType,
-      id: normalizeTrailCommandId(this.environment.createId(), "StatusDefinition ID"),
-      name: normalizeName(input.name, "StatusDefinition name"),
+      id,
+      name,
     };
     const nextConfiguration = replaceStatusCategoryConfiguration(
       {
@@ -384,7 +441,11 @@ export class TrailConfigurationApplication {
 
   public reorderStatusDefinitions(input: ReorderTrailStatusDefinitionsInput): TrailMutationCommandResult {
     const definitionIds = normalizeOrderedStatusDefinitionIds(input.definitionIds);
-    const current = input.expectedConfiguration.workflowStatuses[input.entityType][input.category];
+    const current = requireStatusCategoryConfiguration(
+      input.expectedConfiguration,
+      input.entityType,
+      input.category,
+    );
     if (
       definitionIds.length !== current.definitionIds.length
       || definitionIds.some((definitionId) => !current.definitionIds.includes(definitionId))
@@ -410,7 +471,11 @@ export class TrailConfigurationApplication {
       input.category,
       input.statusDefinitionId,
     );
-    const current = input.expectedConfiguration.workflowStatuses[input.entityType][input.category];
+    const current = requireStatusCategoryConfiguration(
+      input.expectedConfiguration,
+      input.entityType,
+      input.category,
+    );
     const nextConfiguration = replaceStatusCategoryConfiguration(
       input.expectedConfiguration,
       input.entityType,
@@ -422,8 +487,11 @@ export class TrailConfigurationApplication {
 
   public deleteStatusDefinition(input: DeleteTrailStatusDefinitionInput): TrailMutationCommandResult {
     const current = requireStatusDefinition(input.expectedConfiguration, input.statusDefinitionId);
-    const currentCategory = input.expectedConfiguration
-      .workflowStatuses[current.entityType][current.category];
+    const currentCategory = requireStatusCategoryConfiguration(
+      input.expectedConfiguration,
+      current.entityType,
+      current.category,
+    );
     if (currentCategory.definitionIds.length === 1) {
       throw new TrailApplicationPlanningError(
         "status-category-last-definition",

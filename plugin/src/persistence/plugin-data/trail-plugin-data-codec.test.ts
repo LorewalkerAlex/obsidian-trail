@@ -15,13 +15,49 @@ describe("Trail plugin-data codec", () => {
       workspaceState: createTrailTestWorkspaceState(),
     };
     const physical = serializeTrailPluginData(snapshot);
-    const physicalRoot = physical as { configuration: Record<string, unknown> };
+    const physicalRoot = physical as {
+      configuration: {
+        statusDefinitions?: unknown;
+        statuses: { project: Record<string, unknown> };
+      };
+    };
     const parsed = parseTrailPluginData(physical);
 
     expect(physicalRoot.configuration.statusDefinitions).toBeUndefined();
+    expect(physicalRoot.configuration.statuses.project).not.toHaveProperty("backlog");
+    expect(Object.keys(physicalRoot.configuration.statuses.project)).toEqual([
+      "unstarted",
+      "started",
+      "completed",
+      "canceled",
+    ]);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) throw new Error("expected valid plugin data");
     expect(parsed.value).toEqual(snapshot);
+  });
+
+  it("rejects Project Backlog as an unknown current-schema key", () => {
+    const physical = serializeTrailPluginData({
+      configuration: createTrailTestConfiguration(),
+      workspaceState: createTrailTestWorkspaceState(),
+    }) as {
+      configuration: {
+        statuses: { project: Record<string, unknown> };
+      };
+    };
+    physical.configuration.statuses.project.backlog = {
+      defaultId: "project-backlog",
+      definitions: [{ id: "project-backlog", name: "Backlog" }],
+    };
+
+    const parsed = parseTrailPluginData(physical);
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) throw new Error("expected invalid plugin data");
+    expect(parsed.issues.some((issue) => (
+      issue.code === "plugin-data.key.unknown"
+      && issue.path === "$.configuration.statuses.project"
+      && issue.message === "Unknown key: backlog"
+    ))).toBe(true);
   });
 
   it("round-trips an optional Default Project reference without inventing one", () => {

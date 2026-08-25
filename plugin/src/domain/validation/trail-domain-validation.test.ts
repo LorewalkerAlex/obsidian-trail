@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { TrailConfiguration } from "../model/trail-configuration";
 import type { TrailIssue } from "../model/trail-entities";
 import {
   validateTrailConfiguration,
@@ -32,9 +33,38 @@ describe("Trail domain validation", () => {
       },
     };
 
-    expect(validateTrailConfiguration(invalid).map((issue) => issue.code)).toContain(
+    expect(validateTrailConfiguration(invalid).map((item) => item.code)).toContain(
       "status.default.invalid",
     );
+  });
+
+  it("rejects Project Backlog when malformed input crosses the typed boundary", () => {
+    const valid = createTrailTestConfiguration();
+    const invalid = {
+      ...valid,
+      statusDefinitions: [
+        ...valid.statusDefinitions,
+        {
+          category: "backlog",
+          entityType: "project",
+          id: "project-backlog",
+          name: "Backlog",
+        },
+      ],
+      workflowStatuses: {
+        ...valid.workflowStatuses,
+        project: {
+          ...valid.workflowStatuses.project,
+          backlog: {
+            defaultId: "project-backlog",
+            definitionIds: ["project-backlog"],
+          },
+        },
+      },
+    } as unknown as TrailConfiguration;
+
+    const codes = validateTrailConfiguration(invalid).map((item) => item.code);
+    expect(codes.filter((code) => code === "status.category.unsupported")).toHaveLength(2);
   });
 
   it("keeps context-conditioned Issue invariants in Domain validation", () => {
@@ -48,7 +78,7 @@ describe("Trail domain validation", () => {
       statusDefinitionId: "status-a",
       title: "Workflow Issue",
     } as unknown as TrailIssue;
-    const workflowCodes = validateTrailIssue(invalidWorkflow).map((issue) => issue.code);
+    const workflowCodes = validateTrailIssue(invalidWorkflow).map((item) => item.code);
 
     expect(workflowCodes).toContain("workflow.created-at.invalid");
     expect(workflowCodes).toContain("workflow.project.required");
@@ -63,7 +93,7 @@ describe("Trail domain validation", () => {
       projectId: "project-a",
       title: "Triage Issue",
     } as unknown as TrailIssue;
-    const triageCodes = validateTrailIssue(invalidTriage).map((issue) => issue.code);
+    const triageCodes = validateTrailIssue(invalidTriage).map((item) => item.code);
     expect(triageCodes).toContain("triage.project.forbidden");
     expect(triageCodes).toContain("triage.milestone.forbidden");
 
@@ -73,7 +103,7 @@ describe("Trail domain validation", () => {
       labelIds: [],
       title: "Triage Issue",
     } as unknown as TrailIssue;
-    expect(validateTrailIssue(missingTriageDue).map((issue) => issue.code)).toContain(
+    expect(validateTrailIssue(missingTriageDue).map((item) => item.code)).toContain(
       "triage.due.invalid",
     );
   });

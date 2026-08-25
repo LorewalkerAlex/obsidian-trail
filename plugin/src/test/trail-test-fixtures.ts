@@ -1,5 +1,10 @@
 import type { TrailConfiguration } from "../domain/model/trail-configuration";
 import type { TrailWorkspaceState } from "../domain/model/trail-workspace-state";
+import {
+  TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
+  type TrailProjectStatusCategory,
+  type TrailStatusCategory,
+} from "../domain/model/trail-values";
 
 /** Minimal YAML parser for the simple Trail frontmatter used by owner-level codec tests. */
 export function parseTrailTestYaml(yaml: string): unknown {
@@ -26,21 +31,30 @@ function category(id: string) {
 }
 
 export function createTrailTestConfiguration(): TrailConfiguration {
-  const categories = ["backlog", "unstarted", "started", "completed", "canceled"] as const;
-  const statusDefinitions = [
-    ...categories.map((statusCategory) => ({
-      category: statusCategory,
-      entityType: "issue" as const,
-      id: `issue-${statusCategory}`,
-      name: statusCategory,
-    })),
-    ...categories.map((statusCategory) => ({
-      category: statusCategory,
-      entityType: "project" as const,
-      id: `project-${statusCategory}`,
-      name: statusCategory,
-    })),
-  ];
+  const issueStatusDefinitions = TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.issue.map((statusCategory) => ({
+    category: statusCategory,
+    entityType: "issue" as const,
+    id: `issue-${statusCategory}`,
+    name: statusCategory,
+  }));
+  const projectStatusDefinitions = TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.project.map((statusCategory) => ({
+    category: statusCategory,
+    entityType: "project" as const,
+    id: `project-${statusCategory}`,
+    name: statusCategory,
+  }));
+  const issueStatuses = Object.fromEntries(
+    TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.issue.map((statusCategory) => [
+      statusCategory,
+      category(`issue-${statusCategory}`),
+    ]),
+  ) as Readonly<Record<TrailStatusCategory, ReturnType<typeof category>>>;
+  const projectStatuses = Object.fromEntries(
+    TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.project.map((statusCategory) => [
+      statusCategory,
+      category(`project-${statusCategory}`),
+    ]),
+  ) as Readonly<Record<TrailProjectStatusCategory, ReturnType<typeof category>>>;
   return {
     cycle: { defaultEndRule: "end-of-next-week" },
     labelGroups: [
@@ -54,23 +68,14 @@ export function createTrailTestConfiguration(): TrailConfiguration {
     labels: [
       { groupId: "group-area", id: "label-work", name: "Work" },
     ],
-    statusDefinitions,
+    statusDefinitions: [
+      ...issueStatusDefinitions,
+      ...projectStatusDefinitions,
+    ],
     temporal: { timezone: "Asia/Singapore" },
     workflowStatuses: {
-      issue: {
-        backlog: category("issue-backlog"),
-        unstarted: category("issue-unstarted"),
-        started: category("issue-started"),
-        completed: category("issue-completed"),
-        canceled: category("issue-canceled"),
-      },
-      project: {
-        backlog: category("project-backlog"),
-        unstarted: category("project-unstarted"),
-        started: category("project-started"),
-        completed: category("project-completed"),
-        canceled: category("project-canceled"),
-      },
+      issue: issueStatuses,
+      project: projectStatuses,
     },
   };
 }

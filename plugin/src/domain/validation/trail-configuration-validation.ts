@@ -1,5 +1,12 @@
-import type { TrailConfiguration } from "../model/trail-configuration";
-import { TRAIL_STATUS_CATEGORIES } from "../model/trail-values";
+import type {
+  TrailConfiguration,
+  TrailStatusCategoryConfiguration,
+} from "../model/trail-configuration";
+import {
+  TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
+  isTrailStatusCategoryForEntityType,
+  type TrailStatusCategory,
+} from "../model/trail-values";
 import type { TrailWorkspaceState } from "../model/trail-workspace-state";
 import {
   isTrailId,
@@ -38,16 +45,47 @@ export function validateTrailConfiguration(
     if (!isTrailId(definition.id)) issues.push(issue("status.id.invalid", "StatusDefinition id must be non-empty", "statusDefinitions"));
     if (!nonEmptyText(definition.name)) issues.push(issue("status.name.invalid", "StatusDefinition name must be non-empty", "statusDefinitions"));
     if (!isTrailStatusEntityType(definition.entityType)) issues.push(issue("status.entity-type.invalid", "StatusDefinition entityType is invalid", "statusDefinitions"));
-    if (!isTrailStatusCategory(definition.category)) issues.push(issue("status.category.invalid", "StatusDefinition category is invalid", "statusDefinitions"));
+    if (!isTrailStatusCategory(definition.category)) {
+      issues.push(issue("status.category.invalid", "StatusDefinition category is invalid", "statusDefinitions"));
+    } else if (
+      isTrailStatusEntityType(definition.entityType)
+      && !isTrailStatusCategoryForEntityType(definition.entityType, definition.category)
+    ) {
+      issues.push(issue(
+        "status.category.unsupported",
+        `Status Category ${definition.category} is not supported for ${definition.entityType}`,
+        "statusDefinitions",
+      ));
+    }
     if (definitionsById.has(definition.id)) issues.push(issue("status.id.duplicate", `Duplicate StatusDefinition ID: ${definition.id}`, "statusDefinitions"));
     definitionsById.set(definition.id, definition);
   }
 
   const referencedStatusIds = new Set<string>();
   for (const entityType of ["issue", "project"] as const) {
-    const entityConfig = configuration.workflowStatuses[entityType];
-    for (const category of TRAIL_STATUS_CATEGORIES) {
+    const allowedCategories = TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE[entityType] as readonly TrailStatusCategory[];
+    const entityConfig = configuration.workflowStatuses[entityType] as unknown as Readonly<
+      Record<string, TrailStatusCategoryConfiguration | undefined>
+    >;
+    for (const categoryKey of Object.keys(entityConfig)) {
+      if (!allowedCategories.includes(categoryKey as TrailStatusCategory)) {
+        issues.push(issue(
+          "status.category.unsupported",
+          `Status Category ${categoryKey} is not supported for ${entityType}`,
+          "workflowStatuses",
+        ));
+      }
+    }
+    for (const category of allowedCategories) {
       const categoryConfig = entityConfig[category];
+      if (categoryConfig === undefined) {
+        issues.push(issue(
+          "status.category.missing",
+          `${entityType}.${category} must be configured`,
+          "workflowStatuses",
+        ));
+        continue;
+      }
       if (categoryConfig.definitionIds.length === 0) {
         issues.push(issue("status.category.empty", `${entityType}.${category} must contain at least one definition`, "workflowStatuses"));
       }
@@ -146,7 +184,7 @@ export function validateTrailWorkspaceState(
     if (!isTrailId(view.id)) issues.push(issue("custom-view.id.invalid", "Custom View id must be non-empty", "customViews"));
     if (!nonEmptyText(view.name)) issues.push(issue("custom-view.name.invalid", "Custom View name must be non-empty", "customViews"));
     if (!nonEmptyText(view.selection.entityType)) issues.push(issue("custom-view.entity-type.invalid", "Saved View entityType must be non-empty", "customViews"));
-    if (!isTrailPlainObject(view.presentation)) issues.push(issue("custom-view.presentation.invalid", "Custom View presentation must be an object", "customViews"));
+    if (!isTrailPlainObject(view.presentation)) issues.push(issue("custom-view.presentation.invalid", "Saved View presentation must be an object", "customViews"));
     if (viewIds.has(view.id)) issues.push(issue("custom-view.id.duplicate", `Duplicate Custom View ID: ${view.id}`, "customViews"));
     viewIds.add(view.id);
   }

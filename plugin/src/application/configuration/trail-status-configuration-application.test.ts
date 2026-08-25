@@ -179,6 +179,19 @@ describe("TrailConfigurationApplication Status management", () => {
     expect(defaultPlan.effects.filter(({ kind }) => kind === "replace-entity")).toEqual([]);
   });
 
+  it("rejects Project Backlog at the Application boundary", () => {
+    const configuration = createTrailTestConfiguration();
+    const test = harness(configuration, ["project-backlog"]);
+
+    expect(() => test.application.createStatusDefinition({
+      category: "backlog",
+      entityType: "project",
+      expectedConfiguration: configuration,
+      name: "Backlog",
+    })).toThrow("Status Category backlog is not supported for project");
+    expect(test.submitted).toEqual([]);
+  });
+
   it("requires reorder to preserve the exact current Category membership", () => {
     const configuration = configurationWithReadyStatus();
     const test = harness(configuration);

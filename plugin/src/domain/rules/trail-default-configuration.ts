@@ -1,11 +1,15 @@
 import type {
   TrailConfiguration,
-  TrailEntityStatusConfiguration,
+  TrailStatusCategoryConfiguration,
   TrailStatusDefinition,
   TrailWorkflowStatusConfiguration,
 } from "../model/trail-configuration";
-import type { TrailProjectId } from "../model/trail-values";
-import { TRAIL_STATUS_CATEGORIES } from "../model/trail-values";
+import {
+  TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
+  type TrailProjectId,
+  type TrailProjectStatusCategory,
+  type TrailStatusCategory,
+} from "../model/trail-values";
 import type { TrailWorkspaceState } from "../model/trail-workspace-state";
 import {
   validateTrailConfiguration,
@@ -13,34 +17,66 @@ import {
 } from "../validation/trail-configuration-validation";
 import { isTrailId } from "../validation/trail-value-validation";
 
-const ISSUE_DEFAULT_NAMES = {
+const ISSUE_DEFAULT_NAMES: Readonly<Record<TrailStatusCategory, string>> = {
   backlog: "Backlog",
   unstarted: "Todo",
   started: "In Progress",
   completed: "Done",
   canceled: "Canceled",
-} as const;
+};
 
-const PROJECT_DEFAULT_NAMES = {
-  backlog: "Backlog",
+const PROJECT_DEFAULT_NAMES: Readonly<Record<TrailProjectStatusCategory, string>> = {
   unstarted: "Planned",
   started: "In Progress",
   completed: "Completed",
   canceled: "Canceled",
-} as const;
+};
 
-function createEntityStatuses(
-  entityType: "issue" | "project",
-  names: Readonly<Record<(typeof TRAIL_STATUS_CATEGORIES)[number], string>>,
+function createStatusCategory(
+  createId: () => string,
+): { readonly id: string; readonly configuration: TrailStatusCategoryConfiguration } {
+  const id = createId().trim();
+  if (!isTrailId(id)) throw new Error("Default StatusDefinition ID must be non-empty text");
+  return {
+    configuration: { defaultId: id, definitionIds: [id] },
+    id,
+  };
+}
+
+function createIssueStatuses(
   createId: () => string,
   definitions: TrailStatusDefinition[],
-): TrailEntityStatusConfiguration {
-  return Object.fromEntries(TRAIL_STATUS_CATEGORIES.map((category) => {
-    const id = createId().trim();
-    if (!isTrailId(id)) throw new Error("Default StatusDefinition ID must be non-empty text");
-    definitions.push({ category, entityType, id, name: names[category] });
-    return [category, { defaultId: id, definitionIds: [id] }] as const;
-  })) as unknown as TrailEntityStatusConfiguration;
+): TrailWorkflowStatusConfiguration["issue"] {
+  const statuses = {} as Record<TrailStatusCategory, TrailStatusCategoryConfiguration>;
+  for (const category of TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.issue) {
+    const created = createStatusCategory(createId);
+    definitions.push({
+      category,
+      entityType: "issue",
+      id: created.id,
+      name: ISSUE_DEFAULT_NAMES[category],
+    });
+    statuses[category] = created.configuration;
+  }
+  return statuses;
+}
+
+function createProjectStatuses(
+  createId: () => string,
+  definitions: TrailStatusDefinition[],
+): TrailWorkflowStatusConfiguration["project"] {
+  const statuses = {} as Record<TrailProjectStatusCategory, TrailStatusCategoryConfiguration>;
+  for (const category of TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.project) {
+    const created = createStatusCategory(createId);
+    definitions.push({
+      category,
+      entityType: "project",
+      id: created.id,
+      name: PROJECT_DEFAULT_NAMES[category],
+    });
+    statuses[category] = created.configuration;
+  }
+  return statuses;
 }
 
 /** Builds only the initial mutable Configuration; names remain user-editable labels. */
@@ -50,8 +86,8 @@ export function createDefaultTrailConfiguration(input: {
 }): TrailConfiguration {
   const definitions: TrailStatusDefinition[] = [];
   const workflowStatuses: TrailWorkflowStatusConfiguration = {
-    issue: createEntityStatuses("issue", ISSUE_DEFAULT_NAMES, input.createId, definitions),
-    project: createEntityStatuses("project", PROJECT_DEFAULT_NAMES, input.createId, definitions),
+    issue: createIssueStatuses(input.createId, definitions),
+    project: createProjectStatuses(input.createId, definitions),
   };
   const configuration: TrailConfiguration = {
     cycle: { defaultEndRule: "end-of-next-week" },

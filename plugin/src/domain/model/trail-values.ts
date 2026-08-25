@@ -31,11 +31,37 @@ export const TRAIL_STATUS_CATEGORIES = [
 ] as const;
 export type TrailStatusCategory = (typeof TRAIL_STATUS_CATEGORIES)[number];
 
+export const TRAIL_PROJECT_STATUS_CATEGORIES = [
+  "unstarted",
+  "started",
+  "completed",
+  "canceled",
+] as const;
+export type TrailProjectStatusCategory = (typeof TRAIL_PROJECT_STATUS_CATEGORIES)[number];
+
 export const TRAIL_ISSUE_CONTEXTS = ["triage", "workflow"] as const;
 export type TrailIssueContext = (typeof TRAIL_ISSUE_CONTEXTS)[number];
 
 export const TRAIL_STATUS_ENTITY_TYPES = ["issue", "project"] as const;
 export type TrailStatusEntityType = (typeof TRAIL_STATUS_ENTITY_TYPES)[number];
+
+export const TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE = {
+  issue: TRAIL_STATUS_CATEGORIES,
+  project: TRAIL_PROJECT_STATUS_CATEGORIES,
+} as const satisfies Readonly<Record<TrailStatusEntityType, readonly TrailStatusCategory[]>>;
+
+export function trailStatusCategoriesFor(
+  entityType: TrailStatusEntityType,
+): readonly TrailStatusCategory[] {
+  return TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE[entityType];
+}
+
+export function isTrailStatusCategoryForEntityType(
+  entityType: TrailStatusEntityType,
+  category: TrailStatusCategory,
+): boolean {
+  return trailStatusCategoriesFor(entityType).includes(category);
+}
 
 export const TRAIL_LABEL_ENTITY_TYPES = [
   "initiative",

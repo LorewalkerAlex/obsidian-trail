@@ -21,12 +21,12 @@ describe("TrailStatusPicker", () => {
     const picker = screen.getByLabelText("Project status");
     expect(picker).toHaveValue("project-unstarted");
     expect(screen.getAllByRole("option").map((option) => option.getAttribute("value"))).toEqual([
-      "project-backlog",
       "project-unstarted",
       "project-started",
       "project-completed",
       "project-canceled",
     ]);
+    expect(screen.queryByRole("group", { name: "Backlog" })).toBeNull();
 
     fireEvent.change(picker, { target: { value: "project-started" } });
     expect(onChange).toHaveBeenCalledWith("project-started");

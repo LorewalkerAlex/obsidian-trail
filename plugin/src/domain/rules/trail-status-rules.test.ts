@@ -12,6 +12,8 @@ describe("Trail status rules", () => {
     const configuration = createTrailTestConfiguration();
     expect(resolveTrailDefaultStatusDefinition(configuration, "issue", "backlog").id)
       .toBe("issue-backlog");
+    expect(resolveTrailDefaultStatusDefinition(configuration, "project", "unstarted").id)
+      .toBe("project-unstarted");
     expect(resolveTrailStatusDefinition(configuration, "project", "issue-backlog"))
       .toBeUndefined();
   });

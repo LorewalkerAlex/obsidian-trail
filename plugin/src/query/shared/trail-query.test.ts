@@ -300,16 +300,25 @@ describe("Trail Query read side", () => {
     expect(selectTrailReadableCycleIdsByIssue(store.getState(), issueB.id)).toEqual([cycle.id]);
   });
 
-  it("keeps status picker order driven by Configuration", () => {
+  it("keeps status picker order driven by entity-specific Configuration", () => {
     const { configuration } = readyStore();
-    const groups = selectTrailStatusOptionGroups(configuration, "issue");
-    expect(groups.map(({ category }) => category)).toEqual([
+    const issueGroups = selectTrailStatusOptionGroups(configuration, "issue");
+    expect(issueGroups.map(({ category }) => category)).toEqual([
       "backlog",
       "unstarted",
       "started",
       "completed",
       "canceled",
     ]);
-    expect(groups[0]?.definitions.map(({ id }) => id)).toEqual(["issue-backlog"]);
+    expect(issueGroups[0]?.definitions.map(({ id }) => id)).toEqual(["issue-backlog"]);
+
+    const projectGroups = selectTrailStatusOptionGroups(configuration, "project");
+    expect(projectGroups.map(({ category }) => category)).toEqual([
+      "unstarted",
+      "started",
+      "completed",
+      "canceled",
+    ]);
+    expect(projectGroups[0]?.definitions.map(({ id }) => id)).toEqual(["project-unstarted"]);
   });
 });

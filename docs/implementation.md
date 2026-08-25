@@ -4,25 +4,25 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The historical implementation checkpoint immediately preceding the current Required Workflow Project & Default Project corrective slice is:
+The latest published implementation checkpoint immediately preceding the current Project Status Four-State Configuration Closure is:
 
 ```text
-eb6d98fb28be81d8153aca0429705b05846499de
-fix: harden integrity batch failure safety
+b88b671f1b7d7a81f931e70f052ed2d20fdd0fe4
+feat: require workflow projects and add default project
 ```
 
-The authoritative design baseline for this corrective slice is:
+Its authoritative design parent is:
 
 ```text
 5e481fe3d0cbe5aafe2d49210091eb2cd3d7345d
 docs: require project ownership and default project
 ```
 
-The implementation baseline already contains the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search & Project-less Workflow, Home Routing & Weekly Note, Weekly Note integrity hardening, and Integrity Batch failure-safety hardening slices.
+The implementation baseline already contains the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search & Project-less Workflow, Home Routing & Weekly Note, Weekly Note integrity hardening, Integrity Batch failure-safety hardening, and Required Workflow Project & Default Project slices.
 
 Those checkpoints remain historical implementation evidence. This document does not rewrite their recorded behavior after later Product/Domain decisions change the target.
 
-Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. The current target revision reopens a bounded set of owners inside those foundations; it does not invalidate the architecture or restart the gate sequence.
+Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. The current corrective slice reopens a bounded set of Status Configuration owners inside those foundations; it does not invalidate the architecture or restart the gate sequence.
 
 ### 1.1 Historical implementation checkpoints
 
@@ -47,29 +47,34 @@ Important established checkpoints include:
 - Global Search & Project-less Workflow at `9aa3fcd5d1dff72954cd7d5fc95a844da0890d79`;
 - Home Routing & Weekly Note at `0b41143ba40843e3858249a1825f513366d03a3b`;
 - Weekly Note Integrity Hardening at `926c6ee7714c4171a91c53ead76848a325c321cf`;
-- Integrity Batch Failure-Safety Hardening at `eb6d98fb28be81d8153aca0429705b05846499de`.
+- Integrity Batch Failure-Safety Hardening at `eb6d98fb28be81d8153aca0429705b05846499de`;
+- Required Workflow Project & Default Project at `b88b671f1b7d7a81f931e70f052ed2d20fdd0fe4`.
 
-The Global Search checkpoint is especially important to interpret correctly. At `9aa3f...`, the then-current Domain intentionally allowed `projectId: null`/absent Workflow Issues in `Trail/Collections/Projectless Issues.md`, and representative host validation proved that design worked. The new Product/Domain baseline supersedes that **target model**, not the validity of the historical evidence. Search, Peek, cross-carrier movement, and the shared Markdown EOF fix established by that checkpoint remain reusable evidence; the Projectless state/carrier itself must now be removed from the target implementation.
+The Global Search checkpoint is especially important to interpret correctly. At `9aa3f...`, the then-current Domain intentionally allowed `projectId: null`/absent Workflow Issues in `Trail/Collections/Projectless Issues.md`, and representative host validation proved that design worked. The newer Product/Domain baseline supersedes that **target model**, not the validity of the historical evidence. Search, Peek, cross-carrier movement, and the shared Markdown EOF fix established by that checkpoint remain reusable evidence; the Projectless state/carrier itself is absent from the current runtime target.
 
 ### 1.2 Current corrective-slice status
 
-The authoritative design chain now establishes:
+The canonical Product/Domain/Data chain already establishes one global StatusCategory vocabulary with entity-specific applicability:
 
 ```text
-Workflow Issue → exactly one Project
-Triage Issue   → no Project / no Milestone
+StatusCategory vocabulary
+→ Backlog | Unstarted | Started | Completed | Canceled
 
-Default Project
-→ Workspace State reference to an ordinary Project
-→ fresh Workspace seeds ordinary Project title "Standalone"
-→ no Project subtype / systemRole / special lifecycle / special carrier
+Issue applicability
+→ Backlog | Unstarted | Started | Completed | Canceled
+
+Project applicability
+→ Unstarted | Started | Completed | Canceled
+→ no Backlog
 ```
 
-The corrective slice is now implemented and locally verified pending checkpoint publication. Workflow Issue Project ownership is required across Domain/validation/planning and Application entry points; Triage forbids Project/Milestone relations; normal runtime has no Projectless carrier; Project delete uses explicit legal replacement semantics for child Workflow Issues and clears the Default reference when applicable; Query/UI resolve only legal Project targets and use the Default only as an initial candidate; and Obsidian host composition now provides a real left-split Trail Navigation that routes the Default shortcut to the ordinary Project location.
+The bounded **Project Status Four-State Configuration Closure** is implemented and locally verified, pending checkpoint publication. One canonical entity-specific applicability now drives the logical Configuration shape and the normal consumers of that shape instead of allowing each layer to invent a Project/Backlog exception.
 
-Fresh bootstrap persists an ordinary `Standalone` Project as the initial Default and reserves physical Project sequence `0000` for that initial seed only. The sequence stays with that Project across rename, but it is not Default identity, is never transferred when another Project becomes Default, and is not recreated after deletion.
+The validated logical model now gives Issue five Status category buckets and Project four. Project StatusDefinition values cannot carry Backlog in the validated logical Configuration. Default configuration creates nine StatusDefinitions total: five for Issue and four for Project.
 
-One deliberate integrity nuance preserves the established commit-last failure-safety model: a dangling `defaultProjectId` is observable workspace/reference damage but is not a hard Domain-graph-invalid condition at destructive failure edges. Query/navigation resolve a missing Default as absent; successful explicit Project deletion still clears the reference in the final Plugin Data commit.
+Validation, current-schema Plugin Data parsing/serialization, Configuration Application mutations/canonical ordering, shared Status Query, Status Picker, and Obsidian Settings all consume the same applicability. Current-schema Plugin Data rejects a Project Backlog bucket rather than treating it as a compatibility path. The checked-in development Plugin Data is aligned to Issue 5 / Project 4.
+
+No production migration was introduced for this pre-V1 correction. If a future released schema requires retaining legacy Project Backlog data, Migration must own that explicit one-way transition rather than normal runtime validation or codecs accepting both shapes.
 
 ## 2. Objective
 
@@ -119,6 +124,8 @@ Current reusable capability areas include:
 
 The Default Project does not need a new Project codec, Project source kind, Domain subtype, lifecycle policy, query model, or workspace implementation. It reuses an ordinary Project plus a Workspace State reference and the normal Project route.
 
+Status applicability likewise does not need a second Project Status subsystem. The shared StatusCategory vocabulary remains global; one canonical entity-specific applicability defines the legal subset consumed by Configuration, validation, persistence, Application, Query, and UI.
+
 Reuse of current UI work means reuse the canonical mechanism or evidence when it still fits the resolved target, not preservation of the current POC presentation. The present shell layout, CSS treatment, native select/form composition, page-local navigation, modal Peek/details carriers, and Workflow List/Board presentation remain non-authoritative where `ui.md` defines a different target.
 
 ## 4. Changes
@@ -127,11 +134,13 @@ Reuse of current UI work means reuse the canonical mechanism or evidence when it
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-The bounded **Required Workflow Project & Default Project** corrective cross-layer slice is now green and ready for checkpoint publication. Gate 8 next resumes wider formal UI closure against the resolved `ui.md` target.
+The bounded **Project Status Four-State Configuration Closure** corrective cross-layer slice is green and ready for checkpoint publication. Gate 8 next resumes wider formal UI closure against the resolved `ui.md` target.
 
-The corrective slice implemented the upstream model through existing canonical owners rather than hiding it in sidebar code or a migration compatibility branch.
+The correction closes an implementation/schema mismatch against an already-authoritative Product/Domain/Data rule. It does not redefine Status semantics or create a second Status mechanism.
 
 ### 4.2 Required Workflow Project & Default Project slice
+
+The prior corrective slice was published at `b88b671f1b7d7a81f931e70f052ed2d20fdd0fe4`.
 
 #### Domain / validation
 
@@ -205,7 +214,7 @@ The existing destination-first Integrity Batch safety tradeoff remains: prepare 
 
 #### Migration / development data
 
-This is a breaking current-schema replacement, not a permanent dual model.
+This was a breaking current-schema replacement, not a permanent dual model.
 
 If legacy persisted data must be retained, Migration owns a one-way transition:
 
@@ -218,21 +227,53 @@ legacy Projectless Issues.md
 -> normal runtime starts on current schema only
 ```
 
-The checked-in repository `Trail/` tree remains disposable host-test observation data and may be updated to the new current schema as part of implementation validation. It is not itself a production migration contract.
+The checked-in repository `Trail/` tree remains disposable host-test observation data and may be updated to the current schema as part of implementation validation. It is not itself a production migration contract.
 
-### 4.3 Current verified gaps
+### 4.3 Project Status Four-State Configuration Closure
 
-With the corrective model slice green, remaining verified gaps are grouped as follows:
+#### Canonical logical model
+
+- Keep the global StatusCategory vocabulary at Backlog, Unstarted, Started, Completed, Canceled.
+- Add one canonical entity-specific applicability: Issue uses all five categories; Project uses Unstarted, Started, Completed, Canceled.
+- Model `workflowStatuses.issue` with five category configurations and `workflowStatuses.project` with four.
+- Prevent a validated Project StatusDefinition from using Backlog without introducing a separate Project Status subsystem.
+- Keep Issue-only workflow/board behavior on the full five-state vocabulary.
+
+#### Defaults / validation / persistence
+
+- Fresh default Configuration creates five Issue StatusDefinitions and four Project StatusDefinitions.
+- Configuration validation iterates only the applicable category set for each entity type and rejects invalid definition/entity/category relationships.
+- Current Plugin Data requires exactly five Issue Status buckets and exactly four Project Status buckets.
+- Current-schema parsing rejects Project Backlog as an unknown key; serialization emits no Project Backlog bucket.
+- No legacy compatibility branch or automatic migration is added to normal runtime.
+
+#### Application / Query / UI
+
+- Configuration Application status creation, ordering, defaults, deletion, and canonicalization consume legal entity/category targets rather than accepting every global category for Project.
+- Shared Status Query returns category groups from the canonical applicability.
+- Status Picker renders the groups returned by Query, so Project surfaces contain four groups while Issue surfaces retain five.
+- Obsidian Settings generates only applicable status-category sections and routes mutations through the same legal target model.
+
+#### Tests / development data
+
+- Shared fixtures and Domain contract tests model Issue 5 / Project 4.
+- Default Configuration, validation, codec, Configuration Application, Query, and Status Picker tests cover the four-state Project shape.
+- Fresh bootstrap deterministic test IDs are aligned with nine default StatusDefinitions rather than the obsolete ten-definition sequence.
+- Checked-in `.obsidian/plugins/trail/data.json` contains no Project Backlog bucket; existing Project Markdown references already point to legal Project statuses and require no status migration.
+
+### 4.4 Current verified gaps
+
+With Required Workflow Project & Default Project published and the Four-State correction green, remaining verified gaps are grouped as follows:
 
 - **formal UI closure gaps** — the real Obsidian left-split Trail Navigation and Default Project shortcut now establish the correct host/navigation mechanism, but the remaining shell, Location Bar/View Bar, collection composition, density, and visual calibration still need alignment with `ui.md`;
 - **product composition gaps** — remaining Home composition such as Triage Summary and Activity Heatmap;
 - **consumer-driven shared UI gaps** — Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state where real consumers justify them.
 
-Required Workflow Project & Default Project, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing & Weekly Note, Weekly Note hardening, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
+Required Workflow Project & Default Project, Project Status Four-State Configuration Closure, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing & Weekly Note, Weekly Note hardening, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
 
-### 4.4 Next: formal UI closure
+### 4.5 Next: formal UI closure
 
-With Required Workflow Project & Default Project green, resume formal UI closure against Linear as Trail's primary visual and interaction reference:
+With Project Status Four-State Configuration Closure green, resume formal UI closure against Linear as Trail's primary visual and interaction reference:
 
 ```text
 Product responsibilities
@@ -265,13 +306,14 @@ Current Trail rendering remains functional evidence, not a visual/layout/compone
    |
 8. Product Workspace Implementation                     ACTIVE
    ├─ Required Workflow Project & Default Project       COMPLETED
+   ├─ Project Status Four-State Configuration Closure   COMPLETED
    ├─ Formal UI closure                                 NEXT
    └─ remaining Home composition                        AS CONSUMED
    |
 9. V1 Integration / Hardening
 ```
 
-Completed Gate 8 checkpoints remain:
+Completed Gate 8 slices at this candidate checkpoint include:
 
 - Project Lifecycle Closure;
 - Initiative Focus & Project Assignment;
@@ -286,15 +328,35 @@ Completed Gate 8 checkpoints remain:
 - Milestone Details Editing;
 - Global Search & Project-less Workflow **(historical checkpoint; Projectless target later superseded)**;
 - Home Routing & Weekly Note;
-- Required Workflow Project & Default Project.
+- Required Workflow Project & Default Project;
+- Project Status Four-State Configuration Closure.
 
 A previously completed lower-layer owner may be edited during a later slice when an upstream canonical model changes. That does not create a second implementation track or erase earlier evidence.
 
 ## 6. Risk & Verification
 
-### 6.1 Verified corrective-slice evidence
+### 6.1 Verified Project Status Four-State evidence
 
-The Required Workflow Project & Default Project slice now verifies:
+The Project Status Four-State Configuration Closure now verifies:
+
+- the shared StatusCategory vocabulary remains five-state while canonical applicability is Issue 5 / Project 4;
+- validated logical Configuration has no Project Backlog bucket and a Project StatusDefinition cannot use Backlog;
+- fresh default Configuration creates nine StatusDefinitions total: five Issue plus four Project;
+- validation and current-schema Plugin Data enforce the entity-specific category sets rather than requiring or accepting Project Backlog;
+- Plugin Data serialization emits Issue five-state and Project four-state status configuration;
+- Configuration Application, Query, Status Picker, and Obsidian Settings consume the canonical applicability rather than layer-local Project/Backlog special cases;
+- Issue workflow presentation remains five-state;
+- checked-in development Plugin Data is aligned to Issue 5 / Project 4;
+- bootstrap deterministic ID expectations are aligned to the nine-definition default Configuration;
+- focused fresh-bootstrap verification passes all 3 tests;
+- full `npm run check` passes: ESLint is green, 105 Vitest files / 349 tests pass, TypeScript `tsc --noEmit` passes, and the production esbuild completes;
+- full `git diff --check` passes after the final repair.
+
+No production legacy-data migration was introduced for this pre-V1 correction. If legacy Project Backlog persistence must later be retained, Migration remains the explicit owner rather than broadening the current parser/serializer or validated logical model.
+
+### 6.2 Published Required Workflow Project & Default Project evidence
+
+The Required Workflow Project & Default Project slice at `b88b671f1b7d7a81f931e70f052ed2d20fdd0fe4` verifies:
 
 - Domain types/record validation cannot represent or accept committed Projectless Workflow Issue state;
 - Triage cannot retain Project/Milestone relations;
@@ -310,13 +372,13 @@ The Required Workflow Project & Default Project slice now verifies:
 - normal source discovery/placement contains no Projectless source kind/path;
 - fresh bootstrap produces Triage/Cycles + ordinary `Trail/Projects/0000 Standalone.md` + coherent `defaultProjectId`; ordinary subsequent Project allocation begins at `0001`;
 - external edits/reload converge through existing Source Sync and source-health behavior;
-- full `npm run check` and `git diff --check` pass before checkpoint;
-- representative real-Obsidian validation proves a real left-split Trail Navigation, navigation within one primary Trail tab, ordinary Default Project routing, title/filename rename with stable sequence `0000`, and Default resolution after plugin reload;
+- full `npm run check` and `git diff --check` passed before that checkpoint;
+- representative real-Obsidian validation proved a real left-split Trail Navigation, navigation within one primary Trail tab, ordinary Default Project routing, title/filename rename with stable sequence `0000`, and Default resolution after plugin reload;
 - the diagnostics-enabled host check was followed by a production `npm run build` so the generated bundle returned to production mode.
 
-No production legacy-data migration was introduced for this pre-V1 corrective slice. The checked-in development Vault was aligned directly to the current schema for host evidence; if legacy user-data retention becomes required, the explicit one-way Migration contract above remains the owner.
+No production legacy-data migration was introduced for that pre-V1 corrective slice. The checked-in development Vault was aligned directly to the current schema for host evidence; if legacy user-data retention becomes required, the explicit one-way Migration contract above remains the owner.
 
-### 6.2 Historical evidence policy
+### 6.3 Historical evidence policy
 
 Do not delete tests merely because their old Product scenario used Projectless if they still protect an independent mechanism such as:
 
@@ -329,7 +391,7 @@ Do not delete tests merely because their old Product scenario used Projectless i
 
 Rewrite or relocate scenario-specific assertions so the independent mechanism remains covered under the new required-Project model. Remove only tests whose sole purpose is validating the obsolete Projectless semantic contract.
 
-### 6.3 General verification discipline
+### 6.4 General verification discipline
 
 For each active Gate 8 slice:
 
@@ -346,6 +408,6 @@ For each active Gate 8 slice:
 
 ## 7. Final State
 
-V1 implementation is ready for final product hardening when the frozen project answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions; the model contains no normal-runtime Projectless Workflow state; the Default Project is only an ordinary Project reference/default UI target; dependency gates are coherent; and automated plus representative real-host verification is green for the integrated product.
+V1 implementation is ready for final product hardening when the frozen project answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions; the model contains no normal-runtime Projectless Workflow state; the Default Project is only an ordinary Project reference/default UI target; Status Configuration preserves the global semantic vocabulary while enforcing entity-specific applicability; dependency gates are coherent; and automated plus representative real-host verification is green for the integrated product.
 
 `README.md` remains an entry point. This file owns the active construction stage, execution baseline, current verified gaps, build order, and verification evidence. Historical checkpoint behavior is retained as evidence even when a later upstream design decision supersedes its target semantics.

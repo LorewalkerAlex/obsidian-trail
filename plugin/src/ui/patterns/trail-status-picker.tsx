@@ -1,10 +1,9 @@
 import type { ChangeEvent } from "react";
 
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
-import {
-  TRAIL_STATUS_CATEGORIES,
-  type TrailStatusCategory,
-  type TrailStatusEntityType,
+import type {
+  TrailStatusCategory,
+  TrailStatusEntityType,
 } from "../../domain/model/trail-values";
 import { selectTrailStatusOptionGroups } from "../../query/shared/trail-status-query";
 
@@ -40,16 +39,13 @@ export function TrailStatusPicker(props: {
         onChange={(event: ChangeEvent<HTMLSelectElement>) => props.onChange(event.target.value)}
         value={props.value}
       >
-        {TRAIL_STATUS_CATEGORIES.map((category) => {
-          const group = groups.find((candidate) => candidate.category === category);
-          return (
-            <optgroup key={category} label={statusCategoryLabel(category)}>
-              {(group?.definitions ?? []).map((definition) => (
-                <option key={definition.id} value={definition.id}>{definition.name}</option>
-              ))}
-            </optgroup>
-          );
-        })}
+        {groups.map((group) => (
+          <optgroup key={group.category} label={statusCategoryLabel(group.category)}>
+            {group.definitions.map((definition) => (
+              <option key={definition.id} value={definition.id}>{definition.name}</option>
+            ))}
+          </optgroup>
+        ))}
       </select>
     </label>
   );

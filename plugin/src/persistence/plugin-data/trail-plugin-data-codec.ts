@@ -1,13 +1,14 @@
 import type {
   TrailConfiguration,
-  TrailEntityStatusConfiguration,
   TrailLabel,
   TrailLabelGroup,
+  TrailStatusCategoryConfiguration,
   TrailStatusDefinition,
+  TrailWorkflowStatusConfiguration,
 } from "../../domain/model/trail-configuration";
 import {
   TRAIL_LABEL_ENTITY_TYPES,
-  TRAIL_STATUS_CATEGORIES,
+  TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
   type TrailLabelEntityType,
   type TrailStatusCategory,
   type TrailStatusEntityType,
@@ -169,7 +170,7 @@ function parseStatusCategory(
   path: string,
   issues: TrailPluginDataIssue[],
   definitions: TrailStatusDefinition[],
-): { readonly defaultId: string; readonly definitionIds: readonly string[] } | undefined {
+): TrailStatusCategoryConfiguration | undefined {
   const object = objectAt(value, path, issues);
   if (object === undefined) return undefined;
   exactKeys(object, ["defaultId", "definitions"], [], path, issues);
@@ -195,19 +196,27 @@ function parseStatusCategory(
 function parseEntityStatuses(
   value: unknown,
   entityType: TrailStatusEntityType,
+  categories: readonly TrailStatusCategory[],
   path: string,
   issues: TrailPluginDataIssue[],
   definitions: TrailStatusDefinition[],
-): TrailEntityStatusConfiguration | undefined {
+): Readonly<Record<string, TrailStatusCategoryConfiguration>> | undefined {
   const object = objectAt(value, path, issues);
   if (object === undefined) return undefined;
-  exactKeys(object, TRAIL_STATUS_CATEGORIES, [], path, issues);
-  const result = {} as Record<TrailStatusCategory, { readonly defaultId: string; readonly definitionIds: readonly string[] }>;
-  for (const category of TRAIL_STATUS_CATEGORIES) {
-    const parsed = parseStatusCategory(object[category], entityType, category, `${path}.${category}`, issues, definitions);
+  exactKeys(object, categories, [], path, issues);
+  const result: Record<string, TrailStatusCategoryConfiguration> = {};
+  for (const category of categories) {
+    const parsed = parseStatusCategory(
+      object[category],
+      entityType,
+      category,
+      `${path}.${category}`,
+      issues,
+      definitions,
+    );
     if (parsed !== undefined) result[category] = parsed;
   }
-  return TRAIL_STATUS_CATEGORIES.every((category) => result[category] !== undefined)
+  return categories.every((category) => result[category] !== undefined)
     ? result
     : undefined;
 }
@@ -223,12 +232,26 @@ function parseConfiguration(
 
   const statuses = objectAt(object.statuses, `${path}.statuses`, issues);
   const definitions: TrailStatusDefinition[] = [];
-  let issueStatuses: TrailEntityStatusConfiguration | undefined;
-  let projectStatuses: TrailEntityStatusConfiguration | undefined;
+  let issueStatuses: TrailWorkflowStatusConfiguration["issue"] | undefined;
+  let projectStatuses: TrailWorkflowStatusConfiguration["project"] | undefined;
   if (statuses !== undefined) {
     exactKeys(statuses, ["issue", "project"], [], `${path}.statuses`, issues);
-    issueStatuses = parseEntityStatuses(statuses.issue, "issue", `${path}.statuses.issue`, issues, definitions);
-    projectStatuses = parseEntityStatuses(statuses.project, "project", `${path}.statuses.project`, issues, definitions);
+    issueStatuses = parseEntityStatuses(
+      statuses.issue,
+      "issue",
+      TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.issue,
+      `${path}.statuses.issue`,
+      issues,
+      definitions,
+    );
+    projectStatuses = parseEntityStatuses(
+      statuses.project,
+      "project",
+      TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.project,
+      `${path}.statuses.project`,
+      issues,
+      definitions,
+    );
   }
 
   const labelsObject = objectAt(object.labels, `${path}.labels`, issues);
@@ -484,11 +507,16 @@ function definitionMap(configuration: TrailConfiguration): ReadonlyMap<string, T
 function serializeEntityStatuses(
   configuration: TrailConfiguration,
   entityType: TrailStatusEntityType,
-): Record<TrailStatusCategory, unknown> {
+  categories: readonly TrailStatusCategory[],
+  statuses: Readonly<Record<string, TrailStatusCategoryConfiguration>>,
+): Record<string, unknown> {
   const definitions = definitionMap(configuration);
-  const result = {} as Record<TrailStatusCategory, unknown>;
-  for (const category of TRAIL_STATUS_CATEGORIES) {
-    const categoryConfig = configuration.workflowStatuses[entityType][category];
+  const result: Record<string, unknown> = {};
+  for (const category of categories) {
+    const categoryConfig = statuses[category];
+    if (categoryConfig === undefined) {
+      throw new Error(`Missing ${entityType} Status Category during plugin-data serialization: ${category}`);
+    }
     result[category] = {
       defaultId: categoryConfig.defaultId,
       definitions: categoryConfig.definitionIds.map((id) => {
@@ -525,8 +553,18 @@ export function serializeTrailPluginData(snapshot: TrailPluginDataSnapshot): unk
   const physical = {
     configuration: {
       statuses: {
-        issue: serializeEntityStatuses(snapshot.configuration, "issue"),
-        project: serializeEntityStatuses(snapshot.configuration, "project"),
+        issue: serializeEntityStatuses(
+          snapshot.configuration,
+          "issue",
+          TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.issue,
+          snapshot.configuration.workflowStatuses.issue,
+        ),
+        project: serializeEntityStatuses(
+          snapshot.configuration,
+          "project",
+          TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.project,
+          snapshot.configuration.workflowStatuses.project,
+        ),
       },
       labels: {
         groups: [...snapshot.configuration.labelGroups]

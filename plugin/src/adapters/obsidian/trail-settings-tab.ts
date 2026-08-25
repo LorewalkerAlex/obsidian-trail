@@ -17,7 +17,6 @@ import type {
 } from "../../domain/model/trail-configuration";
 import {
   TRAIL_LABEL_ENTITY_TYPES,
-  TRAIL_STATUS_CATEGORIES,
   TRAIL_STATUS_ENTITY_TYPES,
   type TrailLabelEntityType,
   type TrailLabelSelectionMode,
@@ -28,7 +27,10 @@ import {
   selectTrailReadableConfiguration,
   selectTrailReadableEntityIdsByStatusDefinition,
 } from "../../query/shared/trail-effective-query";
-import { selectTrailStatusOptionGroups } from "../../query/shared/trail-status-query";
+import {
+  selectTrailStatusOptionGroups,
+  type TrailStatusOptionGroup,
+} from "../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 
 function errorMessage(error: unknown): string {
@@ -257,8 +259,8 @@ export class TrailSettingsTab extends PluginSettingTab {
     }
 
     for (const entityType of TRAIL_STATUS_ENTITY_TYPES) {
-      for (const category of TRAIL_STATUS_CATEGORIES) {
-        items.push(this.statusCategoryDefinition(configuration, entityType, category, writable));
+      for (const group of selectTrailStatusOptionGroups(configuration, entityType)) {
+        items.push(this.statusCategoryDefinition(configuration, entityType, group, writable));
       }
     }
 
@@ -280,18 +282,16 @@ export class TrailSettingsTab extends PluginSettingTab {
   private statusCategoryDefinition(
     configuration: TrailConfiguration,
     entityType: TrailStatusEntityType,
-    category: TrailStatusCategory,
+    optionGroup: TrailStatusOptionGroup,
     writable: boolean,
   ): SettingDefinitionItem {
-    const optionGroup = selectTrailStatusOptionGroups(configuration, entityType)
-      .find((group) => group.category === category);
-    const definitions = optionGroup?.definitions ?? [];
-    const categoryConfiguration = configuration.workflowStatuses[entityType][category];
+    const category = optionGroup.category;
+    const definitions = optionGroup.definitions;
     const items = definitions.map((definition, index) => this.statusDefinitionItem(
       configuration,
       definition,
       definitions,
-      categoryConfiguration.defaultId,
+      optionGroup.defaultId,
       index,
       writable,
     ));

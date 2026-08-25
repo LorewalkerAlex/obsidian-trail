@@ -3,6 +3,7 @@ import type {
   TrailLabelGroupId,
   TrailLabelId,
   TrailLabelSelectionMode,
+  TrailProjectStatusCategory,
   TrailStatusCategory,
   TrailStatusDefinitionId,
   TrailStatusEntityType,
@@ -21,13 +22,21 @@ export interface TrailStatusCategoryConfiguration {
   readonly definitionIds: readonly TrailStatusDefinitionId[];
 }
 
-export type TrailEntityStatusConfiguration = Readonly<
+export type TrailIssueStatusConfiguration = Readonly<
   Record<TrailStatusCategory, TrailStatusCategoryConfiguration>
 >;
 
+export type TrailProjectStatusConfiguration = Readonly<
+  Record<TrailProjectStatusCategory, TrailStatusCategoryConfiguration>
+>;
+
+export type TrailEntityStatusConfiguration =
+  | TrailIssueStatusConfiguration
+  | TrailProjectStatusConfiguration;
+
 export interface TrailWorkflowStatusConfiguration {
-  readonly issue: TrailEntityStatusConfiguration;
-  readonly project: TrailEntityStatusConfiguration;
+  readonly issue: TrailIssueStatusConfiguration;
+  readonly project: TrailProjectStatusConfiguration;
 }
 
 export interface TrailLabelGroup {

@@ -82,9 +82,9 @@ function createHarness() {
             kind: "project" as const,
             milestones: [],
             project: {
-              id: "status-11",
+              id: "status-10",
               labelIds: [],
-              statusDefinitionId: "status-7",
+              statusDefinitionId: "status-6",
               title: "Standalone",
             },
             sourcePath: path,
@@ -151,7 +151,7 @@ describe("Fresh Trail workspace bootstrap", () => {
     expect(standaloneMarkdown).toBeDefined();
     expect(standaloneMarkdown).toContain("kind: project");
     expect(standaloneMarkdown).toContain("## Standalone");
-    expect(harness.getSavedPluginData()?.workspaceState.defaultProjectId).toBe("status-11");
+    expect(harness.getSavedPluginData()?.workspaceState.defaultProjectId).toBe("status-10");
 
     const saveIndex = harness.events.indexOf("save-plugin-data");
     expect(saveIndex).toBeGreaterThan(

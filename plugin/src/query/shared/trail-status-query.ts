@@ -3,13 +3,14 @@ import type {
   TrailStatusDefinition,
 } from "../../domain/model/trail-configuration";
 import {
-  TRAIL_STATUS_CATEGORIES,
+  TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
   type TrailStatusCategory,
   type TrailStatusEntityType,
 } from "../../domain/model/trail-values";
 
 export interface TrailStatusOptionGroup {
   readonly category: TrailStatusCategory;
+  readonly defaultId: string;
   readonly definitions: readonly TrailStatusDefinition[];
 }
 
@@ -33,12 +34,28 @@ export function selectTrailStatusOptionGroups(
       .filter((definition) => definition.entityType === entityType)
       .map((definition) => [definition.id, definition] as const),
   );
-  const categories = configuration.workflowStatuses[entityType];
 
-  return TRAIL_STATUS_CATEGORIES.map((category) => ({
-    category,
-    definitions: categories[category].definitionIds
-      .map((definitionId) => definitionsById.get(definitionId))
-      .filter((definition): definition is TrailStatusDefinition => definition !== undefined),
-  }));
+  if (entityType === "issue") {
+    return TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.issue.map((category) => {
+      const categoryConfiguration = configuration.workflowStatuses.issue[category];
+      return {
+        category,
+        defaultId: categoryConfiguration.defaultId,
+        definitions: categoryConfiguration.definitionIds
+          .map((definitionId) => definitionsById.get(definitionId))
+          .filter((definition): definition is TrailStatusDefinition => definition !== undefined),
+      };
+    });
+  }
+
+  return TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE.project.map((category) => {
+    const categoryConfiguration = configuration.workflowStatuses.project[category];
+    return {
+      category,
+      defaultId: categoryConfiguration.defaultId,
+      definitions: categoryConfiguration.definitionIds
+        .map((definitionId) => definitionsById.get(definitionId))
+        .filter((definition): definition is TrailStatusDefinition => definition !== undefined),
+    };
+  });
 }
