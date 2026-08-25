@@ -56,7 +56,7 @@ Useful current Linear visual anchors include:
 - Due dates: <https://linear.app/docs/due-dates>
 - Issue selection: <https://linear.app/docs/select-issues>
 
-For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root and Initiative Focus, current Linear Project/Initiative collection arrangement, density, grouping, and Timeline presentation are the primary visual references. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model, and Trail Project filters continue to reuse Trail's Issue Filter interaction model rather than importing a second Linear-specific filter system.
+For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root, current Linear Project collection arrangement, density, grouping, and Timeline presentation remain useful visual references. Initiative Focus is not currently frozen to Linear's Project/Initiative page composition: its final multi-Project workspace presentation is part of the remaining V1 UI closure. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model. Trail filters use one simplified Trail-specific interaction model; Linear filter visuals may inform polish, but Linear's advanced filter/view-builder semantics are not the product target.
 
 For Triage, current Linear Triage is the primary queue/review interaction reference. Trail adopts its compact intake queue, sequential review rhythm, low-noise disposition actions, and constrained presentation model, while localizing the semantics to Trail's personal intake model: no team/assignee routing, no Snooze state, no normal Workflow Status, and no assumption that accepting must always produce an Issue.
 
@@ -291,11 +291,13 @@ The description may use ordinary lightweight Markdown and Obsidian wikilinks. Tr
 
 The View Bar exists only when the current content is a collection with meaningful presentation controls.
 
-For Projects Root and Initiative Focus, the V1 target is:
+For Projects Root, the V1 target is:
 
 ```text
 Filter        [single List/Timeline toggle]        Display
 ```
+
+Initiative Focus remains part of the final V1 UI-closure discussion. Its working direction is a multi-Project project-like workspace and may reuse a Cycle-like List/Board Issue collection with Project context rather than the old assumption that it is another Project-summary List/Timeline surface. Its final View Bar is therefore not frozen by this section yet.
 
 For an In Progress Project Workspace, the V1 target remains:
 
@@ -317,13 +319,13 @@ Filter                                             Display
 
 The binary layout switch occupies one control slot rather than two permanent peer buttons. Not Started, Done, and Cancelled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation. Triage is always a List. Historical Cycle is also List-only because it is passive final-membership history rather than a historical execution Board.
 
-Project-collection Filter reuses Trail's Issue Filter interaction model, visual primitives, applied-filter treatment, and temporary view-state behavior. It is not a second filter system copied from Linear. The Project property set is intentionally smaller: Projects Root supports Status, Initiative, Priority, Labels, and Due; Initiative Focus omits Initiative because the current location already supplies that scope. Filtering changes visibility only. It does not define grouping, ordering, or entity mutation.
+Trail V1 uses one **simplified shared Filter interaction** across supported collections. It is intentionally narrower than Linear's advanced filtering/view-builder capability and must not grow into a generic boolean-query UI merely because different pages expose different fields. The remaining UI closure will freeze the small shared interaction grammar once, including the popover flow, applied-filter treatment, temporal handling, clear/reset behavior, and keyboard/focus mechanics.
 
-Triage follows the same shared Filter grammar, popover mechanics, condition semantics, applied-filter treatment, and clear behavior used by existing Issue/Project filters; only its available property registry is narrower. Triage does not introduce Triage-specific filter operators or another temporal grammar.
+Projects Root uses the simplified Filter with the smaller Project registry: Status, Initiative, Priority, Labels, and Due. Filtering changes visibility only; it does not define grouping, ordering, or entity mutation. Initiative Focus will consume the same simplified mechanism once its final collection composition is frozen.
 
-Cycle Current and Historical views also consume the same shared Issue Filter grammar. Their field registry is defined in Section 11; Cycle does not introduce another filter syntax or generic view-builder layer.
+Triage and Cycle consume the same simplified shared mechanism with their own already-resolved property registries. They do not introduce page-specific filter syntax, a second boolean builder, or a generic view-builder layer.
 
-`Display` is not a generic view builder. In Project collections it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace and Current Cycle it controls supported secondary Issue Row/Card properties. In Historical Cycle it controls supported flat List-row metadata. In Triage it is limited to supported ordering choices. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
+`Display` is not a generic view builder. In Projects Root it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace and Current Cycle it controls supported secondary Issue Row/Card properties. In Historical Cycle it controls supported flat List-row metadata. In Triage it is limited to supported ordering choices. Initiative Focus Display follows whatever final collection composition is frozen in the remaining UI closure. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
 
 `Create Issue` is not a generic View Bar configuration control. Exact placement of the Project-local create affordance is a composition detail, but it must not visually imply that creation inherits a Todo/Started/Completed group.
 
@@ -364,25 +366,23 @@ Projects Root
 └─ Project Workspace
 ```
 
-Initiative Focus is the same Project collection grammar with one Initiative scope and no Initiative grouping:
+Initiative Focus remains a stable location, but its **final collection composition is reopened for the remaining V1 UI closure**. The current working model is a project-like workspace spanning multiple Projects rather than a duplicate of Projects Root:
 
 ```text
 Projects / Initiative Alpha
-
-Filter                 [List / Timeline]       Display
-
-Project A
-Project B
-Project C
+→ multi-Project working context
+→ likely shared Issue collection
+→ likely List / Board
+→ explicit Project context, similar to Current Cycle
 ```
 
-The current Initiative may expose lightweight description/context below the Location Bar and a persistent Initiative Inspector through Details. Root and Focus reuse the same Project Row, filter mechanics, automatic ordering, context menu, and List/Timeline presentation. Project and Initiative summary activation navigates; V1 does not add a separate Project/Initiative Peek merely for these collections.
+This direction should reuse existing Project Workspace / Current Cycle Issue collection mechanics rather than invent another Board/List engine. The remaining closure must decide the exact Board/List projection, Project grouping/swimlane treatment, Initiative Inspector/actions, and where Project summaries remain visible. Until that discussion closes, the older `same Project collection + List/Timeline` assumption is not authoritative for Initiative Focus.
 
-`+ Project` on Projects Root creates a Project with optional Initiative membership. `+ Project` in Initiative Focus creates in the current Initiative context. Low-frequency Initiative creation belongs to a secondary Projects action rather than requiring a separate top-level navigation area.
+`+ Project` on Projects Root creates a Project with optional Initiative membership. Whether Initiative Focus exposes the same create affordance and how Initiative-level properties/details compose with the aggregate work view remain part of that closure. Low-frequency Initiative creation still belongs to a secondary Projects action rather than requiring a separate top-level navigation area.
 
 ### 5.5 Project Summary Row
 
-Project Row is the primary scanning unit in Projects Root and Initiative Focus. It stays compact and normally single-line rather than becoming a card or a table of every Project fact.
+Project Row is the primary scanning unit in Projects Root. Initiative Focus may still reuse Project summaries where useful, but its primary aggregate-work composition is not frozen yet. Project Row stays compact and normally single-line rather than becoming a card or a table of every Project fact.
 
 Wide conceptual form:
 
@@ -422,7 +422,7 @@ Responsive reduction preserves title and Status identity first, then meaningful 
 
 ### 5.6 Project Timeline
 
-Projects Root and Initiative Focus may switch from List to a lightweight Timeline that projects the **current temporal evidence** already present in Effective Runtime. It is not a planning Gantt, immutable history, or a second source of schedule truth. Timeline does not infer the business story behind reopen, Issue movement, lifecycle mismatches, or other unusual data combinations; when current data changes, the projection changes with it.
+Projects Root may switch from List to a lightweight Timeline that projects the **current temporal evidence** already present in Effective Runtime. Initiative Focus is no longer assumed to share this List/Timeline presentation until its multi-Project workspace closure is complete. It is not a planning Gantt, immutable history, or a second source of schedule truth. Timeline does not infer the business story behind reopen, Issue movement, lifecycle mismatches, or other unusual data combinations; when current data changes, the projection changes with it.
 
 Linear remains the primary visual/layout reference for the Timeline shell, Project rows, Initiative grouping, time axis, and density. Trail intentionally does not copy Linear's planning-timeframe, dependency, resource-planning, or drag-to-reschedule semantics.
 
@@ -626,9 +626,9 @@ The Filter in Project Workspace answers only:
 
 > Which Issues from this Project collection are visible?
 
-It uses Trail's shared Issue Filter interaction/presentation model. Projects Root and Initiative Focus reuse the same filter primitives and behavior with a smaller Project-specific property registry; they do not define a parallel filtering system.
+It uses Trail's simplified shared Filter interaction/presentation model. Projects Root uses the same primitive with a smaller Project-specific property registry; Initiative Focus will reuse the same mechanism once its final collection scope is frozen.
 
-Project Workspace filter choices are based on supported existing Issue facts and useful derived buckets, for example Status, Priority, Milestone, Cycle membership, Labels, Due, and Estimate where the current consumer supports them. Trail does not expose a generic operator language, nested boolean builder, or reusable query DSL merely to power these page filters.
+Project Workspace filter choices are based on supported existing Issue facts and useful derived buckets, for example Status, Priority, Milestone, Cycle membership, Labels, Due, and Estimate where the current consumer supports them. The exact small cross-surface Filter interaction grammar remains part of the final UI closure. Trail does not expose Linear's advanced filter builder, a generic operator language, nested boolean builder, or reusable query DSL merely to power these page filters.
 
 A filter does not:
 
@@ -943,7 +943,7 @@ Examples:
 
 ```text
 Project Workspace  → Project Inspector
-Initiative Focus   → Initiative Inspector
+Initiative Focus   → Initiative context/details surface (final composition pending)
 Current Cycle      → Current Cycle Inspector
 Historical Cycle   → Historical Cycle Inspector
 Issue Full Item    → Issue Inspector
@@ -1210,7 +1210,7 @@ Triage Filter supports only:
 - Priority;
 - Labels.
 
-The filter **grammar is exactly the same shared grammar used by existing Issue/Project filters**: same popover interaction, condition/operator behavior, multi-value semantics, relative temporal treatment, applied-filter representation, clear/reset behavior, and keyboard mechanics. `Review Due` consumes the same temporal Filter grammar as ordinary Due while retaining Triage's review meaning. Triage does not introduce extra operators, a second boolean builder, or Triage-only filter syntax.
+Triage uses the same simplified shared Filter interaction as the other V1 collections, with only the property registry above. The final small shared grammar for popover flow, value conditions, temporal handling, applied-filter representation, clear/reset, and keyboard/focus behavior is still part of the remaining UI closure; Triage does not invent extra operators or Triage-only syntax. `Review Due` retains Triage's review meaning while using the shared temporal treatment once that grammar is frozen.
 
 Filtering changes only which active Triage entries are visible. It does not redefine ordering, mutate properties, or recompute the global Review Set against the filtered subset. When a Filter is active, the UI should avoid presenting the unfiltered Review Set boundary as though it were a boundary in the filtered list; a global `to review` summary may remain clearly global.
 
@@ -1395,7 +1395,7 @@ Current Cycle Filter supports:
 - Due;
 - Estimate.
 
-The grammar is exactly the shared Issue Filter grammar already used by Project Workspace: same popover mechanics, operators/conditions, multi-value semantics, temporal treatment, applied-filter representation, clear/reset behavior, and keyboard mechanics. `Project` is useful here because Cycle scope may cross Projects. `Cycle` itself is not a Current Cycle filter field because the current location already supplies that scope.
+Cycle uses the same simplified shared Filter interaction as Project Workspace and Triage, with the property registry above. The final small cross-surface grammar remains part of the remaining UI closure rather than copying Linear's advanced filter builder. `Project` is useful here because Cycle scope may cross Projects. `Cycle` itself is not a Current Cycle filter field because the current location already supplies that scope.
 
 Filtering changes visibility only. It does not change Cycle membership, Board Status projection, Project swimlanes, automatic List clustering, or Issue properties.
 
@@ -1561,9 +1561,35 @@ General priority:
 
 Exact breakpoints remain visual-calibration decisions.
 
-## 13. Explicitly Deferred UI Decisions
+## 13. Remaining V1 UI Design Closure
 
-The following are deliberately not frozen yet:
+The core Project Workspace, Projects Root, Triage, and Cycle page semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers must be closed before Trail treats the whole V1 UI authority as complete:
+
+- **Creation surfaces** — Quick Capture plus the standard Create Issue, Create Project, and Create Initiative compositions that existing flows already reference;
+- **Simplified shared Filter** — one intentionally small Trail-specific interaction grammar shared by Project/Issue/Triage/Cycle consumers, without copying Linear's advanced filter/view-builder system;
+- **Shared interaction system** — Selection, Bulk Actions, Context Menu, Command Menu, keyboard interaction principles, and user-visible optimistic/pending/failure/recovery feedback;
+- **Initiative Focus** — confirm the multi-Project project-like workspace composition, with the current working direction favoring reuse of Cycle-style multi-Project Issue List/Board mechanics and explicit Project context rather than the old duplicate Project-summary List/Timeline assumption;
+- **Home** — close the V1 composition and interaction of Date/Time, Current Cycle Summary, Triage Summary, Projects/Initiatives Summary, Activity Heatmap, and Weekly Note;
+- **Search** — close the global search surface, result composition/grouping, keyboard navigation, activation behavior, and interaction with Peek/navigation;
+- **Runtime/Data-Issue feedback** — map `loading`, `refreshing`, `read-only-error`, optimistic pending, mutation failure, and recoverable Data Issue states to coherent user-visible UI;
+- **Default Project setter** — provide a lightweight V1 interaction for explicitly setting or replacing the Workspace Default Project after bootstrap without introducing special Project semantics.
+
+These are not implementation-calibration details and are not deferred beyond V1. They remain the next UI-design work before full Formal UI Implementation closure.
+
+## 14. Explicitly Deferred Beyond Current V1 UI Closure
+
+The following product conveniences are deferred and do not block V1 UI freeze or formal implementation of the supported workflows:
+
+- Custom Views user-facing creation/editing/navigation;
+- Favorites user-facing navigation and management;
+- future Workspace Issues collection;
+- final Health formula or Home Project-focus ranking policy beyond the already-defined V1 Home summaries.
+
+Their existing Domain/Data/Workspace-state concepts do not require speculative V1 UI or implementation work.
+
+## 15. Implementation-Time Calibration Decisions
+
+The following may remain replaceable until the relevant real-Obsidian surface exists and can be calibrated against current references:
 
 - final pixel values, color values, opacity, radius, and spacing;
 - final icon choice where multiple existing Obsidian/Lucide equivalents are plausible;
@@ -1574,12 +1600,8 @@ The following are deliberately not frozen yet:
 - exact final placement/shortcut for Project-local Create Issue, beyond the fixed `create → Backlog` semantic contract;
 - exact final placement of Current Cycle `Add issues` and History access within the already-resolved Location/View-Bar responsibility split;
 - exact user-facing body-heading mapping required by managed Markdown's reserved H1/H2 structure;
-- complete keyboard shortcut map;
-- future Workspace Issues, Home, Search, and Custom View detailed compositions;
-- a dedicated user-facing interaction for changing the Default Project after bootstrap; the persisted reference, deletion behavior, and current shortcut are already resolved;
-- Favorites navigation presentation and interaction;
+- complete keyboard shortcut bindings once the interaction principles are frozen;
 - exact Timeline scale defaults, date-axis geometry, dense Due-marker collision/aggregation, and final visual calibration;
-- final Health formula or Home Project-focus ranking policy;
 - final full-shell screenshots and calibrated UI measurements.
 
-These items should be resolved consumer by consumer, using current Product/Domain/Architecture facts and the visual-reference rules in this document rather than by introducing speculative generic frameworks.
+These calibration items should be resolved against real consumers and host behavior without introducing speculative generic frameworks.

@@ -20,7 +20,7 @@ Trail V1 covers:
 - personal planning Cycles;
 - Status, Priority, Estimate, Due, and structured Labels;
 - Board, List, and lightweight Project Timeline presentations;
-- Filter, Group, Sort, Search, Custom Views, and Favorites as needed by the supported workflows;
+- Filter, Group, Sort, and Search as needed by the supported V1 workflows;
 - Home as a global summary and routing surface;
 - Peek, Context Menu, Selection, Bulk Actions, Command Menu, and keyboard-oriented interaction;
 - lightweight entity descriptions and properties;
@@ -43,7 +43,7 @@ Trail does not introduce:
 - a generic query language, BI-style view builder, or arbitrary transaction framework;
 - automatic AI/agent modification of authoritative data without explicit user intent.
 
-Templates, recurring creation, integrations, inbox-like information surfaces, and AI/agent conveniences may be added later as capabilities built on the established model; they do not redefine the V1 core domain.
+Templates, recurring creation, integrations, inbox-like information surfaces, Custom Views, Favorites, and AI/agent conveniences may be added later as capabilities built on the established model; they do not redefine the V1 core domain. Custom Views and Favorites are explicitly deferred beyond the current V1 UI closure and do not shape the V1 navigation or implementation plan.
 
 ## 3. Product Model
 
@@ -108,7 +108,7 @@ A fresh Workspace seeds one normal Project titled `Standalone` and makes that Pr
 
 `Standalone` is therefore a default title and starting arrangement, not identity or canonical Project semantics. The Default Project reference follows stable Project identity, so renaming the Project also changes the visible shortcut label. If the referenced Project is deleted, Trail clears the Default Project reference rather than silently recreating or replacing it.
 
-When a workflow needs an explicit Project target, Trail may preselect the Default Project only when it is a legal target for that operation. If it is not legal or no Default Project exists, the user chooses another legal Project. Trail does not reinterpret an omitted Project as a hidden fallback inside Domain logic.
+When a workflow needs an explicit Project target, Trail may preselect the Default Project only when it is a legal target for that operation. If it is not legal or no Default Project exists, the user chooses another legal Project. Trail does not reinterpret an omitted Project as a hidden fallback inside Domain logic. V1 also requires a lightweight user-facing way to set or replace the Default Project after bootstrap; the exact interaction is a UI-design decision, not a new Project subtype or Domain rule.
 
 ### 3.7 Triage
 
@@ -138,11 +138,11 @@ Cycle membership itself is intentionally permissive: any Workflow Issue may be s
 - **Due** is the canonical time target/attention fact. Context determines how it is presented.
 - **Labels** are structured Workspace classification. Label Groups can express single-choice dimensions such as Area or multi-choice dimensions such as Technology.
 
-### 3.10 Views and Favorites
+### 3.10 Filters and deferred workspace conveniences
 
-A Filter is a temporary read configuration. A Custom View saves supported selection and presentation choices for later reuse.
+A Filter is a temporary read configuration used by the supported V1 workspaces. Trail intentionally favors a simpler product-specific filter interaction over importing Linear's advanced filter/view-builder behavior.
 
-Favorites are user-maintained navigation shortcuts to high-value Trail targets. They are not a boolean field on every entity.
+Custom Views and Favorites remain valid future workspace-state concepts, but their user-facing V1 interaction and navigation are deferred. They do not need to be implemented or used to shape current sidebar composition before a later product/UI closure explicitly reactivates them.
 
 ### 3.11 Home
 
@@ -191,9 +191,9 @@ Projects Root
 └─ Project Workspace
 ```
 
-Initiative Focus is a scoped Projects location that shows only Projects contributing to the current Initiative. It is not a mandatory parent path for a Project. Projects may still be deep-linked directly from Home, Search, the Default Project shortcut, or other supported navigation.
+Initiative Focus is a scoped multi-Project location for one Initiative. It is not a mandatory parent path for a Project, and Projects may still be deep-linked directly from Home, Search, the Default Project shortcut, or other supported navigation.
 
-Projects Root and Initiative Focus share the same Project collection semantics. Both support List plus a lightweight Timeline derived from the current temporal evidence already present in Project, Issue, and Milestone data. Timeline uses Issue `createdAt`, `firstStartedAt`, and current `terminalAt` together with currently meaningful Due facts to show planning/execution evidence and known future constraints without introducing manual Project/Initiative start/end schedule fields. Projects without enough temporal evidence for a meaningful Timeline projection may be omitted from Timeline while remaining available in List.
+Projects Root remains the Project-summary collection and supports List plus the lightweight Project Timeline derived from current temporal evidence. The final Initiative Focus presentation is intentionally reopened for UI closure: the working direction is a project-like workspace spanning multiple Projects, likely reusing the same shared Issue collection mechanics that make Current Cycle a multi-Project Board/List surface with explicit Project context. Product does not freeze the old assumption that Initiative Focus must be the same Project-summary List/Timeline collection as Projects Root.
 
 ### 4.3 Project Workspace
 
@@ -302,7 +302,7 @@ A Current Cycle is another scoped Workflow Issue collection, not another workflo
 - Board is the default layout and uses Status columns with Project swimlanes;
 - Project swimlanes provide Board context and are presentation, not drag targets;
 - List remains available, shows the full Workflow lifecycle, displays Project as Issue metadata, and keeps Issues from the same Project visually coherent within a Status;
-- Filter reuses the shared Issue Filter grammar with a Cycle-appropriate field registry rather than introducing Cycle-specific syntax.
+- Filter reuses Trail's shared simplified filter interaction with a Cycle-appropriate field registry rather than importing Linear's advanced filter/view-builder behavior or introducing Cycle-specific syntax.
 
 Board continues to use the normal execution projection. Backlog and Canceled members remain part of the Cycle and remain visible in List even though they are not normal Board columns. Moving a member between Issue Statuses or Projects does not add/remove Cycle membership; presentation updates from the live Issue facts.
 
@@ -331,7 +331,7 @@ The V1 Workspace navigation exposes the current Default Project shortcut, `Proje
 
 A future Workspace-level `Issues` collection may provide an all-Workflow-Issue browse surface across Projects, but it is deferred and does not shape V1 sidebar composition or restore a `No Project` state.
 
-Search finds objects. Command Menu is primarily for actions. Custom Views save useful supported combinations. Favorites remain a supported workspace-state concept, but their final navigation presentation is deferred until that interaction is designed rather than being used to shape the current sidebar.
+Search finds objects and remains a required V1 global surface whose detailed composition still needs UI closure. Command Menu is primarily for actions. Custom Views and Favorites are deferred beyond the current V1 UI closure and therefore do not shape the V1 sidebar or implementation plan.
 
 ### 4.10 Peek and interaction model
 
