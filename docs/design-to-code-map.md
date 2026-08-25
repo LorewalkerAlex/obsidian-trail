@@ -18,8 +18,9 @@ Representative mappings:
 
 | Product behavior | Domain / Data basis | Architecture capability | Canonical code owner | Verification owner |
 |---|---|---|---|---|
-| Quick Capture creates Triage work | Triage Issue context + required Due; no Project/Milestone | semantic create plan + single-source persistence | `domain/planning`, `application/triage`, shared mutation/persistence | planner + application + representative host |
-| Accept Triage | new Workflow identity + required target Project; source removed only after legal target exists | legal-target selection + Source Transition | `domain/planning`, `application/triage`, `query`, `mutation`, `source-sync` | planner + query/application + transition/source-sync + representative host |
+| Quick Capture creates Triage work | Triage Issue context + required review Due; no Project/Milestone | semantic create plan + single-source persistence | `domain/planning`, `application/triage`, shared mutation/persistence | planner + application + representative host |
+| Triage review queue | Triage Issue + Due/Priority/Labels; Review Set is derived, not persisted | page selector + shared filter/sort + transient sequential review state | `query`, `ui/pages/triage`, shared `ui/interactions`/filter primitives | query + UI |
+| Accept Triage | source Triage identity is replaced by a new standard Workflow Issue or Project; V1 auto-seeds title/body only; source removed only after target exists | target-kind choice + normal target create use case + destination-first Source Transition | `ui/pages/triage`, `application/triage`, `application/issues` / `application/projects`, shared mutation/source-sync | planner/application + transition/source-sync + representative host |
 | Create Workflow Issue | Workflow Issue requires exactly one Project and begins in Backlog | explicit target Project + semantic create plan | `domain/planning`, `application/issues`, `query` where a default candidate is needed, shared mutation | planner + application/UI |
 | Change Issue Status | StatusDefinition + lifecycle/Estimate + owning-Project capability invariants | Replace plan + Single Transaction | `domain/planning`, `application/issues`, shared mutation | planner + application/UI |
 | Move Issue between Projects | stable Issue identity + required target Project + Milestone scope + placement integrity | legal-target selection + Source Transition | `domain/planning`, `application/issues`, `query`, `mutation` | planner + application + representative host |
@@ -51,6 +52,8 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 | Pure semantic mutation planning | validated planning state + normalized command | `domain/planning` |
 
 Workflow Issue Project requiredness belongs to the Domain model/validation/planning owners. `Standalone` does not: it is the initial title of an ordinary bootstrapped Project, not a subtype or flag.
+
+Triage's user-facing queue/review model does not create a new Domain entity. Domain continues to own the Triage-context Issue contract and the target-creation/source-removal semantics; UI/Query own Review Set, filtering, ordering presentation, and sequential review state.
 
 ### 2.2 Persistence capabilities
 
@@ -97,6 +100,8 @@ Normal runtime has no `Projectless Issues` path, source kind, codec, or reposito
 | Create-time similarity guard | effective Runtime + text/relation signals | `application/similarity` plus query/helper logic |
 
 Default selection is a UI/query concern. Application/Domain Workflow commands receive the explicit Project chosen for the operation rather than interpreting an absent Project as `Standalone`.
+
+Triage Accept does not get a parallel create stack. The Triage surface selects the target kind and initializes the standard Issue/Project creation flow with title/body; normal target Application/Domain rules own the target draft/creation, while `application/triage` owns consuming the source only after successful target establishment.
 
 ### 2.5 UI, host, and cross-cutting capabilities
 

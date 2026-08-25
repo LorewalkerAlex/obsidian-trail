@@ -128,13 +128,15 @@ Status applicability likewise does not need a second Project Status subsystem. T
 
 Reuse of current UI work means reuse the canonical mechanism or evidence when it still fits the resolved target, not preservation of the current POC presentation. The present shell layout, CSS treatment, native select/form composition, page-local navigation, modal Peek/details carriers, and Workflow List/Board presentation remain non-authoritative where `ui.md` defines a different target.
 
+The resolved Triage target likewise reuses the existing Triage Domain/Data carrier, standard Create Issue/Create Project use cases, Source Transition safety, shared Filter grammar, shared property primitives, and shared menu/selection mechanics. It does not justify a TriageItem entity, Triage-specific create form, Snooze state, or second filter grammar.
+
 ## 4. Changes
 
 ### 4.1 Current gate
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-The bounded **Project Status Four-State Configuration Closure** corrective cross-layer slice is green and ready for checkpoint publication. Gate 8 next resumes wider formal UI closure against the resolved `ui.md` target.
+The bounded **Project Status Four-State Configuration Closure** corrective cross-layer slice is green and ready for checkpoint publication. Gate 8 then continues remaining V1 UI design closure and formal UI implementation against the resolved `ui.md` target.
 
 The correction closes an implementation/schema mismatch against an already-authoritative Product/Domain/Data rule. It does not redefine Status semantics or create a second Status mechanism.
 
@@ -189,6 +191,8 @@ The existing Project carrier already owns Project, Milestone, and Workflow Issue
 - The same Project remains visible normally in Projects Root under its actual Initiative/`No Initiative` grouping.
 - If `defaultProjectId` is absent, the shortcut is absent; Projects/Cycles remain available.
 - A dedicated end-user “set Default Project” control is not required for this corrective slice unless later product work explicitly freezes that interaction.
+
+This subsection records the historical `b88...` target. The newer resolved Triage UI target supersedes its **user-facing Accept composition**: Accept now chooses Issue or Project, and only the Issue branch uses the explicit-Project rule above. The underlying required-Project invariant and standard Workflow Issue creation path remain valid implementation evidence.
 
 #### Project delete
 
@@ -263,17 +267,22 @@ The checked-in repository `Trail/` tree remains disposable host-test observation
 
 ### 4.4 Current verified gaps
 
-With Required Workflow Project & Default Project published and the Four-State correction green, remaining verified gaps are grouped as follows:
+With Required Workflow Project & Default Project published, the Four-State correction green, and the Triage target now resolved in Product/Domain/UI, remaining verified gaps are grouped as follows:
 
-- **formal UI closure gaps** — the real Obsidian left-split Trail Navigation and Default Project shortcut now establish the correct host/navigation mechanism, but the remaining shell, Location Bar/View Bar, collection composition, density, and visual calibration still need alignment with `ui.md`;
+- **remaining UI design-closure gaps** — Cycle-specific creation/filter/presentation/capability details remain the next explicit design target; Home/Search/Custom View and other explicitly deferred compositions remain consumer-by-consumer work;
+- **formal UI implementation gaps** — the real Obsidian left-split Trail Navigation and Default Project shortcut establish the correct host/navigation mechanism, but shell, Location Bar/View Bar, collection composition, Triage queue/review composition, density, and visual calibration still need implementation alignment with `ui.md`;
 - **product composition gaps** — remaining Home composition such as Triage Summary and Activity Heatmap;
 - **consumer-driven shared UI gaps** — Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state where real consumers justify them.
 
+Triage's target interaction is now resolved: it is a Linear-inspired intake/review queue with all active entries browseable, a derived seven-day/minimum-10 Review Set, shared-filter grammar over Review Due/Priority/Labels, constrained Display ordering, sequential Review Surface, Accept→Issue/Project using the normal creation modals with title/body prefill only, Defer as review-Due movement, and Delete rather than a persisted Discard concept. This is **design authority**, not a claim that the current implementation already matches it.
+
 Required Workflow Project & Default Project, Project Status Four-State Configuration Closure, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing & Weekly Note, Weekly Note hardening, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
 
-### 4.5 Next: formal UI closure
+### 4.5 Next: remaining UI design closure, then formal UI implementation
 
-With Project Status Four-State Configuration Closure green, resume formal UI closure against Linear as Trail's primary visual and interaction reference:
+Continue V1 design closure with **Cycles** before treating the whole UI design as frozen. Triage-specific Row/review/filter/Accept/Defer behavior is no longer an explicitly deferred UI decision.
+
+The working chain remains:
 
 ```text
 Product responsibilities
@@ -285,7 +294,7 @@ Product responsibilities
 -> implementation
 ```
 
-Current Trail rendering remains functional evidence, not a visual/layout/component baseline.
+After the remaining product-level UI gaps are frozen, audit the current rendering against `ui.md` and implement the formal shell/page closure. Current Trail rendering remains functional evidence, not a visual/layout/component baseline.
 
 ## 5. Build Order
 
@@ -307,13 +316,15 @@ Current Trail rendering remains functional evidence, not a visual/layout/compone
 8. Product Workspace Implementation                     ACTIVE
    ├─ Required Workflow Project & Default Project       COMPLETED
    ├─ Project Status Four-State Configuration Closure   COMPLETED
-   ├─ Formal UI closure                                 NEXT
+   ├─ Triage UI design closure                          RESOLVED DESIGN
+   ├─ Cycle UI design closure                           NEXT DESIGN
+   ├─ Formal UI implementation closure                  AFTER DESIGN
    └─ remaining Home composition                        AS CONSUMED
    |
 9. V1 Integration / Hardening
 ```
 
-Completed Gate 8 slices at this candidate checkpoint include:
+Completed Gate 8 implementation slices at this candidate checkpoint include:
 
 - Project Lifecycle Closure;
 - Initiative Focus & Project Assignment;
@@ -330,6 +341,8 @@ Completed Gate 8 slices at this candidate checkpoint include:
 - Home Routing & Weekly Note;
 - Required Workflow Project & Default Project;
 - Project Status Four-State Configuration Closure.
+
+Triage UI design closure is not listed as a completed implementation slice because this documentation checkpoint freezes the target; implementation alignment remains future Gate 8 work.
 
 A previously completed lower-layer owner may be edited during a later slice when an upstream canonical model changes. That does not create a second implementation track or erase earlier evidence.
 
@@ -375,6 +388,8 @@ The Required Workflow Project & Default Project slice at `b88b671f1b7d7a81f931e7
 - full `npm run check` and `git diff --check` passed before that checkpoint;
 - representative real-Obsidian validation proved a real left-split Trail Navigation, navigation within one primary Trail tab, ordinary Default Project routing, title/filename rename with stable sequence `0000`, and Default resolution after plugin reload;
 - the diagnostics-enabled host check was followed by a production `npm run build` so the generated bundle returned to production mode.
+
+This evidence remains historical and valid for the Issue-target branch of the newer Triage Accept design. The current target additionally allows Accept→Project through the normal Project create flow; that target has not yet been claimed as implemented/host-verified by this historical checkpoint.
 
 No production legacy-data migration was introduced for that pre-V1 corrective slice. The checked-in development Vault was aligned directly to the current schema for host evidence; if legacy user-data retention becomes required, the explicit one-way Migration contract above remains the owner.
 

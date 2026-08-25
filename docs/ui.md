@@ -46,6 +46,7 @@ Useful current Linear visual anchors include:
 - Initiatives: <https://linear.app/docs/initiatives>
 - Timeline: <https://linear.app/docs/timeline>
 - Filters: <https://linear.app/docs/filters>
+- Triage: <https://linear.app/docs/triage>
 - Peek: <https://linear.app/docs/peek>
 - Priority: <https://linear.app/docs/priority>
 - Project overview/details: <https://linear.app/docs/project-overview>
@@ -54,6 +55,8 @@ Useful current Linear visual anchors include:
 - Issue selection: <https://linear.app/docs/select-issues>
 
 For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root and Initiative Focus, current Linear Project/Initiative collection arrangement, density, grouping, and Timeline presentation are the primary visual references. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model, and Trail Project filters continue to reuse Trail's Issue Filter interaction model rather than importing a second Linear-specific filter system.
+
+For Triage, current Linear Triage is the primary queue/review interaction reference. Trail adopts its compact intake queue, sequential review rhythm, low-noise disposition actions, and constrained presentation model, while localizing the semantics to Trail's personal intake model: no team/assignee routing, no Snooze state, no normal Workflow Status, and no assumption that accepting must always produce an Issue.
 
 ## 2. Visual System and Calibration
 
@@ -293,11 +296,19 @@ For an In Progress Project Workspace, the V1 target remains:
 Filter        [single List/Board toggle]           Display
 ```
 
-The binary layout switch occupies one control slot rather than two permanent peer buttons. Not Started, Done, and Cancelled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation.
+For Triage, the V1 target is deliberately simpler:
+
+```text
+Filter                                             Display
+```
+
+The binary layout switch occupies one control slot rather than two permanent peer buttons. Not Started, Done, and Cancelled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation. Triage is always a List and therefore has no layout toggle.
 
 Project-collection Filter reuses Trail's Issue Filter interaction model, visual primitives, applied-filter treatment, and temporary view-state behavior. It is not a second filter system copied from Linear. The Project property set is intentionally smaller: Projects Root supports Status, Initiative, Priority, Labels, and Due; Initiative Focus omits Initiative because the current location already supplies that scope. Filtering changes visibility only. It does not define grouping, ordering, or entity mutation.
 
-`Display` is not a generic view builder. In Project collections it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace it controls supported secondary Issue Row/Card properties. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
+Triage follows the same shared Filter grammar, popover mechanics, condition semantics, applied-filter treatment, and clear behavior used by existing Issue/Project filters; only its available property registry is narrower. Triage does not introduce Triage-specific filter operators or another temporal grammar.
+
+`Display` is not a generic view builder. In Project collections it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace it controls supported secondary Issue Row/Card properties. In Triage it is limited to supported ordering choices. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
 
 `Create Issue` is not a generic View Bar configuration control. Exact placement of the Project-local create affordance is a composition detail, but it must not visually imply that creation inherits a Todo/Started/Completed group.
 
@@ -517,7 +528,6 @@ UI consumes this projection and maps timestamps to the current Timeline geometry
 V1 Timeline is read-oriented. It does not provide drag-to-reschedule, duration resizing, dependency arrows, resource planning, manual Project/Initiative start/end dates, manual positioning, or another hidden planning-timeframe model.
 
 ## 6. Project Workspace
-
 ### 6.1 Data projection is lifecycle-independent
 
 Project Workspace always describes the actual current Project data. Project lifecycle changes available mutations/presentations, not the child facts shown.
@@ -631,7 +641,7 @@ Project-local Create Issue
 
 Any context-less surface that creates a Workflow Issue directly must also submit an explicit Project relation. Its Project picker may initialize to the Workspace Default Project when that Project can legally accept the new Backlog Issue. If the Default Project is absent or not a legal target, no hidden fallback or lifecycle rewrite occurs; the user chooses another legal Project before submission.
 
-Triage Accept follows the same interaction rule: Project is required, the Default Project is the initial selection only when legal, and the user may choose another legal Project from the picker. The selected Project ID is then submitted explicitly to Application/Domain; `undefined` does not mean "use Standalone" below the UI boundary.
+When Triage Accept chooses **Issue**, it opens the normal Create Issue flow and therefore follows exactly this same creation contract: Project is required, the Default Project is only an initial selection when legal, and the selected Project ID is submitted explicitly to Application/Domain. When Triage Accept chooses **Project**, the normal Create Project flow and defaults apply instead. Triage-specific review/Accept composition is defined in Section 10.
 
 The creation surface does **not** seed Todo/Started/Completed Status from a nearby List section or Board column. Every normal Workflow Issue is born in Backlog first; execution advancement is a separate user action subject to Project capability.
 
@@ -777,7 +787,6 @@ Hover/focus on a Label dot provides a small tooltip with the Label name. Precise
 V1 does not add a canonical `Label.color` field solely for this presentation. Label display color is selected deterministically from a limited Trail palette using stable Label identity so the same Label has the same color everywhere. If future real use establishes manual Label color as independent product value, it can be promoted to explicit Label configuration later.
 
 #### Due
-
 Due uses a stable time/calendar visual identity plus semantic emphasis derived from canonical Due + current time.
 
 Normal future dates remain muted. Due Soon, Today, and Overdue may increase semantic emphasis. This presentation does not create duplicate persisted urgency state.
@@ -1143,7 +1152,151 @@ Deleting the current Default Project is otherwise an ordinary Project deletion. 
 
 The confirmation should state useful concrete consequences/counts and the selected destination rather than generic dramatic wording. Recovery/undo claims must match actual implementation capability.
 
-## 10. Responsive Behavior
+## 10. Triage
+
+Triage is a Linear-inspired intake/review queue, not a normal Workflow Issue workspace. Although Domain/Data represent each entry as an Issue in Triage context, the UI presents a **Triage entry** and a Triage-specific review workflow rather than a reduced Workflow Issue surface.
+
+### 10.1 Queue and Review Set
+
+Every active Triage entry remains part of the Triage collection regardless of whether its review Due is in the past, near future, or far future. Review Due means “review again no later than this time”; it does not hide the entry before that time. The user may always browse, search, filter, open, edit, defer, accept, or delete a future-due entry when an idea arrives early.
+
+Default Triage ordering is:
+
+```text
+Review Due ascending
+→ Priority
+→ stable deterministic fallback
+```
+
+V1 also derives a lightweight **Review Set** to answer “how far should I prioritize reviewing now?” without turning that suggestion into collection eligibility:
+
+```text
+Review Set
+= every active Triage entry with Review Due <= now + 7 calendar days
++ earliest remaining entries in normal ordering until at least 10 entries are included
+```
+
+If fewer than 10 active entries exist, the Review Set contains all of them. If more than 10 entries are already due within the seven-day horizon, all of those entries are included. The Review Set is derived presentation/query state; it is not persisted rank, attention, snooze, or lifecycle state.
+
+The UI may expose a quiet summary such as `10 to review` and a subtle boundary/end-of-target treatment in the unfiltered queue. Completing the Review Set never prevents continuing into later entries; sequential review can continue through the whole active Triage collection.
+
+### 10.2 View Bar, Filter, and Display
+
+Triage uses the shared collection View Bar with no layout toggle:
+
+```text
+Filter                                             Display
+```
+
+Triage Filter supports only:
+
+- Review Due;
+- Priority;
+- Labels.
+
+The filter **grammar is exactly the same shared grammar used by existing Issue/Project filters**: same popover interaction, condition/operator behavior, multi-value semantics, relative temporal treatment, applied-filter representation, clear/reset behavior, and keyboard mechanics. `Review Due` consumes the same temporal Filter grammar as ordinary Due while retaining Triage's review meaning. Triage does not introduce extra operators, a second boolean builder, or Triage-only filter syntax.
+
+Filtering changes only which active Triage entries are visible. It does not redefine ordering, mutate properties, or recompute the global Review Set against the filtered subset. When a Filter is active, the UI should avoid presenting the unfiltered Review Set boundary as though it were a boundary in the filtered list; a global `to review` summary may remain clearly global.
+
+`Display` is intentionally constrained and owns only supported ordering choices. V1 exposes Review Due and Priority ordering choices and does not offer Group/Sub-group, Board, Timeline, manual ordering, or a generic Sort builder. Default ordering remains Review Due ascending, then Priority, then stable fallback.
+
+### 10.3 Triage Row
+
+Triage Row is a product-specific scanning surface that may reuse shared row/property primitives but is not modeled visually as a Workflow Issue Row with fields removed.
+
+Conceptually:
+
+```text
+[priority/selection slot]  Title                    ●●   Review Due
+```
+
+Title is the strongest visual anchor. Priority, Labels, and Review Due use the same stable visual identities and picker primitives used elsewhere. Description/body stays out of the compact row and belongs in the Review Surface.
+
+Triage Row does not show Workflow Status, Project, Milestone, Estimate, or Cycle because those are not part of Triage review semantics.
+
+### 10.4 Triage Review Surface
+
+Opening a Triage Row enters a Linear-like sequential **Triage Review Surface** inside the same Trail workspace. It is non-modal and keeps the queue/context available rather than navigating to Workflow Issue Full Item or repurposing the persistent right Inspector.
+
+The surface prioritizes intake content first:
+
+```text
+previous / next             position in active collection
+
+Title
+
+Priority     Labels     Review Due
+
+Description / body
+
+Accept       Defer      Delete       ···
+```
+
+Title and lightweight Markdown description/body are directly editable without a permanent Edit/Save/Cancel shell. Priority, Labels, and Review Due are compact enrichment properties. Exact review-pane width, side/below placement, and responsive geometry are full-shell calibration decisions; the queue/review interaction contract is fixed.
+
+Adjacent-item navigation is first-class so a user can process a review session continuously. Completing a successful Accept, Defer, or Delete selects the next entry according to the current visible/ordered queue when one exists.
+
+### 10.5 Accept
+
+`Accept` is the primary Triage disposition. It means “formalize this intake,” not “turn this record into a Workflow Issue.”
+
+Activating or hovering/focusing Accept progressively discloses the two target kinds:
+
+```text
+Accept
+├─ Issue
+└─ Project
+```
+
+A direct Accept activation opens the same two-target disclosure; Trail does not silently choose Issue as the default. In wide layouts the choices may disclose beside the button; constrained layouts may disclose below it. The interaction should reuse the shared menu/popover mechanics rather than create a special Triage widget.
+
+Choosing **Issue** opens the standard Create Issue modal used elsewhere. Choosing **Project** opens the standard Create Project modal. There is no Triage-specific Accept form.
+
+V1 passes only these automatic initial values into either normal create draft:
+
+```text
+Title
+Description / body
+```
+
+Triage Priority, Labels, and Review Due are not automatically copied. The normal target form may still let the user explicitly choose its ordinary properties before confirmation.
+
+For Issue, standard creation semantics still require an explicit legal Project and create the Workflow Issue in Backlog; the current Default Project may initialize the normal Project picker only when legal. For Project, the ordinary Project creation defaults and validation apply.
+
+Canceling the create modal leaves the Triage entry unchanged. After target creation succeeds, the source Triage entry is removed through the normal destination-first mutation path and the Review Surface advances to the next entry.
+
+### 10.6 Defer
+
+Defer changes Review Due on the same Triage entry. It does not create Snooze/Deferred state and does not hide the entry from Triage.
+
+Primary activation uses the high-frequency default:
+
+```text
+Defer
+→ Review Due + 7 calendar days
+```
+
+Hover/focus disclosure offers alternate normal targets:
+
+```text
+Tomorrow          +1 day
+This weekend
+Next weekend
++1 month
+Pick date…
+```
+
+Calendar shortcuts resolve through the shared temporal/timezone policy. After Defer, the entry is immediately re-ordered by the normal Triage ordering. Because visibility is independent from Due, it remains browseable and can still be processed before the new Due; it may also remain inside the Review Set when the minimum-size rule pulls it into the current review target.
+
+### 10.7 Delete, context actions, and shared interactions
+
+Delete replaces any V1 Discard concept. V1 does not preserve a separate discarded-Triage history or status merely for possible future similarity use.
+
+Delete is available from the Review Surface with lower visual weight than Accept/Defer and is also available from the normal `···`/right-click context menu. Destructive confirmation/recovery treatment should follow the shared interaction system and actual undo capability rather than a Triage-only deletion framework.
+
+Triage participates in Trail's shared Selection, Context Menu, Command Menu, keyboard, and future Bulk Action mechanisms where those capabilities have real consumers. It does not define a second selection grammar or Triage-specific command system; exact bulk-action availability remains owned by the shared consumer-driven interaction closure rather than this page inventing parallel mechanics.
+
+## 11. Responsive Behavior
 
 Trail must work across variable Obsidian pane widths using progressive disclosure rather than a second mobile layout.
 
@@ -1160,7 +1313,7 @@ General priority:
 
 Exact breakpoints remain visual-calibration decisions.
 
-## 11. Explicitly Deferred UI Decisions
+## 12. Explicitly Deferred UI Decisions
 
 The following are deliberately not frozen yet:
 
@@ -1173,7 +1326,6 @@ The following are deliberately not frozen yet:
 - exact user-facing body-heading mapping required by managed Markdown's reserved H1/H2 structure;
 - complete keyboard shortcut map;
 - Cycle-specific creation/filter/presentation/capability details;
-- Triage-specific Row/detail behavior beyond the shared primitives;
 - future Workspace Issues, Home, Search, and Custom View detailed compositions;
 - a dedicated user-facing interaction for changing the Default Project after bootstrap; the persisted reference, deletion behavior, and current shortcut are already resolved;
 - Favorites navigation presentation and interaction;

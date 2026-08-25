@@ -296,20 +296,35 @@ Quick Capture creates a Triage Issue:
 
 V1 Quick Capture resolves its default Due from the current time plus seven calendar days through the temporal policy before creation.
 
+For a Triage Issue, Due is the latest time by which the intake should be reviewed again. It contributes to review urgency and ordering but does not make the Triage Issue inaccessible before that timestamp.
+
 Defer is a Due change on the same Triage Issue. Triage does not introduce Snooze state, `reviewAt`, `attentionAt`, `snoozedUntil`, or `isSnoozed`.
 
 ### 4.4 Accept Triage
 
-Accept is not a context patch and does not preserve source identity:
+Accept is not a context patch and does not preserve source identity. It formalizes one Triage Issue by creating either a new Workflow Issue or a new Project through the normal target-entity creation semantics.
+
+Workflow target:
 
 ```text
 Issue A (Triage)
-→ create Issue B (Workflow, new identity, Backlog)
+→ create Issue B (Workflow, new identity, Backlog, explicit legal Project)
 → B becomes the new normal work item
 → remove A only after B is safely established
 ```
 
-Applicable source content may seed the new Workflow Issue, but Triage Due does not automatically become Workflow Due. Accept also supplies exactly one explicit target Project; any Default Project behavior belongs to Workspace/UI selection before the Domain command is planned.
+Project target:
+
+```text
+Issue A (Triage)
+→ create Project P (new identity, normal Project creation defaults)
+→ P becomes the new Project
+→ remove A only after P is safely established
+```
+
+V1 automatically seeds only the Triage title and lightweight description/body into the target creation input. Triage Priority, Labels, Due, and other source-specific values are not implicitly copied to either target. The target creation use case may still let the user explicitly choose its normal properties before confirmation.
+
+For a Workflow target, the explicit Project relationship and any Default Project initialization follow the ordinary Workflow Issue creation contract. For a Project target, ordinary Project validation/defaults apply. Canceling target creation leaves the source Triage Issue unchanged.
 
 ### 4.5 Issue lifecycle timestamps
 
@@ -505,6 +520,7 @@ Examples:
 
 - Project/Issue effective mutation capability = current lifecycle/context + Domain rules;
 - Triage Defer = Due mutation;
+- Triage Accept = normal target creation + source removal after target establishment;
 - Due Soon / Overdue / Reminder = derived temporal capability;
 - Project/Milestone/Initiative Progress = current relationship/lifecycle aggregation;
 - Project Attention/Health = explainable current facts + temporal/context evidence;

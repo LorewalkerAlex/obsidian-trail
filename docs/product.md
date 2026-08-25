@@ -112,9 +112,13 @@ When a workflow needs an explicit Project target, Trail may preselect the Defaul
 
 ### 3.7 Triage
 
-Triage is the intake context for captured Issues that are not yet ready to enter the normal workflow.
+Triage is the user-facing intake and review queue for captured ideas or work that have not yet been formalized into normal Workflow Issues or Projects.
 
-Quick Capture creates Triage Issues. A Triage Issue can remain in Triage across multiple reviews, be edited or deferred, or be explicitly converted into normal work.
+A Triage entry is not presented as a normal Workflow Issue. The canonical Domain/Data model reuses the Issue record in Triage context rather than introducing a separate TriageItem entity.
+
+Quick Capture creates a Triage entry. It can remain in Triage across multiple reviews, be edited or enriched, be deferred by moving its required review Due, be accepted into a standard Issue or Project creation flow, or be deleted.
+
+Triage review Due means the latest time by which the entry should be reviewed again. It affects review urgency and ordering, not whether the entry exists or may be browsed and processed before that time.
 
 ### 3.8 Cycle
 
@@ -161,11 +165,17 @@ Home does not define a separate Focus concept in V1. Future evidence may justify
 
 ### 4.1 Quick Capture and Triage
 
-Quick Capture is intentionally low-friction. It creates a Triage Issue with the information needed for later review rather than forcing immediate Project/Label/Category decisions.
+Quick Capture is intentionally low-friction. It creates a Triage entry with the information needed for later review rather than forcing immediate Project/Label/Category decisions.
 
-Triage is a focused List experience. Its primary operations include editing, changing the review Due, accepting into Workflow, converting to a Project when appropriate, and deleting. Triage does not become a generic Board or timeline workspace.
+Triage is a focused Linear-inspired review queue presented as a compact List. It is not a generic Workflow Issue workspace and does not become a Board or Timeline. Its primary operations are editing title/body, enriching the limited Triage properties, accepting, deferring, and deleting.
 
-Accept creates new normal Workflow work; it is not a hidden mutation of the Triage Issue into another context. Accept requires a Project target. The Project picker initially selects the current Default Project when that Project can legally receive the new Backlog Issue, and the user may choose another legal Project before confirmation.
+Accept means “formalize this intake.” It first chooses whether the target is an Issue or a Project, then opens the same standard Create Issue or Create Project flow used elsewhere. Triage does not own a special Accept form. V1 automatically seeds only the source title and lightweight description/body into the target create draft; Triage Priority, Labels, and review Due are not implicitly copied.
+
+If Issue is chosen, normal Workflow Issue creation rules apply: the new Issue starts in Backlog and requires an explicit legal Project. The Create Issue surface may initialize that Project picker from the current Default Project only when it is a legal target. If Project is chosen, normal Project creation defaults and validation apply.
+
+Canceling the target creation leaves the Triage entry unchanged. After the chosen target is safely created, the source Triage entry is removed. Accept does not preserve source identity by changing its context in place.
+
+Defer is a review-priority action, not a visibility action. It changes the same Triage review Due so the entry moves later in the normal review ordering, while the entry remains browseable and may still be reviewed or accepted earlier if the user has an idea before that Due.
 
 ### 4.2 Projects workspace
 
@@ -382,7 +392,7 @@ Weekly Note is a lightweight Home utility backed by one Markdown file. Users can
 8. **Every normal Workflow Issue is born in Backlog and belongs to exactly one Project.** Creation location does not silently choose another Issue lifecycle Status, and `No Project` is not a valid Workflow state.
 9. **Default Project is routing state, not a Project subtype.** A fresh Workspace seeds `Standalone` as an ordinary Project and references it for default selection/navigation; the Project itself gains no special Domain behavior.
 10. **Cycle planning is explicit and independent of Status.** Joining/leaving a Cycle does not silently change the Issue Status.
-11. **Triage stays distinct from normal Workflow.** Accept creates a new Workflow Issue rather than turning the Triage Issue into another context; captured user content must not be lost during that conversion.
+11. **Triage stays distinct from normal Workflow and Project planning.** A Triage entry is intake/review state, not a normal Workflow Issue surface. Accept creates a new standard Workflow Issue or Project with new identity rather than changing the Triage record in place; only title and description/body are automatically seeded in V1, and the source is removed only after the target is safely created.
 12. **Drag has one global meaning for Issue cards: Status change.** Relationship changes use explicit actions.
 13. **Due is reused rather than duplicated.** Triage defer is a Due change; Reminder/Due Soon/Overdue are capabilities derived from time facts and policy.
 14. **Progress, Health, Attention, timeline, ranking, and analytics are derived when possible.** Trail does not ask the user to maintain duplicate facts.
