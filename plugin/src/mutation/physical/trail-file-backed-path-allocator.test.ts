@@ -6,6 +6,19 @@ import {
 } from "./trail-file-backed-path-allocator";
 
 describe("Trail file-backed path allocator", () => {
+  it("allocates 0001 after the reserved fresh-workspace Project sequence 0000", async () => {
+    const path = await allocateTrailFileBackedEntityPath({
+      list: async () => [
+        {
+          kind: "file",
+          name: "0000 Standalone.md",
+          path: "Trail/Projects/0000 Standalone.md",
+        },
+      ],
+    }, "project", "Project A");
+    expect(path).toBe("Trail/Projects/0001 Project A.md");
+  });
+
   it("allocates max existing sequence + 1 without reusing historical gaps", async () => {
     const path = await allocateTrailFileBackedEntityPath({
       list: async () => [
@@ -22,5 +35,13 @@ describe("Trail file-backed path allocator", () => {
       "project",
       "New title",
     )).toBe("Trail/Projects/0042 New title.md");
+  });
+
+  it("keeps reserved sequence 0000 stable when the seeded Project is renamed", () => {
+    expect(projectTrailRenamedFileBackedPath(
+      "Trail/Projects/0000 Standalone.md",
+      "project",
+      "Personal",
+    )).toBe("Trail/Projects/0000 Personal.md");
   });
 });

@@ -28,12 +28,11 @@ describe("Trail physical schema registry", () => {
     expect(TRAIL_PHYSICAL_RECORD_SCHEMAS.cycle.fields.label.missing).toBe("derived");
   });
 
-  it("keeps future carrier owners explicit", () => {
+  it("keeps current carrier owners explicit", () => {
     expect(Object.keys(TRAIL_PHYSICAL_SOURCE_SCHEMAS)).toEqual([
       "initiative",
       "project",
       "triage",
-      "projectless-issues",
       "cycles",
     ]);
   });

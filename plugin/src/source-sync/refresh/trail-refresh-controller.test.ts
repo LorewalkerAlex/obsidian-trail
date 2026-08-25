@@ -5,7 +5,6 @@ import {
   TRAIL_CYCLES_PATH,
   TRAIL_INITIATIVES_PATH,
   TRAIL_MANAGED_ROOT,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_PROJECTS_PATH,
   TRAIL_TRIAGE_PATH,
 } from "../../markdown/schema/trail-paths";
@@ -47,7 +46,7 @@ function createHarness() {
       if ([TRAIL_MANAGED_ROOT, TRAIL_INITIATIVES_PATH, TRAIL_PROJECTS_PATH, TRAIL_COLLECTIONS_PATH].includes(path as never)) {
         return "directory";
       }
-      if ([TRAIL_TRIAGE_PATH, TRAIL_PROJECTLESS_ISSUES_PATH, TRAIL_CYCLES_PATH].includes(path as never)) {
+      if ([TRAIL_TRIAGE_PATH, TRAIL_CYCLES_PATH].includes(path as never)) {
         return "file";
       }
       return "missing";
@@ -63,7 +62,6 @@ function createHarness() {
       ];
       if (path === TRAIL_COLLECTIONS_PATH) return [
         { kind: "file" as const, name: "Triage.md", path: TRAIL_TRIAGE_PATH },
-        { kind: "file" as const, name: "Projectless Issues.md", path: TRAIL_PROJECTLESS_ISSUES_PATH },
         { kind: "file" as const, name: "Cycles.md", path: TRAIL_CYCLES_PATH },
       ];
       return [];
@@ -91,7 +89,6 @@ function createHarness() {
         : [];
       if (sourceIssueNextRead && path === TRAIL_TRIAGE_PATH) sourceIssueNextRead = false;
       if (kind === "triage") return { issues, kind: "accepted" as const, snapshot: { issues: [], kind: "triage" as const, sourcePath: path } };
-      if (kind === "projectless-issues") return { issues: [], kind: "accepted" as const, snapshot: { issues: [], kind: "projectless-issues" as const, sourcePath: path } };
       if (kind === "cycles") return { issues: [], kind: "accepted" as const, snapshot: { cycles: [], kind: "cycles" as const, sourcePath: path } };
       throw new Error(`unexpected source kind: ${kind}`);
     },

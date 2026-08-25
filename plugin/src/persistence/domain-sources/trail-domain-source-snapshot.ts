@@ -27,12 +27,6 @@ export interface TrailTriageSourceSnapshot {
   readonly sourcePath: string;
 }
 
-export interface TrailProjectlessIssuesSourceSnapshot {
-  readonly issues: readonly TrailWorkflowIssue[];
-  readonly kind: "projectless-issues";
-  readonly sourcePath: string;
-}
-
 export interface TrailCyclesSourceSnapshot {
   readonly cycles: readonly TrailCycle[];
   readonly kind: "cycles";
@@ -44,5 +38,4 @@ export type TrailDomainSourceSnapshot =
   | TrailInitiativeSourceSnapshot
   | TrailProjectSourceSnapshot
   | TrailTriageSourceSnapshot
-  | TrailProjectlessIssuesSourceSnapshot
   | TrailCyclesSourceSnapshot;

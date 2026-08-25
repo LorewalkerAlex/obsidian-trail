@@ -19,6 +19,7 @@ function state(): TrailPlanningState & {
     createdAt: 1,
     id: "issue-active",
     labelIds: [],
+    projectId: "project-a",
     statusDefinitionId: "issue-unstarted",
     title: "Active Issue",
   };

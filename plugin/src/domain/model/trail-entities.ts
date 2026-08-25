@@ -45,22 +45,24 @@ interface TrailIssueBase {
   readonly id: TrailIssueId;
   readonly title: string;
   readonly description?: string;
-  readonly projectId?: TrailProjectId;
-  readonly milestoneId?: TrailMilestoneId;
   readonly priority?: TrailPriority;
   readonly estimate?: TrailEstimate;
   readonly labelIds: readonly TrailLabelId[];
 }
 
-/** Triage uses Due as the next review point and has no normal workflow status. */
+/** Triage uses Due as the next review point and never belongs to Project or Milestone. */
 export interface TrailTriageIssue extends TrailIssueBase {
   readonly context: "triage";
+  readonly projectId?: never;
+  readonly milestoneId?: never;
   readonly due: TrailTimestamp;
 }
 
 /** Workflow creation time is immutable and records entry into the workflow universe. */
 export interface TrailWorkflowIssue extends TrailIssueBase {
   readonly context: "workflow";
+  readonly projectId: TrailProjectId;
+  readonly milestoneId?: TrailMilestoneId;
   readonly statusDefinitionId: TrailStatusDefinitionId;
   readonly due?: TrailTimestamp;
   readonly createdAt: TrailTimestamp;

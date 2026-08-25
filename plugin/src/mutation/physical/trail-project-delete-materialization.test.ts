@@ -8,13 +8,19 @@ import { materializeTrailPersistenceTransactionPlan } from "./trail-transaction-
 const configuration = createTrailTestConfiguration();
 const workspaceState = createTrailTestWorkspaceState();
 const projectPath = "Trail/Projects/0001 Project A.md";
-const projectlessPath = "Trail/Collections/Projectless Issues.md";
+const replacementPath = "Trail/Projects/0002 Project B.md";
 
 const project = {
   id: "project-a",
   labelIds: [],
   statusDefinitionId: "project-unstarted",
   title: "Project A",
+};
+const replacementProject = {
+  id: "project-b",
+  labelIds: [],
+  statusDefinitionId: "project-unstarted",
+  title: "Project B",
 };
 const milestone = {
   id: "milestone-a",
@@ -31,12 +37,21 @@ const issue = {
   statusDefinitionId: "issue-unstarted",
   title: "Issue A",
 };
-const projectlessIssue = { ...issue, milestoneId: undefined, projectId: undefined };
+const movedIssue = {
+  ...issue,
+  milestoneId: undefined,
+  projectId: replacementProject.id,
+};
 
-function committedProjectWithChildren() {
+function committedProjectWithChildren(defaultProject = false) {
   return {
     ...buildTrailCommittedRuntimeCandidate({
-      pluginData: { configuration, workspaceState },
+      pluginData: {
+        configuration,
+        workspaceState: defaultProject
+          ? { ...workspaceState, defaultProjectId: project.id }
+          : workspaceState,
+      },
       sources: [
         {
           issues: [issue],
@@ -47,8 +62,10 @@ function committedProjectWithChildren() {
         },
         {
           issues: [],
-          kind: "projectless-issues" as const,
-          sourcePath: projectlessPath,
+          kind: "project" as const,
+          milestones: [],
+          project: replacementProject,
+          sourcePath: replacementPath,
         },
       ],
     }),
@@ -72,20 +89,28 @@ function committedEmptyProject() {
   };
 }
 
+function deleteProjectEffects() {
+  return [
+    {
+      after: { kind: "issue" as const, value: movedIssue },
+      before: { kind: "issue" as const, value: issue },
+      kind: "replace-entity" as const,
+    },
+    { before: { kind: "milestone" as const, value: milestone }, kind: "delete-entity" as const },
+    { before: { kind: "project" as const, value: project }, kind: "delete-entity" as const },
+  ];
+}
+
 describe("Trail Project delete materialization", () => {
-  it("moves Issues to Projectless before deleting the Project carrier as one destructive operation", async () => {
+  it("prepares moved Issues in the replacement Project before deleting the old carrier", async () => {
     const plan = createTrailMutationPlan({
       commandId: "delete-project",
-      effects: [
-        {
-          after: { kind: "issue", value: projectlessIssue },
-          before: { kind: "issue", value: issue },
-          kind: "replace-entity",
-        },
-        { before: { kind: "milestone", value: milestone }, kind: "delete-entity" },
-        { before: { kind: "project", value: project }, kind: "delete-entity" },
-      ],
+      effects: deleteProjectEffects(),
       intent: "workflow.project.delete",
+      preconditions: [{
+        entity: { kind: "project", value: replacementProject },
+        kind: "entity-equals",
+      }],
     });
 
     const transaction = await materializeTrailPersistenceTransactionPlan(
@@ -94,32 +119,70 @@ describe("Trail Project delete materialization", () => {
       { list: async () => [] },
     );
 
-    expect(transaction.kind).toBe("integrity-batch");
-    if (transaction.kind !== "integrity-batch") throw new Error("expected Integrity Batch");
-    expect(transaction.stages).toHaveLength(2);
-    expect(transaction.stages[0]).toEqual({
-      name: "prepare",
-      operations: [{
-        kind: "mutate-domain-source",
-        mutation: { after: { kind: "issue", value: projectlessIssue }, kind: "create" },
-        options: undefined,
-        path: projectlessPath,
-        sourceKind: "projectless-issues",
+    expect(transaction).toMatchObject({
+      commandId: "delete-project",
+      intent: "workflow.project.delete",
+      kind: "integrity-batch",
+      stages: [
+        {
+          name: "prepare",
+          operations: [{
+            kind: "mutate-domain-source",
+            mutation: { after: { kind: "issue", value: movedIssue }, kind: "create" },
+            path: replacementPath,
+            sourceKind: "project",
+          }],
+        },
+        {
+          name: "destructive",
+          operations: [{ kind: "delete-domain-source", path: projectPath, sourceKind: "project" }],
+        },
+      ],
+    });
+  });
+
+  it("commits Default Project clearing only after the Project carrier is deleted", async () => {
+    const beforeWorkspace = { ...workspaceState, defaultProjectId: project.id };
+    const afterWorkspace = {
+      customViews: beforeWorkspace.customViews,
+      favorites: beforeWorkspace.favorites,
+      home: beforeWorkspace.home,
+    };
+    const plan = createTrailMutationPlan({
+      commandId: "delete-default-project",
+      effects: [
+        ...deleteProjectEffects(),
+        {
+          after: afterWorkspace,
+          before: beforeWorkspace,
+          kind: "replace-workspace-state",
+        },
+      ],
+      intent: "workflow.project.delete",
+      preconditions: [{
+        entity: { kind: "project", value: replacementProject },
+        kind: "entity-equals",
       }],
     });
-    expect(transaction.stages[1]).toMatchObject({
-      name: "destructive",
-      operations: [{ kind: "delete-domain-source", path: projectPath, sourceKind: "project" }],
-    });
-    const rootDelete = transaction.stages[1]?.operations[0];
-    expect(rootDelete?.kind).toBe("delete-domain-source");
-    if (rootDelete?.kind === "delete-domain-source") {
-      expect(rootDelete.beforeEntities?.map(({ value }) => value.id)).toEqual([
-        issue.id,
-        milestone.id,
-        project.id,
-      ]);
-    }
+
+    const transaction = await materializeTrailPersistenceTransactionPlan(
+      plan,
+      committedProjectWithChildren(true),
+      { list: async () => [] },
+    );
+
+    expect(transaction.kind).toBe("integrity-batch");
+    if (transaction.kind !== "integrity-batch") return;
+    expect(transaction.stages.map(({ name }) => name)).toEqual([
+      "prepare",
+      "destructive",
+      "commit",
+    ]);
+    expect(transaction.stages[2]?.operations).toEqual([{
+      after: { configuration, workspaceState: afterWorkspace },
+      before: { configuration, workspaceState: beforeWorkspace },
+      kind: "save-plugin-data",
+    }]);
   });
 
   it("deletes an empty Project carrier as one Single Transaction", async () => {

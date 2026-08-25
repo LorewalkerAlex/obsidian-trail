@@ -24,6 +24,12 @@ function harness() {
     labelIds: [] as string[],
     title: "Captured",
   };
+  const project = {
+    id: "project-a",
+    labelIds: [] as string[],
+    statusDefinitionId: "project-unstarted",
+    title: "Project A",
+  };
   const runtimeStore = createTrailRuntimeStore();
   publishTrailCommittedRuntime(runtimeStore, buildTrailCommittedRuntimeCandidate({
     pluginData: {
@@ -32,7 +38,13 @@ function harness() {
     },
     sources: [
       { issues: [triage], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
-      { issues: [], kind: "projectless-issues", sourcePath: "Trail/Collections/Projectless Issues.md" },
+      {
+        issues: [],
+        kind: "project",
+        milestones: [],
+        project,
+        sourcePath: "Trail/Projects/0001 Project A.md",
+      },
       { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
     ],
   }), { sourceIssuesByPath: {} });
@@ -50,13 +62,13 @@ function harness() {
     createId: () => `generated-${nextId += 1}`,
     now: () => 1_000,
   });
-  return { application, submitted, triage };
+  return { application, project, submitted, triage };
 }
 
-describe("TrailTriageApplication project-less Accept", () => {
-  it("preserves the Domain's optional Project contract at the Application boundary", async () => {
+describe("TrailTriageApplication explicit-Project Accept", () => {
+  it("submits the target Project as canonical Workflow ownership", async () => {
     const test = harness();
-    const receipt = test.application.accept(test.triage);
+    const receipt = test.application.accept(test.triage, test.project.id);
     await receipt.completion;
 
     expect(test.submitted).toHaveLength(1);
@@ -66,20 +78,20 @@ describe("TrailTriageApplication project-less Accept", () => {
         {
           after: {
             kind: "issue",
-            value: { context: "workflow", title: "Captured" },
+            value: {
+              context: "workflow",
+              projectId: test.project.id,
+              title: "Captured",
+            },
           },
           kind: "create-entity",
         },
         { before: { kind: "issue", value: test.triage }, kind: "delete-entity" },
       ],
     });
-    expect(test.submitted[0]?.preconditions.some((precondition) => (
-      precondition.kind === "entity-equals" && precondition.entity.kind === "project"
-    ))).toBe(false);
-    const createEffect = test.submitted[0]?.effects[0];
-    expect(createEffect?.kind).toBe("create-entity");
-    if (createEffect?.kind === "create-entity" && createEffect.after.kind === "issue") {
-      expect(createEffect.after.value).not.toHaveProperty("projectId");
-    }
+    expect(test.submitted[0]?.preconditions).toContainEqual({
+      entity: { kind: "project", value: test.project },
+      kind: "entity-equals",
+    });
   });
 });

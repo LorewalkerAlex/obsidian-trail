@@ -35,7 +35,6 @@ function harness() {
         project,
         sourcePath: "Trail/Projects/0001 Project A.md",
       },
-      { issues: [], kind: "projectless-issues", sourcePath: "Trail/Collections/Projectless Issues.md" },
       { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
       { issues: [], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
     ],

@@ -8,9 +8,6 @@ import {
   parseProjectMarkdown,
 } from "../../markdown/codecs/trail-project-codec";
 import {
-  parseProjectlessIssuesMarkdown,
-} from "../../markdown/codecs/trail-projectless-issues-codec";
-import {
   parseTriageMarkdown,
 } from "../../markdown/codecs/trail-triage-codec";
 import type { TrailYamlParser } from "../../markdown/codecs/trail-codec-support";
@@ -27,7 +24,6 @@ import {
   cyclesSourceResult,
   initiativeSourceResult,
   projectSourceResult,
-  projectlessIssuesSourceResult,
   triageSourceResult,
   type TrailDomainSourceReadResult,
 } from "./trail-source-result";
@@ -92,12 +88,6 @@ function parseManagedSource(
       }), path);
     case "triage":
       return triageSourceResult(parseTriageMarkdown({
-        markdown,
-        parseYaml,
-        sourcePath: path,
-      }), path);
-    case "projectless-issues":
-      return projectlessIssuesSourceResult(parseProjectlessIssuesMarkdown({
         markdown,
         parseYaml,
         sourcePath: path,

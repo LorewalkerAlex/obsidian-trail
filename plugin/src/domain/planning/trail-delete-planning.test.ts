@@ -46,9 +46,21 @@ function state(): TrailPlanningState & {
     statusDefinitionId: "project-unstarted",
     title: "Project B",
   };
-  const milestoneA: TrailMilestone = { id: "milestone-a", projectId: projectA.id, title: "Milestone A" };
-  const milestoneA2: TrailMilestone = { id: "milestone-a2", projectId: projectA.id, title: "Milestone A2" };
-  const milestoneB: TrailMilestone = { id: "milestone-b", projectId: projectB.id, title: "Milestone B" };
+  const milestoneA: TrailMilestone = {
+    id: "milestone-a",
+    projectId: projectA.id,
+    title: "Milestone A",
+  };
+  const milestoneA2: TrailMilestone = {
+    id: "milestone-a2",
+    projectId: projectA.id,
+    title: "Milestone A2",
+  };
+  const milestoneB: TrailMilestone = {
+    id: "milestone-b",
+    projectId: projectB.id,
+    title: "Milestone B",
+  };
   const issueA: TrailWorkflowIssue = {
     context: "workflow",
     createdAt: 1,
@@ -176,22 +188,38 @@ describe("Core delete planning", () => {
     });
   });
 
-  it("deletes a Project while preserving child Issues as project-less and removing its Milestones", () => {
+  it("requires an explicit replacement before deleting a Project with child Workflow Issues", () => {
+    const planning = state();
+    expect(planDeleteTrailProject(planning, {
+      commandId: "delete-project-needs-replacement",
+      expectedProject: planning.projectA,
+    })).toMatchObject({
+      input: { code: "project-replacement-required" },
+      kind: "needs-input",
+    });
+  });
+
+  it("moves child Issues to the replacement Project and clears deleted Project Milestones", () => {
     const planning = state();
     const result = planDeleteTrailProject(planning, {
       commandId: "delete-project",
       expectedProject: planning.projectA,
+      replacementProjectId: planning.projectB.id,
     });
     expect(result.kind).toBe("ready");
     if (result.kind !== "ready") return;
+
     const issueReplacement = effectsOfKind(result.plan, "replace-entity")
       .find((effect) => effect.after.kind === "issue");
     expect(issueReplacement).toBeDefined();
     if (issueReplacement?.after.kind === "issue") {
-      expect(issueReplacement.after.value.id).toBe(planning.issueA.id);
+      expect(issueReplacement.after.value).toMatchObject({
+        id: planning.issueA.id,
+        projectId: planning.projectB.id,
+      });
       expect(issueReplacement.after.value.milestoneId).toBeUndefined();
-      expect(issueReplacement.after.value.projectId).toBeUndefined();
     }
+
     const deletedIds = effectsOfKind(result.plan, "delete-entity")
       .map((effect) => effect.before.value.id);
     expect(deletedIds).toEqual(expect.arrayContaining([
@@ -200,6 +228,56 @@ describe("Core delete planning", () => {
       planning.projectA.id,
     ]));
     expect(deletedIds).not.toContain(planning.milestoneB.id);
+    expect(result.plan.plan.preconditions).toContainEqual({
+      entity: { kind: "project", value: planning.projectB },
+      kind: "entity-equals",
+    });
+  });
+
+  it("does not silently change Issue Status to make a terminal replacement Project legal", () => {
+    const planning = state();
+    const terminalProject = {
+      ...planning.projectB,
+      statusDefinitionId: "project-completed",
+    };
+    const projectsById = new Map(planning.domain.projectsById);
+    projectsById.set(terminalProject.id, terminalProject);
+    const withTerminalReplacement = {
+      ...planning,
+      domain: { ...planning.domain, projectsById },
+    };
+
+    expect(planDeleteTrailProject(withTerminalReplacement, {
+      commandId: "delete-project-terminal-replacement",
+      expectedProject: planning.projectA,
+      replacementProjectId: terminalProject.id,
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "project-replacement-not-eligible" },
+    });
+  });
+
+  it("clears Workspace Default Project only when the deleted Project is the Default", () => {
+    const planning = state();
+    const defaultPlanning = {
+      ...planning,
+      workspaceState: {
+        ...planning.workspaceState,
+        defaultProjectId: planning.projectA.id,
+      },
+    };
+    const result = planDeleteTrailProject(defaultPlanning, {
+      commandId: "delete-default-project",
+      expectedProject: planning.projectA,
+      replacementProjectId: planning.projectB.id,
+    });
+    expect(result.kind).toBe("ready");
+    if (result.kind !== "ready") return;
+
+    const workspaceEffects = effectsOfKind(result.plan, "replace-workspace-state");
+    expect(workspaceEffects).toHaveLength(1);
+    expect(workspaceEffects[0]?.before.defaultProjectId).toBe(planning.projectA.id);
+    expect(workspaceEffects[0]?.after.defaultProjectId).toBeUndefined();
   });
 
   it("deletes a Workflow Issue and removes all open and historical Cycle memberships", () => {

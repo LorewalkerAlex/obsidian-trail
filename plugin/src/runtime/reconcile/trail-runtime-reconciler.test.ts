@@ -89,7 +89,7 @@ describe("Trail runtime reconciler", () => {
     expect(store.getState().committed.revision).toBe(1);
   });
 
-  it("builds all five source carrier kinds into one candidate without publishing partial state", () => {
+  it("builds all current source carrier kinds into one candidate without publishing partial state", () => {
     const pluginData = {
       configuration: createTrailTestConfiguration(),
       workspaceState: createTrailTestWorkspaceState(),
@@ -115,11 +115,6 @@ describe("Trail runtime reconciler", () => {
           sourcePath: "Trail/Collections/Triage.md",
         },
         {
-          issues: [{ ...issue, id: "projectless-a", projectId: undefined, title: "P" }],
-          kind: "projectless-issues",
-          sourcePath: "Trail/Collections/Projectless Issues.md",
-        },
-        {
           cycles: [{ id: "cycle-a", issueIds: ["issue-a"], plannedEnd: 20, startedAt: 10 }],
           kind: "cycles",
           sourcePath: "Trail/Collections/Cycles.md",
@@ -130,7 +125,7 @@ describe("Trail runtime reconciler", () => {
     expect(candidate.authoritative.domain.initiativesById.size).toBe(1);
     expect(candidate.authoritative.domain.projectsById.size).toBe(1);
     expect(candidate.authoritative.domain.milestonesById.size).toBe(1);
-    expect(candidate.authoritative.domain.issuesById.size).toBe(3);
+    expect(candidate.authoritative.domain.issuesById.size).toBe(2);
     expect(candidate.authoritative.domain.cyclesById.size).toBe(1);
   });
 });

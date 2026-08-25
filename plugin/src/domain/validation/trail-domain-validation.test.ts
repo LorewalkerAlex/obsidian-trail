@@ -38,6 +38,7 @@ describe("Trail domain validation", () => {
   });
 
   it("keeps context-conditioned Issue invariants in Domain validation", () => {
+    // Deliberately cross the typed boundary to verify malformed persisted/runtime input.
     const invalidWorkflow = {
       context: "workflow",
       createdAt: -1,
@@ -46,20 +47,33 @@ describe("Trail domain validation", () => {
       milestoneId: "milestone-a",
       statusDefinitionId: "status-a",
       title: "Workflow Issue",
-    } as TrailIssue;
+    } as unknown as TrailIssue;
     const workflowCodes = validateTrailIssue(invalidWorkflow).map((issue) => issue.code);
 
     expect(workflowCodes).toContain("workflow.created-at.invalid");
+    expect(workflowCodes).toContain("workflow.project.required");
     expect(workflowCodes).toContain("milestone.requires-project");
 
-    // Deliberately cross the typed boundary to verify malformed persisted/runtime input.
     const invalidTriage = {
       context: "triage",
+      due: 10,
       id: "issue-triage",
+      labelIds: [],
+      milestoneId: "milestone-a",
+      projectId: "project-a",
+      title: "Triage Issue",
+    } as unknown as TrailIssue;
+    const triageCodes = validateTrailIssue(invalidTriage).map((issue) => issue.code);
+    expect(triageCodes).toContain("triage.project.forbidden");
+    expect(triageCodes).toContain("triage.milestone.forbidden");
+
+    const missingTriageDue = {
+      context: "triage",
+      id: "issue-triage-missing-due",
       labelIds: [],
       title: "Triage Issue",
     } as unknown as TrailIssue;
-    expect(validateTrailIssue(invalidTriage).map((issue) => issue.code)).toContain(
+    expect(validateTrailIssue(missingTriageDue).map((issue) => issue.code)).toContain(
       "triage.due.invalid",
     );
   });

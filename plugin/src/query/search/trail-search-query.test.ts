@@ -61,13 +61,21 @@ function state() {
           context: "workflow",
           createdAt: 2,
           description: "Alpha lives here too",
-          id: "issue-projectless",
+          id: "issue-loose",
           labelIds: [],
+          projectId: "project-b",
           statusDefinitionId: "issue-backlog",
           title: "Loose work",
         }],
-        kind: "projectless-issues",
-        sourcePath: "Trail/Collections/Projectless Issues.md",
+        kind: "project",
+        milestones: [],
+        project: {
+          id: "project-b",
+          labelIds: [],
+          statusDefinitionId: "project-unstarted",
+          title: "Project Beta",
+        },
+        sourcePath: "Trail/Projects/0002 Project Beta.md",
       },
       {
         issues: [{
@@ -88,14 +96,14 @@ function state() {
 }
 
 describe("Trail Search query", () => {
-  it("finds title-bearing work objects across contexts and includes project-less Workflow Issues", () => {
+  it("finds title-bearing work objects across contexts and Project-owned Workflow Issues", () => {
     expect(selectTrailSearchResults(state(), "alpha")).toEqual([
       { entityId: "triage-a", kind: "triage-issue", title: "Alpha capture" },
       { entityId: "issue-a", kind: "workflow-issue", projectId: "project-a", title: "Alpha workflow" },
       { entityId: "initiative-a", kind: "initiative", title: "Initiative Alpha" },
       { entityId: "project-a", kind: "project", title: "Project Alpha" },
       { entityId: "milestone-a", kind: "milestone", projectId: "project-a", title: "Release Alpha" },
-      { entityId: "issue-projectless", kind: "workflow-issue", title: "Loose work" },
+      { entityId: "issue-loose", kind: "workflow-issue", projectId: "project-b", title: "Loose work" },
     ]);
   });
 

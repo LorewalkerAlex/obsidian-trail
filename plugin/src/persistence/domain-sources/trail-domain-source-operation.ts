@@ -21,10 +21,6 @@ import {
   serializeProjectWorkflowIssue,
 } from "../../markdown/codecs/trail-project-codec";
 import {
-  parseProjectlessIssuesMarkdown,
-  serializeProjectlessWorkflowIssue,
-} from "../../markdown/codecs/trail-projectless-issues-codec";
-import {
   parseTriageMarkdown,
   serializeTriageIssue,
 } from "../../markdown/codecs/trail-triage-codec";
@@ -282,41 +278,6 @@ export function applyTrailDomainSourceMutation(input: {
         throw new Error("Triage source accepts Triage Issues only");
       }
       return replaceRecord(input.markdown, location, serializeTriageIssue(input.mutation.after.value));
-    }
-
-    case "projectless-issues": {
-      const parsed = parseProjectlessIssuesMarkdown(input);
-      requireCleanParse(parsed.issues, parsed.document !== undefined, input.sourcePath);
-      const document = parsed.document!;
-      const valid = (candidate: TrailDomainEntity) => {
-        if (
-          candidate.kind !== "issue"
-          || candidate.value.context !== "workflow"
-          || candidate.value.projectId !== undefined
-          || candidate.value.milestoneId !== undefined
-        ) {
-          throw new Error("Projectless source accepts projectless Workflow Issues only");
-        }
-        return candidate.value;
-      };
-      valid(entity);
-      const existing = document.issues.find((value) => value.id === entity.value.id);
-      const location = document.locationsByIssueId[entity.value.id];
-      if (input.mutation.kind === "create") {
-        if (existing !== undefined) throw new Error(`Projectless Workflow Issue already exists: ${entity.value.id}`);
-        return appendMarkdownBlock(input.markdown, serializeProjectlessWorkflowIssue(valid(input.mutation.after)));
-      }
-      if (existing === undefined || location === undefined) {
-        throw new Error(`Projectless Workflow Issue is absent from authoritative source: ${entity.value.id}`);
-      }
-      assertExpected({ kind: "issue", value: existing }, input.mutation.before, input.sourcePath);
-      if (input.mutation.kind === "delete") return deleteRecord(input.markdown, location);
-      assertReplaceIdentity(input.mutation);
-      return replaceRecord(
-        input.markdown,
-        location,
-        serializeProjectlessWorkflowIssue(valid(input.mutation.after)),
-      );
     }
 
     case "cycles": {

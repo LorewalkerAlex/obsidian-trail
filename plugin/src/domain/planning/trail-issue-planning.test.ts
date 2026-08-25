@@ -75,7 +75,7 @@ function state() {
 }
 
 describe("Workflow Issue planning", () => {
-  it("creates Workflow work in Backlog with or without a Project and rejects a terminal Project", () => {
+  it("creates Workflow work in Backlog only with an explicit legal Project", () => {
     const planning = state();
     const ready = planCreateTrailWorkflowIssue(planning, {
       commandId: "command-create",
@@ -89,19 +89,21 @@ describe("Workflow Issue planning", () => {
       expect(ready.plan.issue.statusDefinitionId).toBe("issue-backlog");
       expect(ready.plan.issue.createdAt).toBe(100);
       expect(ready.plan.issue.projectId).toBe("project-a");
+      expect(ready.plan.plan.preconditions).toContainEqual({
+        entity: { kind: "project", value: planning.project },
+        kind: "entity-equals",
+      });
     }
 
-    const projectless = planCreateTrailWorkflowIssue(planning, {
-      commandId: "command-create-projectless",
+    expect(planCreateTrailWorkflowIssue(planning, {
+      commandId: "command-create-missing-project",
       effectiveAt: 101,
-      issueId: "issue-projectless",
-      title: "Projectless Issue",
+      issueId: "issue-missing-project",
+      title: "Missing Project",
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "project-required" },
     });
-    expect(projectless.kind).toBe("ready");
-    if (projectless.kind === "ready") {
-      expect(projectless.plan.issue.projectId).toBeUndefined();
-      expect(projectless.plan.issue.milestoneId).toBeUndefined();
-    }
 
     planning.domain.projectsById.set(planning.project.id, {
       ...planning.project,
@@ -238,7 +240,7 @@ describe("Workflow Issue planning", () => {
     }
   });
 
-  it("moves an Issue between Projects while preserving identity and clearing Milestone", () => {
+  it("moves an Issue between explicit Projects while preserving identity and clearing Milestone", () => {
     const planning = state();
     const moved = planMoveTrailWorkflowIssueProject(planning, {
       commandId: "command-move",
@@ -262,18 +264,14 @@ describe("Workflow Issue planning", () => {
       entity: { kind: "project", value: planning.projectB },
       kind: "entity-equals",
     });
-  });
 
-  it("moves an Issue to project-less while clearing Milestone and preserves same-Project membership", () => {
-    const planning = state();
-    const projectless = planMoveTrailWorkflowIssueProject(planning, {
-      commandId: "command-projectless",
+    expect(planMoveTrailWorkflowIssueProject(planning, {
+      commandId: "command-no-target",
       expectedIssue: planning.issue,
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "project-required" },
     });
-    expect(projectless.kind).toBe("ready");
-    if (projectless.kind !== "ready") return;
-    expect(projectless.plan.issue.projectId).toBeUndefined();
-    expect(projectless.plan.issue.milestoneId).toBeUndefined();
 
     const unchanged = planMoveTrailWorkflowIssueProject(planning, {
       commandId: "command-same-project",

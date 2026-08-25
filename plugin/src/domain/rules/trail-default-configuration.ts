@@ -4,6 +4,7 @@ import type {
   TrailStatusDefinition,
   TrailWorkflowStatusConfiguration,
 } from "../model/trail-configuration";
+import type { TrailProjectId } from "../model/trail-values";
 import { TRAIL_STATUS_CATEGORIES } from "../model/trail-values";
 import type { TrailWorkspaceState } from "../model/trail-workspace-state";
 import {
@@ -67,9 +68,12 @@ export function createDefaultTrailConfiguration(input: {
   return configuration;
 }
 
-export function createDefaultTrailWorkspaceState(): TrailWorkspaceState {
+export function createDefaultTrailWorkspaceState(
+  defaultProjectId?: TrailProjectId,
+): TrailWorkspaceState {
   const workspaceState: TrailWorkspaceState = {
     customViews: [],
+    ...(defaultProjectId === undefined ? {} : { defaultProjectId }),
     favorites: [],
     home: {},
   };

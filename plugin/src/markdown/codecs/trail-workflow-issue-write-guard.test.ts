@@ -10,6 +10,7 @@ function issue(description: string): TrailWorkflowIssue {
     description,
     id: "issue-a",
     labelIds: [],
+    projectId: "project-a",
     statusDefinitionId: "status-a",
     title: "Issue A",
   };

@@ -68,29 +68,28 @@ export function planCreateTrailWorkflowIssue(
   if (trailPlanningEntityExists(state.domain, command.issueId)) {
     return rejectTrailPlan("entity-id-conflict", `Trail entity ID already exists: ${command.issueId}`);
   }
+  if (command.projectId === undefined) {
+    return rejectTrailPlan("project-required", "Workflow Issue creation requires a Project");
+  }
 
   const status = resolveTrailDefaultStatusDefinition(state.configuration, "issue", "backlog");
-  const project = command.projectId === undefined
-    ? undefined
-    : state.domain.projectsById.get(command.projectId);
-  if (command.projectId !== undefined && project === undefined) {
+  const project = state.domain.projectsById.get(command.projectId);
+  if (project === undefined) {
     return rejectTrailPlan("project-missing", `Project does not exist: ${command.projectId}`);
   }
-  if (project !== undefined) {
-    const projectStatus = resolveTrailStatusDefinition(
-      state.configuration,
-      "project",
-      project.statusDefinitionId,
+  const projectStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    project.statusDefinitionId,
+  );
+  if (projectStatus === undefined) {
+    return rejectTrailPlan("project-status-invalid", `Project status is invalid: ${project.id}`);
+  }
+  if (!canTrailProjectAcceptWorkflowIssue(projectStatus, status)) {
+    return rejectTrailPlan(
+      "project-terminal",
+      "A terminal Project must be reopened before adding non-terminal work",
     );
-    if (projectStatus === undefined) {
-      return rejectTrailPlan("project-status-invalid", `Project status is invalid: ${project.id}`);
-    }
-    if (!canTrailProjectAcceptWorkflowIssue(projectStatus, status)) {
-      return rejectTrailPlan(
-        "project-terminal",
-        "A terminal Project must be reopened before adding non-terminal work",
-      );
-    }
   }
 
   const issue: TrailWorkflowIssue = {
@@ -98,7 +97,7 @@ export function planCreateTrailWorkflowIssue(
     createdAt: command.effectiveAt,
     id: command.issueId,
     labelIds: [],
-    ...(project === undefined ? {} : { projectId: project.id }),
+    projectId: project.id,
     statusDefinitionId: status.id,
     title: command.title,
   };
@@ -108,9 +107,7 @@ export function planCreateTrailWorkflowIssue(
       commandId: command.commandId,
       effects: [{ after: { kind: "issue", value: issue }, kind: "create-entity" }],
       intent: "workflow.issue.create",
-      preconditions: project === undefined
-        ? []
-        : [{ entity: { kind: "project", value: project }, kind: "entity-equals" }],
+      preconditions: [{ entity: { kind: "project", value: project }, kind: "entity-equals" }],
     }),
   });
 }
@@ -356,11 +353,12 @@ export function planMoveTrailWorkflowIssueProject(
       `Workflow Issue changed before action: ${command.expectedIssue.id}`,
     );
   }
+  if (command.targetProjectId === undefined) {
+    return rejectTrailPlan("project-required", "Moving a Workflow Issue requires a target Project");
+  }
 
-  const targetProject = command.targetProjectId === undefined
-    ? undefined
-    : state.domain.projectsById.get(command.targetProjectId);
-  if (command.targetProjectId !== undefined && targetProject === undefined) {
+  const targetProject = state.domain.projectsById.get(command.targetProjectId);
+  if (targetProject === undefined) {
     return rejectTrailPlan("project-missing", `Project does not exist: ${command.targetProjectId}`);
   }
 
@@ -372,36 +370,33 @@ export function planMoveTrailWorkflowIssueProject(
   if (issueStatus === undefined) {
     return rejectTrailPlan("status-reference-invalid", "Workflow Issue status reference is invalid");
   }
-  if (targetProject !== undefined) {
-    const targetProjectStatus = resolveTrailStatusDefinition(
-      state.configuration,
-      "project",
-      targetProject.statusDefinitionId,
+  const targetProjectStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    targetProject.statusDefinitionId,
+  );
+  if (targetProjectStatus === undefined) {
+    return rejectTrailPlan(
+      "project-status-invalid",
+      `Project status is invalid: ${targetProject.id}`,
     );
-    if (targetProjectStatus === undefined) {
-      return rejectTrailPlan(
-        "project-status-invalid",
-        `Project status is invalid: ${targetProject.id}`,
-      );
-    }
-    if (
-      targetProject.id !== current.projectId
-      && !canTrailProjectAcceptWorkflowIssue(targetProjectStatus, issueStatus)
-    ) {
-      return rejectTrailPlan(
-        "project-terminal",
-        "A terminal Project must be reopened before receiving non-terminal work",
-      );
-    }
+  }
+  if (
+    targetProject.id !== current.projectId
+    && !canTrailProjectAcceptWorkflowIssue(targetProjectStatus, issueStatus)
+  ) {
+    return rejectTrailPlan(
+      "project-terminal",
+      "A terminal Project must be reopened before receiving non-terminal work",
+    );
   }
 
-  const targetProjectId = targetProject?.id;
-  const issue: TrailWorkflowIssue = targetProjectId === current.projectId
+  const issue: TrailWorkflowIssue = targetProject.id === current.projectId
     ? current
     : {
         ...current,
         milestoneId: undefined,
-        projectId: targetProjectId,
+        projectId: targetProject.id,
       };
   return readyTrailPlan({
     issue,
@@ -413,9 +408,7 @@ export function planMoveTrailWorkflowIssueProject(
         kind: "replace-entity",
       }],
       intent: "workflow.issue.move-project",
-      preconditions: targetProject === undefined
-        ? []
-        : [{ entity: { kind: "project", value: targetProject }, kind: "entity-equals" }],
+      preconditions: [{ entity: { kind: "project", value: targetProject }, kind: "entity-equals" }],
     }),
   });
 }
@@ -452,7 +445,7 @@ export function planChangeTrailWorkflowIssueMilestone(
     if (current.projectId === undefined) {
       return rejectTrailPlan(
         "milestone-project-required",
-        "A project-less Workflow Issue cannot reference a Milestone",
+        "Workflow Issue must belong to a Project before assigning a Milestone",
       );
     }
     if (targetMilestone.projectId !== current.projectId) {

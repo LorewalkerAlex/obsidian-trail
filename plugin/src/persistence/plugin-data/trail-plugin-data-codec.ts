@@ -395,7 +395,7 @@ function parseWorkspaceState(
 ): TrailWorkspaceState | undefined {
   const object = objectAt(value, path, issues);
   if (object === undefined) return undefined;
-  exactKeys(object, ["customViews", "favorites", "home"], [], path, issues);
+  exactKeys(object, ["customViews", "favorites", "home"], ["defaultProjectId"], path, issues);
 
   const customViewsPhysical = arrayAt(object.customViews, `${path}.customViews`, issues);
   const customViews: TrailCustomViewConfig[] = [];
@@ -421,6 +421,10 @@ function parseWorkspaceState(
     }
   });
 
+  const defaultProjectId = object.defaultProjectId === undefined
+    ? undefined
+    : idAt(object.defaultProjectId, `${path}.defaultProjectId`, issues);
+
   const favoritesPhysical = arrayAt(object.favorites, `${path}.favorites`, issues);
   const favorites: TrailFavoriteReference[] = [];
   favoritesPhysical?.forEach((entry, index) => {
@@ -443,7 +447,12 @@ function parseWorkspaceState(
     ));
   }
   if (customViewsPhysical === undefined || favoritesPhysical === undefined || home === undefined) return undefined;
-  const workspaceState: TrailWorkspaceState = { customViews, favorites, home };
+  const workspaceState: TrailWorkspaceState = {
+    customViews,
+    ...(defaultProjectId === undefined ? {} : { defaultProjectId }),
+    favorites,
+    home,
+  };
   for (const domainIssue of validateTrailWorkspaceState(workspaceState)) {
     issues.push(codecIssue(
       `plugin-data.workspace.${domainIssue.code}`,
@@ -556,6 +565,9 @@ export function serializeTrailPluginData(snapshot: TrailPluginDataSnapshot): unk
           selection: serializeSelection(view.selection),
           presentation: view.presentation,
         })),
+      ...(snapshot.workspaceState.defaultProjectId === undefined
+        ? {}
+        : { defaultProjectId: snapshot.workspaceState.defaultProjectId }),
       favorites: snapshot.workspaceState.favorites.map((favorite) => ({
         targetType: favorite.targetType,
         targetId: favorite.targetId,

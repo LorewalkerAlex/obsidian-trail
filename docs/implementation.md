@@ -4,18 +4,18 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The latest pushed implementation checkpoint remains:
+The historical implementation checkpoint immediately preceding the current Required Workflow Project & Default Project corrective slice is:
 
 ```text
 eb6d98fb28be81d8153aca0429705b05846499de
 fix: harden integrity batch failure safety
 ```
 
-The repository documentation baseline used for this plan is:
+The authoritative design baseline for this corrective slice is:
 
 ```text
-b7a32dedaea3b382970be13c548efcd9a910d292
-docs: close project timeline design
+5e481fe3d0cbe5aafe2d49210091eb2cd3d7345d
+docs: require project ownership and default project
 ```
 
 The implementation baseline already contains the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search & Project-less Workflow, Home Routing & Weekly Note, Weekly Note integrity hardening, and Integrity Batch failure-safety hardening slices.
@@ -51,7 +51,7 @@ Important established checkpoints include:
 
 The Global Search checkpoint is especially important to interpret correctly. At `9aa3f...`, the then-current Domain intentionally allowed `projectId: null`/absent Workflow Issues in `Trail/Collections/Projectless Issues.md`, and representative host validation proved that design worked. The new Product/Domain baseline supersedes that **target model**, not the validity of the historical evidence. Search, Peek, cross-carrier movement, and the shared Markdown EOF fix established by that checkpoint remain reusable evidence; the Projectless state/carrier itself must now be removed from the target implementation.
 
-### 1.2 Current target correction
+### 1.2 Current corrective-slice status
 
 The authoritative design chain now establishes:
 
@@ -65,9 +65,11 @@ Default Project
 → no Project subtype / systemRole / special lifecycle / special carrier
 ```
 
-The current implementation still has optional Workflow `projectId`, a Projectless source kind/carrier, `No Project` creation/move behavior, and Project delete that clears child `projectId`. Those are now explicit implementation divergences from the target and must be corrected before broader UI closure treats the model as stable.
+The corrective slice is now implemented and locally verified pending checkpoint publication. Workflow Issue Project ownership is required across Domain/validation/planning and Application entry points; Triage forbids Project/Milestone relations; normal runtime has no Projectless carrier; Project delete uses explicit legal replacement semantics for child Workflow Issues and clears the Default reference when applicable; Query/UI resolve only legal Project targets and use the Default only as an initial candidate; and Obsidian host composition now provides a real left-split Trail Navigation that routes the Default shortcut to the ordinary Project location.
 
-The correction is intentionally small in concept: move special handling out of the Project entity and reduce it to Workspace default selection/navigation plus a required Workflow Project relationship.
+Fresh bootstrap persists an ordinary `Standalone` Project as the initial Default and reserves physical Project sequence `0000` for that initial seed only. The sequence stays with that Project across rename, but it is not Default identity, is never transferred when another Project becomes Default, and is not recreated after deletion.
+
+One deliberate integrity nuance preserves the established commit-last failure-safety model: a dangling `defaultProjectId` is observable workspace/reference damage but is not a hard Domain-graph-invalid condition at destructive failure edges. Query/navigation resolve a missing Default as absent; successful explicit Project deletion still clears the reference in the final Plugin Data commit.
 
 ## 2. Objective
 
@@ -125,11 +127,9 @@ Reuse of current UI work means reuse the canonical mechanism or evidence when it
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-Before continuing the wider formal UI closure, Gate 8 now contains one corrective cross-layer slice:
+The bounded **Required Workflow Project & Default Project** corrective cross-layer slice is now green and ready for checkpoint publication. Gate 8 next resumes wider formal UI closure against the resolved `ui.md` target.
 
-> **Required Workflow Project & Default Project**
-
-This slice implements the new upstream model through existing canonical owners instead of hiding it in sidebar code or a migration compatibility branch.
+The corrective slice implemented the upstream model through existing canonical owners rather than hiding it in sidebar code or a migration compatibility branch.
 
 ### 4.2 Required Workflow Project & Default Project slice
 
@@ -146,7 +146,7 @@ This slice implements the new upstream model through existing canonical owners i
 #### Workspace State / bootstrap
 
 - Add optional `defaultProjectId` to synchronized Workspace State.
-- Fresh bootstrap creates the normal default Configuration, then creates one ordinary Project titled `Standalone` using normal Project creation/default Status semantics and stores its stable ID as `defaultProjectId`.
+- Fresh bootstrap creates the normal default Configuration, then creates one ordinary Project titled `Standalone` at reserved physical sequence `0000` using normal Project creation/default Status semantics and stores its stable ID as `defaultProjectId`; `0000` belongs to the seed source rather than Default identity.
 - The Project has no special field and may later be renamed, assigned to an Initiative, transitioned, completed, canceled, reopened, or deleted like any other Project.
 - Deleting the referenced Project clears `defaultProjectId`; Trail does not silently select or create another default.
 - Established workspaces with an invalid dangling Default Project reference are Data Issues rather than silent auto-repair candidates.
@@ -222,18 +222,17 @@ The checked-in repository `Trail/` tree remains disposable host-test observation
 
 ### 4.3 Current verified gaps
 
-After this documentation correction, verified gaps are grouped as follows:
+With the corrective model slice green, remaining verified gaps are grouped as follows:
 
-- **model correction gap** — current implementation still supports Projectless Workflow while the target requires Project ownership and Default Project Workspace State;
+- **formal UI closure gaps** — the real Obsidian left-split Trail Navigation and Default Project shortcut now establish the correct host/navigation mechanism, but the remaining shell, Location Bar/View Bar, collection composition, density, and visual calibration still need alignment with `ui.md`;
 - **product composition gaps** — remaining Home composition such as Triage Summary and Activity Heatmap;
-- **formal UI closure gaps** — navigation/shell and consumer compositions must be aligned with `ui.md`, including the Default Project shortcut and removal of V1 Workspace Issues;
 - **consumer-driven shared UI gaps** — Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state where real consumers justify them.
 
-Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing & Weekly Note, Weekly Note hardening, and Integrity Batch failure-safety remain completed evidence. The Projectless portion of the Search checkpoint is simply no longer the target state.
+Required Workflow Project & Default Project, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing & Weekly Note, Weekly Note hardening, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
 
-### 4.4 Formal UI closure after the correction
+### 4.4 Next: formal UI closure
 
-Once Required Workflow Project & Default Project is green, resume formal UI closure against Linear as Trail's primary visual and interaction reference:
+With Required Workflow Project & Default Project green, resume formal UI closure against Linear as Trail's primary visual and interaction reference:
 
 ```text
 Product responsibilities
@@ -265,8 +264,8 @@ Current Trail rendering remains functional evidence, not a visual/layout/compone
 7. Shared UI Capability Foundation                      ESTABLISHED
    |
 8. Product Workspace Implementation                     ACTIVE
-   ├─ Required Workflow Project & Default Project       NEXT CORRECTIVE SLICE
-   ├─ Formal UI closure                                 AFTER CORRECTION
+   ├─ Required Workflow Project & Default Project       COMPLETED
+   ├─ Formal UI closure                                 NEXT
    └─ remaining Home composition                        AS CONSUMED
    |
 9. V1 Integration / Hardening
@@ -286,15 +285,16 @@ Completed Gate 8 checkpoints remain:
 - Status Configuration & Management;
 - Milestone Details Editing;
 - Global Search & Project-less Workflow **(historical checkpoint; Projectless target later superseded)**;
-- Home Routing & Weekly Note.
+- Home Routing & Weekly Note;
+- Required Workflow Project & Default Project.
 
-A previously completed lower-layer owner may be edited during the corrective slice because the upstream canonical model changed. That does not create a second implementation track or erase earlier evidence.
+A previously completed lower-layer owner may be edited during a later slice when an upstream canonical model changes. That does not create a second implementation track or erase earlier evidence.
 
 ## 6. Risk & Verification
 
-### 6.1 Required corrective-slice evidence
+### 6.1 Verified corrective-slice evidence
 
-The Required Workflow Project & Default Project slice should verify at minimum:
+The Required Workflow Project & Default Project slice now verifies:
 
 - Domain types/record validation cannot represent or accept committed Projectless Workflow Issue state;
 - Triage cannot retain Project/Milestone relations;
@@ -308,11 +308,13 @@ The Required Workflow Project & Default Project slice should verify at minimum:
 - deleting a Project with child Issues requires a legal replacement Project and preserves those Issues;
 - deleting a Project without child Issues does not invent a replacement requirement;
 - normal source discovery/placement contains no Projectless source kind/path;
-- fresh bootstrap produces Triage/Cycles + ordinary `Standalone` Project + coherent `defaultProjectId` and survives reload;
-- legacy migration, if required, leaves no old Projectless carrier and validates the full graph;
+- fresh bootstrap produces Triage/Cycles + ordinary `Trail/Projects/0000 Standalone.md` + coherent `defaultProjectId`; ordinary subsequent Project allocation begins at `0001`;
 - external edits/reload converge through existing Source Sync and source-health behavior;
 - full `npm run check` and `git diff --check` pass before checkpoint;
-- representative real-Obsidian validation covers the changed persistence/navigation behavior with diagnostics restored afterward.
+- representative real-Obsidian validation proves a real left-split Trail Navigation, navigation within one primary Trail tab, ordinary Default Project routing, title/filename rename with stable sequence `0000`, and Default resolution after plugin reload;
+- the diagnostics-enabled host check was followed by a production `npm run build` so the generated bundle returned to production mode.
+
+No production legacy-data migration was introduced for this pre-V1 corrective slice. The checked-in development Vault was aligned directly to the current schema for host evidence; if legacy user-data retention becomes required, the explicit one-way Migration contract above remains the owner.
 
 ### 6.2 Historical evidence policy
 

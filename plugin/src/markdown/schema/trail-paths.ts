@@ -20,14 +20,15 @@ export const TRAIL_BOOTSTRAP_DIRECTORIES = [
   ...TRAIL_TOP_LEVEL_DIRECTORY_PATHS,
 ] as const;
 
+/** Fresh bootstrap reserves Project sequence 0000; ordinary allocation still begins at 0001. */
+export const TRAIL_FRESH_WORKSPACE_PROJECT_SEQUENCE = 0 as const;
+
 export const TRAIL_TRIAGE_PATH = `${TRAIL_COLLECTIONS_PATH}/Triage.md` as const;
-export const TRAIL_PROJECTLESS_ISSUES_PATH = `${TRAIL_COLLECTIONS_PATH}/Projectless Issues.md` as const;
 export const TRAIL_CYCLES_PATH = `${TRAIL_COLLECTIONS_PATH}/Cycles.md` as const;
 export const TRAIL_WEEKLY_UPDATE_PATH = `${TRAIL_COLLECTIONS_PATH}/Weekly Update.md` as const;
 
 export const TRAIL_REQUIRED_SINGLETON_PATHS = [
   TRAIL_TRIAGE_PATH,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_CYCLES_PATH,
 ] as const;
 
@@ -93,8 +94,8 @@ export function createTrailSequencedEntityPath(
   title: string,
   fallback = "Untitled",
 ): string {
-  if (!Number.isSafeInteger(sequence) || sequence < 1 || sequence > 9999) {
-    throw new Error("Trail physical sequence must be an integer from 1 to 9999");
+  if (!Number.isSafeInteger(sequence) || sequence < 0 || sequence > 9999) {
+    throw new Error("Trail physical sequence must be an integer from 0 to 9999");
   }
   return `${directory}/${String(sequence).padStart(4, "0")} ${sanitizeTrailFilenameSuffix(title, fallback)}.md`;
 }

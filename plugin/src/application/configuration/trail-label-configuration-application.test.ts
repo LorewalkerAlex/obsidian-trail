@@ -46,11 +46,18 @@ function requireSubmittedPlan(plans: readonly TrailMutationPlan[], index: number
 
 function harness(createIds: readonly string[] = []) {
   const configuration = createTrailTestConfiguration();
+  const project = {
+    id: "project-a",
+    labelIds: [],
+    statusDefinitionId: "project-unstarted",
+    title: "Project A",
+  };
   const issue = {
     context: "workflow" as const,
     createdAt: 1,
     id: "issue-a",
     labelIds: ["label-work"],
+    projectId: project.id,
     statusDefinitionId: "issue-unstarted",
     title: "Issue A",
   };
@@ -61,8 +68,10 @@ function harness(createIds: readonly string[] = []) {
       { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
       {
         issues: [issue],
-        kind: "projectless-issues",
-        sourcePath: "Trail/Collections/Projectless Issues.md",
+        kind: "project",
+        milestones: [],
+        project,
+        sourcePath: "Trail/Projects/0001 Project A.md",
       },
       { issues: [], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
     ],
@@ -215,11 +224,18 @@ describe("TrailConfigurationApplication Label management", () => {
         { groupId: "group-area", id: "label-home", name: "Home" },
       ],
     };
+    const project = {
+      id: "project-a",
+      labelIds: [],
+      statusDefinitionId: "project-unstarted",
+      title: "Project A",
+    };
     const issue = {
       context: "workflow" as const,
       createdAt: 1,
       id: "issue-a",
       labelIds: ["label-work", "label-home"],
+      projectId: project.id,
       statusDefinitionId: "issue-unstarted",
       title: "Issue A",
     };
@@ -230,8 +246,10 @@ describe("TrailConfigurationApplication Label management", () => {
         { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
         {
           issues: [issue],
-          kind: "projectless-issues",
-          sourcePath: "Trail/Collections/Projectless Issues.md",
+          kind: "project",
+          milestones: [],
+          project,
+          sourcePath: "Trail/Projects/0001 Project A.md",
         },
         { issues: [], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
       ],

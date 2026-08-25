@@ -52,4 +52,29 @@ describe("Triage Markdown codec", () => {
     expect(parsed.document?.issues.map((issue) => issue.id)).toEqual(["good"]);
     expect(parsed.issues.some((issue) => issue.entityId === "bad" || issue.message.includes("triage"))).toBe(true);
   });
+
+  it("rejects Project and Milestone ownership metadata on a Triage Issue", () => {
+    const markdown = [
+      "---",
+      "kind: triage",
+      "---",
+      "",
+      "# Issues",
+      "",
+      "## Invalid",
+      '<!-- data {"id":"invalid","context":"triage","projectId":"project-a","milestoneId":"milestone-a","due":1800000000000} -->',
+      "",
+    ].join("\n");
+    const parsed = parseTriageMarkdown({
+      markdown,
+      parseYaml: parseTrailTestYaml,
+      sourcePath: "Trail/Collections/Triage.md",
+    });
+
+    expect(parsed.document?.issues).toEqual([]);
+    expect(parsed.issues.map(({ message }) => message)).toEqual(expect.arrayContaining([
+      "projectId is not valid on a Triage Issue",
+      "milestoneId is not valid on a Triage Issue",
+    ]));
+  });
 });

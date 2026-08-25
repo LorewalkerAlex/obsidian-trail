@@ -18,8 +18,8 @@ function recorder() {
   return { diagnostics, events };
 }
 
-describe("project-less Triage diagnostics", () => {
-  it("records explicit null Project evidence when Accept targets project-less Workflow", () => {
+describe("explicit-Project Triage diagnostics", () => {
+  it("records the selected Project when Accept targets Workflow", () => {
     const { diagnostics, events } = recorder();
     const triage: TrailTriageIssue = {
       context: "triage",
@@ -36,16 +36,16 @@ describe("project-less Triage diagnostics", () => {
     const session = { triage: { accept } } as unknown as TrailApplicationSession;
     const actions = createDiagnosticTrailUiActions(session, diagnostics);
 
-    actions.triage.accept(triage, undefined);
+    actions.triage.accept(triage, "project-a");
 
-    expect(accept).toHaveBeenCalledWith(triage, undefined);
+    expect(accept).toHaveBeenCalledWith(triage, "project-a");
     expect(events).toEqual([{
       name: "ui.triage.accept.submitted",
       options: {
         correlationId: "command-workflow-a",
         data: {
           entityId: "workflow-a",
-          projectId: null,
+          projectId: "project-a",
           sourceIssueId: triage.id,
         },
       },

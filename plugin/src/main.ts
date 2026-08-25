@@ -13,6 +13,10 @@ import {
   createObsidianDiagnosticStorage,
   type TrailDiagnosticStorage,
 } from "./adapters/obsidian/trail-diagnostics-storage-obsidian";
+import {
+  TRAIL_NAVIGATION_VIEW_TYPE,
+  TrailNavigationView,
+} from "./adapters/obsidian/trail-navigation-view";
 import type { TrailObsidianFileKinds } from "./adapters/obsidian/trail-obsidian-file-kinds";
 import { createObsidianPluginDataIO } from "./adapters/obsidian/trail-plugin-data-io-obsidian";
 import { TrailSettingsTab } from "./adapters/obsidian/trail-settings-tab";
@@ -53,6 +57,11 @@ import { createTrailWeeklyNoteRepository } from "./persistence/utility-sources/t
 import { createTrailRuntimeStore } from "./runtime/store/trail-runtime-store";
 import { TrailRefreshController } from "./source-sync/refresh/trail-refresh-controller";
 import { createTrailAuthoritativeSourceSync } from "./source-sync/trail-authoritative-source-sync";
+import {
+  createTrailNavigationStore,
+  type TrailLocation,
+  type TrailNavigationStore,
+} from "./ui/shell/trail-navigation-state";
 import type { TrailUiActions } from "./ui/shell/trail-ui-actions";
 
 declare const __TRAIL_DIAGNOSTICS_ENABLED__: boolean;
@@ -80,6 +89,7 @@ export default class TrailPlugin extends Plugin {
   private diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS;
   private disposeRuntimeDiagnostics: (() => void) | null = null;
   private mutationQueue: TrailMutationQueue | null = null;
+  private navigationStore: TrailNavigationStore | null = null;
   private refreshController: TrailRefreshController | null = null;
 
   public onload(): void {
@@ -108,6 +118,8 @@ export default class TrailPlugin extends Plugin {
     });
 
     const runtimeStore = createTrailRuntimeStore();
+    const navigationStore = createTrailNavigationStore();
+    this.navigationStore = navigationStore;
     const mutationQueue = new TrailMutationQueue();
     const writeGuard = createTrailHostWriteGuard();
     const rawSourceIO = createObsidianSourceIO(this.app, fileKinds, writeGuard);
@@ -202,8 +214,24 @@ export default class TrailPlugin extends Plugin {
     this.refreshController = refreshController;
 
     this.registerView(
+      TRAIL_NAVIGATION_VIEW_TYPE,
+      (leaf: WorkspaceLeaf) => new TrailNavigationView(
+        leaf,
+        runtimeStore,
+        navigationStore,
+        (location) => {
+          void this.activateView(location);
+        },
+      ),
+    );
+    this.registerView(
       TRAIL_VIEW_TYPE,
-      (leaf: WorkspaceLeaf) => new TrailView(leaf, runtimeStore, actions),
+      (leaf: WorkspaceLeaf) => new TrailView(
+        leaf,
+        runtimeStore,
+        actions,
+        navigationStore,
+      ),
     );
 
     this.addRibbonIcon("route", "Open Trail", () => {
@@ -299,16 +327,27 @@ export default class TrailPlugin extends Plugin {
     this.disposeRuntimeDiagnostics = null;
     this.mutationQueue?.dispose();
     this.mutationQueue = null;
+    this.navigationStore = null;
     this.refreshController = null;
     void this.diagnostics.dispose();
     this.diagnostics = NOOP_TRAIL_DIAGNOSTICS;
   }
 
-  private async activateView(): Promise<void> {
+  private async activateView(location?: TrailLocation): Promise<void> {
     const correlationId = this.diagnostics.createCorrelationId("view.activate");
     this.diagnostics.record("view.activate.requested", { correlationId });
     try {
+      if (location !== undefined) {
+        this.navigationStore?.getState().navigate(location);
+      }
+
       const { workspace } = this.app;
+      await workspace.ensureSideLeaf(
+        TRAIL_NAVIGATION_VIEW_TYPE,
+        "left",
+        { active: true, reveal: true },
+      );
+
       let leaf = workspace.getLeavesOfType(TRAIL_VIEW_TYPE)[0];
       const reusedExistingLeaf = leaf !== undefined;
       if (leaf === undefined) {

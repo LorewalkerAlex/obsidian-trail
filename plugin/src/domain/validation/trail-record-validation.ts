@@ -116,10 +116,31 @@ export function validateTrailIssue(issueValue: TrailIssue): readonly TrailDomain
   }
 
   if (issueValue.context === "triage") {
+    if (issueValue.projectId !== undefined) {
+      issues.push(issue(
+        "triage.project.forbidden",
+        "Triage Issue must not belong to a Project",
+        "projectId",
+      ));
+    }
+    if (issueValue.milestoneId !== undefined) {
+      issues.push(issue(
+        "triage.milestone.forbidden",
+        "Triage Issue must not belong to a Milestone",
+        "milestoneId",
+      ));
+    }
     if (!isTrailTimestamp(issueValue.due)) {
       issues.push(issue("triage.due.invalid", "Triage Issue due is required", "due"));
     }
   } else {
+    if (issueValue.projectId === undefined) {
+      issues.push(issue(
+        "workflow.project.required",
+        "Workflow Issue projectId is required",
+        "projectId",
+      ));
+    }
     if (!isTrailId(issueValue.statusDefinitionId)) {
       issues.push(issue("workflow.status.invalid", "Workflow Issue statusDefinitionId is required", "statusDefinitionId"));
     }

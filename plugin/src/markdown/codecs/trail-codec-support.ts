@@ -306,9 +306,7 @@ export function markerOffset(record: TrailMarkdownRecordSlice, bodyStartOffset: 
     : bodyStartOffset + requiredMarkdownOffset(record.immediateMarker, "start");
 }
 
-export type TrailWorkflowIssuePhysicalContext =
-  | { readonly kind: "project"; readonly projectId: string }
-  | { readonly kind: "projectless" };
+export type TrailWorkflowIssuePhysicalContext = { readonly kind: "project"; readonly projectId: string };
 
 export function parseTriageIssueMetadata(raw: string): {
   readonly issue?: Omit<TrailTriageIssue, "description" | "title">;
@@ -329,9 +327,8 @@ export function parseTriageIssueMetadata(raw: string): {
   for (const field of ["statusDefinitionId", "createdAt", "firstStartedAt", "terminalAt"] as const) {
     if (value[field] !== undefined) issues.push(`${field} is not valid on a Triage Issue`);
   }
-  const projectId = parseOptionalId(value, "projectId", issues);
-  const milestoneId = parseOptionalId(value, "milestoneId", issues);
-  if (milestoneId !== undefined && projectId === undefined) issues.push("milestoneId requires projectId");
+  if (value.projectId !== undefined) issues.push("projectId is not valid on a Triage Issue");
+  if (value.milestoneId !== undefined) issues.push("milestoneId is not valid on a Triage Issue");
   const priority = parseOptionalPriority(value, "priority", issues);
   const estimate = parseOptionalEstimate(value, "estimate", issues);
   const due = parseRequiredTimestamp(value, "due", issues);
@@ -345,9 +342,7 @@ export function parseTriageIssueMetadata(raw: string): {
       estimate,
       id,
       labelIds,
-      milestoneId,
       priority,
-      projectId,
     },
   };
 }
@@ -373,23 +368,24 @@ export function parseWorkflowIssueMetadata(
   if (value.context !== "workflow") issues.push("context must be workflow in a Workflow Issue container");
   const statusDefinitionId = parseRequiredId(value, "statusDefinitionId", issues);
   const createdAt = parseRequiredTimestamp(value, "createdAt", issues);
-  const projectId = parseOptionalId(value, "projectId", issues);
+  const projectId = parseRequiredId(value, "projectId", issues);
   const milestoneId = parseOptionalId(value, "milestoneId", issues);
-  if (context.kind === "project") {
-    if (projectId === undefined) issues.push("projectId is required in a Project file");
-    else if (projectId !== context.projectId) issues.push("projectId must match the owning Project file");
-  } else {
-    if (projectId !== undefined) issues.push("projectId must be absent in Projectless Issues.md");
-    if (milestoneId !== undefined) issues.push("milestoneId must be absent in Projectless Issues.md");
+  if (projectId !== undefined && projectId !== context.projectId) {
+    issues.push("projectId must match the owning Project file");
   }
-  if (milestoneId !== undefined && projectId === undefined) issues.push("milestoneId requires projectId");
   const priority = parseOptionalPriority(value, "priority", issues);
   const estimate = parseOptionalEstimate(value, "estimate", issues);
   const due = parseOptionalTimestamp(value, "due", issues);
   const labelIds = parseIdSet(value.labelIds, "labelIds", issues);
   const firstStartedAt = parseOptionalTimestamp(value, "firstStartedAt", issues);
   const terminalAt = parseOptionalTimestamp(value, "terminalAt", issues);
-  if (id === undefined || statusDefinitionId === undefined || createdAt === undefined || issues.length > 0) {
+  if (
+    id === undefined
+    || statusDefinitionId === undefined
+    || createdAt === undefined
+    || projectId === undefined
+    || issues.length > 0
+  ) {
     return { issues };
   }
   return {
@@ -417,8 +413,6 @@ export function canonicalTriageIssueMetadata(issue: TrailTriageIssue): Record<st
     {
       id: issue.id,
       context: "triage",
-      projectId: issue.projectId,
-      milestoneId: issue.milestoneId,
       priority: issue.priority,
       estimate: issue.estimate,
       due: issue.due,

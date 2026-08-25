@@ -4,12 +4,9 @@ import { TRAIL_BOOTSTRAP_FILES } from "../../markdown/schema/trail-bootstrap-mar
 import {
   TRAIL_BOOTSTRAP_DIRECTORIES,
   TRAIL_COLLECTIONS_PATH,
-  TRAIL_CYCLES_PATH,
   TRAIL_INITIATIVES_PATH,
   TRAIL_MANAGED_ROOT,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_PROJECTS_PATH,
-  TRAIL_TRIAGE_PATH,
 } from "../../markdown/schema/trail-paths";
 import type { TrailDomainSourceRepository } from "../../persistence/domain-sources/trail-domain-source-repository";
 import type { TrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
@@ -40,6 +37,15 @@ function createHarness() {
     },
   };
 
+  const listedFiles = (path: string) => [...files.keys()]
+    .filter((candidate) => candidate.startsWith(`${path}/`) && !candidate.slice(path.length + 1).includes("/"))
+    .sort()
+    .map((child) => ({
+      kind: "file" as const,
+      name: child.slice(child.lastIndexOf("/") + 1),
+      path: child,
+    }));
+
   const list = async (path: string) => {
     if (path === TRAIL_MANAGED_ROOT) {
       return [
@@ -48,10 +54,8 @@ function createHarness() {
         { kind: "directory" as const, name: "Collections", path: TRAIL_COLLECTIONS_PATH },
       ].filter(({ path: child }) => kinds.get(child) === "directory");
     }
-    if (path === TRAIL_COLLECTIONS_PATH) {
-      return [TRAIL_TRIAGE_PATH, TRAIL_PROJECTLESS_ISSUES_PATH, TRAIL_CYCLES_PATH]
-        .filter((child) => kinds.get(child) === "file")
-        .map((child) => ({ kind: "file" as const, name: child.slice(child.lastIndexOf("/") + 1), path: child }));
+    if (path === TRAIL_COLLECTIONS_PATH || path === TRAIL_PROJECTS_PATH) {
+      return listedFiles(path);
     }
     return [];
   };
@@ -62,14 +66,35 @@ function createHarness() {
       files.set(path, markdown);
       kinds.set(path, "file");
       if (failCreate) throw new Error("verification failed");
+      if (kind === "triage") {
+        return {
+          issues: [],
+          kind: "accepted" as const,
+          snapshot: { issues: [], kind: "triage" as const, sourcePath: path },
+        };
+      }
+      if (kind === "project") {
+        return {
+          issues: [],
+          kind: "accepted" as const,
+          snapshot: {
+            issues: [],
+            kind: "project" as const,
+            milestones: [],
+            project: {
+              id: "status-11",
+              labelIds: [],
+              statusDefinitionId: "status-7",
+              title: "Standalone",
+            },
+            sourcePath: path,
+          },
+        };
+      }
       return {
         issues: [],
         kind: "accepted" as const,
-        snapshot: kind === "triage"
-          ? { issues: [], kind: "triage" as const, sourcePath: path }
-          : kind === "projectless-issues"
-            ? { issues: [], kind: "projectless-issues" as const, sourcePath: path }
-            : { cycles: [], kind: "cycles" as const, sourcePath: path },
+        snapshot: { cycles: [], kind: "cycles" as const, sourcePath: path },
       };
     },
     async deleteSourceIfUnchanged(path: string, expected: string) {
@@ -100,6 +125,7 @@ function createHarness() {
     domainSources,
     events,
     files,
+    getSavedPluginData: () => savedPluginData,
     layout,
     pluginData,
     setFailCreate: () => { failCreate = true; },
@@ -108,7 +134,7 @@ function createHarness() {
 }
 
 describe("Fresh Trail workspace bootstrap", () => {
-  it("creates and verifies Markdown before saving Plugin Data", async () => {
+  it("creates the ordinary Standalone Project at reserved sequence 0000 before saving Default Project", async () => {
     const harness = createHarness();
     let next = 0;
     await bootstrapFreshTrailWorkspace({
@@ -118,10 +144,18 @@ describe("Fresh Trail workspace bootstrap", () => {
       pluginData: harness.pluginData,
       timezone: "Asia/Singapore",
     });
-    expect(harness.files.size).toBe(TRAIL_BOOTSTRAP_FILES.length);
+
+    expect(harness.files.size).toBe(TRAIL_BOOTSTRAP_FILES.length + 1);
+    const standalonePath = `${TRAIL_PROJECTS_PATH}/0000 Standalone.md`;
+    const standaloneMarkdown = harness.files.get(standalonePath);
+    expect(standaloneMarkdown).toBeDefined();
+    expect(standaloneMarkdown).toContain("kind: project");
+    expect(standaloneMarkdown).toContain("## Standalone");
+    expect(harness.getSavedPluginData()?.workspaceState.defaultProjectId).toBe("status-11");
+
     const saveIndex = harness.events.indexOf("save-plugin-data");
     expect(saveIndex).toBeGreaterThan(
-      Math.max(...TRAIL_BOOTSTRAP_FILES.map(({ path }) => harness.events.indexOf(`create:${path}`))),
+      Math.max(...[...harness.files.keys()].map((path) => harness.events.indexOf(`create:${path}`))),
     );
   });
 
@@ -153,7 +187,7 @@ describe("Fresh Trail workspace bootstrap", () => {
       pluginData: harness.pluginData,
       timezone: "Asia/Singapore",
     })).rejects.toThrow("Plugin Data persistence");
-    expect(harness.files.size).toBe(TRAIL_BOOTSTRAP_FILES.length);
+    expect(harness.files.size).toBe(TRAIL_BOOTSTRAP_FILES.length + 1);
     expect(harness.events.some((event) => event.startsWith("delete:"))).toBe(false);
     expect(TRAIL_BOOTSTRAP_DIRECTORIES.every((path) => harness.events.includes(`mkdir:${path}`))).toBe(true);
   });

@@ -1,13 +1,19 @@
+import type { TrailProject } from "../../domain/model/trail-entities";
 import {
   createDefaultTrailConfiguration,
   createDefaultTrailWorkspaceState,
 } from "../../domain/rules/trail-default-configuration";
+import { resolveTrailDefaultStatusDefinition } from "../../domain/rules/trail-status-rules";
+import { isTrailId } from "../../domain/validation/trail-value-validation";
+import { serializeProjectMarkdown } from "../../markdown/codecs/trail-project-codec";
 import { TRAIL_BOOTSTRAP_FILES } from "../../markdown/schema/trail-bootstrap-markdown";
 import {
   TRAIL_BOOTSTRAP_DIRECTORIES,
   TRAIL_CYCLES_PATH,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
+  TRAIL_FRESH_WORKSPACE_PROJECT_SEQUENCE,
+  TRAIL_PROJECTS_PATH,
   TRAIL_TRIAGE_PATH,
+  createTrailSequencedEntityPath,
 } from "../../markdown/schema/trail-paths";
 import type {
   TrailDomainSourceRepository,
@@ -21,8 +27,6 @@ function singletonKind(path: string): TrailManagedDomainSourceKind {
   switch (path) {
     case TRAIL_TRIAGE_PATH:
       return "triage";
-    case TRAIL_PROJECTLESS_ISSUES_PATH:
-      return "projectless-issues";
     case TRAIL_CYCLES_PATH:
       return "cycles";
     default:
@@ -56,12 +60,38 @@ export async function bootstrapFreshTrailWorkspace(input: {
     );
   }
 
+  const configuration = createDefaultTrailConfiguration({
+    createId: input.createId,
+    timezone: input.timezone,
+  });
+  const standaloneProjectId = input.createId().trim();
+  if (!isTrailId(standaloneProjectId)) {
+    throw new Error("Default Project ID must be non-empty text");
+  }
+  const standaloneProject: TrailProject = {
+    id: standaloneProjectId,
+    labelIds: [],
+    statusDefinitionId: resolveTrailDefaultStatusDefinition(
+      configuration,
+      "project",
+      "unstarted",
+    ).id,
+    title: "Standalone",
+  };
+  const standalonePath = createTrailSequencedEntityPath(
+    TRAIL_PROJECTS_PATH,
+    TRAIL_FRESH_WORKSPACE_PROJECT_SEQUENCE,
+    standaloneProject.title,
+    "Project",
+  );
+  const standaloneMarkdown = serializeProjectMarkdown({
+    issues: [],
+    milestones: [],
+    project: standaloneProject,
+  });
   const pluginData = {
-    configuration: createDefaultTrailConfiguration({
-      createId: input.createId,
-      timezone: input.timezone,
-    }),
-    workspaceState: createDefaultTrailWorkspaceState(),
+    configuration,
+    workspaceState: createDefaultTrailWorkspaceState(standaloneProject.id),
   };
   const createdDirectories: string[] = [];
   const attemptedFiles: Array<{ readonly content: string; readonly path: string }> = [];
@@ -83,6 +113,16 @@ export async function bootstrapFreshTrailWorkspace(input: {
       if (result.kind !== "accepted" || result.issues.length > 0) {
         throw new Error(`Bootstrap source failed authoritative verification: ${file.path}`);
       }
+    }
+
+    attemptedFiles.push({ content: standaloneMarkdown, path: standalonePath });
+    const standaloneResult = await input.domainSources.create(
+      "project",
+      standalonePath,
+      standaloneMarkdown,
+    );
+    if (standaloneResult.kind !== "accepted" || standaloneResult.issues.length > 0) {
+      throw new Error(`Bootstrap source failed authoritative verification: ${standalonePath}`);
     }
 
     pluginDataPersistenceStarted = true;

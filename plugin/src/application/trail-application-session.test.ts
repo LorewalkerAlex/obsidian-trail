@@ -106,11 +106,6 @@ function createHarness(options: HarnessOptions = {}) {
         sourcePath: "Trail/Projects/0002 Project B.md",
       },
       {
-        issues: [],
-        kind: "projectless-issues",
-        sourcePath: "Trail/Collections/Projectless Issues.md",
-      },
-      {
         cycles: options.includeOpenCycle === false ? [] : [cycle],
         kind: "cycles",
         sourcePath: "Trail/Collections/Cycles.md",
@@ -262,15 +257,18 @@ describe("Trail Application session", () => {
     ]);
   });
 
-  it("exposes project-less Issue creation and explicit Project/Milestone relation changes", async () => {
+  it("requires explicit Project creation and keeps Project/Milestone relation changes explicit", async () => {
     const harness = createHarness();
-    const projectlessReceipt = harness.session.issues.create(undefined, " Loose Issue ");
+    const issueReceipt = harness.session.issues.create(harness.projectB.id, " Routed Issue ");
     const milestoneResult = harness.session.issues.changeMilestone(harness.workflow, undefined);
-    const projectResult = harness.session.issues.moveToProject(harness.workflow, undefined);
+    const projectResult = harness.session.issues.moveToProject(
+      harness.workflow,
+      harness.projectB.id,
+    );
 
     expect(milestoneResult.kind).toBe("submitted");
     expect(projectResult.kind).toBe("submitted");
-    await projectlessReceipt.completion;
+    await issueReceipt.completion;
     if (milestoneResult.kind === "submitted") await milestoneResult.receipt.completion;
     if (projectResult.kind === "submitted") await projectResult.receipt.completion;
 
@@ -282,8 +280,8 @@ describe("Trail Application session", () => {
     const createEffect = harness.submitted[0]?.effects[0];
     expect(createEffect?.kind).toBe("create-entity");
     if (createEffect?.kind === "create-entity" && createEffect.after.kind === "issue") {
-      expect(createEffect.after.value.title).toBe("Loose Issue");
-      expect(createEffect.after.value.projectId).toBeUndefined();
+      expect(createEffect.after.value.title).toBe("Routed Issue");
+      expect(createEffect.after.value.projectId).toBe(harness.projectB.id);
     }
   });
 
@@ -294,14 +292,21 @@ describe("Trail Application session", () => {
       "project-started",
     );
     const initiativeResult = harness.session.projects.changeInitiative(harness.project, undefined);
-    const projectDelete = harness.session.projects.delete(harness.project);
+    const needsReplacement = harness.session.projects.delete(harness.project);
+    const projectDelete = harness.session.projects.delete(harness.project, harness.projectB.id);
     const issueDelete = harness.session.issues.delete(harness.workflow);
 
     expect(statusResult.kind).toBe("submitted");
     expect(initiativeResult.kind).toBe("submitted");
+    expect(needsReplacement).toMatchObject({
+      input: { code: "project-replacement-required" },
+      kind: "needs-input",
+    });
+    expect(projectDelete.kind).toBe("submitted");
     if (statusResult.kind === "submitted") await statusResult.receipt.completion;
     if (initiativeResult.kind === "submitted") await initiativeResult.receipt.completion;
-    await Promise.all([projectDelete.completion, issueDelete.completion]);
+    if (projectDelete.kind === "submitted") await projectDelete.receipt.completion;
+    await issueDelete.completion;
 
     expect(harness.submitted.map(({ intent }) => intent)).toEqual([
       "workflow.project.change-status",
@@ -314,6 +319,16 @@ describe("Trail Application session", () => {
       "delete-entity",
       "delete-entity",
     ]);
+    expect(harness.submitted[2]?.effects[0]).toMatchObject({
+      after: {
+        kind: "issue",
+        value: {
+          id: harness.workflow.id,
+          milestoneId: undefined,
+          projectId: harness.projectB.id,
+        },
+      },
+    });
     expect(harness.submitted[3]?.effects.map(({ kind }) => kind)).toEqual([
       "replace-entity",
       "delete-entity",

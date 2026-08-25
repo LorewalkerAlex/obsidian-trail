@@ -11,9 +11,12 @@ import { addTrailCalendarDays } from "../../domain/rules/trail-temporal-rules";
 import {
   selectIsTrailEntityPending,
   selectTrailReadableProjectById,
-  selectTrailReadableProjectIds,
   selectTrailReadableTriageIssueById,
 } from "../../query/shared/trail-effective-query";
+import {
+  selectTrailDefaultTriageAcceptProjectId,
+  selectTrailTriageAcceptProjectIds,
+} from "../../query/shared/trail-project-target-query";
 import { selectTrailEntitySourceIssues } from "../../query/shared/trail-source-health-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import {
@@ -69,7 +72,11 @@ export function TrailTriageIssueRow({
   );
   const projectIds = useStore(
     runtimeStore,
-    useShallow(selectTrailReadableProjectIds),
+    useShallow(selectTrailTriageAcceptProjectIds),
+  );
+  const defaultProjectId = useStore(
+    runtimeStore,
+    selectTrailDefaultTriageAcceptProjectId,
   );
   const [acceptBaseline, setAcceptBaseline] = useState<TrailTriageIssue>();
   const [acceptProjectId, setAcceptProjectId] = useState("");
@@ -95,26 +102,21 @@ export function TrailTriageIssueRow({
   const beginAccept = (): void => {
     setEditBaseline(undefined);
     setAcceptBaseline(issue);
-    const preferredProjectId = issue.projectId !== undefined
-      && projectIds.includes(issue.projectId)
-        ? issue.projectId
-        : projectIds.length === 1
-          ? projectIds[0] ?? ""
-          : "";
-    setAcceptProjectId(preferredProjectId);
+    setAcceptProjectId(defaultProjectId ?? "");
   };
 
   const submitAccept = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    if (acceptBaseline === undefined || actionsDisabled) return;
-    const targetProjectId = acceptProjectId === "" ? undefined : acceptProjectId;
     if (
-      targetProjectId !== undefined
-      && (!projectIds.includes(targetProjectId) || targetHasIssues)
+      acceptBaseline === undefined
+      || actionsDisabled
+      || acceptProjectId === ""
+      || !projectIds.includes(acceptProjectId)
+      || targetHasIssues
     ) return;
 
     const receipt = runTrailReceipt(
-      () => actions.accept(acceptBaseline, targetProjectId),
+      () => actions.accept(acceptBaseline, acceptProjectId),
       onError,
     );
     if (receipt !== undefined) cancelAccept();
@@ -258,7 +260,7 @@ export function TrailTriageIssueRow({
               }}
               value={acceptProjectId}
             >
-              <option value="">No Project</option>
+              <option value="">Select Project</option>
               {projectIds.map((projectId) => (
                 <TrailAcceptProjectOption
                   key={projectId}
@@ -273,7 +275,8 @@ export function TrailTriageIssueRow({
               className="mod-cta"
               disabled={
                 actionsDisabled
-                || (acceptProjectId !== "" && !projectIds.includes(acceptProjectId))
+                || acceptProjectId === ""
+                || !projectIds.includes(acceptProjectId)
                 || targetHasIssues
               }
               type="submit"

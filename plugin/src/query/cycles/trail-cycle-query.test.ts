@@ -35,13 +35,14 @@ function readyStore() {
     statusDefinitionId: "issue-started",
     title: "Active",
   };
-  const projectless = {
+  const backlog = {
     context: "workflow" as const,
     createdAt: 2,
-    id: "issue-projectless",
+    id: "issue-backlog",
     labelIds: [],
+    projectId: project.id,
     statusDefinitionId: "issue-unstarted",
-    title: "Projectless",
+    title: "Backlog",
   };
   const completed = {
     context: "workflow" as const,
@@ -82,16 +83,11 @@ function readyStore() {
     },
     sources: [
       {
-        issues: [active, completed],
+        issues: [active, backlog, completed],
         kind: "project",
         milestones: [],
         project,
         sourcePath: "Trail/Projects/0001 Project A.md",
-      },
-      {
-        issues: [projectless],
-        kind: "projectless-issues",
-        sourcePath: "Trail/Collections/Projectless Issues.md",
       },
       {
         cycles: [olderClosed, newerClosed, openCycle],
@@ -101,22 +97,22 @@ function readyStore() {
     ],
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
-  return { active, completed, newerClosed, openCycle, projectless, store };
+  return { active, backlog, completed, newerClosed, openCycle, store };
 }
 
 describe("Trail Cycle page Query", () => {
   it("selects current planning candidates and newest-first history", () => {
-    const { active, completed, openCycle, projectless, store } = readyStore();
+    const { active, backlog, completed, openCycle, store } = readyStore();
 
     expect(selectTrailReadableCycleById(store.getState(), openCycle.id)).toBe(openCycle);
     expect(selectTrailCycleHistoryIds(store.getState())).toEqual(["cycle-new", "cycle-old"]);
     expect(selectTrailCyclePlanningIssueIds(store.getState())).toEqual([
-      projectless.id,
       active.id,
+      backlog.id,
     ]);
     expect(selectTrailCyclePlanningIssueIds(store.getState(), openCycle.id)).toEqual([
-      projectless.id,
       active.id,
+      backlog.id,
       completed.id,
     ]);
   });

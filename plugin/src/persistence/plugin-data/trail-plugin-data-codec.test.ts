@@ -24,6 +24,30 @@ describe("Trail plugin-data codec", () => {
     expect(parsed.value).toEqual(snapshot);
   });
 
+  it("round-trips an optional Default Project reference without inventing one", () => {
+    const withDefault = {
+      configuration: createTrailTestConfiguration(),
+      workspaceState: {
+        ...createTrailTestWorkspaceState(),
+        defaultProjectId: "project-a",
+      },
+    };
+    const physical = serializeTrailPluginData(withDefault) as {
+      workspaceState: { defaultProjectId?: string };
+    };
+    expect(physical.workspaceState.defaultProjectId).toBe("project-a");
+    expect(parseTrailPluginData(physical)).toEqual({ ok: true, value: withDefault });
+
+    const withoutDefault = {
+      configuration: createTrailTestConfiguration(),
+      workspaceState: createTrailTestWorkspaceState(),
+    };
+    const withoutPhysical = serializeTrailPluginData(withoutDefault) as {
+      workspaceState: { defaultProjectId?: string };
+    };
+    expect(withoutPhysical.workspaceState).not.toHaveProperty("defaultProjectId");
+  });
+
   it("preserves Status order and default within one fixed Category", () => {
     const base = createTrailTestConfiguration();
     const ready = {

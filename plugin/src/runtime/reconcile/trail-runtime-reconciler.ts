@@ -44,7 +44,6 @@ function entitiesForSource(snapshot: TrailDomainSourceSnapshot): readonly TrailD
         ...snapshot.issues.map((value) => ({ kind: "issue" as const, value })),
       ];
     case "triage":
-    case "projectless-issues":
       return snapshot.issues.map((value) => ({ kind: "issue" as const, value }));
     case "cycles":
       return snapshot.cycles.map((value) => ({ kind: "cycle" as const, value }));

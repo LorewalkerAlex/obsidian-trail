@@ -342,6 +342,7 @@ async function tryMaterializeProjectDelete(
   effects: readonly TrailStateEffect[],
   committed: TrailCommittedRuntime,
   repository: Pick<TrailDomainSourceRepository, "list">,
+  pluginDataOperation?: TrailPersistenceOperation,
 ): Promise<TrailPersistenceTransactionPlan | undefined> {
   const projectDeletes = effects.filter((effect): effect is Extract<TrailStateEffect, { kind: "delete-entity" }> => (
     effect.kind === "delete-entity" && effect.before.kind === "project"
@@ -349,6 +350,9 @@ async function tryMaterializeProjectDelete(
   if (projectDeletes.length === 0) return undefined;
   if (projectDeletes.length !== 1) {
     throw new Error("Project deletion materialization supports exactly one Project root");
+  }
+  if (pluginDataOperation !== undefined && pluginDataOperation.kind !== "save-plugin-data") {
+    throw new Error("Project deletion Plugin Data cutover must be one save operation");
   }
 
   const projectDelete = projectDeletes[0];
@@ -361,7 +365,7 @@ async function tryMaterializeProjectDelete(
   for (const effect of effects) {
     const entityId = entityEffectId(effect);
     if (entityId === undefined) {
-      throw new Error("Project deletion cannot include plugin-data effects");
+      throw new Error("Project deletion Domain effects must target owned entities");
     }
     if (effectsById.has(entityId)) {
       throw new Error(`Project deletion contains multiple effects for entity: ${entityId}`);
@@ -413,15 +417,21 @@ async function tryMaterializeProjectDelete(
           || effect.kind !== "replace-entity"
           || effect.before.kind !== "issue"
           || effect.after.kind !== "issue"
+          || effect.after.value.context !== "workflow"
+          || effect.after.value.projectId === project.value.id
         ) {
-          throw new Error(`Project deletion must move owned Workflow Issue: ${entityId}`);
+          throw new Error(`Project deletion must move owned Workflow Issue to another Project: ${entityId}`);
         }
         const expectedAfter: TrailDomainEntity = {
           kind: "issue",
-          value: { ...current.value, milestoneId: undefined, projectId: undefined },
+          value: {
+            ...current.value,
+            milestoneId: undefined,
+            projectId: effect.after.value.projectId,
+          },
         };
         if (!sameTrailDomainEntity(effect.after, expectedAfter)) {
-          throw new Error(`Project deletion must preserve Issue facts while clearing Project scope: ${entityId}`);
+          throw new Error(`Project deletion must preserve Issue facts while changing Project scope: ${entityId}`);
         }
         const created = await createEntityOperations(effect.after, committed, repository);
         if (created.length !== 1) {
@@ -433,8 +443,9 @@ async function tryMaterializeProjectDelete(
           || operation.kind !== "mutate-domain-source"
           || operation.mutation.kind !== "create"
           || operation.path === placement.path
+          || operation.sourceKind !== "project"
         ) {
-          throw new Error(`Project deletion Issue move must create a distinct target record: ${entityId}`);
+          throw new Error(`Project deletion Issue move must create a distinct Project target record: ${entityId}`);
         }
         targetOperations.push(operation);
         break;
@@ -446,7 +457,7 @@ async function tryMaterializeProjectDelete(
   }
 
   const rootDelete = rootSourceDeleteOperation(project, committed);
-  if (targetOperations.length === 0) {
+  if (targetOperations.length === 0 && pluginDataOperation === undefined) {
     return {
       commandId: plan.commandId,
       intent: plan.intent,
@@ -459,8 +470,13 @@ async function tryMaterializeProjectDelete(
     intent: plan.intent,
     kind: "integrity-batch",
     stages: [
-      { name: "prepare", operations: targetOperations },
+      ...(targetOperations.length === 0
+        ? []
+        : [{ name: "prepare" as const, operations: targetOperations }]),
       { name: "destructive", operations: [rootDelete] },
+      ...(pluginDataOperation === undefined
+        ? []
+        : [{ name: "commit" as const, operations: [pluginDataOperation] }]),
     ],
   };
 }
@@ -586,14 +602,25 @@ export async function materializeTrailPersistenceTransactionPlan(
     };
   }
 
-  if (pluginData.operation === undefined) {
-    const projectDelete = await tryMaterializeProjectDelete(
-      plan,
-      pluginData.remaining,
-      committed,
-      repository,
-    );
-    if (projectDelete !== undefined) return projectDelete;
+  const projectDelete = await tryMaterializeProjectDelete(
+    plan,
+    pluginData.remaining,
+    committed,
+    repository,
+    pluginData.operation,
+  );
+  if (projectDelete !== undefined) {
+    if (pluginData.operation !== undefined) {
+      if (pluginData.operation.kind !== "save-plugin-data") {
+        throw new Error("Project deletion Plugin Data cutover is not a save operation");
+      }
+      assertPluginDataCommitBridge(
+        committed,
+        pluginData.operation,
+        pluginData.remaining,
+      );
+    }
+    return projectDelete;
   }
 
   if (pluginData.operation === undefined && pluginData.remaining.length === 1) {

@@ -8,13 +8,19 @@ import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../
 import { runtimeChangesFromPersistenceResult } from "./trail-authoritative-source-sync";
 
 const projectPath = "Trail/Projects/0001 Project A.md";
-const projectlessPath = "Trail/Collections/Projectless Issues.md";
+const projectBPath = "Trail/Projects/0002 Project B.md";
 
 const project = {
   id: "project-a",
   labelIds: [],
   statusDefinitionId: "project-unstarted",
   title: "Project A",
+};
+const projectB = {
+  id: "project-b",
+  labelIds: [],
+  statusDefinitionId: "project-unstarted",
+  title: "Project B",
 };
 const milestone = {
   id: "milestone-a",
@@ -31,7 +37,7 @@ const beforeIssue = {
   statusDefinitionId: "issue-unstarted",
   title: "Issue A",
 };
-const afterIssue = { ...beforeIssue, milestoneId: undefined, projectId: undefined };
+const afterIssue = { ...beforeIssue, milestoneId: undefined, projectId: projectB.id };
 
 describe("Trail Integrity Batch settlement", () => {
   it("releases a deleted source before accepting prepared same-identity targets", () => {
@@ -51,8 +57,10 @@ describe("Trail Integrity Batch settlement", () => {
           },
           {
             issues: [],
-            kind: "projectless-issues" as const,
-            sourcePath: projectlessPath,
+            kind: "project" as const,
+            milestones: [],
+            project: projectB,
+            sourcePath: projectBPath,
           },
         ],
       }),
@@ -67,8 +75,10 @@ describe("Trail Integrity Batch settlement", () => {
         kind: "accepted" as const,
         snapshot: {
           issues: [afterIssue],
-          kind: "projectless-issues" as const,
-          sourcePath: projectlessPath,
+          kind: "project" as const,
+          milestones: [],
+          project: projectB,
+          sourcePath: projectBPath,
         },
       },
     };
@@ -96,6 +106,6 @@ describe("Trail Integrity Batch settlement", () => {
     expect(candidate.committed.authoritative.domain.projectsById.has(project.id)).toBe(false);
     expect(candidate.committed.authoritative.domain.milestonesById.has(milestone.id)).toBe(false);
     expect(candidate.committed.authoritative.domain.issuesById.get(afterIssue.id)).toEqual(afterIssue);
-    expect(candidate.committed.ownership.sourceByEntityId.get(afterIssue.id)).toBe(projectlessPath);
+    expect(candidate.committed.ownership.sourceByEntityId.get(afterIssue.id)).toBe(projectBPath);
   });
 });

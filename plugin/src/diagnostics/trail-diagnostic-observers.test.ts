@@ -245,6 +245,7 @@ describe("Trail diagnostic observers", () => {
       createdAt: 1,
       id: "issue-a",
       labelIds: [],
+      projectId: "project-a",
       statusDefinitionId: "issue-unstarted",
       title: "Issue A",
     };

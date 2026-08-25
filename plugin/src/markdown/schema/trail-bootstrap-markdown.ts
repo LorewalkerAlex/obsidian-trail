@@ -1,7 +1,6 @@
 import {
   TRAIL_BOOTSTRAP_DIRECTORIES,
   TRAIL_CYCLES_PATH,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
 } from "./trail-paths";
 import {
@@ -10,7 +9,7 @@ import {
 } from "./trail-physical-schema";
 
 function emptySingletonMarkdown(
-  kind: Extract<TrailDomainSourceKind, "cycles" | "projectless-issues" | "triage">,
+  kind: Extract<TrailDomainSourceKind, "cycles" | "triage">,
 ): string {
   const schema = TRAIL_PHYSICAL_SOURCE_SCHEMAS[kind];
   return [
@@ -24,9 +23,6 @@ function emptySingletonMarkdown(
 }
 
 export const TRAIL_TRIAGE_EMPTY_MARKDOWN = emptySingletonMarkdown("triage");
-export const TRAIL_PROJECTLESS_ISSUES_EMPTY_MARKDOWN = emptySingletonMarkdown(
-  "projectless-issues",
-);
 export const TRAIL_CYCLES_EMPTY_MARKDOWN = emptySingletonMarkdown("cycles");
 
 export interface BootstrapMarkdownFile {
@@ -36,10 +32,6 @@ export interface BootstrapMarkdownFile {
 
 export const TRAIL_BOOTSTRAP_FILES: readonly BootstrapMarkdownFile[] = [
   { path: TRAIL_TRIAGE_PATH, content: TRAIL_TRIAGE_EMPTY_MARKDOWN },
-  {
-    path: TRAIL_PROJECTLESS_ISSUES_PATH,
-    content: TRAIL_PROJECTLESS_ISSUES_EMPTY_MARKDOWN,
-  },
   { path: TRAIL_CYCLES_PATH, content: TRAIL_CYCLES_EMPTY_MARKDOWN },
 ] as const;
 

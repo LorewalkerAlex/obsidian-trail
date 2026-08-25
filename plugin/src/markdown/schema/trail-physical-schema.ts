@@ -2,7 +2,6 @@ export type TrailDomainSourceKind =
   | "initiative"
   | "project"
   | "triage"
-  | "projectless-issues"
   | "cycles";
 
 export type TrailPhysicalRecordKind =
@@ -161,11 +160,6 @@ export const TRAIL_PHYSICAL_SOURCE_SCHEMAS = {
   },
   triage: {
     frontmatterKind: "triage",
-    recordSections: { Issues: ["issue"] },
-    rootSections: ["Issues"],
-  },
-  "projectless-issues": {
-    frontmatterKind: "projectless-issues",
     recordSections: { Issues: ["issue"] },
     rootSections: ["Issues"],
   },

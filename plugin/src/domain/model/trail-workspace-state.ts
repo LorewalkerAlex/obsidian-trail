@@ -1,4 +1,4 @@
-import type { TrailCustomViewId } from "./trail-values";
+import type { TrailCustomViewId, TrailProjectId } from "./trail-values";
 
 /**
  * Saved View selection keeps only the outer logical contract here.
@@ -33,6 +33,8 @@ export type TrailHomeComposition = Readonly<Record<string, unknown>>;
 
 export interface TrailWorkspaceState {
   readonly customViews: readonly TrailCustomViewConfig[];
+  /** Stable reference to one ordinary Project used only as a default selection target. */
+  readonly defaultProjectId?: TrailProjectId;
   /** Array order is authoritative user ordering. */
   readonly favorites: readonly TrailFavoriteReference[];
   readonly home: TrailHomeComposition;

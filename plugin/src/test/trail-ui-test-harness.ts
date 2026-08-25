@@ -21,6 +21,7 @@ import {
 } from "./trail-test-fixtures";
 
 export function createTrailUiTestHarness(input: {
+  readonly defaultProjectId?: string | null;
   readonly projectStatusDefinitionId?: string;
   readonly workflowStatusDefinitionId?: string;
 } = {}) {
@@ -74,10 +75,17 @@ export function createTrailUiTestHarness(input: {
     ...(workflowIsTerminal ? { terminalAt: Date.UTC(2026, 7, 15, 2) } : {}),
   };
   const runtimeStore = createTrailRuntimeStore();
+  const baseWorkspaceState = createTrailTestWorkspaceState();
+  const defaultProjectId = input.defaultProjectId === undefined
+    ? project.id
+    : input.defaultProjectId;
+  const workspaceState = defaultProjectId === null
+    ? baseWorkspaceState
+    : { ...baseWorkspaceState, defaultProjectId };
   publishTrailCommittedRuntime(runtimeStore, buildTrailCommittedRuntimeCandidate({
     pluginData: {
       configuration: createTrailTestConfiguration(),
-      workspaceState: createTrailTestWorkspaceState(),
+      workspaceState,
     },
     sources: [
       { issues: [triage], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
@@ -100,7 +108,6 @@ export function createTrailUiTestHarness(input: {
         project: projectB,
         sourcePath: "Trail/Projects/0002 Project B.md",
       },
-      { issues: [], kind: "projectless-issues", sourcePath: "Trail/Collections/Projectless Issues.md" },
       { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
     ],
   }), { sourceIssuesByPath: {} });

@@ -5,7 +5,6 @@ import {
   TRAIL_CYCLES_PATH,
   TRAIL_INITIATIVES_PATH,
   TRAIL_MANAGED_ROOT,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_PROJECTS_PATH,
   TRAIL_TRIAGE_PATH,
 } from "../../markdown/schema/trail-paths";
@@ -20,7 +19,7 @@ function harness(pluginMode: "valid" | "absent" = "valid") {
   for (const path of [TRAIL_MANAGED_ROOT, TRAIL_INITIATIVES_PATH, TRAIL_PROJECTS_PATH, TRAIL_COLLECTIONS_PATH]) {
     kinds.set(path, "directory");
   }
-  for (const path of [TRAIL_TRIAGE_PATH, TRAIL_PROJECTLESS_ISSUES_PATH, TRAIL_CYCLES_PATH]) {
+  for (const path of [TRAIL_TRIAGE_PATH, TRAIL_CYCLES_PATH]) {
     kinds.set(path, "file");
   }
   const entries = new Map<string, readonly { readonly kind: "directory" | "file"; readonly name: string; readonly path: string }[]>([
@@ -37,7 +36,6 @@ function harness(pluginMode: "valid" | "absent" = "valid") {
     ]],
     [TRAIL_COLLECTIONS_PATH, [
       { kind: "file", name: "Triage.md", path: TRAIL_TRIAGE_PATH },
-      { kind: "file", name: "Projectless Issues.md", path: TRAIL_PROJECTLESS_ISSUES_PATH },
       { kind: "file", name: "Cycles.md", path: TRAIL_CYCLES_PATH },
     ]],
   ]);
@@ -73,7 +71,7 @@ describe("Trail workspace discovery", () => {
     expect(existing.mode).toBe("existing");
     if (existing.mode === "existing") {
       expect(existing.sources.map(({ kind }) => kind)).toEqual([
-        "initiative", "project", "triage", "projectless-issues", "cycles",
+        "initiative", "project", "triage", "cycles",
       ]);
     }
   });
@@ -88,6 +86,28 @@ describe("Trail workspace discovery", () => {
     expect(result.mode).toBe("blocked");
     if (result.mode === "blocked") {
       expect(result.blockers.map(({ code }) => code)).toContain("managed-markdown-incomplete");
+    }
+  });
+
+  it("rejects the retired Projectless carrier instead of accepting a runtime compatibility path", async () => {
+    const value = harness();
+    value.entries.set(TRAIL_COLLECTIONS_PATH, [
+      ...value.entries.get(TRAIL_COLLECTIONS_PATH)!,
+      {
+        kind: "file",
+        name: "Projectless Issues.md",
+        path: `${TRAIL_COLLECTIONS_PATH}/Projectless Issues.md`,
+      },
+    ]);
+    const result = await discoverTrailWorkspace(value);
+    expect(result.mode).toBe("blocked");
+    if (result.mode === "blocked") {
+      expect(result.blockers).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          code: "managed-markdown-invalid",
+          path: `${TRAIL_COLLECTIONS_PATH}/Projectless Issues.md`,
+        }),
+      ]));
     }
   });
 

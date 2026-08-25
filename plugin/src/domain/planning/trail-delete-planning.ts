@@ -6,12 +6,19 @@ import type {
   TrailWorkflowIssue,
 } from "../model/trail-entities";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
+import { canTrailProjectAcceptWorkflowIssue } from "../rules/trail-project-rules";
+import { resolveTrailStatusDefinition } from "../rules/trail-status-rules";
 import {
   createTrailMutationPlan,
   type TrailMutationPlan,
   type TrailStateEffect,
 } from "../../mutation/plans/trail-mutation-plan";
-import { readyTrailPlan, rejectTrailPlan, type TrailPlanResult } from "./trail-plan-result";
+import {
+  readyTrailPlan,
+  rejectTrailPlan,
+  trailPlanNeedsInput,
+  type TrailPlanResult,
+} from "./trail-plan-result";
 import type { TrailPlanningState } from "./trail-planning-state";
 
 export interface DeleteTrailInitiativeCommand {
@@ -29,6 +36,7 @@ export interface DeleteTrailMilestoneCommand {
 export interface DeleteTrailProjectCommand {
   readonly commandId: string;
   readonly expectedProject: TrailProject;
+  readonly replacementProjectId?: string;
 }
 
 export interface DeleteTrailWorkflowIssueCommand {
@@ -152,6 +160,64 @@ export function planDeleteTrailMilestone(
   });
 }
 
+function projectChildIssues(
+  state: TrailPlanningState,
+  projectId: string,
+): readonly TrailWorkflowIssue[] {
+  return [...state.domain.issuesById.values()].filter(
+    (issue): issue is TrailWorkflowIssue => issue.context === "workflow" && issue.projectId === projectId,
+  );
+}
+
+function validateProjectReplacement(
+  state: TrailPlanningState,
+  deleted: TrailProject,
+  replacementProjectId: string,
+  childIssues: readonly TrailWorkflowIssue[],
+): TrailPlanResult<TrailProject> {
+  if (replacementProjectId === deleted.id) {
+    return rejectTrailPlan("project-replacement-invalid", "Deleted Project cannot replace itself");
+  }
+  const replacement = state.domain.projectsById.get(replacementProjectId);
+  if (replacement === undefined) {
+    return rejectTrailPlan(
+      "project-replacement-missing",
+      `Replacement Project does not exist: ${replacementProjectId}`,
+    );
+  }
+  const projectStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    replacement.statusDefinitionId,
+  );
+  if (projectStatus === undefined) {
+    return rejectTrailPlan(
+      "project-replacement-status-invalid",
+      `Replacement Project has an invalid StatusDefinition: ${replacement.statusDefinitionId}`,
+    );
+  }
+  for (const child of childIssues) {
+    const issueStatus = resolveTrailStatusDefinition(
+      state.configuration,
+      "issue",
+      child.statusDefinitionId,
+    );
+    if (issueStatus === undefined) {
+      return rejectTrailPlan(
+        "project-child-status-invalid",
+        `Workflow Issue has an invalid StatusDefinition: ${child.statusDefinitionId}`,
+      );
+    }
+    if (!canTrailProjectAcceptWorkflowIssue(projectStatus, issueStatus)) {
+      return rejectTrailPlan(
+        "project-replacement-not-eligible",
+        `Replacement Project cannot accept Workflow Issue without changing its Status: ${child.id}`,
+      );
+    }
+  }
+  return readyTrailPlan(replacement);
+}
+
 export function planDeleteTrailProject(
   state: TrailPlanningState,
   command: DeleteTrailProjectCommand,
@@ -167,14 +233,37 @@ export function planDeleteTrailProject(
     return rejectTrailPlan("project-changed", `Project changed before action: ${current.id}`);
   }
 
+  const childIssues = projectChildIssues(state, current.id);
+  let replacement: TrailProject | undefined;
+  if (childIssues.length > 0) {
+    if (command.replacementProjectId === undefined) {
+      return trailPlanNeedsInput(
+        "project-replacement-required",
+        "Project deletion requires a replacement Project for child Workflow Issues",
+      );
+    }
+    const replacementResult = validateProjectReplacement(
+      state,
+      current,
+      command.replacementProjectId,
+      childIssues,
+    );
+    if (replacementResult.kind !== "ready") return replacementResult;
+    replacement = replacementResult.plan;
+  }
+
   const effects: TrailStateEffect[] = [];
-  for (const issue of state.domain.issuesById.values()) {
-    if (issue.projectId !== current.id) continue;
-    effects.push({
-      after: { kind: "issue", value: { ...issue, milestoneId: undefined, projectId: undefined } },
-      before: { kind: "issue", value: issue },
-      kind: "replace-entity",
-    });
+  if (replacement !== undefined) {
+    for (const issue of childIssues) {
+      effects.push({
+        after: {
+          kind: "issue",
+          value: { ...issue, milestoneId: undefined, projectId: replacement.id },
+        },
+        before: { kind: "issue", value: issue },
+        kind: "replace-entity",
+      });
+    }
   }
   for (const milestone of state.domain.milestonesById.values()) {
     if (milestone.projectId !== current.id) continue;
@@ -182,11 +271,24 @@ export function planDeleteTrailProject(
   }
   effects.push({ before: { kind: "project", value: current }, kind: "delete-entity" });
 
+  if (state.workspaceState.defaultProjectId === current.id) {
+    const workspaceAfter = { ...state.workspaceState };
+    delete workspaceAfter.defaultProjectId;
+    effects.push({
+      after: workspaceAfter,
+      before: state.workspaceState,
+      kind: "replace-workspace-state",
+    });
+  }
+
   return readyTrailPlan({
     plan: createTrailMutationPlan({
       commandId: command.commandId,
       effects,
       intent: "workflow.project.delete",
+      preconditions: replacement === undefined
+        ? []
+        : [{ entity: { kind: "project", value: replacement }, kind: "entity-equals" }],
     }),
   });
 }

@@ -1,5 +1,0 @@
----
-kind: projectless-issues
----
-
-# Issues

@@ -78,11 +78,6 @@ function openCycleHarness() {
         sourcePath: "Trail/Projects/0001 Project A.md",
       },
       {
-        issues: [],
-        kind: "projectless-issues",
-        sourcePath: "Trail/Collections/Projectless Issues.md",
-      },
-      {
         cycles: [cycle],
         kind: "cycles",
         sourcePath: "Trail/Collections/Cycles.md",

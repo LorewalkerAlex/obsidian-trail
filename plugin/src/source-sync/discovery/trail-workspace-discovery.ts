@@ -3,7 +3,6 @@ import {
   TRAIL_CYCLES_PATH,
   TRAIL_INITIATIVES_PATH,
   TRAIL_MANAGED_ROOT,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_PROJECTS_PATH,
   TRAIL_REQUIRED_SINGLETON_PATHS,
   TRAIL_TOP_LEVEL_DIRECTORIES,
@@ -164,7 +163,6 @@ async function inspectCollections(
 ): Promise<void> {
   const allowed = new Set<string>([
     TRAIL_TRIAGE_PATH,
-    TRAIL_PROJECTLESS_ISSUES_PATH,
     TRAIL_CYCLES_PATH,
     TRAIL_WEEKLY_UPDATE_PATH,
   ]);
@@ -249,7 +247,6 @@ export async function discoverTrailWorkspace(input: {
       ...initiatives,
       ...projects,
       { kind: "triage", path: TRAIL_TRIAGE_PATH },
-      { kind: "projectless-issues", path: TRAIL_PROJECTLESS_ISSUES_PATH },
       { kind: "cycles", path: TRAIL_CYCLES_PATH },
     ],
   };

@@ -6,7 +6,7 @@ import { createTrailUiTestHarness } from "../../../test/trail-ui-test-harness";
 import { TrailTriagePage } from "./trail-triage-page";
 
 describe("TrailTriagePage", () => {
-  it("accepts Triage into project-less Workflow when No Project is selected", () => {
+  it("preselects the legal Default Project before accepting Triage into Workflow", () => {
     const harness = createTrailUiTestHarness();
     render(
       <TrailTriagePage
@@ -18,9 +18,52 @@ describe("TrailTriagePage", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Accept" }));
-    expect(screen.getByRole("combobox", { name: "Accept into Workflow" })).toHaveValue("");
+    const project = screen.getByRole("combobox", { name: "Accept into Workflow" });
+    expect(project).toHaveValue(harness.project.id);
+    expect(screen.getByRole("button", { name: "Accept" })).toBeEnabled();
+
     fireEvent.click(screen.getByRole("button", { name: "Accept" }));
-    expect(harness.actions.triage.accept).toHaveBeenCalledWith(harness.triage, undefined);
+    expect(harness.actions.triage.accept).toHaveBeenCalledWith(harness.triage, harness.project.id);
+  });
+
+  it("requires an explicit legal Project when no Default Project is configured", () => {
+    const harness = createTrailUiTestHarness({ defaultProjectId: null });
+    render(
+      <TrailTriagePage
+        actions={harness.actions.triage}
+        runtimeStore={harness.runtimeStore}
+        timezone="Asia/Singapore"
+        writable
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+    const project = screen.getByRole("combobox", { name: "Accept into Workflow" });
+    expect(project).toHaveValue("");
+    expect(screen.getByRole("option", { name: "Select Project" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accept" })).toBeDisabled();
+
+    fireEvent.change(project, { target: { value: harness.projectB.id } });
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+    expect(harness.actions.triage.accept).toHaveBeenCalledWith(harness.triage, harness.projectB.id);
+  });
+
+  it("does not preselect or offer a terminal Default Project for non-terminal Triage Accept", () => {
+    const harness = createTrailUiTestHarness({ projectStatusDefinitionId: "project-completed" });
+    render(
+      <TrailTriagePage
+        actions={harness.actions.triage}
+        runtimeStore={harness.runtimeStore}
+        timezone="Asia/Singapore"
+        writable
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+    const project = screen.getByRole("combobox", { name: "Accept into Workflow" });
+    expect(project).toHaveValue("");
+    expect(screen.queryByRole("option", { name: harness.project.title })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: harness.projectB.title })).toBeInTheDocument();
   });
 
   it("maps Defer to seven configured-zone calendar days", () => {

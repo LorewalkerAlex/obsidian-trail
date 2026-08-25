@@ -641,7 +641,7 @@ prepare
 - `destructive` removes authoritative Domain carriers only after preparation has succeeded;
 - `commit` is the final plugin-data cutover and occurs at most once.
 
-When an Integrity Batch mixes Plugin Data with Domain repairs, materialization projects the ordered Domain effects before any I/O and proves each pre-commit Domain prefix remains legal under the currently committed Configuration/Workspace State; it then validates the final Plugin Data cutover. A mixed Configuration/Domain repair is therefore allowed only when the Entity repairs can first produce a state legal under both the old and new configuration, after which plugin data may commit last. If no safe staged bridge exists, the mutation is rejected before persistence rather than relying on write order or rollback to make an illegal prefix acceptable.
+When an Integrity Batch mixes Plugin Data with Domain repairs, materialization projects the ordered Domain effects before any I/O and proves each pre-commit Domain prefix remains legal under the currently committed hard Domain/Configuration invariants; it then validates the final Plugin Data cutover. Optional `workspaceState.defaultProjectId` is deliberately not a hard Domain-graph invariant across destructive failure edges: deleting the referenced Project may leave that soft workspace preference dangling after the destructive stage until the final Plugin Data `commit` clears it. Query/navigation resolve such a missing Default as absent, and successful execution still clears the reference in the final cutover. A mixed Configuration/Domain repair is otherwise allowed only when the Entity repairs can first produce a state legal under both the old and new hard configuration, after which plugin data may commit last. If no safe staged bridge exists, the mutation is rejected before persistence rather than relying on write order or rollback to make an illegal prefix acceptable.
 
 The executor validates this topology independently of the materializer, stops at the first failed operation, and reports the durable operation prefix that completed before the error. Existing Source Sync recovery then clears invalid optimism and rereads authoritative state. Integrity Batch does not add general rollback, recursive compensation, a transaction graph, or an all-or-nothing filesystem guarantee. For destination-first destructive flows such as Project deletion, a detectable duplicate/error prefix remains preferable to silent source loss when a later destructive step fails.
 
@@ -658,7 +658,7 @@ Workflow Issue                → owning Project source (Project relationship re
 Cycle                           → Collections/Cycles.md
 ```
 
-Existing entities prefer current source ownership. New file-backed Initiative/Project paths use a small allocator based on valid current sequences and readable sanitized title suffixes.
+Existing entities prefer current source ownership. Genuine fresh bootstrap reserves `Projects/0000 <title>.md` for its ordinary seed Project; renaming that seed preserves sequence `0000`. Other new file-backed Initiative/Project paths use the normal allocator based on valid current sequences and readable sanitized title suffixes, so the first ordinary Project after the seed is `0001`.
 
 Entity→source placement is distinct from locating record source ranges inside a source.
 
@@ -676,7 +676,7 @@ load plugin data
 → ready
 ```
 
-Fresh installation explicitly bootstraps required managed structure and one ordinary Project seed titled `Standalone`, then stores that Project's stable ID as `workspaceState.defaultProjectId`. The seed uses the ordinary Project carrier, default Project-creation lifecycle semantics, and normal relationship/mutation rules; there is no Standalone source kind or lifecycle branch. Missing required containers in an established Workspace are Data Issues, not silently replaced empty state. A missing Project referenced by Workspace State is likewise surfaced as reference-integrity damage rather than silently recreated.
+Fresh installation explicitly bootstraps required managed structure and one ordinary Project seed titled `Standalone` at reserved physical sequence `0000`, then stores that Project's stable ID as `workspaceState.defaultProjectId`. The seed uses the ordinary Project carrier, default Project-creation lifecycle semantics, and normal relationship/mutation rules; there is no Standalone source kind or lifecycle branch, and `0000` is not Default identity. Missing required containers in an established Workspace are Data Issues, not silently replaced empty state. A missing Project referenced by Workspace State is surfaced as reference-integrity damage rather than silently recreated, but the optional Default reference is soft for Domain-graph validity and resolves as absent in Query/navigation until repaired or cleared.
 
 ### 5.10 External managed-persistence change
 

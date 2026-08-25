@@ -163,13 +163,25 @@ export class TrailProjectApplication {
     };
   }
 
-  public delete(expectedProject: TrailProject): TrailEntityMutationReceipt {
+  public delete(
+    expectedProject: TrailProject,
+    replacementProjectId?: string,
+  ): TrailMutationActionResult {
     const state = readTrailPlanningState(this.runtimeStore);
     const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
     normalizeTrailCommandTime(this.environment);
-    const result = planDeleteTrailProject(state, { commandId, expectedProject });
+    const result = planDeleteTrailProject(state, {
+      commandId,
+      expectedProject,
+      replacementProjectId: replacementProjectId === undefined
+        ? undefined
+        : normalizeTrailCommandId(replacementProjectId, "Replacement Project ID"),
+    });
     const planned = resolveTrailApplicationPlan(result);
-    if (planned.kind === "needs-input") throw new Error("Project deletion unexpectedly requires input");
-    return submitTrailApplicationPlan(this.sourceSync, planned.value.plan, expectedProject.id);
+    if (planned.kind === "needs-input") return { input: planned.input, kind: "needs-input" };
+    return {
+      kind: "submitted",
+      receipt: submitTrailApplicationPlan(this.sourceSync, planned.value.plan, expectedProject.id),
+    };
   }
 }

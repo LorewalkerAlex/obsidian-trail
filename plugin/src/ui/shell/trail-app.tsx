@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useStore } from "zustand";
 
 import { selectTrailReadableConfiguration } from "../../query/shared/trail-effective-query";
@@ -12,9 +11,25 @@ import {
 import { TrailSearchPage } from "../pages/search/trail-search-page";
 import { TrailTriagePage } from "../pages/triage/trail-triage-page";
 import { TrailStatusPanel } from "../patterns/trail-feedback";
+import type {
+  TrailLocation,
+  TrailNavigationStore,
+} from "./trail-navigation-state";
 import type { TrailUiActions } from "./trail-ui-actions";
 
 type TrailPage = "cycles" | "home" | "projects" | "search" | "triage";
+
+function pageForLocation(location: TrailLocation): TrailPage {
+  switch (location.kind) {
+    case "cycles": return "cycles";
+    case "home": return "home";
+    case "initiative":
+    case "project":
+    case "projects": return "projects";
+    case "search": return "search";
+    case "triage": return "triage";
+  }
+}
 
 function pageTitle(page: TrailPage): string {
   switch (page) {
@@ -41,8 +56,28 @@ function pageSubtitle(page: TrailPage): string {
   }
 }
 
+function projectsNavigationRequest(
+  location: TrailLocation,
+  requestId: number,
+): TrailProjectsNavigationRequest | undefined {
+  if (location.kind === "project") {
+    return {
+      requestId,
+      target: { kind: "project", projectId: location.projectId },
+    };
+  }
+  if (location.kind === "initiative") {
+    return {
+      requestId,
+      target: { initiativeId: location.initiativeId, kind: "initiative" },
+    };
+  }
+  return undefined;
+}
+
 export function TrailApp(props: {
   readonly actions: TrailUiActions;
+  readonly navigationStore: TrailNavigationStore;
   readonly runtimeStore: TrailRuntimeStore;
 }) {
   const control = useStore(props.runtimeStore, (state) => state.control);
@@ -54,30 +89,23 @@ export function TrailApp(props: {
     props.runtimeStore,
     selectTrailReadableConfiguration,
   );
-  const [activePage, setActivePage] = useState<TrailPage>("home");
-  const [projectsNavigation, setProjectsNavigation] = useState<TrailProjectsNavigationRequest>();
+  const location = useStore(props.navigationStore, (state) => state.location);
+  const navigationRequestId = useStore(props.navigationStore, (state) => state.requestId);
+  const navigate = useStore(props.navigationStore, (state) => state.navigate);
+  const activePage = pageForLocation(location);
   const writable = control.kind === "ready";
   const hasReadableSnapshot = committedRevision > 0 && configuration !== null;
 
   const openProjectsRoot = (): void => {
-    setProjectsNavigation(undefined);
-    setActivePage("projects");
+    navigate({ kind: "projects" });
   };
 
   const openProject = (projectId: string): void => {
-    setProjectsNavigation((current) => ({
-      requestId: (current?.requestId ?? 0) + 1,
-      target: { kind: "project", projectId },
-    }));
-    setActivePage("projects");
+    navigate({ kind: "project", projectId });
   };
 
   const openInitiative = (initiativeId: string): void => {
-    setProjectsNavigation((current) => ({
-      requestId: (current?.requestId ?? 0) + 1,
-      target: { initiativeId, kind: "initiative" },
-    }));
-    setActivePage("projects");
+    navigate({ initiativeId, kind: "initiative" });
   };
 
   return (
@@ -111,96 +139,52 @@ export function TrailApp(props: {
       ) : null}
 
       {hasReadableSnapshot ? (
-        <>
-          <nav className="trail-page-nav" aria-label="Trail pages">
-            <button
-              aria-current={activePage === "home" ? "page" : undefined}
-              className={activePage === "home" ? "is-active" : undefined}
-              onClick={() => setActivePage("home")}
-              type="button"
-            >
-              Home
-            </button>
-            <button
-              aria-current={activePage === "triage" ? "page" : undefined}
-              className={activePage === "triage" ? "is-active" : undefined}
-              onClick={() => setActivePage("triage")}
-              type="button"
-            >
-              Triage
-            </button>
-            <button
-              aria-current={activePage === "search" ? "page" : undefined}
-              className={activePage === "search" ? "is-active" : undefined}
-              onClick={() => setActivePage("search")}
-              type="button"
-            >
-              Search
-            </button>
-            <button
-              aria-current={activePage === "projects" ? "page" : undefined}
-              className={activePage === "projects" ? "is-active" : undefined}
-              onClick={openProjectsRoot}
-              type="button"
-            >
-              Projects
-            </button>
-            <button
-              aria-current={activePage === "cycles" ? "page" : undefined}
-              className={activePage === "cycles" ? "is-active" : undefined}
-              onClick={() => setActivePage("cycles")}
-              type="button"
-            >
-              Cycles
-            </button>
-          </nav>
-
-          {activePage === "home" ? (
-            <TrailHomePage
-              actions={props.actions.weeklyNote}
-              onOpenCycles={() => setActivePage("cycles")}
-              onOpenProjects={openProjectsRoot}
-              runtimeStore={props.runtimeStore}
-              timezone={configuration.temporal.timezone}
-              writable={writable}
-            />
-          ) : activePage === "triage" ? (
-            <TrailTriagePage
-              actions={props.actions.triage}
-              runtimeStore={props.runtimeStore}
-              timezone={configuration.temporal.timezone}
-              writable={writable}
-            />
-          ) : activePage === "search" ? (
-            <TrailSearchPage
-              actions={{ issues: props.actions.issues, triage: props.actions.triage }}
-              onOpenInitiative={openInitiative}
-              onOpenProject={openProject}
-              runtimeStore={props.runtimeStore}
-              writable={writable}
-            />
-          ) : activePage === "projects" ? (
-            <TrailProjectsPage
-              actions={{
-                initiatives: props.actions.initiatives,
-                issues: props.actions.issues,
-                milestones: props.actions.milestones,
-                projects: props.actions.projects,
-              }}
-              navigationRequest={projectsNavigation}
-              runtimeStore={props.runtimeStore}
-              writable={writable}
-            />
-          ) : (
-            <TrailCyclesPage
-              actions={props.actions.cycles}
-              configuration={configuration}
-              issueActions={props.actions.issues}
-              runtimeStore={props.runtimeStore}
-              writable={writable}
-            />
-          )}
-        </>
+        activePage === "home" ? (
+          <TrailHomePage
+            actions={props.actions.weeklyNote}
+            onOpenCycles={() => navigate({ kind: "cycles" })}
+            onOpenProjects={openProjectsRoot}
+            runtimeStore={props.runtimeStore}
+            timezone={configuration.temporal.timezone}
+            writable={writable}
+          />
+        ) : activePage === "triage" ? (
+          <TrailTriagePage
+            actions={props.actions.triage}
+            runtimeStore={props.runtimeStore}
+            timezone={configuration.temporal.timezone}
+            writable={writable}
+          />
+        ) : activePage === "search" ? (
+          <TrailSearchPage
+            actions={{ issues: props.actions.issues, triage: props.actions.triage }}
+            onOpenInitiative={openInitiative}
+            onOpenProject={openProject}
+            runtimeStore={props.runtimeStore}
+            writable={writable}
+          />
+        ) : activePage === "projects" ? (
+          <TrailProjectsPage
+            key={navigationRequestId}
+            actions={{
+              initiatives: props.actions.initiatives,
+              issues: props.actions.issues,
+              milestones: props.actions.milestones,
+              projects: props.actions.projects,
+            }}
+            navigationRequest={projectsNavigationRequest(location, navigationRequestId)}
+            runtimeStore={props.runtimeStore}
+            writable={writable}
+          />
+        ) : (
+          <TrailCyclesPage
+            actions={props.actions.cycles}
+            configuration={configuration}
+            issueActions={props.actions.issues}
+            runtimeStore={props.runtimeStore}
+            writable={writable}
+          />
+        )
       ) : null}
     </div>
   );

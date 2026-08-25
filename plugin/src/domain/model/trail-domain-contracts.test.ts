@@ -26,21 +26,22 @@ const triageIssue = {
   labelIds: [],
 } satisfies TrailTriageIssue;
 
-const workflowIssue = {
-  id: "issue-workflow",
-  title: "Implement parser",
-  context: "workflow",
-  statusDefinitionId: "issue-backlog",
-  createdAt: 1_786_464_000_000,
-  labelIds: [],
-} satisfies TrailWorkflowIssue;
-
 const project = {
   id: "project-a",
   title: "Trail",
   statusDefinitionId: "project-started",
   labelIds: [],
 } satisfies TrailProject;
+
+const workflowIssue = {
+  id: "issue-workflow",
+  title: "Implement parser",
+  context: "workflow",
+  projectId: project.id,
+  statusDefinitionId: "issue-backlog",
+  createdAt: 1_786_464_000_000,
+  labelIds: [],
+} satisfies TrailWorkflowIssue;
 
 const initiative = {
   id: "initiative-a",

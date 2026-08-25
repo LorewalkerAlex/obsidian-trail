@@ -1,7 +1,6 @@
 import type { TrailDomainEntity } from "../../domain/model/trail-entities";
 import {
   TRAIL_CYCLES_PATH,
-  TRAIL_PROJECTLESS_ISSUES_PATH,
   TRAIL_TRIAGE_PATH,
 } from "../../markdown/schema/trail-paths";
 import type { TrailDomainSourceRepository, TrailManagedDomainSourceKind } from "../../persistence/domain-sources/trail-domain-source-repository";
@@ -21,6 +20,16 @@ function requiredOwner(committed: TrailCommittedRuntime, entityId: string, label
   const path = committed.ownership.sourceByEntityId.get(entityId);
   if (path === undefined) throw new Error(`${label} has no authoritative source ownership: ${entityId}`);
   return path;
+}
+
+function requiredWorkflowProjectId(entity: Extract<TrailDomainEntity, { readonly kind: "issue" }>): string {
+  if (entity.value.context !== "workflow") {
+    throw new Error("Workflow Project resolution requires a Workflow Issue");
+  }
+  if (entity.value.projectId === undefined) {
+    throw new Error("Workflow Issue requires a Project for physical placement");
+  }
+  return entity.value.projectId;
 }
 
 /** Resolves desired placement from current logical relationships, not from Markdown layout. */
@@ -69,11 +78,12 @@ export async function resolveTrailDesiredEntityPlacement(
       if (entity.value.context === "triage") {
         return { path: TRAIL_TRIAGE_PATH, sourceKind: "triage" };
       }
-      if (entity.value.projectId === undefined) {
-        return { path: TRAIL_PROJECTLESS_ISSUES_PATH, sourceKind: "projectless-issues" };
-      }
       return {
-        path: requiredOwner(committed, entity.value.projectId, "Workflow Issue Project"),
+        path: requiredOwner(
+          committed,
+          requiredWorkflowProjectId(entity),
+          "Workflow Issue Project",
+        ),
         sourceKind: "project",
       };
     case "cycle":
@@ -92,10 +102,8 @@ export function resolveTrailCurrentEntityPlacement(
     case "milestone": return { path, sourceKind: "project" };
     case "issue": {
       if (entity.value.context === "triage") return { path, sourceKind: "triage" };
-      return {
-        path,
-        sourceKind: entity.value.projectId === undefined ? "projectless-issues" : "project",
-      };
+      requiredWorkflowProjectId(entity);
+      return { path, sourceKind: "project" };
     }
     case "cycle": return { path, sourceKind: "cycles" };
   }

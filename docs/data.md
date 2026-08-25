@@ -270,7 +270,7 @@ Workspace State may contain one optional stable Project reference:
 defaultProjectId?: ProjectId
 ```
 
-The referenced record is an ordinary Project. `defaultProjectId` is not Project identity, is not derived from title, and does not require a Project subtype or `systemRole` field. A fresh Workspace seeds a normal Project titled `Standalone` and stores its ID here; rename leaves the reference intact, while a legal delete clears the reference rather than inventing a replacement. A dedicated user-facing mechanism for changing the Default Project may be added when needed and does not change this data contract.
+The referenced record is an ordinary Project. `defaultProjectId` is not Project identity, is not derived from title, and does not require a Project subtype or `systemRole` field. A fresh Workspace seeds a normal Project titled `Standalone` at the reserved initial path `Projects/0000 Standalone.md` and stores its stable ID here. Sequence `0000` is only a fresh-bootstrap physical convention for that initial seed: it does not define Default identity, it remains attached to the seeded Project across title rename, it is not reassigned when another Project later becomes Default, and it is not recreated when the seed is deleted. Rename leaves the reference intact, while a legal delete clears the reference rather than inventing a replacement. A dedicated user-facing mechanism for changing the Default Project may be added when needed and does not change this data contract.
 
 ```text
 FavoritesState {
@@ -336,9 +336,9 @@ Native Obsidian links are navigational/document relationships and do not become 
 
 ### 2.5 Default Project is a workspace reference, not Project identity
 
-The Workspace Default Project is represented only by optional `WorkspaceState.defaultProjectId`. It points to the same stable ID used by an ordinary Project record and adds no second Project identity, path, kind, title convention, or lifecycle field.
+The Workspace Default Project is represented only by optional `WorkspaceState.defaultProjectId`. It points to the same stable ID used by an ordinary Project record; the reference itself adds no second Project identity, path, kind, title convention, or lifecycle field.
 
-`Standalone` is only the title of the Project seeded for a fresh Workspace. The title may change without changing `defaultProjectId`, and another ordinary Project could legally have the same title.
+Fresh bootstrap separately reserves physical Project sequence `0000` for the initial seed. That reservation belongs to the seeded Project source, not to Default identity: renaming the seed updates the readable filename suffix while preserving `0000`, and changing the Default Project does not move another Project into `0000`. `Standalone` is only the initial title; another ordinary Project could legally have the same title.
 
 ## 3. Authority & Derivation
 
@@ -436,7 +436,8 @@ Initiative and Project files use independent four-digit sequence namespaces for 
 
 ```text
 Initiatives/0001 Personal Finance.md
-Projects/0001 Mapping Review.md
+Projects/0000 Standalone.md       fresh-bootstrap seed only
+Projects/0001 Mapping Review.md   ordinary Project allocation
 ```
 
 Sequence:
@@ -444,10 +445,12 @@ Sequence:
 - is physical only;
 - is not persisted into the Domain record;
 - does not carry identity or relationship meaning;
-- may be reused after the historically highest sequence disappears;
-- is allocated by scanning current valid files and using `max + 1`.
+- reserves Project sequence `0000` only for the ordinary Project created by genuine fresh bootstrap;
+- uses `0001` through `9999` for ordinary Initiative allocation and post-bootstrap Project allocation;
+- is allocated for ordinary creates by scanning current valid files and using `max + 1`, so a Project directory containing only the `0000` seed allocates the next Project as `0001`;
+- may reuse a lower historical normal sequence after the historically highest current sequence disappears, but ordinary allocation never emits the reserved Project sequence `0000`.
 
-The readable suffix derives from current title. Title remains canonical even if filename suffix is temporarily stale. Duplicate titles are legal.
+The readable suffix derives from current title. Title remains canonical even if filename suffix is temporarily stale. Duplicate titles are legal. Renaming the seeded Project changes only the readable suffix and preserves sequence `0000`.
 
 ### 4.4 Frontmatter and file kinds
 
@@ -469,7 +472,7 @@ kind: triage
 kind: cycles
 ```
 
-The fresh `Standalone` seed is not a singleton carrier kind. It uses the ordinary `kind: project` source and normal sequenced Project filename like any other Project.
+The fresh `Standalone` seed is not a singleton carrier kind. It uses the ordinary `kind: project` source and Project record grammar; only its initial physical sequence is reserved as `0000` by genuine fresh bootstrap.
 
 No `trail-` field namespace or per-file schema-version marker is required because managed scope and structural context already provide namespace/schema context.
 
@@ -752,9 +755,11 @@ How much of the product remains writable under a known Data Issue is an Architec
 
 `data.json` is referenced by Domain records, so invalid configuration is not silently replaced with fresh defaults.
 
-Configuration/Workspace State load or update must reject states that would leave missing/invalid Status, Label, Default Project, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog.
+Configuration/Workspace State load or update must reject states that would leave missing/invalid Status, Label, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog.
 
-Old last-known-good runtime data may be useful to Architecture for viewing/recovery, but is not authority for further writes after persistence becomes invalid.
+`defaultProjectId` is intentionally softer at destructive failure edges. A missing referenced Project is observable workspace/reference damage, but it is not a hard Domain-graph-invalid condition: Query/navigation resolve the missing Default as absent, while a successful explicit Project delete clears `defaultProjectId` in the final Plugin Data commit. This keeps Plugin Data commit-last compatible with destination-first/destructive Integrity Batch ordering without turning a failure prefix into silent Project replacement.
+
+Old last-known-good runtime data may be useful to Architecture for viewing/recovery, but is not authority for further writes after hard persistence invariants become invalid.
 
 ### 5.5 Canonical normalization
 
@@ -764,9 +769,9 @@ Parser may accept valid metadata with non-canonical property order or set array 
 
 ### 5.6 Initialization and missing data
 
-Fresh installation with no `Trail/` root is not corruption; explicit bootstrap creates the required current containers plus an ordinary seed Project titled `Standalone`, and persists that Project ID as the initial `workspaceState.defaultProjectId`. The seed uses the normal Project record/carrier and normal Project creation defaults; its title, lifecycle, Initiative membership, properties, and later deletion remain ordinary Project behavior.
+Fresh installation with no `Trail/` root is not corruption; explicit bootstrap creates the required current containers plus an ordinary seed Project titled `Standalone` at `Trail/Projects/0000 Standalone.md`, and persists that Project ID as the initial `workspaceState.defaultProjectId`. The seed uses the normal Project record/carrier and normal Project creation defaults; sequence `0000` is only its stable fresh-bootstrap physical slot. Its title, lifecycle, Initiative membership, properties, and later deletion remain ordinary Project behavior, and rename preserves `0000` while updating the readable suffix.
 
-Once a Workspace exists, disappearance of a required singleton such as Triage or Cycles is a Data Issue rather than a reason to silently create a new empty container that hides possible data loss. A missing Project referenced by `defaultProjectId` is likewise a reference-integrity issue when caused by external persistence damage; explicit Trail Project deletion clears the reference as part of the delete mutation.
+Once a Workspace exists, disappearance of a required singleton such as Triage or Cycles is a Data Issue rather than a reason to silently create a new empty container that hides possible data loss. A missing Project referenced by `defaultProjectId` is likewise observable reference-integrity damage when caused by external persistence damage, but it does not hard-fail the Domain graph; Query/navigation treat the Default as absent. Explicit Trail Project deletion clears the reference in the final Plugin Data commit.
 
 Weekly Update is lazy-created utility state and is not a required Domain bootstrap container.
 
@@ -787,7 +792,7 @@ Normal startup does not maintain long-term dual parsers or silently migrate a su
 
 The Project four-state lifecycle changes the logical Status configuration contract. If existing persisted Project configuration contains a Backlog branch or Project definitions in Backlog, implementation must treat removal as an explicit configuration migration/reference-resolution concern rather than silently reinterpret those definitions.
 
-The current removal of Projectless Workflow is also a breaking schema transition. Legacy `Collections/Projectless Issues.md` records must be moved to a real ordinary Project with explicit `projectId` before that carrier is removed. For the current pre-V1 transition, migration may create an ordinary Project titled `Standalone` when a legal target is needed and set it as `workspaceState.defaultProjectId`; the migration target's lifecycle must be chosen so existing Issue facts can be preserved without silently rewriting Issue Status. After successful validation, the Projectless source kind/path/codec is removed from normal runtime. Long-term dual parsing is not part of the target schema.
+The current removal of Projectless Workflow is also a breaking schema transition. Legacy `Collections/Projectless Issues.md` records must be moved to a real ordinary Project with explicit `projectId` before that carrier is removed. For the current pre-V1 transition, migration may create an ordinary Project titled `Standalone` when a legal target is needed and set it as `workspaceState.defaultProjectId`; the migration target's lifecycle must be chosen so existing Issue facts can be preserved without silently rewriting Issue Status. The reserved Project sequence `0000` belongs only to genuine fresh bootstrap, so a migration-created target uses normal Project path allocation. After successful validation, the Projectless source kind/path/codec is removed from normal runtime. Long-term dual parsing is not part of the target schema.
 
 ### 5.8 Native links
 

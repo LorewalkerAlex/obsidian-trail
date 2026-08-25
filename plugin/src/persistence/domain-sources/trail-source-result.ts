@@ -3,7 +3,6 @@ import type { TrailCodecIssue } from "../../markdown/codecs/trail-codec-support"
 import type { TrailCyclesParseResult } from "../../markdown/codecs/trail-cycles-codec";
 import type { TrailInitiativeParseResult } from "../../markdown/codecs/trail-initiative-codec";
 import type { TrailProjectParseResult } from "../../markdown/codecs/trail-project-codec";
-import type { TrailProjectlessIssuesParseResult } from "../../markdown/codecs/trail-projectless-issues-codec";
 import type { TrailTriageParseResult } from "../../markdown/codecs/trail-triage-codec";
 
 export type TrailSourceProblemStage =
@@ -106,23 +105,6 @@ export function triageSourceResult(
     snapshot: {
       issues: result.document.issues,
       kind: "triage",
-      sourcePath,
-    },
-  };
-}
-
-export function projectlessIssuesSourceResult(
-  result: TrailProjectlessIssuesParseResult,
-  sourcePath: string,
-): TrailDomainSourceReadResult {
-  const issues = toProblems(result.issues);
-  if (result.document === undefined) return { issues, kind: "rejected", sourcePath };
-  return {
-    issues,
-    kind: "accepted",
-    snapshot: {
-      issues: result.document.issues,
-      kind: "projectless-issues",
       sourcePath,
     },
   };

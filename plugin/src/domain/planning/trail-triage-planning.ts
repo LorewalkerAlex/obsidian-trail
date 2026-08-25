@@ -215,29 +215,28 @@ export function planAcceptTrailTriageIssue(
   if (trailPlanningEntityExists(state.domain, command.targetIssueId)) {
     return rejectTrailPlan("entity-id-conflict", `Trail entity ID already exists: ${command.targetIssueId}`);
   }
+  if (command.projectId === undefined) {
+    return rejectTrailPlan("project-required", "Triage Accept requires a target Project");
+  }
 
   const backlog = resolveTrailDefaultStatusDefinition(state.configuration, "issue", "backlog");
-  const project = command.projectId === undefined
-    ? undefined
-    : state.domain.projectsById.get(command.projectId);
-  if (command.projectId !== undefined && project === undefined) {
+  const project = state.domain.projectsById.get(command.projectId);
+  if (project === undefined) {
     return rejectTrailPlan("project-missing", `Project does not exist: ${command.projectId}`);
   }
-  if (project !== undefined) {
-    const projectStatus = resolveTrailStatusDefinition(
-      state.configuration,
-      "project",
-      project.statusDefinitionId,
+  const projectStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    project.statusDefinitionId,
+  );
+  if (projectStatus === undefined) {
+    return rejectTrailPlan("project-status-invalid", `Project status is invalid: ${project.id}`);
+  }
+  if (!canTrailProjectAcceptWorkflowIssue(projectStatus, backlog)) {
+    return rejectTrailPlan(
+      "project-terminal",
+      "A terminal Project must be reopened before accepting non-terminal work",
     );
-    if (projectStatus === undefined) {
-      return rejectTrailPlan("project-status-invalid", `Project status is invalid: ${project.id}`);
-    }
-    if (!canTrailProjectAcceptWorkflowIssue(projectStatus, backlog)) {
-      return rejectTrailPlan(
-        "project-terminal",
-        "A terminal Project must be reopened before accepting non-terminal work",
-      );
-    }
   }
 
   const targetIssue: TrailWorkflowIssue = {
@@ -248,7 +247,7 @@ export function planAcceptTrailTriageIssue(
     id: command.targetIssueId,
     labelIds: [...source.labelIds],
     priority: source.priority,
-    ...(project === undefined ? {} : { projectId: project.id }),
+    projectId: project.id,
     statusDefinitionId: backlog.id,
     title: source.title,
   };
@@ -260,9 +259,7 @@ export function planAcceptTrailTriageIssue(
         { before: { kind: "issue", value: source }, kind: "delete-entity" },
       ],
       intent: "triage.accept",
-      preconditions: project === undefined
-        ? []
-        : [{ entity: { kind: "project", value: project }, kind: "entity-equals" }],
+      preconditions: [{ entity: { kind: "project", value: project }, kind: "entity-equals" }],
     }),
     sourceIssueId: source.id,
     targetIssue,

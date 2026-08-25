@@ -62,11 +62,18 @@ function harness(
   configuration: TrailConfiguration,
   createIds: readonly string[] = [],
 ) {
+  const project = {
+    id: "project-a",
+    labelIds: [],
+    statusDefinitionId: "project-unstarted",
+    title: "Project A",
+  };
   const issue = {
     context: "workflow" as const,
     createdAt: 1,
     id: "issue-a",
     labelIds: [],
+    projectId: project.id,
     statusDefinitionId: "issue-unstarted",
     title: "Issue A",
   };
@@ -77,8 +84,10 @@ function harness(
       { cycles: [], kind: "cycles", sourcePath: "Trail/Collections/Cycles.md" },
       {
         issues: [issue],
-        kind: "projectless-issues",
-        sourcePath: "Trail/Collections/Projectless Issues.md",
+        kind: "project",
+        milestones: [],
+        project,
+        sourcePath: "Trail/Projects/0001 Project A.md",
       },
       { issues: [], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
     ],

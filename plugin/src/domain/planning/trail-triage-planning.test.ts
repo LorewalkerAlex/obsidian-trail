@@ -99,7 +99,7 @@ describe("Triage planning", () => {
     }).kind).toBe("rejected");
   });
 
-  it("accepts into a new Workflow identity without copying Triage Due", () => {
+  it("accepts into a new Workflow identity only with an explicit legal Project", () => {
     const planning = state();
     const result = planAcceptTrailTriageIssue(planning, {
       commandId: "command-accept",
@@ -115,21 +115,20 @@ describe("Triage planning", () => {
     expect(result.plan.targetIssue.due).toBeUndefined();
     expect(result.plan.targetIssue.projectId).toBe(planning.project.id);
     expect(result.plan.plan.effects).toHaveLength(2);
-  });
+    expect(result.plan.plan.preconditions).toContainEqual({
+      entity: { kind: "project", value: planning.project },
+      kind: "entity-equals",
+    });
 
-  it("accepts into project-less Workflow when no Project is selected", () => {
-    const planning = state();
-    const result = planAcceptTrailTriageIssue(planning, {
-      commandId: "command-accept-projectless",
+    expect(planAcceptTrailTriageIssue(planning, {
+      commandId: "command-accept-missing-project",
       effectiveAt: 201,
       expectedIssue: planning.triage,
-      targetIssueId: "workflow-projectless",
+      targetIssueId: "workflow-missing-project",
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "project-required" },
     });
-    expect(result.kind).toBe("ready");
-    if (result.kind !== "ready") return;
-    expect(result.plan.targetIssue.projectId).toBeUndefined();
-    expect(result.plan.targetIssue.milestoneId).toBeUndefined();
-    expect(result.plan.targetIssue.due).toBeUndefined();
   });
 
   it("converts Triage to a new Project and carries only Project-applicable content", () => {
