@@ -124,9 +124,11 @@ Triage review Due means the latest time by which the entry should be reviewed ag
 
 A Cycle is a user-opened personal planning timebox that answers: “what do I intend to focus on during this period?”
 
-Cycles are orthogonal to Issue Status and Project structure. They can contain Workflow Issues from multiple Projects.
+A Cycle is fundamentally a selected collection of Workflow Issues plus its actual start, planned end, and optional actual close. It does not create another Issue type or workflow. Cycle membership is orthogonal to Issue Status, Project, Milestone, Priority, Estimate, Labels, and Due, and a Cycle may contain Workflow Issues from multiple Projects.
 
-Project capability rules are resolved independently from Cycle design. Cycle-specific capability/presentation rules are closed separately rather than being inferred prematurely from Project UI.
+At most one Cycle is Current/Open at a time, and it is valid to have none. V1 does not create future/upcoming Cycle objects. A new Cycle begins only when the user explicitly starts it.
+
+Cycle membership itself is intentionally permissive: any Workflow Issue may be selected into an Open Cycle. Individual UI entry points may narrow which candidates they proactively surface so planning remains contextual, but that discovery policy is not a hidden Domain restriction.
 
 ### 3.9 Status, Priority, Estimate, Due, and Labels
 
@@ -293,11 +295,33 @@ Milestones are Project checkpoints and Issue classification context, not a secon
 
 ### 4.8 Cycles
 
-Cycles Root shows the Current Cycle and history.
+Cycles is the focused workspace for the user's current planning timebox. When a Current Cycle exists, entering `Cycles` opens that Cycle's Issue collection directly rather than an analytics dashboard. History is secondary access. When no Current Cycle exists, the Cycles location offers `Start Cycle` while keeping prior Cycle history reachable.
 
-The Current Cycle can use Status columns with Project swimlanes. Project swimlanes are presentation, not drag targets. Adding or removing Cycle membership is an explicit action.
+A Current Cycle is another scoped Workflow Issue collection, not another workflow. It reuses the same Issue collection mechanics as Project Workspace with Cycle-specific presentation defaults:
 
-Closing a Cycle is explicit. If unfinished work remains, creating the next Cycle is another explicit flow in which unfinished Issues are candidates that the user may keep or remove before confirmation. It is valid to have no Current Cycle.
+- Board is the default layout and uses Status columns with Project swimlanes;
+- Project swimlanes provide Board context and are presentation, not drag targets;
+- List remains available, shows the full Workflow lifecycle, displays Project as Issue metadata, and keeps Issues from the same Project visually coherent within a Status;
+- Filter reuses the shared Issue Filter grammar with a Cycle-appropriate field registry rather than introducing Cycle-specific syntax.
+
+Board continues to use the normal execution projection. Backlog and Canceled members remain part of the Cycle and remain visible in List even though they are not normal Board columns. Moving a member between Issue Statuses or Projects does not add/remove Cycle membership; presentation updates from the live Issue facts.
+
+Adding/removing membership is always explicit and changes only the Open Cycle's Issue selection. Cycle-level `Add Issues` may proactively surface non-terminal work from In Progress Projects because that is the most useful execution discovery set, but this is a UI discovery policy rather than membership legality. A Backlog Issue from a Not Started Project may still be added from that Project's own planning surface. V1 does not expose future Cycle objects or a generic multi-Cycle property picker.
+
+Current Cycle Progress uses the same Completed/non-Canceled formula as Project Progress over the Current Cycle's live member set. `Effort` is a separate live aggregate over every member that currently has an Estimate, regardless of Status:
+
+```text
+Cycle Progress = Completed / (all current members except Canceled)
+Cycle Effort   = sum(current Estimate of every member whose Estimate is present)
+```
+
+These values are current projections, not stored Cycle analytics or close-time snapshots.
+
+Closing a Cycle is explicit. Close records the actual end and freezes that Cycle's final membership without changing any member's Status, Project, Milestone, Priority, Estimate, Labels, or Due. Reaching the planned end never auto-closes the Cycle.
+
+Starting the next Cycle is another explicit Start Cycle flow. Previous members that are currently unfinished/non-terminal may be preselected as carry-over candidates; the user may deselect any of them, add other legal Workflow Issues, or cancel and leave the Workspace with no Current Cycle. Trail does not perform automatic rollover.
+
+Historical Cycles are passive membership history. Their final Issue membership is retained, but V1 does not snapshot Issue Status, Project, Estimate, Progress, or other analytics at close. A Historical Cycle opens as a flat List-only collection whose rows resolve the member Issues' current live fields; Status and Project are displayed as ordinary row metadata rather than grouping the collection. Historical membership cannot be normally edited.
 
 ### 4.9 Views, Search, and navigation
 
@@ -391,7 +415,7 @@ Weekly Note is a lightweight Home utility backed by one Markdown file. Users can
 7. **Milestone completion and Initiative completion are derived.** They are not manually maintained workflow Statuses.
 8. **Every normal Workflow Issue is born in Backlog and belongs to exactly one Project.** Creation location does not silently choose another Issue lifecycle Status, and `No Project` is not a valid Workflow state.
 9. **Default Project is routing state, not a Project subtype.** A fresh Workspace seeds `Standalone` as an ordinary Project and references it for default selection/navigation; the Project itself gains no special Domain behavior.
-10. **Cycle planning is explicit and independent of Status.** Joining/leaving a Cycle does not silently change the Issue Status.
+10. **Cycle planning is explicit, selection-based, and independent of Workflow lifecycle.** An Open Cycle may select any Workflow Issue; joining/leaving a Cycle changes only Cycle membership, and Issue Status/Project changes never silently add or remove membership. Cycle Progress and Effort are live derived projections, while historical Cycles retain final membership rather than close-time Issue snapshots.
 11. **Triage stays distinct from normal Workflow and Project planning.** A Triage entry is intake/review state, not a normal Workflow Issue surface. Accept creates a new standard Workflow Issue or Project with new identity rather than changing the Triage record in place; only title and description/body are automatically seeded in V1, and the source is removed only after the target is safely created.
 12. **Drag has one global meaning for Issue cards: Status change.** Relationship changes use explicit actions.
 13. **Due is reused rather than duplicated.** Triage defer is a Due change; Reminder/Due Soon/Overdue are capabilities derived from time facts and policy.

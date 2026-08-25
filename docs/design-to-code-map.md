@@ -30,11 +30,17 @@ Representative mappings:
 | Project Workspace Board/List | same Project Issue set, Status presentation; Default Project is not a separate workspace kind | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
 | Milestone management | Project-scoped Milestone + same-Project Workflow Issue relation | semantic plans + same-source/Integrity operations | `domain/planning`, `application/milestones`, shared mutation | planner + application + UI |
 | Initiative organization | Project→Initiative relation; derived Initiative progress | semantic plans + derived query | `domain/planning`, `application/initiatives`, `query` | planner + query + UI |
-| Current Cycle | open Cycle + Workflow Issue membership | semantic plans + Cycle selectors | `domain/planning`, `application/cycles`, `query`, `ui/pages/cycles` | planner + query + UI |
+| Current Cycle Issue collection | Open Cycle `issueIds` + live Workflow Issue facts; Issue records have no Cycle field | Cycle selector + shared Issue Filter/List/Board presentation + runtime membership indexes | `query`, `ui/pages/cycles`, reusable `ui/entities` / `ui/interactions` | query + UI |
+| Current Cycle membership | Open Cycle owns membership; membership is independent of Issue Status/Project/etc. | semantic add/remove plans + entry-point-specific candidate selectors | `domain/planning`, `application/cycles`, `query`, shared selection/context actions | planner + application + query/UI |
+| Cycle lifecycle | at most one Open Cycle; explicit start/close; Closed membership frozen; next-Cycle candidates are derived from previous members' current non-terminal state | semantic plans + current-Cycle selector + candidate derivation | `domain/planning`, `application/cycles`, `query`, `ui/pages/cycles` | planner + application + query/UI |
+| Cycle Progress / Effort | Progress uses Completed / non-Canceled current members; Effort sums present current member Estimates regardless of Status | reusable derived aggregation over Cycle membership | `query/derived`, `ui/pages/cycles`, Cycle Inspector composition | query + UI |
+| Historical Cycle | Closed Cycle final `issueIds` + current live Workflow Issue fields; no Issue/Status/Estimate snapshot | closed-Cycle selectors + flat List projection | `query`, `ui/pages/cycles`, reusable Issue Row/filter primitives | query + UI |
 | Labels and Status configuration | configuration definitions + reference integrity | configuration plans + Integrity Batch as needed | `domain/model`, `domain/validation`, `application/configuration`, `mutation` | validation + mutation + application |
 | Home | derived facts from same Runtime | shared/page-specific selectors + modules | `query`, `ui/pages/home` | query + UI |
 | External managed-file change | current physical schema + authoritative persistence | Refresh / source-health convergence | `source-sync`, `runtime`, adapters | source-sync + representative host |
 | Legacy Projectless schema upgrade | old Projectless Workflow records → ordinary Project ownership | explicit one-way migration; no dual normal-runtime model | `migration` plus existing persistence/validation owners | migration + full graph validation + representative fixture |
+
+Cycle UI does not introduce another work-item model, Board engine, Filter grammar, or snapshot subsystem. It composes the existing Cycle record and runtime membership indexes with shared Issue collection/query/UI capabilities. Cycle-level discovery may intentionally narrow candidates by entry-point context without turning that narrowing into a Domain membership invariant.
 
 A future Workspace Issues collection is intentionally not mapped as a V1 page. When introduced, it should query all Workflow Issues across real Projects and reuse the shared Issue collection/filter presentation; it must not reintroduce a Projectless state.
 
@@ -55,6 +61,8 @@ Workflow Issue Project requiredness belongs to the Domain model/validation/plann
 
 Triage's user-facing queue/review model does not create a new Domain entity. Domain continues to own the Triage-context Issue contract and the target-creation/source-removal semantics; UI/Query own Review Set, filtering, ordering presentation, and sequential review state.
 
+Cycle membership likewise does not create an Issue-side Cycle property. Domain owns the Open/Closed Cycle lifecycle and Cycle-owned Workflow Issue membership; Query/UI own current/historical collection projection, candidate discovery, filtering, ordering, Progress/Effort presentation, and Board/List composition.
+
 ### 2.2 Persistence capabilities
 
 | Capability | Inputs / dependencies | Owner |
@@ -69,6 +77,8 @@ Triage's user-facing queue/review model does not create a new Domain entity. Dom
 | Weekly Note persistence | utility source contract | `persistence/utility-sources` |
 
 Normal runtime has no `Projectless Issues` path, source kind, codec, or repository branch. Every Workflow Issue is physically owned by its Project carrier.
+
+Cycle persistence remains the existing Cycle record with `issueIds`; no Issue `cycleId`, Cycle analytics snapshot, per-membership timestamp, future-Cycle carrier, or second history store is introduced by the UI closure.
 
 ### 2.3 Mutation and runtime capabilities
 
@@ -102,6 +112,8 @@ Normal runtime has no `Projectless Issues` path, source kind, codec, or reposito
 Default selection is a UI/query concern. Application/Domain Workflow commands receive the explicit Project chosen for the operation rather than interpreting an absent Project as `Standalone`.
 
 Triage Accept does not get a parallel create stack. The Triage surface selects the target kind and initializes the standard Issue/Project creation flow with title/body; normal target Application/Domain rules own the target draft/creation, while `application/triage` owns consuming the source only after successful target establishment.
+
+Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain any Workflow Issue allowed by the Domain relationship; a Cycle-level Add selector may primarily surface non-terminal work from In Progress Projects, while Project-local actions can add Backlog work from a Not Started Project. Both routes submit the same explicit membership intent to `application/cycles`.
 
 ### 2.5 UI, host, and cross-cutting capabilities
 

@@ -149,9 +149,11 @@ Canonical Cycle facts:
 - actual `startedAt`;
 - confirmed `plannedEnd`;
 - optional actual `endedAt`;
-- Issue membership.
+- selected Workflow Issue membership.
 
 `endedAt` absent means Open/Current. `endedAt` present means Closed/Historical.
+
+A Cycle does not own a title, workflow Status, Project relation, manual Progress, manual Effort, capacity/velocity score, or Issue-state snapshot. V1 does not persist future/upcoming Cycle objects.
 
 ### 2.8 Workspace configuration concepts
 
@@ -236,11 +238,13 @@ When a Workflow Issue changes Project, an old Milestone from the previous Projec
 
 Only Workflow Issues may participate in Cycles. Triage Issues may not.
 
-Cycle membership does not imply or change Status, Project, Milestone, Priority, or Due.
+An Open Cycle may select a Workflow Issue regardless of that Issue's current StatusCategory or owning Project lifecycle. Project lifecycle still governs what may be done to the Issue inside its Project; it does not create a separate Cycle-membership eligibility rule.
+
+Cycle membership does not imply or change Status, Project, Milestone, Priority, Estimate, Labels, or Due. Conversely, later changes to those Issue facts do not implicitly add or remove Cycle membership.
+
+UI candidate discovery may intentionally surface a narrower set for a particular planning entry point, such as non-terminal work from Started Projects in a Cycle-level Add flow. That is read-side/product selection policy, not a Domain membership invariant. A Backlog Issue in an Unstarted Project remains a legal Open-Cycle member when the user explicitly adds it from that Project context.
 
 Closed Cycle membership is retained as a minimal historical fact. A Workflow Issue can therefore appear in multiple historical Cycles over time; Cycle membership is not represented as a single `cycleId` on Issue.
-
-Project-specific Cycle capability is intentionally resolved with the Cycle product slice rather than inferred from Project UI alone.
 
 ## 4. State & Lifecycle
 
@@ -431,11 +435,13 @@ Deleting a Milestone preserves Issues and clears/replaces their Milestone relati
 
 At most one Cycle may be Open at a time, and it is valid to have none.
 
-Opening a Cycle records its actual start and a concrete planned end. The configured EndOfNextWeek default is a suggestion rule: calendar weeks run Monday through Sunday and the default points to the Sunday of the following natural week. A user may choose another end before creation; later configuration changes do not rewrite existing Cycles.
+Opening a Cycle records its actual start and a concrete planned end. The configured EndOfNextWeek default is a suggestion rule: calendar weeks run Monday through Sunday and the default points to the Sunday of the following natural week. A user may choose another end before creation; later configuration changes do not rewrite existing Cycles. An Open Cycle may begin with an empty member set and accept membership later.
 
-Reaching `plannedEnd` does not automatically close the Cycle.
+While a Cycle is Open, membership changes are explicit Cycle mutations and may add/remove any Workflow Issue. They do not change member Issue facts. Reaching `plannedEnd` does not automatically close the Cycle.
 
-Closing a Cycle sets actual `endedAt` and freezes normal planning membership. If unfinished/non-terminal Issues remain, a separate Create Next Cycle flow offers all of them as initially selected candidates. The user may deselect any candidates or cancel the entire flow, leaving no Current Cycle.
+Closing a Cycle sets actual `endedAt` and freezes normal planning membership. Closing does not mutate any member Issue fact and does not automatically open a successor.
+
+A separate Start Next Cycle flow may use the previous Cycle's final membership as a discovery input. Previous members that are currently non-terminal may be initially selected as carry-over candidates; the user may deselect any candidates, add other Workflow Issues, or cancel the flow entirely, leaving no Current Cycle. Candidate selection is evaluated from current Issue facts when the flow runs; Trail does not persist an unfinished-at-close snapshot or perform automatic rollover.
 
 ### 4.12 Delete relation resolution
 
@@ -522,7 +528,8 @@ Examples:
 - Triage Defer = Due mutation;
 - Triage Accept = normal target creation + source removal after target establishment;
 - Due Soon / Overdue / Reminder = derived temporal capability;
-- Project/Milestone/Initiative Progress = current relationship/lifecycle aggregation;
+- Project/Milestone/Cycle Progress = current relationship/membership + lifecycle aggregation;
+- Cycle Effort = sum of present current member Estimates;
 - Project Attention/Health = explainable current facts + temporal/context evidence;
 - actual activity timeline = Issue lifecycle aggregation;
 - Home summaries / Current Cycle / Triage / Projects / Custom Views = read selection/presentation;
@@ -544,6 +551,8 @@ V1 Canonical Domain does not include:
 - Standalone/System Project subtype, role flag, or special Project lifecycle;
 - Initiative/Milestone workflow Status;
 - generic manual Progress/Health/Attention facts;
+- Cycle capacity/velocity/success facts or Issue-state snapshots;
+- future/upcoming Cycle records;
 - Project Backlog lifecycle category;
 - Project previousStatus/reopen-history field;
 - generic Project/Issue capability flags persisted on records;
@@ -569,11 +578,13 @@ Current retained examples:
 - Cycle `startedAt`, `plannedEnd`, `endedAt`;
 - Closed Cycle final Issue membership.
 
+Closed Cycle membership answers which Issues were finally associated with that Cycle. Trail does not preserve each member's Status, Project, Estimate, Progress contribution, Effort contribution, or other Issue snapshot at Cycle close. Historical Cycle views therefore resolve member Issue fields from current authoritative Issue data.
+
 Trail does not preserve a general event log, complete relation history, Project previous Status, or every past lifecycle transition.
 
-### 6.2 Project and Milestone progress
+### 6.2 Project, Milestone, and Cycle progress / effort
 
-Project Progress and Milestone Progress use the same current-scope rule.
+Project Progress, Milestone Progress, and Cycle Progress use the same current-scope rule.
 
 For the relevant current Issue scope:
 
@@ -589,6 +600,14 @@ If `effectiveIssues` is empty, Progress is unavailable/undefined rather than fab
 Canceled Issues contribute neither numerator nor denominator. Started work does not receive partial completion credit. Priority, Estimate, Due, and manual weights do not alter V1 Progress.
 
 Milestone derived completion is true only when its effective Issue scope is non-empty and Progress reaches 100%.
+
+Cycle Effort is a separate live aggregate and does not weight Progress:
+
+```text
+effort = sum(issue.estimate for every current Cycle member where estimate is present)
+```
+
+Every member with a present Estimate contributes regardless of Backlog/Unstarted/Started/Completed/Canceled Status. Members without Estimate contribute nothing. Effort is derived from the current member Issues and is not persisted as a Cycle fact or close-time snapshot.
 
 Initiative progress/completion remains derived from current Project relationships/state. Because V1 does not retain complete relationship history, moving an Issue or Project changes which current parent scope receives that work's contribution. This is intentional current-scope semantics.
 

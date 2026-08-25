@@ -4,25 +4,32 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The latest published implementation checkpoint immediately preceding the current Project Status Four-State Configuration Closure is:
+The latest published public authority checkpoint before this Cycle design-closure candidate is:
+
+```text
+07bf99a092e70ed50c3c263974767fecb903395b
+docs: close triage interaction design
+```
+
+The latest published implementation/code checkpoint is:
+
+```text
+b3b541b21d06af86b79f9bd718d9a317090596b0
+fix: enforce four-state project status configuration
+```
+
+Its immediate implementation parent is:
 
 ```text
 b88b671f1b7d7a81f931e70f052ed2d20fdd0fe4
 feat: require workflow projects and add default project
 ```
 
-Its authoritative design parent is:
+The implementation baseline already contains the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search & Project-less Workflow, Home Routing & Weekly Note, Weekly Note integrity hardening, Integrity Batch failure-safety hardening, Required Workflow Project & Default Project, and Project Status Four-State Configuration Closure slices.
 
-```text
-5e481fe3d0cbe5aafe2d49210091eb2cd3d7345d
-docs: require project ownership and default project
-```
+Those checkpoints remain historical implementation evidence. This document does not rewrite their recorded behavior after later Product/Domain/UI decisions change the target.
 
-The implementation baseline already contains the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search & Project-less Workflow, Home Routing & Weekly Note, Weekly Note integrity hardening, Integrity Batch failure-safety hardening, and Required Workflow Project & Default Project slices.
-
-Those checkpoints remain historical implementation evidence. This document does not rewrite their recorded behavior after later Product/Domain decisions change the target.
-
-Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. The current corrective slice reopens a bounded set of Status Configuration owners inside those foundations; it does not invalidate the architecture or restart the gate sequence.
+Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. Gate 8 now consumes the resolved Triage and Cycle design authorities and aligns the formal product UI against them rather than reopening the lower-layer architecture without evidence.
 
 ### 1.1 Historical implementation checkpoints
 
@@ -48,13 +55,16 @@ Important established checkpoints include:
 - Home Routing & Weekly Note at `0b41143ba40843e3858249a1825f513366d03a3b`;
 - Weekly Note Integrity Hardening at `926c6ee7714c4171a91c53ead76848a325c321cf`;
 - Integrity Batch Failure-Safety Hardening at `eb6d98fb28be81d8153aca0429705b05846499de`;
-- Required Workflow Project & Default Project at `b88b671f1b7d7a81f931e70f052ed2d20fdd0fe4`.
+- Required Workflow Project & Default Project at `b88b671f1b7d7a81f931e70f052ed2d20fdd0fe4`;
+- Project Status Four-State Configuration Closure at `b3b541b21d06af86b79f9bd718d9a317090596b0`.
 
 The Global Search checkpoint is especially important to interpret correctly. At `9aa3f...`, the then-current Domain intentionally allowed `projectId: null`/absent Workflow Issues in `Trail/Collections/Projectless Issues.md`, and representative host validation proved that design worked. The newer Product/Domain baseline supersedes that **target model**, not the validity of the historical evidence. Search, Peek, cross-carrier movement, and the shared Markdown EOF fix established by that checkpoint remain reusable evidence; the Projectless state/carrier itself is absent from the current runtime target.
 
-### 1.2 Current corrective-slice status
+The historical Cycle checkpoints are interpreted the same way. `826424f...` and `c877234...` prove useful Cycle planning, membership, query, and shared Board/List mechanics. The current Product/Domain/UI Cycle closure supersedes any older user-facing automation or presentation that conflicts with the new target, including automatic-rollover assumptions, analytics-heavy presentation, or a Cycle-specific collection stack.
 
-The canonical Product/Domain/Data chain already establishes one global StatusCategory vocabulary with entity-specific applicability:
+### 1.2 Published corrective-slice status
+
+The canonical Product/Domain/Data chain establishes one global StatusCategory vocabulary with entity-specific applicability:
 
 ```text
 StatusCategory vocabulary
@@ -68,11 +78,11 @@ Project applicability
 → no Backlog
 ```
 
-The bounded **Project Status Four-State Configuration Closure** is implemented and locally verified, pending checkpoint publication. One canonical entity-specific applicability now drives the logical Configuration shape and the normal consumers of that shape instead of allowing each layer to invent a Project/Backlog exception.
+The bounded **Project Status Four-State Configuration Closure** is implemented, verified, and published at `b3b541b21d06af86b79f9bd718d9a317090596b0`. One canonical entity-specific applicability drives the logical Configuration shape and the normal consumers of that shape instead of allowing each layer to invent a Project/Backlog exception.
 
-The validated logical model now gives Issue five Status category buckets and Project four. Project StatusDefinition values cannot carry Backlog in the validated logical Configuration. Default configuration creates nine StatusDefinitions total: five for Issue and four for Project.
+The validated logical model gives Issue five Status category buckets and Project four. Project StatusDefinition values cannot carry Backlog in the validated logical Configuration. Default configuration creates nine StatusDefinitions total: five for Issue and four for Project.
 
-Validation, current-schema Plugin Data parsing/serialization, Configuration Application mutations/canonical ordering, shared Status Query, Status Picker, and Obsidian Settings all consume the same applicability. Current-schema Plugin Data rejects a Project Backlog bucket rather than treating it as a compatibility path. The checked-in development Plugin Data is aligned to Issue 5 / Project 4.
+Validation, current-schema Plugin Data parsing/serialization, Configuration Application mutations/canonical ordering, shared Status Query, Status Picker, and Obsidian Settings consume the same applicability. Current-schema Plugin Data rejects a Project Backlog bucket rather than treating it as a compatibility path. The checked-in development Plugin Data is aligned to Issue 5 / Project 4.
 
 No production migration was introduced for this pre-V1 correction. If a future released schema requires retaining legacy Project Backlog data, Migration must own that explicit one-way transition rather than normal runtime validation or codecs accepting both shapes.
 
@@ -119,6 +129,7 @@ Current reusable capability areas include:
 - committed/effective Runtime, source ownership, reconciliation, and structural/reference indexes;
 - shared structural and explicitly defined derived Query capabilities;
 - existing Project Workspace, Project collection, Issue row/Peek, and navigation mechanisms where they match the resolved UI target;
+- existing Cycle record/persistence, `issuesByCycleId` / `cyclesByIssueId` / `currentCycleId` runtime indexes, Cycle application/planning operations, and shared Project/Cycle Board/List evidence;
 - Configuration and Workspace State plugin-data persistence;
 - Diagnostics and architecture guards.
 
@@ -128,7 +139,9 @@ Status applicability likewise does not need a second Project Status subsystem. T
 
 Reuse of current UI work means reuse the canonical mechanism or evidence when it still fits the resolved target, not preservation of the current POC presentation. The present shell layout, CSS treatment, native select/form composition, page-local navigation, modal Peek/details carriers, and Workflow List/Board presentation remain non-authoritative where `ui.md` defines a different target.
 
-The resolved Triage target likewise reuses the existing Triage Domain/Data carrier, standard Create Issue/Create Project use cases, Source Transition safety, shared Filter grammar, shared property primitives, and shared menu/selection mechanics. It does not justify a TriageItem entity, Triage-specific create form, Snooze state, or second filter grammar.
+The resolved Triage target reuses the existing Triage Domain/Data carrier, standard Create Issue/Create Project use cases, Source Transition safety, shared Filter grammar, shared property primitives, and shared menu/selection mechanics. It does not justify a TriageItem entity, Triage-specific create form, Snooze state, or second filter grammar.
+
+The resolved Cycle target similarly reuses the existing Cycle Domain/Data carrier and runtime indexes plus the shared Workflow Issue collection, Filter grammar, List/Board components, Issue Row/Card, selection/context interactions, Project capability projection, and Inspector primitives. It does not justify an Issue-side `cycleId`, future-Cycle model, automatic cadence/rollover engine, Cycle-specific Status workflow, analytics snapshot history, per-membership timestamps, or second Board/Filter implementation.
 
 ## 4. Changes
 
@@ -136,9 +149,7 @@ The resolved Triage target likewise reuses the existing Triage Domain/Data carri
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-The bounded **Project Status Four-State Configuration Closure** corrective cross-layer slice is green and ready for checkpoint publication. Gate 8 then continues remaining V1 UI design closure and formal UI implementation against the resolved `ui.md` target.
-
-The correction closes an implementation/schema mismatch against an already-authoritative Product/Domain/Data rule. It does not redefine Status semantics or create a second Status mechanism.
+Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Triage and Cycle interaction design are now resolved authorities. Gate 8 should next audit and align the formal shell/page implementation against the resolved `ui.md` target, repairing lower-layer owners only when the implementation exposes a genuine contract gap.
 
 ### 4.2 Required Workflow Project & Default Project slice
 
@@ -181,7 +192,7 @@ The existing Project carrier already owns Project, Milestone, and Workflow Issue
 
 #### Application / query / UI
 
-- Triage Accept requires a Project selection.
+- Triage Accept historically required a Project selection because the target was a Workflow Issue; the current UI design now chooses Issue or Project, and only the Issue branch keeps that requirement.
 - Any context-less Workflow Issue create surface requires a Project selection.
 - Query exposes legal Project target candidates and resolves the current Default Project as an initial candidate only when legal for the requested action.
 - UI may preselect that candidate; Application/Domain receive the selected explicit Project ID.
@@ -192,7 +203,7 @@ The existing Project carrier already owns Project, Milestone, and Workflow Issue
 - If `defaultProjectId` is absent, the shortcut is absent; Projects/Cycles remain available.
 - A dedicated end-user “set Default Project” control is not required for this corrective slice unless later product work explicitly freezes that interaction.
 
-This subsection records the historical `b88...` target. The newer resolved Triage UI target supersedes its **user-facing Accept composition**: Accept now chooses Issue or Project, and only the Issue branch uses the explicit-Project rule above. The underlying required-Project invariant and standard Workflow Issue creation path remain valid implementation evidence.
+This subsection records the historical `b88...` target. The resolved Triage UI target supersedes its **user-facing Accept composition**: Accept now chooses Issue or Project, and only the Issue branch uses the explicit-Project rule above. The underlying required-Project invariant and standard Workflow Issue creation path remain valid implementation evidence.
 
 #### Project delete
 
@@ -235,6 +246,8 @@ The checked-in repository `Trail/` tree remains disposable host-test observation
 
 ### 4.3 Project Status Four-State Configuration Closure
 
+The corrective slice was published at `b3b541b21d06af86b79f9bd718d9a317090596b0`.
+
 #### Canonical logical model
 
 - Keep the global StatusCategory vocabulary at Backlog, Unstarted, Started, Completed, Canceled.
@@ -267,20 +280,21 @@ The checked-in repository `Trail/` tree remains disposable host-test observation
 
 ### 4.4 Current verified gaps
 
-With Required Workflow Project & Default Project published, the Four-State correction green, and the Triage target now resolved in Product/Domain/UI, remaining verified gaps are grouped as follows:
+With Required Workflow Project & Default Project and Project Status Four-State Configuration Closure published, and both Triage and Cycle interaction targets now resolved in Product/Domain/UI, the remaining verified gaps are grouped as follows:
 
-- **remaining UI design-closure gaps** — Cycle-specific creation/filter/presentation/capability details remain the next explicit design target; Home/Search/Custom View and other explicitly deferred compositions remain consumer-by-consumer work;
-- **formal UI implementation gaps** — the real Obsidian left-split Trail Navigation and Default Project shortcut establish the correct host/navigation mechanism, but shell, Location Bar/View Bar, collection composition, Triage queue/review composition, density, and visual calibration still need implementation alignment with `ui.md`;
-- **product composition gaps** — remaining Home composition such as Triage Summary and Activity Heatmap;
+- **formal UI implementation gaps** — the real Obsidian left-split Trail Navigation and Default Project shortcut establish the correct host/navigation mechanism, but shell, Location Bar/View Bar, Project collection/workspace composition, Triage queue/review composition, Current/Historical Cycle composition, density, and visual calibration still need implementation alignment with `ui.md`;
+- **product composition gaps** — remaining Home composition such as Triage Summary and Activity Heatmap, plus Search/Custom View and other explicitly deferred consumer-specific composition;
 - **consumer-driven shared UI gaps** — Selection, Bulk Actions, Context Menu, Command Menu, broader property pickers, and later saved presentation state where real consumers justify them.
 
-Triage's target interaction is now resolved: it is a Linear-inspired intake/review queue with all active entries browseable, a derived seven-day/minimum-10 Review Set, shared-filter grammar over Review Due/Priority/Labels, constrained Display ordering, sequential Review Surface, Accept→Issue/Project using the normal creation modals with title/body prefill only, Defer as review-Due movement, and Delete rather than a persisted Discard concept. This is **design authority**, not a claim that the current implementation already matches it.
+Triage's target interaction is resolved: it is a Linear-inspired intake/review queue with all active entries browseable, a derived seven-day/minimum-10 Review Set, shared-filter grammar over Review Due/Priority/Labels, constrained Display ordering, sequential Review Surface, Accept→Issue/Project using the normal creation modals with title/body prefill only, Defer as review-Due movement, and Delete rather than a persisted Discard concept. This is **design authority**, not a claim that the current implementation already matches it.
+
+Cycle's target interaction is also resolved. Current Cycle is a Cycle-owned `issueIds` scope over the shared Workflow Issue collection, defaults to the normal execution Board with Project swimlanes, supports the complete List, reuses shared Filter grammar with a Cycle-specific property registry, keeps membership independent from Issue lifecycle/Project facts, and derives Progress/Effort from current member facts. Start/Close/Next are explicit; there are no future Cycles, automatic cadence/rollover, Issue-side Cycle field, or history snapshots. Historical Cycle is final membership shown as a flat List over current Issue projections. This is **design authority**, not a claim that the current implementation already matches it.
 
 Required Workflow Project & Default Project, Project Status Four-State Configuration Closure, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing & Weekly Note, Weekly Note hardening, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
 
-### 4.5 Next: remaining UI design closure, then formal UI implementation
+### 4.5 Next: formal UI implementation closure
 
-Continue V1 design closure with **Cycles** before treating the whole UI design as frozen. Triage-specific Row/review/filter/Accept/Defer behavior is no longer an explicitly deferred UI decision.
+The Project, Triage, and Cycle workspace-level UI responsibilities needed for the current V1 formal implementation pass are now resolved. The next step is to audit the current rendering against `ui.md` and implement the formal shell/page closure without preserving obsolete POC composition merely because it already exists.
 
 The working chain remains:
 
@@ -294,7 +308,7 @@ Product responsibilities
 -> implementation
 ```
 
-After the remaining product-level UI gaps are frozen, audit the current rendering against `ui.md` and implement the formal shell/page closure. Current Trail rendering remains functional evidence, not a visual/layout/component baseline.
+Home/Search/Custom View and other explicitly deferred consumer details remain consumer-by-consumer work; they do not block starting the formal implementation of already-resolved Project/Triage/Cycle surfaces.
 
 ## 5. Build Order
 
@@ -317,8 +331,8 @@ After the remaining product-level UI gaps are frozen, audit the current renderin
    ├─ Required Workflow Project & Default Project       COMPLETED
    ├─ Project Status Four-State Configuration Closure   COMPLETED
    ├─ Triage UI design closure                          RESOLVED DESIGN
-   ├─ Cycle UI design closure                           NEXT DESIGN
-   ├─ Formal UI implementation closure                  AFTER DESIGN
+   ├─ Cycle UI design closure                           RESOLVED DESIGN
+   ├─ Formal UI implementation closure                  NEXT
    └─ remaining Home composition                        AS CONSUMED
    |
 9. V1 Integration / Hardening
@@ -329,7 +343,7 @@ Completed Gate 8 implementation slices at this candidate checkpoint include:
 - Project Lifecycle Closure;
 - Initiative Focus & Project Assignment;
 - Project Milestone Management;
-- Cycle Planning & Rollover;
+- Cycle Planning & Rollover **(historical implementation evidence; current Cycle target supersedes conflicting automation/presentation semantics)**;
 - Project / Cycle Board & List Interaction Foundation;
 - Workflow Issue Peek & Planning Properties;
 - Project Details Editing;
@@ -342,15 +356,15 @@ Completed Gate 8 implementation slices at this candidate checkpoint include:
 - Required Workflow Project & Default Project;
 - Project Status Four-State Configuration Closure.
 
-Triage UI design closure is not listed as a completed implementation slice because this documentation checkpoint freezes the target; implementation alignment remains future Gate 8 work.
+Triage and Cycle UI design closures are not listed as completed implementation slices because these documentation checkpoints freeze the targets; implementation alignment remains future Gate 8 work.
 
 A previously completed lower-layer owner may be edited during a later slice when an upstream canonical model changes. That does not create a second implementation track or erase earlier evidence.
 
 ## 6. Risk & Verification
 
-### 6.1 Verified Project Status Four-State evidence
+### 6.1 Published Project Status Four-State evidence
 
-The Project Status Four-State Configuration Closure now verifies:
+The Project Status Four-State Configuration Closure at `b3b541b21d06af86b79f9bd718d9a317090596b0` verifies:
 
 - the shared StatusCategory vocabulary remains five-state while canonical applicability is Issue 5 / Project 4;
 - validated logical Configuration has no Project Backlog bucket and a Project StatusDefinition cannot use Backlog;
@@ -374,7 +388,7 @@ The Required Workflow Project & Default Project slice at `b88b671f1b7d7a81f931e7
 - Domain types/record validation cannot represent or accept committed Projectless Workflow Issue state;
 - Triage cannot retain Project/Milestone relations;
 - Workflow create requires an existing legal Project and starts in Backlog;
-- Triage Accept requires an explicit legal Project;
+- the then-current Triage Accept flow required an explicit legal Project because its target was a Workflow Issue;
 - context-less create/default selection resolves the Default Project only at Query/UI and submits an explicit ID;
 - Default Project rename updates the sidebar label through Project identity rather than title lookup;
 - Initiative assignment and lifecycle changes on the Default Project behave exactly like ordinary Project operations;
@@ -393,20 +407,27 @@ This evidence remains historical and valid for the Issue-target branch of the ne
 
 No production legacy-data migration was introduced for that pre-V1 corrective slice. The checked-in development Vault was aligned directly to the current schema for host evidence; if legacy user-data retention becomes required, the explicit one-way Migration contract above remains the owner.
 
-### 6.3 Historical evidence policy
+### 6.3 Historical Cycle implementation evidence
 
-Do not delete tests merely because their old Product scenario used Projectless if they still protect an independent mechanism such as:
+The Cycle Planning & Rollover checkpoint at `826424ff673499d3aaef1669875db2719b1d9e5a` and Project / Cycle Board & List Interaction Foundation at `c87723486e95c2915ff02388540e2fd189010b63` remain useful evidence for established Cycle storage, planning/membership operations, current-Cycle lookup, Issue/Cycle runtime relationships, and shared Board/List mechanics.
+
+They are **not** authority for the newly resolved Cycle product/UI composition. The current target intentionally requires explicit membership changes, explicit close, optional explicit next-Cycle creation, no future Cycle objects, no automatic Status coupling, no automatic rollover, no analytics snapshot history, Current Cycle default Board with Project swimlanes, and flat List-only Historical Cycle presentation. Formal implementation must preserve reusable mechanisms while replacing any historical behavior that conflicts with those answers.
+
+### 6.4 Historical evidence policy
+
+Do not delete tests merely because their old Product scenario used Projectless or older Cycle composition if they still protect an independent mechanism such as:
 
 - Markdown EOF record deletion;
 - Source Transition failure ordering;
 - Project-source placement/rename;
+- Cycle membership persistence/index convergence;
 - search ranking/discovery;
 - Runtime reconciliation;
 - Integrity Batch destination-first failure safety.
 
-Rewrite or relocate scenario-specific assertions so the independent mechanism remains covered under the new required-Project model. Remove only tests whose sole purpose is validating the obsolete Projectless semantic contract.
+Rewrite or relocate scenario-specific assertions so the independent mechanism remains covered under the current Product/Domain model. Remove only tests whose sole purpose is validating an obsolete semantic contract.
 
-### 6.4 General verification discipline
+### 6.5 General verification discipline
 
 For each active Gate 8 slice:
 
@@ -423,6 +444,6 @@ For each active Gate 8 slice:
 
 ## 7. Final State
 
-V1 implementation is ready for final product hardening when the frozen project answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions; the model contains no normal-runtime Projectless Workflow state; the Default Project is only an ordinary Project reference/default UI target; Status Configuration preserves the global semantic vocabulary while enforcing entity-specific applicability; dependency gates are coherent; and automated plus representative real-host verification is green for the integrated product.
+V1 implementation is ready for final product hardening when the frozen project answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions; the model contains no normal-runtime Projectless Workflow state; the Default Project is only an ordinary Project reference/default UI target; Status Configuration preserves the global semantic vocabulary while enforcing entity-specific applicability; Triage and Cycle composition reuse the established shared interaction/query mechanisms without new authority models; dependency gates are coherent; and automated plus representative real-host verification is green for the integrated product.
 
 `README.md` remains an entry point. This file owns the active construction stage, execution baseline, current verified gaps, build order, and verification evidence. Historical checkpoint behavior is retained as evidence even when a later upstream design decision supersedes its target semantics.

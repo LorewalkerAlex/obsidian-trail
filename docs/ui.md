@@ -46,6 +46,8 @@ Useful current Linear visual anchors include:
 - Initiatives: <https://linear.app/docs/initiatives>
 - Timeline: <https://linear.app/docs/timeline>
 - Filters: <https://linear.app/docs/filters>
+- Cycles: <https://linear.app/docs/use-cycles>
+- Cycle graph: <https://linear.app/docs/cycle-graph>
 - Triage: <https://linear.app/docs/triage>
 - Peek: <https://linear.app/docs/peek>
 - Priority: <https://linear.app/docs/priority>
@@ -57,6 +59,8 @@ Useful current Linear visual anchors include:
 For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root and Initiative Focus, current Linear Project/Initiative collection arrangement, density, grouping, and Timeline presentation are the primary visual references. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model, and Trail Project filters continue to reuse Trail's Issue Filter interaction model rather than importing a second Linear-specific filter system.
 
 For Triage, current Linear Triage is the primary queue/review interaction reference. Trail adopts its compact intake queue, sequential review rhythm, low-noise disposition actions, and constrained presentation model, while localizing the semantics to Trail's personal intake model: no team/assignee routing, no Snooze state, no normal Workflow Status, and no assumption that accepting must always produce an Issue.
+
+For Cycles, current Linear Cycles provide the primary collection, Board/List, timebox identity, membership, and compact progress-reference grammar. Trail deliberately localizes away Linear's automatic cadence, future/upcoming Cycle generation, automatic Status coupling, automatic rollover, team distribution, predictive Capacity, Cycle Success, and historical graph snapshots. Trail's Current Cycle is a selected live Issue collection; Historical Cycles retain final membership only.
 
 ## 2. Visual System and Calibration
 
@@ -246,13 +250,16 @@ Projects
 Projects / Initiative Alpha
 Projects / Initiative Alpha / Project Trail
 Projects / Project Personal
+Cycles / Aug 25 – Sep 7
+Cycles / History
+Cycles / History / Aug 11 – Aug 24
 ```
 
 Breadcrumbs describe Trail product structure, not visit history. Ancestors are navigable; the terminal segment is the current location.
 
 Back/forward history remains an Obsidian/browser host responsibility and is not duplicated in the Trail Location Bar.
 
-The right side contains only actions that belong to the current location/object, such as Inspector/Details toggle, Project context disclosure, or a low-frequency overflow menu when applicable. If a location has no such action, no empty action shell is rendered merely for symmetry.
+The right side contains only actions that belong to the current location/object, such as Inspector/Details toggle, Project context disclosure, Cycle History access, or a low-frequency overflow menu when applicable. If a location has no such action, no empty action shell is rendered merely for symmetry.
 
 A large repeated page title is not required when the Location Bar already establishes the current object and the content does not need an additional title hierarchy.
 
@@ -296,19 +303,27 @@ For an In Progress Project Workspace, the V1 target remains:
 Filter        [single List/Board toggle]           Display
 ```
 
-For Triage, the V1 target is deliberately simpler:
+For Current Cycle, the V1 target is:
+
+```text
+Filter        [single List/Board toggle]           Display
+```
+
+For Triage and Historical Cycle, the V1 target is deliberately simpler:
 
 ```text
 Filter                                             Display
 ```
 
-The binary layout switch occupies one control slot rather than two permanent peer buttons. Not Started, Done, and Cancelled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation. Triage is always a List and therefore has no layout toggle.
+The binary layout switch occupies one control slot rather than two permanent peer buttons. Not Started, Done, and Cancelled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation. Triage is always a List. Historical Cycle is also List-only because it is passive final-membership history rather than a historical execution Board.
 
 Project-collection Filter reuses Trail's Issue Filter interaction model, visual primitives, applied-filter treatment, and temporary view-state behavior. It is not a second filter system copied from Linear. The Project property set is intentionally smaller: Projects Root supports Status, Initiative, Priority, Labels, and Due; Initiative Focus omits Initiative because the current location already supplies that scope. Filtering changes visibility only. It does not define grouping, ordering, or entity mutation.
 
 Triage follows the same shared Filter grammar, popover mechanics, condition semantics, applied-filter treatment, and clear behavior used by existing Issue/Project filters; only its available property registry is narrower. Triage does not introduce Triage-specific filter operators or another temporal grammar.
 
-`Display` is not a generic view builder. In Project collections it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace it controls supported secondary Issue Row/Card properties. In Triage it is limited to supported ordering choices. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
+Cycle Current and Historical views also consume the same shared Issue Filter grammar. Their field registry is defined in Section 11; Cycle does not introduce another filter syntax or generic view-builder layer.
+
+`Display` is not a generic view builder. In Project collections it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace and Current Cycle it controls supported secondary Issue Row/Card properties. In Historical Cycle it controls supported flat List-row metadata. In Triage it is limited to supported ordering choices. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
 
 `Create Issue` is not a generic View Bar configuration control. Exact placement of the Project-local create affordance is a composition detail, but it must not visually imply that creation inherits a Todo/Started/Completed group.
 
@@ -929,8 +944,9 @@ Examples:
 ```text
 Project Workspace  → Project Inspector
 Initiative Focus   → Initiative Inspector
-Cycle               → Cycle Inspector
-Issue Full Item     → Issue Inspector
+Current Cycle      → Current Cycle Inspector
+Historical Cycle   → Historical Cycle Inspector
+Issue Full Item    → Issue Inspector
 ```
 
 Peeking Issue B while remaining in Project A Workspace leaves Project A Inspector visible. Entering Issue B Full Item changes the editing context and may show Issue B Inspector.
@@ -1296,7 +1312,239 @@ Delete is available from the Review Surface with lower visual weight than Accept
 
 Triage participates in Trail's shared Selection, Context Menu, Command Menu, keyboard, and future Bulk Action mechanisms where those capabilities have real consumers. It does not define a second selection grammar or Triage-specific command system; exact bulk-action availability remains owned by the shared consumer-driven interaction closure rather than this page inventing parallel mechanics.
 
-## 11. Responsive Behavior
+## 11. Cycles
+
+Cycles is a focused planning/execution workspace over a Cycle-owned set of Workflow Issue IDs. It reuses the established Issue collection, Row/Card, Filter, Selection, Peek, Context Menu, and Inspector primitives rather than introducing a parallel Cycle work-item system.
+
+### 11.1 Navigation and location
+
+The single sidebar `Cycles` row does not expand Current/Previous children.
+
+When a Current Cycle exists, activating `Cycles` opens that Current Cycle directly:
+
+```text
+Cycles / Aug 25 – Sep 7
+```
+
+Current Cycle identity uses its date range rather than a separate persisted Cycle title. The Location Bar may expose `History`, `Details`, and low-frequency overflow actions without turning the page into a dashboard.
+
+When no Current Cycle exists, the `Cycles` location presents a compact `Start Cycle` affordance and secondary access to History. V1 does not show an Upcoming/Future Cycle because no such Domain object exists.
+
+History is reached as a secondary Cycles location:
+
+```text
+Cycles / History
+Cycles / History / Aug 11 – Aug 24
+```
+
+### 11.2 Current Cycle collection
+
+Current Cycle scope is exactly the live Workflow Issues whose IDs are in the Open Cycle membership. The Issue records remain authoritative for Status, Project, Milestone, Priority, Estimate, Labels, Due, title/body, and lifecycle facts.
+
+Default layout is **Board**, with List available through the normal single layout toggle.
+
+Cycle Board reuses the same execution Status projection as Project Board:
+
+```text
+Unstarted
+Started
+Completed
+```
+
+Backlog and Canceled Cycle members remain valid members but do not become normal Board columns. They remain visible in Current Cycle List. Dragging between Board columns means Status change only and remains subject to the owning Project's normal capability rules.
+
+Cycle Board uses **Project swimlanes** as the fixed secondary presentation dimension. Project swimlanes are not drag targets and do not create a second way to mutate Project relationships. Because the enclosing swimlane already establishes Project context, Board Cards do not repeat Project identity.
+
+Conceptually:
+
+```text
+                  Todo           In Progress       Done
+
+Project A         Issue A        Issue B           Issue C
+                  Issue D
+
+Project B                        Issue E           Issue F
+```
+
+Current Cycle List reuses the full Workflow lifecycle projection from Project List. Within the same Status, Issues from the same Project should remain visually coherent rather than interleaving unnecessarily. Project is displayed as normal row metadata because List has no Project swimlane.
+
+Conceptually:
+
+```text
+Done
+Issue A          Project A
+Issue B          Project A
+Issue C          Project B
+
+In Progress
+Issue D          Project A
+Issue E          Project C
+```
+
+Project clustering is automatic presentation/ordering, not a nested Project group or persisted manual rank.
+
+### 11.3 Filter and Display
+
+Current Cycle Filter supports:
+
+- Status;
+- Project;
+- Priority;
+- Milestone;
+- Labels;
+- Due;
+- Estimate.
+
+The grammar is exactly the shared Issue Filter grammar already used by Project Workspace: same popover mechanics, operators/conditions, multi-value semantics, temporal treatment, applied-filter representation, clear/reset behavior, and keyboard mechanics. `Project` is useful here because Cycle scope may cross Projects. `Cycle` itself is not a Current Cycle filter field because the current location already supplies that scope.
+
+Filtering changes visibility only. It does not change Cycle membership, Board Status projection, Project swimlanes, automatic List clustering, or Issue properties.
+
+`Display` controls the supported secondary metadata of the current List/Board presentation; it does not become a generic Group/Sub-group or Sort builder. Project is not a Board Card property because the fixed swimlane already expresses it. List may show Project together with the shared optional Issue metadata.
+
+Historical Cycle uses the same Filter field registry because its rows resolve the same current live Issue facts. Its `Display` controls flat List metadata only.
+
+### 11.4 Membership discovery and actions
+
+Cycle membership is explicit selection, not a Workflow property mutation. Adding/removing membership changes the Open Cycle's membership only and never changes Issue Status, Project, Milestone, Priority, Estimate, Labels, or Due.
+
+Current Cycle provides a low-noise `Add issues` flow using the shared searchable/filterable Issue selection grammar. To keep Cycle-level discovery focused on current execution, this entry point proactively surfaces non-terminal Workflow Issues from In Progress Projects and excludes Issues already in the Current Cycle. This is only a discovery policy; it is not Domain membership legality.
+
+Project Workspace remains an equally important planning entry point. In a Not Started Project, a Backlog Issue may be explicitly added to the Current Cycle from that Project's Issue context/selection even though it was not discoverable from Cycle-level `Add issues`. The Issue remains Backlog and the Project remains Not Started. It therefore appears in Current Cycle List and will appear in Board only after ordinary Project capability later permits a Status that belongs to the Board execution projection.
+
+Issue context/selection surfaces reuse shared actions:
+
+```text
+not in Current Cycle  → Add to current cycle
+in Current Cycle      → Remove from current cycle
+```
+
+Current Cycle itself exposes `Remove from cycle` through normal row/card context and shared Selection/Bulk mechanisms. V1 does not need a generic multi-Cycle property picker because at most one Cycle is Open and there are no future Cycle targets.
+
+Later Issue Status or Project changes do not implicitly add/remove membership. A Project move automatically changes the Cycle Board swimlane/List Project metadata because those presentations resolve current Issue facts; `Cycle.issueIds` remains unchanged.
+
+### 11.5 Start, Close, and Next Cycle
+
+`Start Cycle` is explicit and immediate. It records `startedAt = now`, lets the user confirm/edit `plannedEnd`, and may start with an empty Issue selection. The existing Cycle default planning rule supplies the initial end suggestion; V1 does not select a future start date or create future Cycle records.
+
+The Start flow may offer the same focused Issue selector as Current Cycle `Add issues`. Starting without members is valid; work can be added afterward.
+
+Reaching `plannedEnd` changes presentation such as time-remaining/overdue context but does not auto-close the Cycle.
+
+`Close cycle` is an explicit lifecycle action. Confirmation may summarize useful current counts, but the mutation itself only records actual `endedAt` and freezes final membership:
+
+```text
+Close Cycle
+→ endedAt = now
+→ keep final issueIds
+→ change no Issue facts
+→ Current Cycle = none
+```
+
+Closing does not automatically start another Cycle.
+
+A later `Start next cycle` uses the normal Start Cycle flow with one convenience: members of the previous Cycle that are **currently non-terminal** may be initially selected as carry-over candidates. The user can deselect any candidate, add other Issues, or cancel the flow and remain without a Current Cycle. Candidate state is calculated from current Issue facts when the flow opens; Trail does not save an unfinished-at-close snapshot or perform automatic rollover.
+
+### 11.6 Progress and Effort
+
+Current Cycle uses the same simple Progress semantics as Project/Milestone over the current live membership:
+
+```text
+effective members = Current Cycle members except Canceled
+completed members = effective members in Completed
+
+Progress = completed / effective
+```
+
+If there are no effective members, Progress is unavailable rather than fabricated as 0%/100%. Started work receives no partial credit and Estimate does not weight Progress.
+
+`Effort` is a separate live aggregate:
+
+```text
+Effort = sum(Estimate of every Cycle member whose Estimate is present)
+```
+
+Every member with a present Estimate contributes regardless of Status. Missing Estimate contributes nothing. Effort is not named Capacity/Velocity/Success and has no forecasting meaning.
+
+A Current Cycle page keeps these summaries lightweight so the Issue collection remains primary. A compact context line may show Progress/count/time remaining; the persistent Cycle Inspector carries the fuller summary.
+
+### 11.7 Cycle Inspector
+
+Current Cycle Inspector is intentionally smaller than Project Inspector:
+
+```text
+Cycle
+Aug 25 – Sep 7
+10 days left
+
+Progress
+────────────────
+████████████░░░░    67%
+
+Scope
+12 issues
+
+Effort
+27
+
+Info
+Started     Aug 25
+Ends        Sep 7
+
+Close cycle
+```
+
+`startedAt` is read-only actual history. `plannedEnd` may be edited while the Cycle is Open. Progress, Scope, and Effort are live derived summaries and are never stored back as Cycle fields.
+
+Historical Cycle Inspector is read-oriented:
+
+```text
+Cycle
+Aug 11 – Aug 24
+
+Scope
+12 issues
+
+Effort
+31
+
+Info
+Started       Aug 11
+Planned end   Aug 24
+Closed        Aug 24
+```
+
+Historical Effort is still a live aggregate of the current Estimates of the retained final members; it does not mean “Effort at close.” Historical Inspector does not need to emphasize Progress because Trail does not preserve close-time Issue state and History is not an analytics surface.
+
+### 11.8 Historical Cycles
+
+History is passive final-membership history rather than a performance dashboard.
+
+The History list is chronological and compact. A row needs only stable Cycle identity/context such as date range, final member count, and optionally actual close date; it does not display predictive Capacity, Velocity, Cycle Success, or a stored Progress result.
+
+Opening a Historical Cycle produces a **List-only flat Issue collection**. It has no Status sections, Project grouping, Board, Project swimlanes, or editable membership.
+
+Conceptually:
+
+```text
+Cycles / History / Aug 11 – Aug 24
+
+12 issues · Effort 27
+
+Filter                                      Display
+
+Issue A     Project A     In Progress    3    ●●
+Issue B     Project A     Done           5    ●
+Issue C     Project B     Backlog        —
+Issue D     Project C     Cancelled      2
+```
+
+Status and Project are ordinary row fields. Other shared fields such as Priority, Milestone, Labels, Due, and Estimate may be shown through the normal Display rules. The list remains visually flat even when ordering keeps related Project work coherent.
+
+Historical Cycle membership is the only retained Issue-level Cycle history. Every displayed Issue property is resolved from the current live Issue record, so a later Status, Project, Estimate, Label, or Due change is reflected when the Historical Cycle is opened. Trail deliberately does not label those values as the state “at close.”
+
+Historical Cycle retains normal Issue inspection/navigation actions such as Peek/Full Item where current Issue/Project capability permits them, but it exposes no Add/Remove Cycle-membership action.
+
+## 12. Responsive Behavior
 
 Trail must work across variable Obsidian pane widths using progressive disclosure rather than a second mobile layout.
 
@@ -1313,7 +1561,7 @@ General priority:
 
 Exact breakpoints remain visual-calibration decisions.
 
-## 12. Explicitly Deferred UI Decisions
+## 13. Explicitly Deferred UI Decisions
 
 The following are deliberately not frozen yet:
 
@@ -1321,11 +1569,12 @@ The following are deliberately not frozen yet:
 - final icon choice where multiple existing Obsidian/Lucide equivalents are plausible;
 - final Label palette and color-assignment function;
 - exact lower-level Project Issue ordering/clustering algorithm;
-- exact default optional Issue property set for Project Workspace List vs Board beyond the hierarchy defined above;
+- exact lower-level Cycle List ordering within the resolved Status/Project coherence rules;
+- exact default optional Issue property set for Project Workspace/Cycle List vs Board beyond the hierarchy defined above;
 - exact final placement/shortcut for Project-local Create Issue, beyond the fixed `create → Backlog` semantic contract;
+- exact final placement of Current Cycle `Add issues` and History access within the already-resolved Location/View-Bar responsibility split;
 - exact user-facing body-heading mapping required by managed Markdown's reserved H1/H2 structure;
 - complete keyboard shortcut map;
-- Cycle-specific creation/filter/presentation/capability details;
 - future Workspace Issues, Home, Search, and Custom View detailed compositions;
 - a dedicated user-facing interaction for changing the Default Project after bootstrap; the persisted reference, deletion behavior, and current shortcut are already resolved;
 - Favorites navigation presentation and interaction;
