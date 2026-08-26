@@ -18,10 +18,12 @@ Representative mappings:
 
 | Product behavior | Domain / Data basis | Architecture capability | Canonical code owner | Verification owner |
 |---|---|---|---|---|
-| Quick Capture creates Triage work | Triage Issue context + required review Due; no Project/Milestone | semantic create plan + single-source persistence | `domain/planning`, `application/triage`, shared mutation/persistence | planner + application + representative host |
+| Quick Capture creates Triage work | Triage Issue context + required review Due; no Project/Milestone | title-first UI draft → standard Triage Composer → normal semantic create plan; no mutation before Create | shared creation `ui/interactions` / `ui/patterns`, `application/triage`, `domain/planning`, shared mutation/persistence | UI interaction + planner + application + representative host |
+| Standard creation surfaces | Existing Triage/Workflow Issue/Project/Initiative contracts and defaults; no new draft Domain entity | one shared Creation Composer shell + shared title/body/property controls + invocation prefill + capability-gated target selection | shared `ui/interactions`, `ui/patterns`, `ui/primitives`, page invocation owners, normal target Application modules | UI interaction + target application/planner + representative host where keyboard/focus requires it |
 | Triage review queue | Triage Issue + Due/Priority/Labels; Review Set is derived, not persisted | page selector + shared filter/sort + transient sequential review state | `query`, `ui/pages/triage`, shared `ui/interactions`/filter primitives | query + UI |
-| Accept Triage | source Triage identity is replaced by a new standard Workflow Issue or Project; V1 auto-seeds title/body only; source removed only after target exists | target-kind choice + normal target create use case + destination-first Source Transition | `ui/pages/triage`, `application/triage`, `application/issues` / `application/projects`, shared mutation/source-sync | planner/application + transition/source-sync + representative host |
-| Create Workflow Issue | Workflow Issue requires exactly one Project and begins in Backlog | explicit target Project + semantic create plan | `domain/planning`, `application/issues`, `query` where a default candidate is needed, shared mutation | planner + application/UI |
+| Accept Triage | source Triage identity is replaced by a new standard Workflow Issue or Project; V1 auto-seeds title/body only; source removed only after target exists | target-kind choice + standard target Composer/use case + destination-first Source Transition | `ui/pages/triage`, shared creation `ui/interactions`, `application/triage`, `application/issues` / `application/projects`, shared mutation/source-sync | planner/application + UI + transition/source-sync + representative host |
+| Create Workflow Issue | Workflow Issue requires exactly one Project and begins in Backlog | standard Issue Composer + explicit legal target Project + semantic create plan; context/default only prefill the final explicit selection | shared creation `ui/interactions`, `query`, `domain/planning`, `application/issues`, shared mutation | planner + application + UI |
+| Create Project / Initiative | Existing entity contracts/defaults; Project uses configured Unstarted default; Initiative has no Status | standard entity Composer + optional context prefill + normal semantic create plan | shared creation `ui/interactions`, `application/projects` / `application/initiatives`, `domain/planning`, shared mutation | planner + application + UI |
 | Change Issue Status | StatusDefinition + lifecycle/Estimate + owning-Project capability invariants | Replace plan + Single Transaction | `domain/planning`, `application/issues`, shared mutation | planner + application/UI |
 | Move Issue between Projects | stable Issue identity + required target Project + Milestone scope + placement integrity | legal-target selection + Source Transition | `domain/planning`, `application/issues`, `query`, `mutation` | planner + application + representative host |
 | Default Project | Workspace State `defaultProjectId?` referencing an ordinary Project | bootstrap seed + reference resolution + normal Project navigation | `domain/model`, `source-sync/bootstrap`, `persistence/plugin-data`, `query`, `ui/shell` | workspace validation/bootstrap + query/navigation + representative host |
@@ -36,9 +38,11 @@ Representative mappings:
 | Cycle Progress / Effort | Progress uses Completed / non-Canceled current members; Effort sums present current member Estimates regardless of Status | reusable derived aggregation over Cycle membership | `query/derived`, `ui/pages/cycles`, Cycle Inspector composition | query + UI |
 | Historical Cycle | Closed Cycle final `issueIds` + current live Workflow Issue fields; no Issue/Status/Estimate snapshot | closed-Cycle selectors + flat List projection | `query`, `ui/pages/cycles`, reusable Issue Row/filter primitives | query + UI |
 | Labels and Status configuration | configuration definitions + reference integrity | configuration plans + Integrity Batch as needed | `domain/model`, `domain/validation`, `application/configuration`, `mutation` | validation + mutation + application |
-| Home | derived facts from same Runtime | shared/page-specific selectors + modules | `query`, `ui/pages/home` | query + UI |
+| Home | derived facts from same Runtime; Home creation adds no new Domain semantics | shared/page-specific selectors + modules + shared `+` creation menu invoking standard Composers | `query`, `ui/pages/home`, shared creation `ui/interactions` | query + UI |
 | External managed-file change | current physical schema + authoritative persistence | Refresh / source-health convergence | `source-sync`, `runtime`, adapters | source-sync + representative host |
 | Legacy Projectless schema upgrade | old Projectless Workflow records → ordinary Project ownership | explicit one-way migration; no dual normal-runtime model | `migration` plus existing persistence/validation owners | migration + full graph validation + representative fixture |
+
+Creation does not introduce a second domain model or a page-specific stack. Triage, Issue, Project, and Initiative creation share one Composer infrastructure and the same lower-level property/menu/focus primitives; invocation context supplies only initial UI state and never bypasses canonical target legality. Quick Capture is only a title-first entry into the Triage Composer. V1 does not introduce a persisted Draft entity, Create-more semantics, or pre-Create mutation.
 
 Cycle UI does not introduce another work-item model, Board engine, Filter grammar, or snapshot subsystem. It composes the existing Cycle record and runtime membership indexes with shared Issue collection/query/UI capabilities. Cycle-level discovery may intentionally narrow candidates by entry-point context without turning that narrowing into a Domain membership invariant. The shared Filter owner is intentionally a simplified Trail interaction rather than a clone of Linear's advanced filter/view-builder capability.
 
@@ -61,6 +65,8 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 
 Workflow Issue Project requiredness belongs to the Domain model/validation/planning owners. `Standalone` does not: it is the initial title of an ordinary bootstrapped Project, not a subtype or flag.
 
+Creation UI state does not create a Draft Domain entity. Canonical entity creation still begins at the normal Application/Domain create boundary; the shared Composer only holds transient title/body/property selections until Create succeeds.
+
 Triage's user-facing queue/review model does not create a new Domain entity. Domain continues to own the Triage-context Issue contract and the target-creation/source-removal semantics; UI/Query own Review Set, filtering, ordering presentation, and sequential review state.
 
 Cycle membership likewise does not create an Issue-side Cycle property. Domain owns the Open/Closed Cycle lifecycle and Cycle-owned Workflow Issue membership; Query/UI own current/historical collection projection, candidate discovery, filtering, ordering, Progress/Effort presentation, and Board/List composition.
@@ -79,6 +85,8 @@ Cycle membership likewise does not create an Issue-side Cycle property. Domain o
 | Weekly Note persistence | utility source contract | `persistence/utility-sources` |
 
 Normal runtime has no `Projectless Issues` path, source kind, codec, or repository branch. Every Workflow Issue is physically owned by its Project carrier.
+
+Creation adds no draft persistence path. An unfinished Composer is UI state only and closing it writes nothing.
 
 Cycle persistence remains the existing Cycle record with `issueIds`; no Issue `cycleId`, Cycle analytics snapshot, per-membership timestamp, future-Cycle carrier, or second history store is introduced by the UI closure.
 
@@ -113,7 +121,9 @@ Cycle persistence remains the existing Cycle record with `issueIds`; no Issue `c
 
 Default selection is a UI/query concern. Application/Domain Workflow commands receive the explicit Project chosen for the operation rather than interpreting an absent Project as `Standalone`.
 
-Triage Accept does not get a parallel create stack. The Triage surface selects the target kind and initializes the standard Issue/Project creation flow with title/body; normal target Application/Domain rules own the target draft/creation, while `application/triage` owns consuming the source only after successful target establishment.
+The shared Composer consumes legal-target/default-candidate Query output rather than reimplementing capability rules. Project-local or Milestone-local invocation may prefill a relation; Home/context-neutral creation may prefill the legal Default Project; the final selected relation is still explicit. If Project changes, Project-scoped dependent choices such as an incompatible Milestone are cleared in UI state before submit.
+
+Triage Accept does not get a parallel create stack. The Triage surface selects the target kind and initializes the standard Issue/Project Composer with title/body; normal target Application/Domain rules own target creation, while `application/triage` owns consuming the source only after successful target establishment.
 
 Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain any Workflow Issue allowed by the Domain relationship; a Cycle-level Add selector may primarily surface non-terminal work from In Progress Projects, while Project-local actions can add Backlog work from a Not Started Project. Both routes submit the same explicit membership intent to `application/cycles`.
 
@@ -124,6 +134,8 @@ Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain 
 | Product pages/workspaces | UI Design + Query + Application | `ui/pages` |
 | Trail navigation + Default Project shortcut | UI Design + Workspace State/query + stable Project route | `ui/shell` |
 | Stable entity presentation | UI Design + entity IDs + effective Runtime selection | `ui/entities` |
+| Shared Creation Composer / transient create UI state | UI Design + Query capability/defaults + target Application intents | `ui/interactions`, `ui/patterns` |
+| Shared property controls / pickers / compact property grammar | UI Design + reusable entity property presentation | `ui/primitives`, `ui/patterns` |
 | Reusable interactions | UI Design + UI state + Application intents | `ui/interactions` |
 | Reusable visual primitives/patterns | UI Design + design-system tokens | `ui/primitives`, `ui/patterns`, `ui/design-system` |
 | Obsidian source/plugin-data/workspace/file-event bridge | Obsidian API | `adapters/obsidian` |
@@ -132,7 +144,7 @@ Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain 
 | Benchmarks/profiling | representative corpus/workflows, including large long-lived Projects | `performance` |
 | Whole-graph composition | all ports/capabilities | `main.ts` |
 
-Shared mechanisms appear once in this map. A new feature consumes an existing capability unless it introduces a genuinely new mechanism.
+Shared mechanisms appear once in this map. A new feature consumes an existing capability unless it introduces a genuinely new mechanism. In particular, page-local create forms must not duplicate the shared Composer/property stack.
 
 ## 3. Code Ownership Map
 
@@ -169,6 +181,8 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Product composition | `plugin/src/ui/pages/` | Domain/Application |
 | Navigation and stable Project shortcut routing | `plugin/src/ui/shell/` | Project entity model or persistence filenames |
 | Entity components | `plugin/src/ui/entities/` | page-specific copies |
+| Shared Creation Composer and create-state orchestration | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/` | page-local inline/modal create stacks |
+| Shared property controls and pickers | `plugin/src/ui/primitives/`, `plugin/src/ui/patterns/` | per-page property widgets |
 | Shared interactions | `plugin/src/ui/interactions/` | per-page duplicated command/selection mechanics |
 | Visual primitives/patterns/design tokens | `plugin/src/ui/primitives/`, `patterns/`, `design-system/` | ad hoc per-page systems |
 | Obsidian integration | `plugin/src/adapters/obsidian/` | Domain/Application/Runtime |

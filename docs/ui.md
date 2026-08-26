@@ -40,6 +40,7 @@ Useful current Linear visual anchors include:
 
 - UI refresh: <https://linear.app/changelog/2026-03-12-ui-refresh>
 - Design-refresh process and header system: <https://linear.app/now/behind-the-latest-design-refresh>
+- Create issues: <https://linear.app/docs/creating-issues>
 - Board layout: <https://linear.app/docs/board-layout>
 - Display options: <https://linear.app/docs/display-options>
 - Projects: <https://linear.app/docs/projects>
@@ -56,7 +57,9 @@ Useful current Linear visual anchors include:
 - Due dates: <https://linear.app/docs/due-dates>
 - Issue selection: <https://linear.app/docs/select-issues>
 
-For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root, current Linear Project collection arrangement, density, grouping, and Timeline presentation remain useful visual references. Initiative Focus is not currently frozen to Linear's Project/Initiative page composition: its final multi-Project workspace presentation is part of the remaining V1 UI closure. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model. Trail filters use one simplified Trail-specific interaction model; Linear filter visuals may inform polish, but Linear's advanced filter/view-builder semantics are not the product target.
+For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root, current Linear Project collection arrangement, density, grouping, Timeline presentation, and primary Project-create affordance remain useful visual references. Initiative Focus is not currently frozen to Linear's Project/Initiative page composition: its final multi-Project workspace presentation is part of the remaining V1 UI closure. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model. Trail filters use one simplified Trail-specific interaction model; Linear filter visuals may inform polish, but Linear's advanced filter/view-builder semantics are not the product target.
+
+For Creation, current Linear composer structure is the primary reference: lightweight creation context, title/body as the content center, compact property controls, a restrained footer, context-prefilled values, and capability-aware availability. Trail localizes that grammar to its own Domain: Quick Capture is a title-first Obsidian-wide entry into standard Triage creation; Workflow Issues must name one explicit legal Project and always begin in Backlog; Projects use their configured Unstarted default; Trail Initiatives have no Status; and V1 does not copy Linear Drafts or Create-more behavior.
 
 For Triage, current Linear Triage is the primary queue/review interaction reference. Trail adopts its compact intake queue, sequential review rhythm, low-noise disposition actions, and constrained presentation model, while localizing the semantics to Trail's personal intake model: no team/assignee routing, no Snooze state, no normal Workflow Status, and no assumption that accepting must always produce an Issue.
 
@@ -378,7 +381,7 @@ Projects / Initiative Alpha
 
 This direction should reuse existing Project Workspace / Current Cycle Issue collection mechanics rather than invent another Board/List engine. The remaining closure must decide the exact Board/List projection, Project grouping/swimlane treatment, Initiative Inspector/actions, and where Project summaries remain visible. Until that discussion closes, the older `same Project collection + List/Timeline` assumption is not authoritative for Initiative Focus.
 
-`+ Project` on Projects Root creates a Project with optional Initiative membership. Whether Initiative Focus exposes the same create affordance and how Initiative-level properties/details compose with the aggregate work view remain part of that closure. Low-frequency Initiative creation still belongs to a secondary Projects action rather than requiring a separate top-level navigation area.
+Projects Root follows the current Linear Projects pattern for its primary creation affordance: a compact `+` / New Project action opens the standard Project Composer directly. Initiative creation remains a lower-frequency secondary Projects action, available adjacent to or behind the normal low-noise menu grammar, and opens the standard Initiative Composer; Trail does not need a separate top-level Initiatives area merely to create one. If Initiative Focus later exposes New Project, the current Initiative is only a prefilled editable relation in the same Project Composer.
 
 ### 5.5 Project Summary Row
 
@@ -397,7 +400,7 @@ Default row semantics are:
 - Title is the strongest visual anchor; description is not shown in the row.
 - Status uses the shared Status glyph/name grammar and opens the normal legal-transition picker when activated.
 - Priority uses the shared compact Priority glyph and picker.
-- Progress is derived and read-only. Wide rows may show a thin bar plus percentage; compact rows may reduce to percentage. Undefined Progress displays `—` rather than fabricated 0%/100%.
+- Progress is derived and read-only. Wide rows may show a thin bar plus percentage; compact rows may reduce this to percentage. Undefined Progress displays `—` rather than fabricated 0%/100%.
 - Due is the Project's own Due and uses the shared temporal emphasis grammar. It may open the normal date picker.
 - Attention is exception-driven rather than a permanently occupied column. No meaningful attention means no visual footprint. Temporal pressure or Cancelled-Project cleanup may expose a compact signal/reason; when that signal identifies a concrete attention bucket/reason, activating it opens the Project Workspace with the corresponding temporary Issue Filter.
 - Labels are optional secondary display and use the shared compact dot grammar. They are off by default in the Projects Root row unless enabled through Display.
@@ -542,6 +545,153 @@ UI consumes this projection and maps timestamps to the current Timeline geometry
 
 V1 Timeline is read-oriented. It does not provide drag-to-reschedule, duration resizing, dependency arrows, resource planning, manual Project/Initiative start/end dates, manual positioning, or another hidden planning-timeframe model.
 
+### 5.7 Shared Creation Composer and invocation
+
+Trail V1 uses one **shared Creation Composer infrastructure** rather than page-specific creation forms. This is an implementation as well as interaction constraint: entity-specific composers compose the same shell, title/body editor, property controls/pickers, footer/action treatment, focus mechanics, and responsive behavior. Page code supplies entity-specific fields, defaults, legal context, and submit intent; it must not duplicate the basic creation stack. Create and Edit may share those lower-level primitives without being forced into one universal surface when their workflows differ.
+
+The common Linear-inspired structure is:
+
+```text
+light creation header / context
+Title
+Description / body
+compact entity-specific properties
+Linear-style footer / Create action
+```
+
+The header identifies what is being created and, where structurally useful, its current relation. It is intentionally light rather than a second page title. Title/body remain the visual center; properties use the same compact property/picker grammar used elsewhere rather than a vertical label-and-input form.
+
+A Creation Composer is UI draft state only. **No Domain mutation happens until the normal Create action succeeds.** V1 does not implement Linear-style saved Drafts or Create-more. Closing/canceling an unfinished Composer discards that UI state and creates nothing. Exact shortcut hints and normal Composer keyboard bindings follow the shared interaction/Linear reference; Quick Capture does not broadcast a special Enter-submit rule into normal Composer behavior.
+
+#### 5.7.1 Triage creation and Quick Capture
+
+The standard Triage Composer is:
+
+```text
+Triage
+
+Title
+Description / body
+
+Priority   Labels   Due
+
+Create
+```
+
+`Due` is the Triage review Due by context and does not need a redundant `Review Due` label inside this composer. The normal temporal policy supplies its default. Priority and Labels remain optional.
+
+Quick Capture is a title-first Obsidian-wide entry into this same creation flow:
+
+```text
+Quick Capture hotkey / Navigation Capture
+→ Title only
+→ Enter
+→ standard Triage Composer
+   - Title prefilled
+   - Due default already present
+→ normal Composer interaction
+→ Create
+```
+
+The first Enter does not create a Triage entry. Once the full Composer is open, it behaves exactly like normal Triage creation; there is no second special Quick-Capture mode or special Enter-submit rule. A user who wants to provide richer intake information can continue with Description, Priority, Labels, and Due before Create.
+
+The Triage page and Home may also invoke the full Triage Composer directly without passing through title-first Quick Capture.
+
+#### 5.7.2 Workflow Issue Composer
+
+The standard Workflow Issue Composer is:
+
+```text
+Issue · Project ▾
+
+Title
+Description / body
+
+Priority   Labels   Milestone   Estimate   Due
+
+Create
+```
+
+Project is a required structural relation and belongs in the light creation header. Invocation context may prefill it, but the Composer remains the final explicit selection and the Project may be changed before creation. Changing Project clears any Milestone that is not legal in the new Project.
+
+At normal pane widths, Priority, Labels, Milestone, Estimate, and Due are directly available. Only when width is genuinely constrained may lower-priority property controls progressively move into a secondary/overflow treatment; they are not hidden by default merely to keep the Composer artificially sparse.
+
+Creation Status is **not** an editable Composer property. Every normal Workflow Issue begins in the Domain-defined Backlog StatusDefinition; the UI does not show a fake disabled Backlog dropdown or inherit Todo/Started/Completed from a nearby section/column. Cycle is also not a creation property.
+
+Invocation rules are:
+
+- Project Workspace Create Issue → current Project prefilled, still editable;
+- a concrete Milestone context may prefill both Project and Milestone;
+- Home or any other context-neutral Issue create → legal Workspace Default Project may prefill; otherwise Project starts unselected and must be chosen;
+- Triage Accept → Issue → standard Issue Composer with Title + Description/body seeded; a legal Default Project may prefill; Triage Priority/Labels/Due do not copy automatically;
+- if a future Command Menu/Obsidian command invokes standard Issue creation, it uses this same context-neutral Composer rather than another form.
+
+Application/Domain always receive the explicit selected Project ID. Invocation context never creates a second creation semantic.
+
+#### 5.7.3 Project Composer
+
+The standard Project Composer is:
+
+```text
+Project
+
+Title
+Description / body
+
+Initiative   Priority   Labels   Due
+
+Create
+```
+
+Initiative is optional and therefore a normal property rather than Project identity in the header. Project Status is not an editable creation property; normal creation uses the configured Unstarted default and lifecycle advancement happens later through the normal Status interaction.
+
+Projects Root uses the Linear-style primary `+` / New Project action to open this Composer. Initiative Focus may prefill its current Initiative while leaving the relation editable. Triage Accept → Project uses the same Composer and seeds only Title + Description/body. Home may invoke it from the shared Home creation menu.
+
+#### 5.7.4 Initiative Composer
+
+The standard Initiative Composer is:
+
+```text
+Initiative
+
+Title
+Description / body
+
+Priority   Labels   Due
+
+Create
+```
+
+Trail Initiative has no Workflow Status, so no Status control appears merely because current Linear Initiatives have one. Project membership is also not required during Initiative creation; Projects can be associated through their normal Initiative relation afterward. Projects Root exposes Initiative creation as a secondary Projects action, and Home may invoke it from the shared Home creation menu.
+
+#### 5.7.5 Home creation menu
+
+Home provides one compact `+` creation action rather than multiple competing permanent buttons. Activating it uses the normal shared menu/popover grammar and offers:
+
+```text
+Triage
+Issue
+Project
+Initiative
+```
+
+Each choice opens the corresponding standard Composer above. `Triage` opens the full Triage Composer, not Quick Capture. `Issue` is context-neutral and therefore uses a legal Default Project only as a prefill candidate. This resolves Home's creation affordance without freezing the rest of Home composition, which remains part of the later Home closure.
+
+#### 5.7.6 Capability-gated creation and illegal targets
+
+Trail follows the same broad usability principle visible in Linear's read-only/archived capability treatment: prevent an unavailable operation at the point of use instead of inviting the user through a complete edit flow that can never succeed.
+
+Concretely:
+
+- a Done/Cancelled Project does not expose an active Project-local Create Issue action;
+- when an unavailable action is useful to explain, a disabled/unavailable presentation may give a concise reason and recovery such as reopening the Project rather than failing only after Composer completion;
+- relation pickers show/select only legal normal targets, or mark a target unavailable when retaining it in the list materially helps the user understand why it cannot be chosen;
+- an illegal or absent Default Project is treated as no prefill, never as permission for a hidden fallback;
+- UI never changes Status or another relation silently just to make a target legal;
+- Domain/Application still revalidate on submit, so a context that becomes illegal while the Composer is open cannot bypass canonical rules. Exact mutation-failure presentation belongs to the later runtime/feedback closure.
+
+Capability gating is shared infrastructure/query consumption, not a set of page-local lifecycle `if` statements.
+
 ## 6. Project Workspace
 ### 6.1 Data projection is lifecycle-independent
 
@@ -642,27 +792,27 @@ Milestone and derived attention entries may apply a temporary Issue Filter in Pr
 
 ### 6.6 Workflow Issue creation and default Project selection
 
-Global Capture and Project-local creation remain separate intents:
+Global Quick Capture and direct Workflow Issue creation remain separate intents:
 
 ```text
-Navigation Capture
-→ Triage Issue
+Navigation/Obsidian Quick Capture
+→ title-first Triage creation
+→ standard Triage Composer
 
 Project-local Create Issue
-→ Workflow Issue
-→ current Project relation
+→ standard Issue Composer
+→ current Project prefilled, editable
+→ explicit selected Project relation
 → default Issue Backlog StatusDefinition
 ```
 
 Any context-less surface that creates a Workflow Issue directly must also submit an explicit Project relation. Its Project picker may initialize to the Workspace Default Project when that Project can legally accept the new Backlog Issue. If the Default Project is absent or not a legal target, no hidden fallback or lifecycle rewrite occurs; the user chooses another legal Project before submission.
 
-When Triage Accept chooses **Issue**, it opens the normal Create Issue flow and therefore follows exactly this same creation contract: Project is required, the Default Project is only an initial selection when legal, and the selected Project ID is submitted explicitly to Application/Domain. When Triage Accept chooses **Project**, the normal Create Project flow and defaults apply instead. Triage-specific review/Accept composition is defined in Section 10.
+When Triage Accept chooses **Issue**, it opens the same standard Issue Composer and therefore follows exactly this same creation contract: Project is required, the Default Project is only an initial selection when legal, and the selected Project ID is submitted explicitly to Application/Domain. When Triage Accept chooses **Project**, the normal Project Composer and defaults apply instead. Triage-specific review/Accept composition is defined in Section 10; shared creation composition and invocation are defined in Section 5.7.
 
 The creation surface does **not** seed Todo/Started/Completed Status from a nearby List section or Board column. Every normal Workflow Issue is born in Backlog first; execution advancement is a separate user action subject to Project capability.
 
-In a Not Started Project, the new Backlog Issue can be planned but cannot advance into Todo/Started execution. In an In Progress Project, it can later advance normally. Done/Cancelled Projects do not expose Project-local creation and are not valid default targets for a new non-terminal child under the normal capability rules.
-
-Exact final placement of the create affordance remains a calibration/composition decision; the semantic contract above is fixed.
+In a Not Started Project, the new Backlog Issue can be planned but cannot advance into Todo/Started execution. In an In Progress Project, it can later advance normally. Done/Cancelled Projects do not expose an active Project-local creation action and are not legal default/selection targets for a new non-terminal child under the normal capability rules.
 
 ### 6.7 Automatic ordering
 
@@ -1266,7 +1416,7 @@ Accept
 
 A direct Accept activation opens the same two-target disclosure; Trail does not silently choose Issue as the default. In wide layouts the choices may disclose beside the button; constrained layouts may disclose below it. The interaction should reuse the shared menu/popover mechanics rather than create a special Triage widget.
 
-Choosing **Issue** opens the standard Create Issue modal used elsewhere. Choosing **Project** opens the standard Create Project modal. There is no Triage-specific Accept form.
+Choosing **Issue** opens the standard Issue Composer used elsewhere. Choosing **Project** opens the standard Project Composer. There is no Triage-specific Accept form.
 
 V1 passes only these automatic initial values into either normal create draft:
 
@@ -1275,11 +1425,11 @@ Title
 Description / body
 ```
 
-Triage Priority, Labels, and Review Due are not automatically copied. The normal target form may still let the user explicitly choose its ordinary properties before confirmation.
+Triage Priority, Labels, and Review Due are not automatically copied. The normal target Composer still lets the user explicitly choose its ordinary properties before confirmation.
 
 For Issue, standard creation semantics still require an explicit legal Project and create the Workflow Issue in Backlog; the current Default Project may initialize the normal Project picker only when legal. For Project, the ordinary Project creation defaults and validation apply.
 
-Canceling the create modal leaves the Triage entry unchanged. After target creation succeeds, the source Triage entry is removed through the normal destination-first mutation path and the Review Surface advances to the next entry.
+Canceling the target Composer leaves the Triage entry unchanged. After target creation succeeds, the source Triage entry is removed through the normal destination-first mutation path and the Review Surface advances to the next entry.
 
 ### 10.6 Defer
 
@@ -1559,17 +1709,18 @@ General priority:
 - preserve Progress/Attention semantic readability even when exact numeric/tooltip detail moves behind interaction;
 - let the right Inspector collapse through normal Obsidian host behavior rather than building a second custom pane system.
 
+For the shared Creation Composer, normal width keeps the resolved entity properties directly accessible; constrained panes progressively overflow lower-priority property controls without changing creation semantics or creating a separate compact form.
+
 Exact breakpoints remain visual-calibration decisions.
 
 ## 13. Remaining V1 UI Design Closure
 
-The core Project Workspace, Projects Root, Triage, and Cycle page semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers must be closed before Trail treats the whole V1 UI authority as complete:
+The core Project Workspace, Projects Root, Triage, Cycle, and standard Creation Surface semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers must be closed before Trail treats the whole V1 UI authority as complete:
 
-- **Creation surfaces** — Quick Capture plus the standard Create Issue, Create Project, and Create Initiative compositions that existing flows already reference;
 - **Simplified shared Filter** — one intentionally small Trail-specific interaction grammar shared by Project/Issue/Triage/Cycle consumers, without copying Linear's advanced filter/view-builder system;
 - **Shared interaction system** — Selection, Bulk Actions, Context Menu, Command Menu, keyboard interaction principles, and user-visible optimistic/pending/failure/recovery feedback;
 - **Initiative Focus** — confirm the multi-Project project-like workspace composition, with the current working direction favoring reuse of Cycle-style multi-Project Issue List/Board mechanics and explicit Project context rather than the old duplicate Project-summary List/Timeline assumption;
-- **Home** — close the V1 composition and interaction of Date/Time, Current Cycle Summary, Triage Summary, Projects/Initiatives Summary, Activity Heatmap, and Weekly Note;
+- **Home** — close the V1 composition and interaction of Date/Time, Current Cycle Summary, Triage Summary, Projects/Initiatives Summary, Activity Heatmap, and Weekly Note; the Home `+` creation menu itself is already resolved in Section 5.7;
 - **Search** — close the global search surface, result composition/grouping, keyboard navigation, activation behavior, and interaction with Peek/navigation;
 - **Runtime/Data-Issue feedback** — map `loading`, `refreshing`, `read-only-error`, optimistic pending, mutation failure, and recoverable Data Issue states to coherent user-visible UI;
 - **Default Project setter** — provide a lightweight V1 interaction for explicitly setting or replacing the Workspace Default Project after bootstrap without introducing special Project semantics.
@@ -1597,7 +1748,8 @@ The following may remain replaceable until the relevant real-Obsidian surface ex
 - exact lower-level Project Issue ordering/clustering algorithm;
 - exact lower-level Cycle List ordering within the resolved Status/Project coherence rules;
 - exact default optional Issue property set for Project Workspace/Cycle List vs Board beyond the hierarchy defined above;
-- exact final placement/shortcut for Project-local Create Issue, beyond the fixed `create → Backlog` semantic contract;
+- exact final placement/shortcut for Project-local Create Issue within the resolved contextual-create contract;
+- exact Creation Composer width, compact-property overflow breakpoint/order, and whether the Linear-style footer shows shortcut hint text;
 - exact final placement of Current Cycle `Add issues` and History access within the already-resolved Location/View-Bar responsibility split;
 - exact user-facing body-heading mapping required by managed Markdown's reserved H1/H2 structure;
 - complete keyboard shortcut bindings once the interaction principles are frozen;
