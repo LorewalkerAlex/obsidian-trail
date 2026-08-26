@@ -756,6 +756,82 @@ Concretely:
 
 Capability gating is shared infrastructure/query consumption, not a set of page-local lifecycle `if` statements.
 
+### 5.8 Shared Selection and Action System
+
+Trail V1 follows the current Linear selection/action interaction grammar wherever Trail has an equivalent responsibility. Selection, Context Menu, Command Menu, Bulk actions, overflow actions, and keyboard shortcuts are one shared interaction system rather than page-specific mechanisms. Trail diverges only when its own capability semantics or Obsidian host/focus constraints require it.
+
+Conceptually:
+
+```text
+pointer hover / keyboard focus
+→ highlight current candidate
+
+explicit selection interaction
+→ one or more selected items
+
+current entity / current selection / current location
+→ shared available actions
+   ├─ Context Menu
+   ├─ Command Menu
+   ├─ Bulk action surface when useful
+   ├─ ··· / other explicit action affordance
+   └─ keyboard shortcut
+```
+
+#### 5.8.1 Highlight and selection
+
+Highlight/focus is not the same state as selection. Pointer hover or keyboard navigation may establish the current candidate without silently creating a persistent multi-selection. Ordinary Row/Card activation keeps its normal open/navigation meaning; explicit selection affordances provide toggle, range, and current-collection selection mechanics in the Linear style.
+
+List, Board, Triage, and other supported collection surfaces consume the same selection model rather than implementing page-specific variants. Selection is transient UI runtime state only. It is not Domain Data, committed/effective canonical Runtime, Workspace State, Markdown, Plugin Data, or a saved View. An action must never be applied to an invisible stale selection from another context merely because that selection once existed.
+
+The exact keyboard bindings used to toggle/range/select-all/clear are not frozen as product semantics. Trail owns a shared shortcut-dispatch mechanism and may choose bindings that fit the Obsidian host rather than copying Linear's literal keymap.
+
+#### 5.8.2 One action authority, multiple entry points
+
+Trail uses one shared **Action Registry** as the UI authority for actions available in the current context. An action has stable identity plus the context/capability information needed to determine whether it is available, which legal targets it may expose, and which existing Application intent it invokes.
+
+Context Menu, Command Menu, `···`/overflow affordances, Bulk surfaces, and keyboard shortcuts consume that same authority. They do not need identical visible menus: Context Menu favors the small set of actions most relevant to the clicked/current object or selection, while Command Menu may expose a broader searchable set. Different presentation subsets do not create different action semantics.
+
+Context resolution follows the mature Linear pattern: an existing relevant selection may be the action scope, while explicitly invoking an unselected object must not accidentally execute against an unrelated stale selection. Page code does not recreate that resolution rule locally.
+
+#### 5.8.3 Bulk actions
+
+Bulk means executing one shared action against the current selection. Trail intentionally keeps V1 Bulk narrow and consumer-driven; there is no requirement to bulk-enable every entity or every action simply because Selection exists.
+
+A valid Bulk operation must be expressible as:
+
+```text
+same action
++ same target
++ every selected item can legally accept that action/target
+```
+
+Therefore target-bearing Bulk controls expose the intersection of the selected items' ordinary legal targets:
+
+```text
+bulk legal targets
+= intersection(legal targets of every selected item)
+```
+
+This does not create a second Bulk Domain model. Each selected item keeps the same ordinary capability and validation rules it has when operated on individually. For example, a Milestone target is available for a multi-Issue selection only when the selected Issues share one Project and that Milestone is legal for every selected Issue. A cross-Project Cycle selection therefore does not expose one Project's Milestones as a valid common target.
+
+Where an existing action is naturally idempotent, an item that already satisfies the common target may remain unchanged rather than turning the Bulk operation into a failure. Trail does not use hidden per-item target changes to simulate a common action. If there is no useful common action/target, that Bulk operation is absent or unavailable.
+
+Execution coordination may reuse the established mutation/application mechanisms; exact pending/failure/recovery presentation remains part of the runtime-feedback closure. The UI interaction itself does not introduce `BulkIssue`, persisted selection, or another business entity/command vocabulary.
+
+#### 5.8.4 Keyboard shortcuts
+
+Keyboard shortcuts are bindings to the same stable Action IDs used by menus and visible affordances:
+
+```text
+keybinding
+→ Action ID
+→ current context / selection
+→ normal action execution
+```
+
+The interaction contract does not require Linear's literal shortcut choices. Exact bindings are selected during implementation/host calibration so Trail does not conflict with Obsidian or text-editing focus. Editor/text-input contexts may suppress global Trail shortcuts unless an action is explicitly safe there. Changing a binding must not require changing the underlying action, Context Menu, Command Menu, or Bulk behavior.
+
 ## 6. Project Workspace
 ### 6.1 Data projection is lifecycle-independent
 
@@ -1530,7 +1606,7 @@ Delete replaces any V1 Discard concept. V1 does not preserve a separate discarde
 
 Delete is available from the Review Surface with lower visual weight than Accept/Defer and is also available from the normal `···`/right-click context menu. Destructive confirmation/recovery treatment should follow the shared interaction system and actual undo capability rather than a Triage-only deletion framework.
 
-Triage participates in Trail's shared Selection, Context Menu, Command Menu, keyboard, and future Bulk Action mechanisms where those capabilities have real consumers. It does not define a second selection grammar or Triage-specific command system; exact bulk-action availability remains owned by the shared consumer-driven interaction closure rather than this page inventing parallel mechanics.
+Triage participates in Trail's resolved shared Selection/Action system. Context Menu, Command Menu, keyboard dispatch, and any useful Triage Bulk action consume the same Action Registry and ordinary Triage capabilities; Triage does not define a second selection grammar, command system, or Bulk legality model. V1 exposes Bulk only where a concrete Triage consumer has one meaningful common action/target rather than attempting to make every Triage action bulk-capable.
 
 ## 11. Cycles
 
@@ -1785,13 +1861,12 @@ Exact breakpoints remain visual-calibration decisions.
 
 ## 13. Remaining V1 UI Design Closure
 
-The core Project Workspace, Projects Root, Triage, Cycle, standard Creation Surface, and simplified shared Filter semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers must be closed before Trail treats the whole V1 UI authority as complete:
+The core Project Workspace, Projects Root, Triage, Cycle, standard Creation Surface, simplified shared Filter, and shared Selection/Action interaction semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers must be closed before Trail treats the whole V1 UI authority as complete:
 
-- **Shared interaction system** — Selection, Bulk Actions, Context Menu, Command Menu, keyboard interaction principles, and user-visible optimistic/pending/failure/recovery feedback;
 - **Initiative Focus** — confirm the multi-Project project-like workspace composition, with the current working direction favoring reuse of Cycle-style multi-Project Issue List/Board mechanics and explicit Project context rather than the old duplicate Project-summary List/Timeline assumption;
 - **Home** — close the V1 composition and interaction of Date/Time, Current Cycle Summary, Triage Summary, Projects/Initiatives Summary, Activity Heatmap, and Weekly Note; the Home `+` creation menu itself is already resolved in Section 5.7;
 - **Search** — close the global search surface, result composition/grouping, keyboard navigation, activation behavior, and interaction with Peek/navigation;
-- **Runtime/Data-Issue feedback** — map `loading`, `refreshing`, `read-only-error`, optimistic pending, mutation failure, and recoverable Data Issue states to coherent user-visible UI;
+- **Runtime/Data-Issue feedback** — map `loading`, `refreshing`, `read-only-error`, optimistic pending, mutation failure, and recoverable Data Issue states to coherent user-visible UI, including feedback for the already-resolved shared actions;
 - **Default Project setter** — provide a lightweight V1 interaction for explicitly setting or replacing the Workspace Default Project after bootstrap without introducing special Project semantics.
 
 These are not implementation-calibration details and are not deferred beyond V1. They remain the next UI-design work before full Formal UI Implementation closure.
@@ -1821,7 +1896,7 @@ The following may remain replaceable until the relevant real-Obsidian surface ex
 - exact Creation Composer width, compact-property overflow breakpoint/order, and whether the Linear-style footer shows shortcut hint text;
 - exact final placement of Current Cycle `Add issues` and History access within the already-resolved Location/View-Bar responsibility split;
 - exact user-facing body-heading mapping required by managed Markdown's reserved H1/H2 structure;
-- complete keyboard shortcut bindings once the interaction principles are frozen;
+- exact keyboard shortcut bindings and Obsidian conflict/focus mapping over the frozen shared Action IDs;
 - exact Timeline scale defaults, date-axis geometry, dense Due-marker collision/aggregation, and final visual calibration;
 - final full-shell screenshots and calibrated UI measurements.
 
