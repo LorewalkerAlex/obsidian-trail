@@ -4,14 +4,14 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The verified public authority baseline used for this Creation Surface closure is:
+The verified public authority baseline used for this **Shared Filter + Estimate semantic closure** is:
 
 ```text
-83da1ec239b0cc8b95f5dcb171418d39e1082257
-docs: recalibrate ui closure status
+6cda2b84686345ab7f2b31b10ac1216be95bcda3
+docs: close creation surface design
 ```
 
-This is the pre-change authority baseline for the Creation Surface closure recorded here, not a claim that `83da1ec...` must remain the repository HEAD after this documentation checkpoint is published.
+This is the pre-change authority baseline for the Filter/Estimate closure recorded here, not a claim that `6cda2b8...` must remain the repository HEAD after this documentation checkpoint is published.
 
 The latest published implementation/code checkpoint is:
 
@@ -31,7 +31,7 @@ The implementation baseline already contains the completed Project Lifecycle, In
 
 Those checkpoints remain historical implementation evidence. This document does not rewrite their recorded behavior after later Product/Domain/UI decisions change the target.
 
-Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. Gate 8 now has resolved Project Workspace/Projects Root, Triage, Cycle, and Creation Surface semantics, but the full V1 UI authority is not yet frozen. The next work remains a bounded UI-design closure beginning with the simplified shared Filter before comprehensive Formal UI Implementation alignment.
+Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. Gate 8 now has resolved Project Workspace/Projects Root, Triage, Cycle, Creation Surface, and simplified shared Filter semantics, but the full V1 UI authority is not yet frozen. This closure also promotes Estimate from an open numeric carrier to the fixed T-Shirt `S/M/L/XL` Domain vocabulary with configurable aggregation weights; current code has not yet been aligned to that newer target. The remaining bounded UI-design work now begins with the shared interaction system before comprehensive Formal UI Implementation alignment.
 
 ### 1.1 Historical implementation checkpoints
 
@@ -145,9 +145,9 @@ The resolved Creation target makes reuse a first-order implementation constraint
 
 Quick Capture is only a title-first Obsidian-wide entry into the standard Triage Composer. It performs no mutation before the full Composer's Create action. V1 deliberately does not add saved Drafts or Create-more. Home's creation affordance is one `+` menu over Triage/Issue/Project/Initiative; Projects Root keeps a Linear-style primary New Project affordance with secondary Initiative creation.
 
-The resolved Triage target reuses the existing Triage Domain/Data carrier, standard Create Issue/Create Project use cases, Source Transition safety, the shared simplified Filter direction, shared property primitives, and shared menu/selection mechanisms. Triage page semantics and its creation/Accept composition are resolved, while the cross-surface simplified Filter grammar and shared interaction system remain part of the final V1 UI closure. Triage does not justify a TriageItem entity, Triage-specific create form, Snooze state, or second filter system.
+The resolved Triage target reuses the existing Triage Domain/Data carrier, standard Create Issue/Create Project use cases, Source Transition safety, the resolved shared Filter grammar, shared property primitives, and shared menu/selection mechanisms. Triage page semantics, creation/Accept composition, and its `Due / Priority / Labels` Filter registry are resolved; the broader shared interaction system remains part of the final V1 UI closure. Triage does not justify a TriageItem entity, Triage-specific create form, Snooze state, or second filter system.
 
-The resolved Cycle target similarly reuses the existing Cycle Domain/Data carrier and runtime indexes plus the shared Workflow Issue collection, simplified Filter direction, List/Board components, Issue Row/Card, selection/context interactions, Project capability projection, and Inspector primitives. Cycle page semantics are resolved, while the cross-surface Filter and interaction grammar remains part of the final V1 UI closure. It does not justify an Issue-side `cycleId`, future-Cycle model, automatic cadence/rollover engine, Cycle-specific Status workflow, analytics snapshot history, per-membership timestamps, or second Board/Filter implementation.
+The resolved Cycle target similarly reuses the existing Cycle Domain/Data carrier and runtime indexes plus the shared Workflow Issue collection, resolved shared Filter grammar, List/Board components, Issue Row/Card, selection/context interactions, Project capability projection, and Inspector primitives. Current/Historical Cycle use `Status / Project / Priority / Milestone / Labels / Due / Estimate`; Project Workspace intentionally has no Cycle Filter and instead marks Current Cycle membership on its Row/Card. The broader shared interaction system remains part of the final V1 UI closure. Cycle does not justify an Issue-side `cycleId`, future-Cycle model, automatic cadence/rollover engine, Cycle-specific Status workflow, analytics snapshot history, per-membership timestamps, or second Board/Filter implementation.
 
 ## 4. Changes
 
@@ -155,7 +155,7 @@ The resolved Cycle target similarly reuses the existing Cycle Domain/Data carrie
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Project Workspace/Projects Root are substantially resolved, and Triage, Cycle, and Creation Surface design are resolved at the interaction-semantic level. Gate 8 should **not yet treat the entire V1 UI as frozen**: the remaining bounded UI-design closure now starts with the simplified shared Filter, then shared interactions, Initiative Focus composition, Home/Search, runtime feedback states, and a Default Project setter. Formal shell/page implementation alignment follows that closure.
+Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Project Workspace/Projects Root are substantially resolved, and Triage, Cycle, Creation Surface, and simplified shared Filter design are resolved at the interaction-semantic level. Gate 8 should **not yet treat the entire V1 UI as frozen**: the remaining bounded UI-design closure now starts with shared interactions, then Initiative Focus composition, Home/Search, runtime feedback states, and a Default Project setter. Formal shell/page implementation alignment follows that closure, together with the lower-layer Estimate model correction exposed by this design checkpoint.
 
 ### 4.2 Required Workflow Project & Default Project slice
 
@@ -286,19 +286,22 @@ The corrective slice was published at `b3b541b21d06af86b79f9bd718d9a317090596b0`
 
 ### 4.4 Current verified gaps
 
-With Required Workflow Project & Default Project and Project Status Four-State Configuration Closure published, and Project Workspace/Projects Root, Triage, Cycle, and Creation Surface semantics resolved, the remaining verified gaps are grouped as follows:
+With Required Workflow Project & Default Project and Project Status Four-State Configuration Closure published, and Project Workspace/Projects Root, Triage, Cycle, Creation Surface, and simplified shared Filter semantics resolved, the remaining verified gaps are grouped as follows:
 
-- **remaining V1 UI design-closure gaps** — one simplified shared Filter grammar; Selection/Bulk/Context Menu/Command Menu/keyboard interaction principles; Initiative Focus multi-Project composition; the rest of Home; Search; runtime/loading/refreshing/read-only/pending/failure feedback; and a lightweight Default Project setter;
-- **formal UI implementation gaps after UI freeze** — shell, Location Bar/View Bar, shared Creation Composer and invocation surfaces, Project/Initiative composition, Triage queue/review, Current/Historical Cycle composition, shared interactions, density, responsive behavior, and visual calibration must then be aligned with the final `ui.md`;
+- **canonical Estimate alignment gap** — target Domain/Data now use fixed T-Shirt Estimate levels `S/M/L/XL` (`small/medium/large/xlarge`) plus Workspace-configured aggregation weights with V1 defaults `1/2/5/10`; current code still models `TrailEstimate` as a number and current Configuration has no Estimate-weight mapping, so Domain model/validation, physical schema/codecs, Plugin Data Configuration, derived Effort query, fixtures/tests, and property/filter UI must be corrected coherently rather than adding a UI-only translation;
+- **remaining V1 UI design-closure gaps** — Selection/Bulk/Context Menu/Command Menu/keyboard interaction principles; Initiative Focus multi-Project composition; the rest of Home; Search; runtime/loading/refreshing/read-only/pending/failure feedback; and a lightweight Default Project setter;
+- **formal UI implementation gaps after UI freeze** — shell, Location Bar/View Bar, shared Creation Composer and invocation surfaces, the resolved shared Filter/session-state mechanism, Project/Initiative composition, Triage queue/review, Current/Historical Cycle composition, shared interactions, density, responsive behavior, and visual calibration must then be aligned with the final `ui.md`;
 - **explicitly deferred conveniences** — Custom Views, Favorites, and the future Workspace Issues collection do not block the V1 UI freeze or current implementation plan.
 
 Creation Surface design is resolved but **not claimed implemented**. Target UI uses one shared Linear-inspired Composer infrastructure for Triage, Workflow Issue, Project, and Initiative creation. Quick Capture is a title-first Obsidian-wide entry that opens the full Triage Composer before any mutation. Home has one `+` menu over Triage/Issue/Project/Initiative; Projects Root keeps a Linear-style primary New Project action and secondary Initiative creation. Issue Project is an explicit required relation that may be context-prefilled but remains editable; normal-width Issue creation directly exposes Priority/Labels/Milestone/Estimate/Due. Workflow Status and Cycle are absent from Issue creation, Project Status is absent from Project creation, and Initiative has no Status. V1 has no saved Draft/Create-more. Illegal creation and relation targets are capability-gated before normal completion where possible, while Domain/Application remain the final submit-time authority.
 
+Simplified shared Filter design is resolved but **not claimed implemented**. One shared interaction owns `Filter → Property → Value(s)`, immediate application, one clause per property, discrete-value OR within a property, AND across properties, nullable `No …` pseudo-values, and Due cutoff presets (`Overdue`, `Today`, `This week`, `This month`, optional `No due`, `Pick date…`). Applied clauses remain directly editable/clearable in the View Bar. State is location-scoped, session-only UI runtime state: it may survive navigation within one Trail session but is not canonical Runtime, Markdown, Plugin Data, Workspace State, or Custom View persistence. Project Workspace uses `Status / Priority / Milestone / Labels / Due / Estimate` with no Cycle Filter; Current Cycle membership is a compact default Row/Card marker there. Projects Root, Current/Historical Cycle, and Triage consume the registries frozen in `ui.md`.
+
 The current implementation diverges materially from that target: Navigation Capture currently navigates to Triage rather than providing the title-first global launcher; Triage capture and several Project/Issue/Initiative create paths use old inline/title-only forms; Triage Accept still has old direct action/select plumbing; and current Application create methods expose narrower title-only command shapes before separate property edits. These are implementation gaps/evidence, not authority, and should be replaced through shared Composer/property primitives rather than preserved as parallel stacks.
 
-Triage's page-specific target interaction is resolved: it is a Linear-inspired intake/review queue with all active entries browseable, a derived seven-day/minimum-10 Review Set, a narrow property registry over Review Due/Priority/Labels, constrained Display ordering, sequential Review Surface, Accept→Issue/Project using the normal creation flows with title/body prefill only, Defer as review-Due movement, and Delete rather than a persisted Discard concept. The shared simplified Filter interaction and shared Selection/Command/feedback grammar still need one cross-surface closure. This is **design authority**, not a claim that the current implementation already matches it.
+Triage's page-specific target interaction is resolved: it is a Linear-inspired intake/review queue with all active entries browseable, a derived seven-day/minimum-10 Review Set, a narrow Filter registry over Due/Priority/Labels, constrained Display ordering, sequential Review Surface, Accept→Issue/Project using the normal creation flows with title/body prefill only, Defer as review-Due movement, and Delete rather than a persisted Discard concept. The shared Filter interaction is now resolved; Selection/Command/feedback grammar still needs the remaining cross-surface closure. This is **design authority**, not a claim that the current implementation already matches it.
 
-Cycle's page-specific target interaction is also resolved. Current Cycle is a Cycle-owned `issueIds` scope over the shared Workflow Issue collection, defaults to the normal execution Board with Project swimlanes, supports the complete List, uses the shared simplified Filter direction with a Cycle-specific property registry, keeps membership independent from Issue lifecycle/Project facts, and derives Progress/Effort from current member facts. Start/Close/Next are explicit; there are no future Cycles, automatic cadence/rollover, Issue-side Cycle field, or history snapshots. Historical Cycle is final membership shown as a flat List over current Issue projections. The cross-surface Filter/interaction grammar remains part of the final V1 UI closure.
+Cycle's page-specific target interaction is also resolved. Current Cycle is a Cycle-owned `issueIds` scope over the shared Workflow Issue collection, defaults to the normal execution Board with Project swimlanes, supports the complete List, consumes the resolved shared Filter grammar with its Cycle property registry, keeps membership independent from Issue lifecycle/Project facts, and derives Progress/Effort from current member facts and configured Estimate weights. Start/Close/Next are explicit; there are no future Cycles, automatic cadence/rollover, Issue-side Cycle field, or history snapshots. Historical Cycle is final membership shown as a flat List over current Issue projections. The remaining cross-surface work is the broader interaction/feedback system, not another Filter grammar.
 
 Initiative Focus is no longer considered fully frozen by the older Project-summary List/Timeline text. The working direction is a multi-Project project-like workspace that should strongly reuse the same shared Issue collection mechanics used by Project Workspace and Current Cycle; the exact Board/List/project-context composition must be confirmed before V1 UI freeze.
 
@@ -309,14 +312,13 @@ Required Workflow Project & Default Project, Project Status Four-State Configura
 Continue the bounded design pass before comprehensive Formal UI Implementation:
 
 ```text
-1. simplified shared Filter
-2. Selection / Bulk / Context Menu / Command Menu / keyboard interaction principles
-3. Initiative Focus multi-Project composition
-4. Home + Search
-5. runtime / Data Issue / optimistic-feedback states
-6. Default Project setter
-7. freeze V1 ui.md
-8. formal UI implementation closure
+1. Selection / Bulk / Context Menu / Command Menu / keyboard interaction principles
+2. Initiative Focus multi-Project composition
+3. Home + Search
+4. runtime / Data Issue / optimistic-feedback states
+5. Default Project setter
+6. freeze V1 ui.md
+7. formal UI implementation closure
 ```
 
 Custom Views and Favorites are explicitly deferred and should not consume this closure. The future Workspace Issues collection remains deferred as well.
@@ -356,8 +358,10 @@ Product responsibilities
    ├─ Triage UI design closure                          RESOLVED PAGE DESIGN
    ├─ Cycle UI design closure                           RESOLVED PAGE DESIGN
    ├─ Creation Surface design closure                   RESOLVED DESIGN
+   ├─ Simplified shared Filter design closure           RESOLVED DESIGN
+   ├─ Estimate T-Shirt model alignment                  REQUIRED TARGET GAP
    ├─ remaining V1 UI design closure                    NEXT
-   │  ├─ simplified Filter + shared interactions
+   │  ├─ shared interactions
    │  ├─ Initiative Focus multi-Project composition
    │  ├─ Home + Search + runtime feedback
    │  └─ Default Project setter
@@ -385,7 +389,7 @@ Completed Gate 8 implementation slices at the current documented baseline includ
 - Required Workflow Project & Default Project;
 - Project Status Four-State Configuration Closure.
 
-Triage, Cycle, and Creation Surface design closures are not listed as completed implementation slices because those documentation checkpoints freeze target semantics rather than implementation. Their shared Filter/interaction consumers and formal UI implementation still depend on the remaining V1 UI closure before the whole UI authority is considered frozen.
+Triage, Cycle, Creation Surface, and Simplified shared Filter design closures are not listed as completed implementation slices because those documentation checkpoints freeze target semantics rather than implementation. Their shared Filter/interaction consumers and formal UI implementation still depend on the remaining V1 UI closure before the whole UI authority is considered frozen. The Estimate T-Shirt decision is likewise target authority, not an implemented lower-layer checkpoint yet.
 
 A previously completed lower-layer owner may be edited during a later slice when an upstream canonical model changes. That does not create a second implementation track or erase earlier evidence.
 
@@ -473,6 +477,6 @@ For each active Gate 8 slice:
 
 ## 7. Final State
 
-V1 implementation is ready for final product hardening only after the already-resolved Creation Surface plus the remaining simplified shared Filter, shared interaction/feedback grammar, Initiative Focus, Home/Search, and Default Project setter answers are frozen together in `ui.md`, and those answers are then implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions. The model must continue to contain no normal-runtime Projectless Workflow state; the Default Project remains only an ordinary Project reference/default UI target; Status Configuration preserves the global semantic vocabulary while enforcing entity-specific applicability; Creation/Triage/Cycle composition reuses shared interaction/query/UI mechanisms without new authority models; deferred Custom Views/Favorites do not leak speculative implementation into V1; dependency gates are coherent; and automated plus representative real-host verification is green for the integrated product.
+V1 implementation is ready for final product hardening only after the already-resolved Creation Surface and simplified shared Filter plus the remaining shared interaction/feedback grammar, Initiative Focus, Home/Search, and Default Project setter answers are frozen together in `ui.md`, the fixed T-Shirt Estimate model/configured-weight target is aligned through its lower-layer owners, and those answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions. The model must continue to contain no normal-runtime Projectless Workflow state; the Default Project remains only an ordinary Project reference/default UI target; Status Configuration preserves the global semantic vocabulary while enforcing entity-specific applicability; Filter state remains session-only UI state; Creation/Triage/Cycle composition reuses shared interaction/query/UI mechanisms without new authority models; deferred Custom Views/Favorites do not leak speculative implementation into V1; dependency gates are coherent; and automated plus representative real-host verification is green for the integrated product.
 
 `README.md` remains an entry point. This file owns the active construction stage, execution baseline, current verified gaps, build order, and verification evidence. Historical checkpoint behavior is retained as evidence even when a later upstream design decision supersedes its target semantics.

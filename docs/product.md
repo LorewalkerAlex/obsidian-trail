@@ -49,7 +49,7 @@ Templates, recurring creation, integrations, inbox-like information surfaces, Cu
 
 ### 3.1 Workspace
 
-Workspace is the single personal Trail boundary. It owns workflow definitions, Label definitions, defaults, shared temporal settings, Saved Views, Favorites, and Home configuration. It is not a normal user-created work item.
+Workspace is the single personal Trail boundary. It owns workflow definitions, Label definitions, Estimate weights, defaults, shared temporal settings, Saved Views, Favorites, and Home configuration. It is not a normal user-created work item.
 
 ### 3.2 Initiative
 
@@ -134,13 +134,13 @@ Cycle membership itself is intentionally permissive: any Workflow Issue may be s
 
 - **Status** expresses workflow lifecycle. Issue and Project Status definitions are configured separately. Issues support all five system StatusCategories; Projects support all except Backlog.
 - **Priority** expresses relative importance: Urgent, High, Medium, Low, or unset.
-- **Estimate** is an ordinal work-size value for Issues, not a duration.
+- **Estimate** is a fixed T-Shirt work-size level for Issues: S, M, L, or XL. The level is the canonical Issue fact and is not a duration. Workspace Configuration maps the fixed levels to numeric aggregation weights; V1 defaults are S=1, M=2, L=5, XL=10, and changing those weights does not rewrite an Issue's Estimate level.
 - **Due** is the canonical time target/attention fact. Context determines how it is presented.
 - **Labels** are structured Workspace classification. Label Groups can express single-choice dimensions such as Area or multi-choice dimensions such as Technology.
 
 ### 3.10 Filters and deferred workspace conveniences
 
-A Filter is a temporary read configuration used by the supported V1 workspaces. Trail intentionally favors a simpler product-specific filter interaction over importing Linear's advanced filter/view-builder behavior.
+A Filter is a temporary read configuration used by the supported V1 workspaces. Filter state is location-scoped, session-only UI state: it survives ordinary in-session presentation changes and returning to the same location, but it is not Domain Data, synchronized Workspace State, or a saved View. Trail intentionally favors a simpler product-specific filter interaction over importing Linear's advanced filter/view-builder behavior. Ordinary discrete properties use selected values as an OR set, different property clauses combine as AND, and no selected value means that property does not filter the collection.
 
 Custom Views and Favorites remain valid future workspace-state concepts, but their user-facing V1 interaction and navigation are deferred. They do not need to be implemented or used to shape current sidebar composition before a later product/UI closure explicitly reactivates them.
 
@@ -312,7 +312,7 @@ Current Cycle Progress uses the same Completed/non-Canceled formula as Project P
 
 ```text
 Cycle Progress = Completed / (all current members except Canceled)
-Cycle Effort   = sum(current Estimate of every member whose Estimate is present)
+Cycle Effort   = sum(configured weight for each member whose Estimate is present)
 ```
 
 These values are current projections, not stored Cycle analytics or close-time snapshots.

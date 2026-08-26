@@ -15,7 +15,7 @@ Trail uses the following canonical terms.
 - **StatusCategory** — the fixed system semantic categories Backlog, Unstarted, Started, Completed, Canceled.
 - **StatusDefinition** — a configurable named status with stable identity, applicable to Projects or Issues only in categories legal for that entity type.
 - **Priority** — Urgent, High, Medium, Low, or unset.
-- **Estimate** — a discrete ordinal Issue work-size value, not elapsed time or duration.
+- **Estimate** — a fixed T-Shirt Issue work-size level: S, M, L, or XL; it is ordinal relative size, not elapsed time or duration.
 - **Due** — a canonical user-set time target/attention fact.
 - **LabelGroup** — a Workspace classification dimension with Single or Multiple selection semantics.
 - **Label** — a selectable value belonging to exactly one LabelGroup.
@@ -35,6 +35,7 @@ Workspace owns:
 
 - Project and Issue Status definitions/defaults/order;
 - LabelGroups, Labels, and registrations;
+- Estimate aggregation weights for the fixed T-Shirt levels;
 - Cycle default planning rule;
 - temporal/timezone policy;
 - Custom Views, Favorites, Home composition, and the optional Default Project reference.
@@ -159,6 +160,8 @@ A Cycle does not own a title, workflow Status, Project relation, manual Progress
 
 StatusDefinition, LabelGroup, and Label have stable reference identity because Core Domain Data and workspace state may reference them. Their old versions do not have the same business-history continuity requirement as Core Entities.
 
+The V1 Estimate vocabulary and ordering are fixed: `S < M < L < XL` (Small, Medium, Large, Extra Large). Workspace Configuration owns only the numeric aggregation weight assigned to each level. V1 defaults are `S=1`, `M=2`, `L=5`, and `XL=10`. Changing those weights changes derived numeric aggregates such as Cycle Effort but does not reinterpret or rewrite the canonical Estimate level stored on any Issue.
+
 Configuration changes still must preserve the legality of the current canonical graph.
 
 ### 2.9 Domain values
@@ -166,7 +169,7 @@ Configuration changes still must preserve the legality of the current canonical 
 The main Domain Values are:
 
 - Priority;
-- Estimate;
+- Estimate level (`S | M | L | XL`);
 - Due Timestamp;
 - StatusCategory;
 - LabelGroup selection mode.
@@ -351,7 +354,9 @@ Trail does not retain a complete Issue transition/event history.
 
 Estimate may be absent while an Issue is non-Completed.
 
-An Issue in Completed must have a legal Estimate. While it remains Completed the Estimate may change to another legal value but may not be cleared.
+A present Estimate is exactly one fixed T-Shirt level: S, M, L, or XL. The level is the canonical Issue fact; its configured numeric weight is not stored on the Issue.
+
+An Issue in Completed must have a legal Estimate level. While it remains Completed the Estimate may change to another legal level but may not be cleared. Changing Workspace Estimate weights does not change whether an existing Estimate is legal.
 
 ### 4.7 Project lifecycle transitions
 
@@ -482,7 +487,7 @@ The following must always hold:
 4. Triage Issue has no normal StatusDefinition, has required Due, has no Project or Milestone relationship, and has no Workflow `createdAt`.
 5. Workflow Issue has a valid StatusDefinition, exactly one valid Project, and required immutable `createdAt`; Workflow Due is optional.
 6. Workflow Issue Milestone, when present, belongs to the same Project as the Issue.
-7. Completed Issue has an Estimate.
+7. Completed Issue has one legal Estimate level from S, M, L, or XL.
 8. New normal Workflow Issues begin in Backlog.
 9. Unstarted Projects accept new/moved-in Issue membership only for Backlog Issues.
 10. Completed/Canceled Projects accept no new Issue membership under the normal workflow capability rules.
@@ -529,7 +534,7 @@ Examples:
 - Triage Accept = normal target creation + source removal after target establishment;
 - Due Soon / Overdue / Reminder = derived temporal capability;
 - Project/Milestone/Cycle Progress = current relationship/membership + lifecycle aggregation;
-- Cycle Effort = sum of present current member Estimates;
+- Cycle Effort = sum of configured weights for present current member Estimate levels;
 - Project Attention/Health = explainable current facts + temporal/context evidence;
 - actual activity timeline = Issue lifecycle aggregation;
 - Home summaries / Current Cycle / Triage / Projects / Custom Views = read selection/presentation;
@@ -551,6 +556,7 @@ V1 Canonical Domain does not include:
 - Standalone/System Project subtype, role flag, or special Project lifecycle;
 - Initiative/Milestone workflow Status;
 - generic manual Progress/Health/Attention facts;
+- configurable/custom Estimate vocabularies or per-Issue numeric Estimate weights;
 - Cycle capacity/velocity/success facts or Issue-state snapshots;
 - future/upcoming Cycle records;
 - Project Backlog lifecycle category;
@@ -604,10 +610,10 @@ Milestone derived completion is true only when its effective Issue scope is non-
 Cycle Effort is a separate live aggregate and does not weight Progress:
 
 ```text
-effort = sum(issue.estimate for every current Cycle member where estimate is present)
+effort = sum(configuredWeight(issue.estimate) for every current Cycle member where estimate is present)
 ```
 
-Every member with a present Estimate contributes regardless of Backlog/Unstarted/Started/Completed/Canceled Status. Members without Estimate contribute nothing. Effort is derived from the current member Issues and is not persisted as a Cycle fact or close-time snapshot.
+Every member with a present Estimate contributes its current configured weight regardless of Backlog/Unstarted/Started/Completed/Canceled Status. Members without Estimate contribute nothing. The T-Shirt level remains the Issue fact while its numeric weight is current Workspace Configuration, so changing the weight mapping changes the live Effort projection without rewriting Issue records. Effort is not persisted as a Cycle fact or close-time snapshot.
 
 Initiative progress/completion remains derived from current Project relationships/state. Because V1 does not retain complete relationship history, moving an Issue or Project changes which current parent scope receives that work's contribution. This is intentional current-scope semantics.
 

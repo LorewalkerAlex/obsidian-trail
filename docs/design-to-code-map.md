@@ -30,12 +30,14 @@ Representative mappings:
 | Delete Project | child Workflow Issues require an explicit legal replacement Project; old Project Milestones removed; Default Project reference cleared when applicable | semantic multi-entity plan + Integrity Batch | `domain/planning`, `application/projects`, `query`, `mutation`, `source-sync` | planner + materialization/execution + representative host |
 | Projects Root / Initiative Focus | Project→Initiative relation + derived summaries/activity; Initiative Focus final aggregate presentation still pending UI closure | Projects Root Project collection + pending multi-Project Initiative workspace composition | `query`, `ui/pages/projects`, reusable Project/Issue collection/filter/board/timeline components as the final consumer requires | query + UI |
 | Project Workspace Board/List | same Project Issue set, Status presentation; Default Project is not a separate workspace kind | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
+| Shared collection Filter | supported collection facts + location-scoped session-only UI Filter state; no persisted query/view object | shared property/value filter projection + reusable popover/applied-clause interaction; discrete values OR within a property, properties AND, Due uses cutoff semantics | `query`, shared `ui/interactions` / `ui/patterns`, page registry consumers | query semantics + shared UI interaction |
+| Estimate level / weight mapping | Issue Estimate is fixed T-Shirt `S/M/L/XL`; Workspace Configuration maps levels to numeric weights, default `1/2/5/10` | canonical enum validation/persistence + configuration lookup + weighted derived aggregation | `domain/model`, `domain/validation`, `markdown/schema` / codecs, `persistence/plugin-data`, `query/derived`, shared property/filter UI | domain/data/config + derived query + UI |
 | Milestone management | Project-scoped Milestone + same-Project Workflow Issue relation | semantic plans + same-source/Integrity operations | `domain/planning`, `application/milestones`, shared mutation | planner + application + UI |
 | Initiative organization | Project→Initiative relation; derived Initiative progress | semantic plans + derived query | `domain/planning`, `application/initiatives`, `query` | planner + query + UI |
 | Current Cycle Issue collection | Open Cycle `issueIds` + live Workflow Issue facts; Issue records have no Cycle field | Cycle selector + shared Issue Filter/List/Board presentation + runtime membership indexes | `query`, `ui/pages/cycles`, reusable `ui/entities` / `ui/interactions` | query + UI |
 | Current Cycle membership | Open Cycle owns membership; membership is independent of Issue Status/Project/etc. | semantic add/remove plans + entry-point-specific candidate selectors | `domain/planning`, `application/cycles`, `query`, shared selection/context actions | planner + application + query/UI |
 | Cycle lifecycle | at most one Open Cycle; explicit start/close; Closed membership frozen; next-Cycle candidates are derived from previous members' current non-terminal state | semantic plans + current-Cycle selector + candidate derivation | `domain/planning`, `application/cycles`, `query`, `ui/pages/cycles` | planner + application + query/UI |
-| Cycle Progress / Effort | Progress uses Completed / non-Canceled current members; Effort sums present current member Estimates regardless of Status | reusable derived aggregation over Cycle membership | `query/derived`, `ui/pages/cycles`, Cycle Inspector composition | query + UI |
+| Cycle Progress / Effort | Progress uses Completed / non-Canceled current members; Effort sums the current configured weight of each present member T-Shirt Estimate regardless of Status | reusable derived aggregation over Cycle membership + Estimate weight Configuration | `query/derived`, `ui/pages/cycles`, Cycle Inspector composition | query + UI |
 | Historical Cycle | Closed Cycle final `issueIds` + current live Workflow Issue fields; no Issue/Status/Estimate snapshot | closed-Cycle selectors + flat List projection | `query`, `ui/pages/cycles`, reusable Issue Row/filter primitives | query + UI |
 | Labels and Status configuration | configuration definitions + reference integrity | configuration plans + Integrity Batch as needed | `domain/model`, `domain/validation`, `application/configuration`, `mutation` | validation + mutation + application |
 | Home | derived facts from same Runtime; Home creation adds no new Domain semantics | shared/page-specific selectors + modules + shared `+` creation menu invoking standard Composers | `query`, `ui/pages/home`, shared creation `ui/interactions` | query + UI |
@@ -44,7 +46,9 @@ Representative mappings:
 
 Creation does not introduce a second domain model or a page-specific stack. Triage, Issue, Project, and Initiative creation share one Composer infrastructure and the same lower-level property/menu/focus primitives; invocation context supplies only initial UI state and never bypasses canonical target legality. Quick Capture is only a title-first entry into the Triage Composer. V1 does not introduce a persisted Draft entity, Create-more semantics, or pre-Create mutation.
 
-Cycle UI does not introduce another work-item model, Board engine, Filter grammar, or snapshot subsystem. It composes the existing Cycle record and runtime membership indexes with shared Issue collection/query/UI capabilities. Cycle-level discovery may intentionally narrow candidates by entry-point context without turning that narrowing into a Domain membership invariant. The shared Filter owner is intentionally a simplified Trail interaction rather than a clone of Linear's advanced filter/view-builder capability.
+Cycle UI does not introduce another work-item model, Board engine, Filter grammar, or snapshot subsystem. It composes the existing Cycle record and runtime membership indexes with shared Issue collection/query/UI capabilities. Cycle-level discovery may intentionally narrow candidates by entry-point context without turning that narrowing into a Domain membership invariant.
+
+The shared Filter grammar is now resolved once across Projects Root, Project Workspace, Triage, Current Cycle, and Historical Cycle. Pages supply only their supported property registry and collection scope. Filter clauses are location-scoped session-only UI state, not canonical Runtime or persistence; Project Workspace does not add a redundant Cycle filter, and Current Cycle membership is surfaced there through the shared Row/Card marker instead. No consumer may reintroduce a page-local boolean builder, hidden quick-filter state, or persisted Filter object to implement this V1 behavior.
 
 Initiative Focus remains owned by the existing Projects/query/UI boundaries, but its final multi-Project working composition is part of the remaining V1 UI closure. No new domain or persistence model should be introduced merely to resolve that presentation. Custom Views and Favorites are deferred and therefore create no V1 implementation obligation until a later product/UI closure reactivates them.
 
@@ -58,7 +62,7 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 
 | Capability | Inputs / dependencies | Owner |
 |---|---|---|
-| Core entity/config/workspace-state contracts, including `defaultProjectId?` | Product + Domain | `domain/model` |
+| Core entity/config/workspace-state contracts, including fixed Estimate levels, Estimate weight Configuration, and `defaultProjectId?` | Product + Domain | `domain/model` |
 | Value and state rules | Domain | `domain/rules` |
 | Field/domain/reference/workspace validation | Domain + Configuration + Workspace State | `domain/validation` |
 | Pure semantic mutation planning | validated planning state + normalized command | `domain/planning` |
@@ -88,6 +92,10 @@ Normal runtime has no `Projectless Issues` path, source kind, codec, or reposito
 
 Creation adds no draft persistence path. An unfinished Composer is UI state only and closing it writes nothing.
 
+Filter adds no persistence path either. Active clauses live only in location-scoped UI session state; they are not written to Markdown, Plugin Data, Workspace State, Custom Views, or the committed/effective canonical Runtime store.
+
+Issue persistence stores the fixed Estimate level (`small | medium | large | xlarge`), while Plugin Configuration stores the numeric weight for each fixed level. A weight change does not rewrite Issue Markdown. Legacy numeric Estimate persistence, if retained, requires explicit one-way migration rather than dual normal-runtime parsing.
+
 Cycle persistence remains the existing Cycle record with `issueIds`; no Issue `cycleId`, Cycle analytics snapshot, per-membership timestamp, future-Cycle carrier, or second history store is introduced by the UI closure.
 
 ### 2.3 Mutation and runtime capabilities
@@ -114,7 +122,7 @@ Cycle persistence remains the existing Cycle record with `issueIds`; no Issue `c
 | External authoritative refresh | managed host events + loader + Runtime | `source-sync/refresh` |
 | Effective/query helpers | Runtime + temporal/config/workspace context | `query/shared` |
 | Legal Project target/default-candidate selection | Effective Runtime + Workspace State + Project/Issue capability | `query` |
-| Derived calculations | Domain facts + temporal/config context | `query/derived` |
+| Derived calculations, including configured Estimate-weight aggregation | Domain facts + temporal/config context | `query/derived` |
 | Product page selectors | shared query + product page needs | `query` page-specific modules |
 | User use cases | Domain/Query/Mutation contracts | `application/<business-area>` |
 | Create-time similarity guard | effective Runtime + text/relation signals | `application/similarity` plus query/helper logic |
@@ -135,6 +143,7 @@ Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain 
 | Trail navigation + Default Project shortcut | UI Design + Workspace State/query + stable Project route | `ui/shell` |
 | Stable entity presentation | UI Design + entity IDs + effective Runtime selection | `ui/entities` |
 | Shared Creation Composer / transient create UI state | UI Design + Query capability/defaults + target Application intents | `ui/interactions`, `ui/patterns` |
+| Shared collection Filter / location-scoped session state | UI Design + page registry + Query filter semantics | `ui/interactions`, `ui/patterns`, `query` |
 | Shared property controls / pickers / compact property grammar | UI Design + reusable entity property presentation | `ui/primitives`, `ui/patterns` |
 | Reusable interactions | UI Design + UI state + Application intents | `ui/interactions` |
 | Reusable visual primitives/patterns | UI Design + design-system tokens | `ui/primitives`, `ui/patterns`, `ui/design-system` |
@@ -182,6 +191,7 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Navigation and stable Project shortcut routing | `plugin/src/ui/shell/` | Project entity model or persistence filenames |
 | Entity components | `plugin/src/ui/entities/` | page-specific copies |
 | Shared Creation Composer and create-state orchestration | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/` | page-local inline/modal create stacks |
+| Shared collection Filter grammar and session state | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/`, `plugin/src/query/` | page-private filter engines, hidden quick-filter state, or `runtime/store` canonical entity state |
 | Shared property controls and pickers | `plugin/src/ui/primitives/`, `plugin/src/ui/patterns/` | per-page property widgets |
 | Shared interactions | `plugin/src/ui/interactions/` | per-page duplicated command/selection mechanics |
 | Visual primitives/patterns/design tokens | `plugin/src/ui/primitives/`, `patterns/`, `design-system/` | ad hoc per-page systems |

@@ -17,6 +17,7 @@ A. Domain Data
 B. System / Domain Configuration
 ├─ Status definitions, defaults, and ordering
 ├─ LabelGroups, Labels, and registrations
+├─ Estimate weights for the fixed T-Shirt levels
 ├─ Cycle default planning rule
 └─ temporal/timezone policy
 
@@ -38,6 +39,8 @@ Logical temporal fields use one `Timestamp` concept. Physical persistence encode
 Optional values are absent when not set rather than persisted as `null` unless a specific carrier requires a different representation.
 
 Logical sets have no business ordering unless explicitly stated. Their physical array representation is serialized deterministically.
+
+Logical `Estimate` is a fixed enum `Small | Medium | Large | XLarge`, presented as `S | M | L | XL`. Domain Markdown serializes those levels as stable lowercase keywords `small | medium | large | xlarge`; numeric aggregation weights are Configuration and are never serialized into `Issue.estimate`.
 
 ### 1.2 Initiative record
 
@@ -228,9 +231,16 @@ LabelRecord {
 
 Label does not duplicate group selection mode or applicability. Usage count is derived and is not persisted.
 
-### 1.9 Cycle and temporal configuration
+### 1.9 Estimate, Cycle, and temporal configuration
 
 ```text
+EstimateWeightConfig {
+  small: PositiveNumber
+  medium: PositiveNumber
+  large: PositiveNumber
+  xlarge: PositiveNumber
+}
+
 CycleConfig {
   defaultEndRule: EndOfNextWeek
 }
@@ -240,6 +250,8 @@ TemporalConfig {
   presentation / calendar / notification policies
 }
 ```
+
+V1 Estimate weights default to `small=1`, `medium=2`, `large=5`, and `xlarge=10`. The four keys and their ordinal order are fixed product semantics; Configuration may change only the numeric weights. Weight changes affect live derived numeric aggregates and do not rewrite Issue records.
 
 `EndOfNextWeek` uses Monday-Sunday calendar weeks and suggests the Sunday of the natural week after the start's current week. The selected concrete `plannedEnd` is persisted on the Cycle.
 
@@ -354,7 +366,7 @@ A configuration mutation is complete only when all affected Domain Data and Work
 
 Changing a Status name/default/order does not reinterpret existing Entity IDs. Removing or semantically changing a referenced definition requires reference resolution.
 
-Project configuration cannot introduce a Project StatusDefinition in Backlog; Issue configuration continues to require Backlog definitions/defaults because every new Workflow Issue begins there.
+Project configuration cannot introduce a Project StatusDefinition in Backlog; Issue configuration continues to require Backlog definitions/defaults because every new Workflow Issue begins there. Estimate Configuration must retain exactly one valid numeric aggregation weight for each fixed T-Shirt level; changing a weight does not reinterpret the enum level stored on an Issue.
 
 ### 3.3 User Workspace State
 
@@ -381,7 +393,7 @@ The following are rebuildable and are not authoritative persistence:
 - optimistic/pending state;
 - source ownership/indexes;
 - source health and diagnostics;
-- local selection, hover, drag state, modal drafts, and other ephemeral UI state.
+- local selection, hover, drag state, modal drafts, location-scoped Filter state, and other ephemeral UI state.
 
 Derived values may be cached/materialized for performance, but the cache never becomes a second source of truth.
 
@@ -650,6 +662,8 @@ File-backed Initiative/Project IDs live in frontmatter and are not repeated in t
 
 Conditional Domain requiredness is not misrepresented as unconditional physical requiredness. In the shared Issue grammar, `statusDefinitionId` and `projectId` remain structurally optional because Triage and Workflow records share one physical record kind; Domain validation requires both for Workflow context and forbids Project/Milestone relationships for Triage context.
 
+`estimate`, when present, serializes the stable T-Shirt enum keyword (`small`, `medium`, `large`, or `xlarge`), never the current numeric aggregation weight.
+
 No physical Project carrier field changes are required for the four-state lifecycle because `statusDefinitionId` already references configuration; legality is validated through the referenced Project StatusDefinition category.
 
 ### 4.12 Optional values and set serialization
@@ -675,7 +689,7 @@ Logical top level:
 }
 ```
 
-Configuration conceptually contains statuses, labels, cycle settings, and temporal settings. Workspace state contains optional `defaultProjectId`, Custom Views, Favorites, and Home state.
+Configuration conceptually contains statuses, labels, Estimate weights, cycle settings, and temporal settings. Workspace state contains optional `defaultProjectId`, Custom Views, Favorites, and Home state.
 
 Within Status persistence, fixed hierarchy (`issue/project` → applicable category) may encode entity type/category context so individual definition entries need not repeat those fields. Definition IDs remain opaque and stable. Project status persistence has no Backlog category branch.
 
@@ -755,7 +769,7 @@ How much of the product remains writable under a known Data Issue is an Architec
 
 `data.json` is referenced by Domain records, so invalid configuration is not silently replaced with fresh defaults.
 
-Configuration/Workspace State load or update must reject states that would leave missing/invalid Status, Label, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog.
+Configuration/Workspace State load or update must reject states that would leave missing/invalid Status, Label, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog and rejecting an Estimate weight configuration that omits a fixed T-Shirt level or provides a non-positive/non-finite weight.
 
 `defaultProjectId` is intentionally softer at destructive failure edges. A missing referenced Project is observable workspace/reference damage, but it is not a hard Domain-graph-invalid condition: Query/navigation resolve the missing Default as absent, while a successful explicit Project delete clears `defaultProjectId` in the final Plugin Data commit. This keeps Plugin Data commit-last compatible with destination-first/destructive Integrity Batch ordering without turning a failure prefix into silent Project replacement.
 
@@ -789,6 +803,8 @@ old persisted data
 ```
 
 Normal startup does not maintain long-term dual parsers or silently migrate a subset of files. Migration execution/recovery mechanics belong to Architecture/Implementation; the Data contract is one current schema after a successful migration.
+
+The Estimate model changes the canonical Issue field from an open numeric carrier to the fixed T-Shirt enum `small | medium | large | xlarge`, with numeric weights moved to Configuration. This is a breaking current-schema correction. Checked-in pre-V1 development fixtures may be aligned directly; if retained user data contains legacy numeric Estimate values, Migration must use an explicit one-way mapping or user-confirmed resolution rather than silently guessing a semantic size. Normal runtime must not retain dual numeric/enum Estimate parsing after migration. Changing only the configured weights later is not a schema migration and never rewrites Issue records.
 
 The Project four-state lifecycle changes the logical Status configuration contract. If existing persisted Project configuration contains a Backlog branch or Project definitions in Backlog, implementation must treat removal as an explicit configuration migration/reference-resolution concern rather than silently reinterpret those definitions.
 

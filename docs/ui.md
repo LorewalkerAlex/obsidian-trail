@@ -322,11 +322,75 @@ Filter                                             Display
 
 The binary layout switch occupies one control slot rather than two permanent peer buttons. Not Started, Done, and Cancelled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation. Triage is always a List. Historical Cycle is also List-only because it is passive final-membership history rather than a historical execution Board.
 
-Trail V1 uses one **simplified shared Filter interaction** across supported collections. It is intentionally narrower than Linear's advanced filtering/view-builder capability and must not grow into a generic boolean-query UI merely because different pages expose different fields. The remaining UI closure will freeze the small shared interaction grammar once, including the popover flow, applied-filter treatment, temporal handling, clear/reset behavior, and keyboard/focus mechanics.
+Trail V1 uses one **simplified shared Filter interaction** across supported collections. It borrows Linear's low-friction property/value selection rhythm but deliberately omits the advanced operator builder, nested boolean grammar, AI filtering, and saved-view machinery. The common interaction is:
 
-Projects Root uses the simplified Filter with the smaller Project registry: Status, Initiative, Priority, Labels, and Due. Filtering changes visibility only; it does not define grouping, ordering, or entity mutation. Initiative Focus will consume the same simplified mechanism once its final collection composition is frozen.
+```text
+Filter
+→ choose Property
+→ choose Value(s)
+→ visibility updates immediately
+```
 
-Triage and Cycle consume the same simplified shared mechanism with their own already-resolved property registries. They do not introduce page-specific filter syntax, a second boolean builder, or a generic view-builder layer.
+The first popover level directly lists the small property registry for the current collection and may show a quiet summary beside properties that already have an active clause. A second-level value picker may add search when its option set can grow materially, such as Project, Initiative, Milestone, or Labels; fixed small enums do not need a search field. Selection applies immediately and there is no Apply/Save/Done step. `Esc` closes the current Filter popover without clearing active clauses.
+
+Ordinary discrete properties use one deliberately small grammar:
+
+```text
+0 selected values      → All / no clause for that property
+1..N selected values   → selected values are OR
+different properties   → clauses are AND
+```
+
+The UI does not expose those boolean words or a generic operator control. V1 has no exclude / is-not / includes-all variant. Each property has at most one active clause. Nullable fields may expose an explicit pseudo-value such as `No initiative`, `No priority`, `No milestone`, `No labels`, or `No estimate`; choosing nothing still means All and is not the same as choosing `No …`. Required fields do not expose a fake empty value. Label options may remain visually organized by LabelGroup, but LabelGroup Single/Multiple assignment rules do not alter Filter semantics: selected Labels are still one OR set.
+
+Due is the one specialized temporal clause and is single-choice/replacement rather than multi-select. Its menu is:
+
+```text
+Overdue
+Today
+This week
+This month
+No due                 when the field is nullable
+────────────────
+Pick date…
+```
+
+All dated choices are **cutoffs**, not date-window membership. They resolve through the Workspace timezone/calendar policy:
+
+```text
+Overdue      → Due < start of today
+Today        → Due <= end of today
+This week    → Due <= end of the current Monday-Sunday week
+This month   → Due <= end of the current calendar month
+Pick date…   → Due <= end of the selected date
+No due       → Due absent
+```
+
+Therefore an already-overdue item intentionally also matches Today, This week, and This month. V1 does not need before/after operators or a date-range picker for this Filter.
+
+Applied clauses remain visible in the View Bar using a compact formula/chip treatment such as:
+
+```text
+Filter   [Status · Todo, In Progress]   [Due · This week]   Display
+```
+
+Clicking an applied clause opens that property's value picker directly. Removing its last discrete value removes the clause; a low-noise remove action may clear the whole clause. The Filter popover exposes `Clear filters` when any clause is active. Long value summaries may compress to a bounded prefix plus `+N` without changing the underlying selection. If the unfiltered collection has data but the active Filter produces no rows/cards, the empty state explicitly says that no items match the filters and offers `Clear filters`; it must not look like a genuinely empty collection.
+
+Milestone, Attention, and similar quick-focus actions use the same normal location Filter state **when the intended focus is exactly expressible by the frozen grammar**. For example, a Milestone focus writes that Milestone clause and an Overdue focus writes `Due · Overdue`. A focused action for a property replaces that property's existing clause rather than maintaining a hidden second filter or silently expanding the old values. If a derived bucket is not exactly expressible, the UI must not create a hidden range/exclusion clause merely to make it clickable.
+
+Filter state is **location-scoped, session-only UI runtime state**. It may survive List/Board switching, Peek, and navigation away/back to the same location during the current Trail session, while different locations keep independent state. It is not Domain Data, committed/effective canonical Runtime, synchronized Workspace State, Custom View persistence, Markdown, or Plugin Data. Relation-valued clauses retain stable IDs so rename presentation follows current entities; deleted/unavailable values are removed from the transient clause, and an emptied clause disappears. Restart/reload may discard the entire Filter state.
+
+The frozen V1 registries are:
+
+| Collection | Filter properties |
+| --- | --- |
+| Projects Root | Status · Initiative · Priority · Labels · Due |
+| Project Workspace | Status · Priority · Milestone · Labels · Due · Estimate |
+| Current Cycle | Status · Project · Priority · Milestone · Labels · Due · Estimate |
+| Historical Cycle | Status · Project · Priority · Milestone · Labels · Due · Estimate |
+| Triage | Due · Priority · Labels |
+
+Initiative Focus will consume the same mechanism once its final collection scope is frozen. Filtering changes visibility only; it never defines grouping/order, mutates entity facts, or creates another page-specific query language.
 
 `Display` is not a generic view builder. In Projects Root it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace and Current Cycle it controls supported secondary Issue Row/Card properties. In Historical Cycle it controls supported flat List-row metadata. In Triage it is limited to supported ordering choices. Initiative Focus Display follows whatever final collection composition is frozen in the remaining UI closure. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
 
@@ -402,7 +466,7 @@ Default row semantics are:
 - Priority uses the shared compact Priority glyph and picker.
 - Progress is derived and read-only. Wide rows may show a thin bar plus percentage; compact rows may reduce this to percentage. Undefined Progress displays `—` rather than fabricated 0%/100%.
 - Due is the Project's own Due and uses the shared temporal emphasis grammar. It may open the normal date picker.
-- Attention is exception-driven rather than a permanently occupied column. No meaningful attention means no visual footprint. Temporal pressure or Cancelled-Project cleanup may expose a compact signal/reason; when that signal identifies a concrete attention bucket/reason, activating it opens the Project Workspace with the corresponding temporary Issue Filter.
+- Attention is exception-driven rather than a permanently occupied column. No meaningful attention means no visual footprint. Temporal pressure or Cancelled-Project cleanup may expose a compact signal/reason. When that reason is exactly expressible by the shared Filter grammar, activating it may open Project Workspace with that normal temporary Filter; an unrepresentable derived bucket does not justify hidden Filter state or a one-off operator.
 - Labels are optional secondary display and use the shared compact dot grammar. They are off by default in the Projects Root row unless enabled through Display.
 
 The row itself is a navigation surface: activating the title or ordinary row area opens Project Workspace. Activating an inline property edits that property and does not trigger row navigation. Progress remains read-only. Right-click or a low-noise overflow affordance opens Project actions such as status/priority/due changes, Initiative movement, and destructive actions where legal. V1 does not require drag-between-Initiative-groups as a second relationship-editing mechanism.
@@ -776,9 +840,13 @@ The Filter in Project Workspace answers only:
 
 > Which Issues from this Project collection are visible?
 
-It uses Trail's simplified shared Filter interaction/presentation model. Projects Root uses the same primitive with a smaller Project-specific property registry; Initiative Focus will reuse the same mechanism once its final collection scope is frozen.
+It uses the shared Filter grammar frozen in Section 5.3. The Project Workspace registry is exactly:
 
-Project Workspace filter choices are based on supported existing Issue facts and useful derived buckets, for example Status, Priority, Milestone, Cycle membership, Labels, Due, and Estimate where the current consumer supports them. The exact small cross-surface Filter interaction grammar remains part of the final UI closure. Trail does not expose Linear's advanced filter builder, a generic operator language, nested boolean builder, or reusable query DSL merely to power these page filters.
+```text
+Status · Priority · Milestone · Labels · Due · Estimate
+```
+
+Project Workspace deliberately has **no Cycle filter**. Current Cycle already owns the focused Cycle-membership workspace, while Current Cycle membership remains visible as a compact Row/Card marker inside Project Workspace. Duplicating `Cycle = Current Cycle` here would add a second route to the same collection intent without adding useful selection semantics. Historical Cycle membership is not an Issue property and is not exposed as a Project Workspace filter.
 
 A filter does not:
 
@@ -788,7 +856,7 @@ A filter does not:
 - seed arbitrary properties during creation;
 - justify new canonical data fields.
 
-Milestone and derived attention entries may apply a temporary Issue Filter in Project Workspace as a navigation shortcut. The resulting filter remains represented by the normal Filter UI and is cleared there rather than maintaining a second hidden Inspector filter state.
+Milestone and derived attention entries may apply a temporary Issue Filter in Project Workspace as a navigation shortcut when the intended subset is exactly expressible by the shared grammar. The resulting filter remains represented by the normal Filter UI and is cleared there rather than maintaining a second hidden Inspector filter state. Derived attention buckets that require an unavailable range/exclusion operator remain presentation only in V1 rather than creating private filter semantics.
 
 ### 6.6 Workflow Issue creation and default Project selection
 
@@ -958,11 +1026,13 @@ Normal future dates remain muted. Due Soon, Today, and Overdue may increase sema
 
 #### Estimate
 
-Estimate uses a stable compact glyph + value where shown. It is optional on Row/Card and more naturally available in Peek/Inspector.
+Estimate uses the fixed T-Shirt vocabulary `S / M / L / XL`. Where shown, dense surfaces use a stable compact size treatment with the semantic level, while precise picker/filter/Inspector surfaces may expand it to Small / Medium / Large / Extra Large. The configured numeric aggregation weight is not normal Issue metadata and is not substituted for the T-Shirt level in Row/Card/Filter presentation. Estimate is optional on Row/Card and more naturally available in Peek/Inspector.
 
 #### Cycle
 
-Cycle uses a stable Cycle glyph + value where precise context is useful. It is not a default Project Row/Card property unless later visual evidence justifies it.
+Inside Project Workspace, a Workflow Issue that belongs to the Current Cycle shows a compact default **Current Cycle marker** on its Row/Card. The marker uses the stable Cycle visual identity; tooltip/focus/accessibility text says `Current Cycle`. It is a membership signal, not an Issue-side Cycle property.
+
+The Current Cycle workspace does not repeat that marker because the enclosing collection already expresses membership. Historical Cycle membership does not become a stack of default Row/Card badges; historical membership remains Cycle-owned context available through Cycle History.
 
 ### 7.5 Labels and metadata overflow
 
@@ -1236,7 +1306,7 @@ Attention
 
 Semantic color/emphasis distinguishes Overdue, Due This Week, and Later Due. Exact colors are calibrated with the dark design system rather than hard-coded by this document.
 
-Permanent legends/count sentences are not required in the compact Inspector. Hover/focus provides exact segment name/count/accessibility text. Clicking a segment applies the corresponding temporary Issue Filter in Project Workspace so the user can immediately inspect the work represented by that segment.
+Permanent legends/count sentences are not required in the compact Inspector. Hover/focus provides exact segment name/count/accessibility text. Only an Attention segment that maps exactly to the shared Filter grammar is an immediate Filter shortcut in V1: `Overdue` may apply `Due · Overdue`. The mutually exclusive `Due This Week` and `Later Due` segments do not map exactly to Trail's cumulative Due-cutoff Filter (`This week` means every Due through week end, including overdue), so they remain informational rather than introducing hidden date-range/exclusion clauses.
 
 This is not a persisted `Health` score and is not a Status chart.
 
@@ -1356,11 +1426,11 @@ Filter                                             Display
 
 Triage Filter supports only:
 
-- Review Due;
+- Due;
 - Priority;
 - Labels.
 
-Triage uses the same simplified shared Filter interaction as the other V1 collections, with only the property registry above. The final small shared grammar for popover flow, value conditions, temporal handling, applied-filter representation, clear/reset, and keyboard/focus behavior is still part of the remaining UI closure; Triage does not invent extra operators or Triage-only syntax. `Review Due` retains Triage's review meaning while using the shared temporal treatment once that grammar is frozen.
+Triage uses the same shared Filter grammar frozen in Section 5.3 and does not invent extra operators or Triage-only syntax. `Due` is the Triage review Due by context. Because Triage Due is required, its Due filter does not offer `No due`; the cutoff presets and `Pick date…` use the same temporal semantics as other collections.
 
 Filtering changes only which active Triage entries are visible. It does not redefine ordering, mutate properties, or recompute the global Review Set against the filtered subset. When a Filter is active, the UI should avoid presenting the unfiltered Review Set boundary as though it were a boundary in the filtered list; a global `to review` summary may remain clearly global.
 
@@ -1545,7 +1615,7 @@ Current Cycle Filter supports:
 - Due;
 - Estimate.
 
-Cycle uses the same simplified shared Filter interaction as Project Workspace and Triage, with the property registry above. The final small cross-surface grammar remains part of the remaining UI closure rather than copying Linear's advanced filter builder. `Project` is useful here because Cycle scope may cross Projects. `Cycle` itself is not a Current Cycle filter field because the current location already supplies that scope.
+Cycle uses the shared Filter grammar frozen in Section 5.3 with the property registry above. `Project` is useful here because Cycle scope may cross Projects. `Cycle` itself is not a Current Cycle filter field because the current location already supplies that scope. Historical Cycle uses the same property registry over the current live fields of its retained members.
 
 Filtering changes visibility only. It does not change Cycle membership, Board Status projection, Project swimlanes, automatic List clustering, or Issue properties.
 
@@ -1607,13 +1677,13 @@ Progress = completed / effective
 
 If there are no effective members, Progress is unavailable rather than fabricated as 0%/100%. Started work receives no partial credit and Estimate does not weight Progress.
 
-`Effort` is a separate live aggregate:
+`Effort` is a separate live aggregate over configured Estimate weights:
 
 ```text
-Effort = sum(Estimate of every Cycle member whose Estimate is present)
+Effort = sum(configuredWeight(member.estimate) for every member whose Estimate is present)
 ```
 
-Every member with a present Estimate contributes regardless of Status. Missing Estimate contributes nothing. Effort is not named Capacity/Velocity/Success and has no forecasting meaning.
+Every member with a present T-Shirt Estimate contributes its current Workspace-configured weight regardless of Status. V1 defaults are `S=1`, `M=2`, `L=5`, and `XL=10`; missing Estimate contributes nothing. The Issue continues to display/store the T-Shirt level, not the weight. Changing the weight mapping changes the live Effort projection without rewriting members. Effort is not named Capacity/Velocity/Success and has no forecasting meaning.
 
 A Current Cycle page keeps these summaries lightweight so the Issue collection remains primary. A compact context line may show Progress/count/time remaining; the persistent Cycle Inspector carries the fuller summary.
 
@@ -1663,7 +1733,7 @@ Planned end   Aug 24
 Closed        Aug 24
 ```
 
-Historical Effort is still a live aggregate of the current Estimates of the retained final members; it does not mean “Effort at close.” Historical Inspector does not need to emphasize Progress because Trail does not preserve close-time Issue state and History is not an analytics surface.
+Historical Effort is still a live aggregate of the current configured weights for the retained final members' current T-Shirt Estimates; it does not mean “Effort at close.” Historical Inspector does not need to emphasize Progress because Trail does not preserve close-time Issue state and History is not an analytics surface.
 
 ### 11.8 Historical Cycles
 
@@ -1682,10 +1752,10 @@ Cycles / History / Aug 11 – Aug 24
 
 Filter                                      Display
 
-Issue A     Project A     In Progress    3    ●●
-Issue B     Project A     Done           5    ●
+Issue A     Project A     In Progress    M    ●●
+Issue B     Project A     Done           L    ●
 Issue C     Project B     Backlog        —
-Issue D     Project C     Cancelled      2
+Issue D     Project C     Cancelled      S
 ```
 
 Status and Project are ordinary row fields. Other shared fields such as Priority, Milestone, Labels, Due, and Estimate may be shown through the normal Display rules. The list remains visually flat even when ordering keeps related Project work coherent.
@@ -1715,9 +1785,8 @@ Exact breakpoints remain visual-calibration decisions.
 
 ## 13. Remaining V1 UI Design Closure
 
-The core Project Workspace, Projects Root, Triage, Cycle, and standard Creation Surface semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers must be closed before Trail treats the whole V1 UI authority as complete:
+The core Project Workspace, Projects Root, Triage, Cycle, standard Creation Surface, and simplified shared Filter semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers must be closed before Trail treats the whole V1 UI authority as complete:
 
-- **Simplified shared Filter** — one intentionally small Trail-specific interaction grammar shared by Project/Issue/Triage/Cycle consumers, without copying Linear's advanced filter/view-builder system;
 - **Shared interaction system** — Selection, Bulk Actions, Context Menu, Command Menu, keyboard interaction principles, and user-visible optimistic/pending/failure/recovery feedback;
 - **Initiative Focus** — confirm the multi-Project project-like workspace composition, with the current working direction favoring reuse of Cycle-style multi-Project Issue List/Board mechanics and explicit Project context rather than the old duplicate Project-summary List/Timeline assumption;
 - **Home** — close the V1 composition and interaction of Date/Time, Current Cycle Summary, Triage Summary, Projects/Initiatives Summary, Activity Heatmap, and Weekly Note; the Home `+` creation menu itself is already resolved in Section 5.7;
