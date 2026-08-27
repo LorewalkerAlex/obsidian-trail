@@ -57,7 +57,7 @@ Useful current Linear visual anchors include:
 - Due dates: <https://linear.app/docs/due-dates>
 - Issue selection: <https://linear.app/docs/select-issues>
 
-For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root, current Linear Project collection arrangement, density, grouping, Timeline presentation, and primary Project-create affordance remain useful visual references. Initiative Focus is not currently frozen to Linear's Project/Initiative page composition: its final multi-Project workspace presentation is part of the remaining V1 UI closure. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model. Trail filters use one simplified Trail-specific interaction model; Linear filter visuals may inform polish, but Linear's advanced filter/view-builder semantics are not the product target.
+For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root, current Linear Project collection arrangement, density, grouping, Timeline presentation, and primary Project-create affordance remain useful visual references. Initiative Focus is the same Project collection scoped to one Initiative: it reuses Project summaries/actions/filtering, stays List-only, and does not become a multi-Project Issue workspace. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model. Trail filters use one simplified Trail-specific interaction model; Linear filter visuals may inform polish, but Linear's advanced filter/view-builder semantics are not the product target.
 
 For Creation, current Linear composer structure is the primary reference: lightweight creation context, title/body as the content center, compact property controls, a restrained footer, context-prefilled values, and capability-aware availability. Trail localizes that grammar to its own Domain: Quick Capture is a title-first Obsidian-wide entry into standard Triage creation; Workflow Issues must name one explicit legal Project and always begin in Backlog; Projects use their configured Unstarted default; Trail Initiatives have no Status; and V1 does not copy Linear Drafts or Create-more behavior.
 
@@ -286,7 +286,7 @@ Trail is an Obsidian-native personal project...
 Filter                 [layout]        Display
 ```
 
-Collapsed state removes the description region without changing Project location.
+Collapsed state removes the description region without changing Project location. Initiative Focus uses the same narrative-context pattern for the Initiative description: the description is disclosed inline in the main workspace rather than duplicated as an Inspector property or promoted to a separate Overview page.
 
 The description may use ordinary lightweight Markdown and Obsidian wikilinks. Trail does not introduce `relatedNoteIds[]` merely to imitate Linear Resources/Documents; ordinary Obsidian notes/backlinks remain the document layer.
 
@@ -300,7 +300,11 @@ For Projects Root, the V1 target is:
 Filter        [single List/Timeline toggle]        Display
 ```
 
-Initiative Focus remains part of the final V1 UI-closure discussion. Its working direction is a multi-Project project-like workspace and may reuse a Cycle-like List/Board Issue collection with Project context rather than the old assumption that it is another Project-summary List/Timeline surface. Its final View Bar is therefore not frozen by this section yet.
+Initiative Focus is List-only and reuses the Project collection controls without repeating the already-fixed Initiative dimension:
+
+```text
+Filter                                             Display
+```
 
 For an In Progress Project Workspace, the V1 target remains:
 
@@ -385,14 +389,15 @@ The frozen V1 registries are:
 | Collection | Filter properties |
 | --- | --- |
 | Projects Root | Status · Initiative · Priority · Labels · Due |
+| Initiative Focus | Status · Priority · Labels · Due |
 | Project Workspace | Status · Priority · Milestone · Labels · Due · Estimate |
 | Current Cycle | Status · Project · Priority · Milestone · Labels · Due · Estimate |
 | Historical Cycle | Status · Project · Priority · Milestone · Labels · Due · Estimate |
 | Triage | Due · Priority · Labels |
 
-Initiative Focus will consume the same mechanism once its final collection scope is frozen. Filtering changes visibility only; it never defines grouping/order, mutates entity facts, or creates another page-specific query language.
+Initiative Focus does not repeat Initiative as a filter because the location already fixes that scope. Filtering changes visibility only; it never defines grouping/order, mutates entity facts, or creates another page-specific query language.
 
-`Display` is not a generic view builder. In Projects Root it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace and Current Cycle it controls supported secondary Issue Row/Card properties. In Historical Cycle it controls supported flat List-row metadata. In Triage it is limited to supported ordering choices. Initiative Focus Display follows whatever final collection composition is frozen in the remaining UI closure. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
+`Display` is not a generic view builder. In Projects Root it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace and Current Cycle it controls supported secondary Issue Row/Card properties. In Historical Cycle it controls supported flat List-row metadata. In Triage it is limited to supported ordering choices. In Initiative Focus it controls the same supported Project-row secondary properties as the shared Project collection, without Initiative grouping because the location already supplies that dimension. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
 
 `Create Issue` is not a generic View Bar configuration control. Exact placement of the Project-local create affordance is a composition detail, but it must not visually imply that creation inherits a Todo/Started/Completed group.
 
@@ -433,23 +438,26 @@ Projects Root
 └─ Project Workspace
 ```
 
-Initiative Focus remains a stable location, but its **final collection composition is reopened for the remaining V1 UI closure**. The current working model is a project-like workspace spanning multiple Projects rather than a duplicate of Projects Root:
+Initiative Focus is the standard Project collection scoped to one Initiative:
 
 ```text
 Projects / Initiative Alpha
-→ multi-Project working context
-→ likely shared Issue collection
-→ likely List / Board
-→ explicit Project context, similar to Current Cycle
+-> Projects where Project.initiativeId == Initiative Alpha
+-> shared Project Summary Row / actions / selection / filter / ordering
+-> List-only presentation
 ```
 
-This direction should reuse existing Project Workspace / Current Cycle Issue collection mechanics rather than invent another Board/List engine. The remaining closure must decide the exact Board/List projection, Project grouping/swimlane treatment, Initiative Inspector/actions, and where Project summaries remain visible. Until that discussion closes, the older `same Project collection + List/Timeline` assumption is not authoritative for Initiative Focus.
+It does not introduce an Issue collection, Board, Timeline, Cycle-like execution surface, or a second Project presentation model. Initiative grouping and the Initiative filter are absent because the current location already fixes Initiative scope. Changing a Project's `initiativeId` through the normal Project property/action semantics naturally moves it into or out of the current collection; V1 does not need a separate `Remove from Initiative` Domain action.
 
-Projects Root follows the current Linear Projects pattern for its primary creation affordance: a compact `+` / New Project action opens the standard Project Composer directly. Initiative creation remains a lower-frequency secondary Projects action, available adjacent to or behind the normal low-noise menu grammar, and opens the standard Initiative Composer; Trail does not need a separate top-level Initiatives area merely to create one. If Initiative Focus later exposes New Project, the current Initiative is only a prefilled editable relation in the same Project Composer.
+Initiative Focus exposes the same lightweight narrative-context disclosure used by Project Workspace so the Initiative description appears in the main workspace when requested. Structured Initiative properties remain lightweight Inspector material, using the existing Priority / Labels / Due semantics rather than building an Initiative dashboard.
+
+`New Project` is a high-value Initiative Focus action and opens the standard Project Composer with the current Initiative prefilled but editable. The normal Project creation contract remains authoritative.
+
+Projects Root follows the current Linear Projects pattern for its primary creation affordance: a compact `+` / New Project action opens the standard Project Composer directly. Initiative creation remains a lower-frequency secondary Projects action, available adjacent to or behind the normal low-noise menu grammar, and opens the standard Initiative Composer; Trail does not need a separate top-level Initiatives area merely to create one.
 
 ### 5.5 Project Summary Row
 
-Project Row is the primary scanning unit in Projects Root. Initiative Focus may still reuse Project summaries where useful, but its primary aggregate-work composition is not frozen yet. Project Row stays compact and normally single-line rather than becoming a card or a table of every Project fact.
+Project Row is the primary scanning unit in Projects Root and Initiative Focus. Both locations reuse the same Project Summary Row; the enclosing collection scope is what differs. Project Row stays compact and normally single-line rather than becoming a card or a table of every Project fact.
 
 Wide conceptual form:
 
@@ -489,7 +497,7 @@ Responsive reduction preserves title and Status identity first, then meaningful 
 
 ### 5.6 Project Timeline
 
-Projects Root may switch from List to a lightweight Timeline that projects the **current temporal evidence** already present in Effective Runtime. Initiative Focus is no longer assumed to share this List/Timeline presentation until its multi-Project workspace closure is complete. It is not a planning Gantt, immutable history, or a second source of schedule truth. Timeline does not infer the business story behind reopen, Issue movement, lifecycle mismatches, or other unusual data combinations; when current data changes, the projection changes with it.
+Projects Root may switch from List to a lightweight Timeline that projects the **current temporal evidence** already present in Effective Runtime. Initiative Focus remains List-only and does not expose this Timeline. It is not a planning Gantt, immutable history, or a second source of schedule truth. Timeline does not infer the business story behind reopen, Issue movement, lifecycle mismatches, or other unusual data combinations; when current data changes, the projection changes with it.
 
 Linear remains the primary visual/layout reference for the Timeline shell, Project rows, Initiative grouping, time axis, and density. Trail intentionally does not copy Linear's planning-timeframe, dependency, resource-planning, or drag-to-reschedule semantics.
 
@@ -739,7 +747,7 @@ Project
 Initiative
 ```
 
-Each choice opens the corresponding standard Composer above. `Triage` opens the full Triage Composer, not Quick Capture. `Issue` is context-neutral and therefore uses a legal Default Project only as a prefill candidate. This resolves Home's creation affordance without freezing the rest of Home composition, which remains part of the later Home closure.
+Each choice opens the corresponding standard Composer above. `Triage` opens the full Triage Composer, not Quick Capture. `Issue` is context-neutral and therefore uses a legal Default Project only as a prefill candidate. This creation affordance is independent from the Home module layout. Home module content is frozen separately; exact grid placement and width-dependent composition remain part of the workspace-grid closure.
 
 #### 5.7.6 Capability-gated creation and illegal targets
 
@@ -1239,7 +1247,7 @@ Examples:
 
 ```text
 Project Workspace  → Project Inspector
-Initiative Focus   → Initiative context/details surface (final composition pending)
+Initiative Focus   → Initiative Inspector
 Current Cycle      → Current Cycle Inspector
 Historical Cycle   → Historical Cycle Inspector
 Issue Full Item    → Issue Inspector
@@ -1840,7 +1848,131 @@ Historical Cycle membership is the only retained Issue-level Cycle history. Ever
 
 Historical Cycle retains normal Issue inspection/navigation actions such as Peek/Full Item where current Issue/Project capability permits them, but it exposes no Add/Remove Cycle-membership action.
 
-## 12. Responsive Behavior
+## 12. Home
+
+Home is a modular, visual-first homepage rather than a reduced work collection or a prose dashboard. Its V1 content is a fixed set of modules whose exact grid positions, spans, border/surface treatment, and width-dependent visibility are intentionally deferred to the next **Workspace Grid / Composition** closure.
+
+The structural rule is:
+
+```text
+Home
+-> independent rectangular modules
+-> graphical information dominates permanent prose
+-> text mainly labels, numbers, and hover/focus detail
+-> module boundaries may be explicit or visually quiet depending on Linear-style calibration
+```
+
+Home does not create new canonical telemetry, daily snapshots, activity logs, productivity scores, or Health facts merely to support visualization. V1 analytics are projections from the currently retained Trail data and temporal policy.
+
+### 12.1 Work Pulse modules
+
+Work Pulse is intentionally light. It communicates current system state without reproducing Cycle, Triage, or Projects working surfaces.
+
+**Current Cycle** shows the current Cycle period plus the existing simple Cycle Progress projection. The default module is bar-first and low-text; exact completed/member/Effort detail may appear on hover/focus rather than as permanent copy.
+
+**Triage** shows two compact quantities over the active Triage collection:
+
+```text
+Overdue = Review Due < now
+Remain  = other active Triage entries
+```
+
+The preferred information form is a small combination of bars plus counts rather than a Triage item list.
+
+**In Progress Projects** includes only Projects in the Started/In Progress lifecycle category and represents each with its existing Project Progress projection. The default module is a compact set of progress micro-bars plus a small aggregate count. Project title and exact progress may be progressively disclosed on hover/focus rather than permanently consuming horizontal space. It does not create a hidden Home ranking or Health score.
+
+### 12.2 Lifecycle Activity Heatmap
+
+The Heatmap measures daily lifecycle-event density only. For a calendar day `D`:
+
+```text
+activity(D)
+= count(Workflow Issue createdAt on D)
++ count(Workflow Issue firstStartedAt on D)
++ count(Workflow Issue terminalAt on D)
+```
+
+The three timestamp kinds are deliberately treated equally. V1 does not weight them by Estimate/Effort and does not encode timestamp kind with separate colors.
+
+The visual encoding uses one Linear-compatible hue and varies intensity by the total `activity(D)` value. Exact hue, intensity steps, empty-cell treatment, and scale normalization are visual-calibration decisions. Hover/focus may expose the date and the underlying counts, but the default grid remains low-text.
+
+### 12.3 Work Trend
+
+Work Trend complements the Heatmap by showing work stock and completion flow over time. It is recomputed from currently retained Workflow Issue timestamps; Trail does not persist daily snapshots solely for this chart.
+
+For each day `D`:
+
+```text
+Backlog stock
+= Workflow Issues created by D
+  whose firstStartedAt has not occurred by D
+  and whose terminalAt has not occurred by D
+
+Active stock
+= Workflow Issues whose firstStartedAt has occurred by D
+  and whose terminalAt has not occurred by D
+
+Completed flow
+= Workflow Issues whose terminalAt falls on D
+  and whose current terminal category is Completed
+```
+
+`Backlog stock` therefore means the work that, as of that day, has only reached the created lifecycle evidence. `Active stock` is already-started unfinished work. These two series are stocks and may grow when work accumulates; `Completed flow` is day-local rather than cumulative so old completions do not inflate the chart indefinitely.
+
+This chart intentionally reads the available data directly rather than introducing edge-case history reconstruction or a new transition log. If currently retained lifecycle evidence changes later, the retrospective projection may change with it.
+
+### 12.4 Temporal Orientation
+
+Temporal Orientation provides the current date/week context and a compact view of near-term Due distribution. V1 distinguishes exactly two Due sources:
+
+```text
+Triage Review Due
+Workflow Issue Due
+```
+
+The module uses separate compact colored-dot identities for those two sources across the current-week temporal strip. It does not mix Project, Initiative, or Milestone Due into the V1 module. Exact dot stacking, density compression, colors, and hover/focus detail remain part of the later composition/visual calibration.
+
+### 12.5 Weekly Meeting Notes
+
+Weekly Meeting Notes is the existing lightweight Trail-managed `Collections/Weekly Update.md` utility used to jot down the talking-point outline for the user's work weekly meeting. It is not a Domain entity, personal journal, life-log surface, or general weekly-review system.
+
+The existing utility structure remains:
+
+```text
+Current
+Archive / History
+```
+
+V1 user operations remain deliberately small:
+
+```text
+Open / Read
+Edit Current
+Archive / Next
+```
+
+`Archive / Next` moves the current content into the same file's Archive/History block and clears Current for the next working outline. Only Current is the normal editing target. Home presentation does not justify another weekly-note entity, status model, undo/history subsystem, or automatic linkage to Issues/Cycles.
+
+### 12.6 Home creation
+
+The compact Home `+` menu remains the shared creation entry already frozen in Section 5.7.5:
+
+```text
+Triage
+Issue
+Project
+Initiative
+```
+
+It is shell/action affordance rather than another Home analytics module.
+
+### 12.7 Composition boundary
+
+This section freezes **what Home can show and how each module derives its information**. It deliberately does not freeze where modules are placed, how many grid tracks they span, which borders/surfaces are visible, or which modules compress/hide at each Obsidian pane width.
+
+Those questions are next resolved once through a shared responsive Workspace Grid so Home, Projects Root, Initiative Focus, Project Workspace, Triage, Cycles, Full Item, and Inspector compositions use one coherent spatial system without forcing every page into a dashboard appearance.
+
+## 13. Responsive Behavior
 
 Trail must work across variable Obsidian pane widths using progressive disclosure rather than a second mobile layout.
 
@@ -1859,30 +1991,29 @@ For the shared Creation Composer, normal width keeps the resolved entity propert
 
 Exact breakpoints remain visual-calibration decisions.
 
-## 13. Remaining V1 UI Design Closure
+## 14. Remaining V1 UI Design Closure
 
-The core Project Workspace, Projects Root, Triage, Cycle, standard Creation Surface, simplified shared Filter, and shared Selection/Action interaction semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers must be closed before Trail treats the whole V1 UI authority as complete:
+The core Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, and Home content/data semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers remain before Trail treats the whole V1 UI authority as complete:
 
-- **Initiative Focus** — confirm the multi-Project project-like workspace composition, with the current working direction favoring reuse of Cycle-style multi-Project Issue List/Board mechanics and explicit Project context rather than the old duplicate Project-summary List/Timeline assumption;
-- **Home** — close the V1 composition and interaction of Date/Time, Current Cycle Summary, Triage Summary, Projects/Initiatives Summary, Activity Heatmap, and Weekly Note; the Home `+` creation menu itself is already resolved in Section 5.7;
-- **Search** — close the global search surface, result composition/grouping, keyboard navigation, activation behavior, and interaction with Peek/navigation;
-- **Runtime/Data-Issue feedback** — map `loading`, `refreshing`, `read-only-error`, optimistic pending, mutation failure, and recoverable Data Issue states to coherent user-visible UI, including feedback for the already-resolved shared actions;
-- **Default Project setter** — provide a lightweight V1 interaction for explicitly setting or replacing the Workspace Default Project after bootstrap without introducing special Project semantics.
+- **Workspace Grid / responsive composition** - define the shared spatial grid and the composition of each major surface across useful Obsidian pane sizes. For Home this includes module placement, spans, compression, reflow, and which frozen modules remain visible at each size; for other pages it includes main/auxiliary regions, collection width, Inspector relationships, and responsive transitions. The grid is implementation infrastructure, not a rule that every page must look like a card dashboard; current Linear references remain the composition authority for equivalent surfaces.
+- **Search** - close the global search surface, result composition/grouping, keyboard navigation, activation behavior, and interaction with Peek/navigation.
+- **Runtime/Data-Issue feedback** - map `loading`, `refreshing`, `read-only-error`, optimistic pending, mutation failure, and recoverable Data Issue states to coherent user-visible UI, including feedback for the already-resolved shared actions.
+- **Default Project setter** - provide a lightweight V1 interaction for explicitly setting or replacing the Workspace Default Project after bootstrap without introducing special Project semantics.
 
-These are not implementation-calibration details and are not deferred beyond V1. They remain the next UI-design work before full Formal UI Implementation closure.
+These are not deferred beyond V1. Workspace Grid / responsive composition is the immediate next design closure because it determines the final spatial form of the already-frozen Home modules and the shared page compositions.
 
-## 14. Explicitly Deferred Beyond Current V1 UI Closure
+## 15. Explicitly Deferred Beyond Current V1 UI Closure
 
 The following product conveniences are deferred and do not block V1 UI freeze or formal implementation of the supported workflows:
 
 - Custom Views user-facing creation/editing/navigation;
 - Favorites user-facing navigation and management;
 - future Workspace Issues collection;
-- final Health formula or Home Project-focus ranking policy beyond the already-defined V1 Home summaries.
+- future Home analytics, personalization, or Health/ranking policies beyond the frozen V1 modules;
 
 Their existing Domain/Data/Workspace-state concepts do not require speculative V1 UI or implementation work.
 
-## 15. Implementation-Time Calibration Decisions
+## 16. Implementation-Time Calibration Decisions
 
 The following may remain replaceable until the relevant real-Obsidian surface exists and can be calibrated against current references:
 
