@@ -26,8 +26,8 @@ Representative mappings:
 | Create Project / Initiative | Existing entity contracts/defaults; Project uses configured Unstarted default; Initiative has no Status | standard entity Composer + optional context prefill + normal semantic create plan | shared creation `ui/interactions`, `application/projects` / `application/initiatives`, `domain/planning`, shared mutation | planner + application + UI |
 | Change Issue Status | StatusDefinition + lifecycle/Estimate + owning-Project capability invariants | Replace plan + Single Transaction | `domain/planning`, `application/issues`, shared mutation | planner + application/UI |
 | Move Issue between Projects | stable Issue identity + required target Project + Milestone scope + placement integrity | legal-target selection + Source Transition | `domain/planning`, `application/issues`, `query`, `mutation` | planner + application + representative host |
-| Default Project | Workspace State `defaultProjectId?` referencing an ordinary Project | bootstrap seed + reference resolution + normal Project navigation | `domain/model`, `source-sync/bootstrap`, `persistence/plugin-data`, `query`, `ui/shell` | workspace validation/bootstrap + query/navigation + representative host |
-| Delete Project | child Workflow Issues require an explicit legal replacement Project; old Project Milestones removed; Default Project reference cleared when applicable | semantic multi-entity plan + Integrity Batch | `domain/planning`, `application/projects`, `query`, `mutation`, `source-sync` | planner + materialization/execution + representative host |
+| Default Project | required normal-state Workspace `defaultProjectId` referencing one ordinary Project; missing persisted reference uses the narrow `0000 Standalone.md` startup recovery | fresh seed + missing-reference startup recovery + settings replacement + normal Project navigation | `domain/model`, `domain/validation`, `source-sync/bootstrap`, `persistence/plugin-data`, `query`, `ui/shell`, Obsidian Settings adapter | workspace validation/bootstrap + query/navigation/settings + representative host |
+| Delete Project | child Workflow Issues require an explicit legal replacement Project; old Project Milestones removed; deleting the current Default additionally requires an explicit replacement Default Project | semantic multi-entity plan + Workspace State replacement + Integrity Batch | `domain/planning`, `application/projects`, `query`, `mutation`, `source-sync` | planner + materialization/execution + representative host |
 | Projects Root / Initiative Focus | Project->Initiative relation + derived Project summaries; Initiative Focus is the same Project collection scoped to one Initiative | Projects Root Project collection + Initiative-scoped List-only Project collection reusing Project Row/actions/filter/order | `query`, `ui/pages/projects`, reusable Project collection/row/filter components | query + UI |
 | Project Workspace Board/List | same Project Issue set, Status presentation; Default Project is not a separate workspace kind | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
 | Shared collection Filter | supported collection facts + location-scoped session-only UI Filter state; no persisted query/view object | shared property/value filter projection + reusable popover/applied-clause interaction; discrete values OR within a property, properties AND, Due uses cutoff semantics | `query`, shared `ui/interactions` / `ui/patterns`, page registry consumers | query semantics + shared UI interaction |
@@ -44,6 +44,7 @@ Representative mappings:
 | Home | current Runtime lifecycle timestamps, Project/Cycle/Triage summaries, Due facts, and existing Weekly Update utility; no new telemetry/snapshot Domain data | Home selectors for Work Pulse, lifecycle Heatmap, Work Trend, Temporal Orientation, Weekly Meeting Notes + shared `+` creation menu | `query`, `ui/pages/home`, `persistence/utility-sources`, shared creation `ui/interactions` | query + UI |
 | Workspace Grid / responsive composition | presentation-only pane capacity and transient location-entry state; no new Domain/Data fact or persisted per-visit layout | Obsidian-owned sidebars/splits + Trail Workspace Frame/Page Composition + component-owned List/Board/Timeline/Home/Triage behavior; Inspector reveal is decided on location entry only | `ui/shell`, `ui/pages`, shared `ui/entities` / `ui/patterns`, `adapters/obsidian` for host side-view integration | shared UI + representative Obsidian host across pane/split/sidebar sizes |
 | Global Search | existing Initiative/Project/Workflow Issue/Triage projections; no Search Domain entity or Vault-note ownership | Search location + grouped Query results + entity-specific activation through normal navigation, Workflow Issue Peek, or Triage Review | `query/search`, `ui/pages/search`, shared Peek/navigation interactions, `ui/shell` entry action | query + UI + representative keyboard/focus host |
+| Runtime / Data-Issue feedback | existing Runtime `control`, optimistic `pending`, Source Health, and LKG committed state; no persisted feedback state | silent fast-path optimism + performance-delayed lightweight loading/saving/refreshing status + transient failure toast + persistent scoped Data-Issue/read-only warning | `runtime`, `query`, shared `ui/patterns` / `ui/interactions`, `ui/shell`, Obsidian adapter for `Open source` host action | runtime/query + shared UI + performance calibration + representative host |
 | External managed-file change | current physical schema + authoritative persistence | Refresh / source-health convergence | `source-sync`, `runtime`, adapters | source-sync + representative host |
 | Legacy Projectless schema upgrade | old Projectless Workflow records → ordinary Project ownership | explicit one-way migration; no dual normal-runtime model | `migration` plus existing persistence/validation owners | migration + full graph validation + representative fixture |
 
@@ -55,7 +56,7 @@ The shared Filter grammar is now resolved once across Projects Root, Project Wor
 
 The shared Selection/Action system is resolved the same way: one transient selection model and one Action Registry feed Context Menu, Command Menu, overflow actions, optional Bulk surfaces, and keyboard dispatch. Presentation surfaces may expose different useful subsets, but they resolve the same Action IDs and ordinary Query/Application capabilities. Bulk adds no new Domain legality model: a selection may execute only a common action with a common target, and target-bearing controls use the intersection of each selected item's ordinary legal targets. Exact shortcut bindings remain host calibration so Obsidian conflicts do not leak into action semantics.
 
-Initiative Focus, Home content, Workspace Grid/responsive composition, and global Search are now frozen at the target-interaction level without introducing new Domain or persistence authority. Grid behavior consumes actual Obsidian pane capacity and host-owned side views; Search consumes existing entity/query/navigation/Peek/Review capabilities. The remaining V1 product-facing UI closure is runtime/Data-Issue/optimistic feedback plus the lightweight Default Project setter. Custom Views and Favorites remain deferred and therefore create no V1 implementation obligation until a later product/UI closure reactivates them.
+Initiative Focus, Home content, Workspace Grid/responsive composition, global Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are now frozen at the V1 target-interaction level. Runtime feedback consumes existing control/pending/health/LKG mechanisms and follows Linear's low-noise grammar; the Default setter consumes the required Workspace reference and ordinary Project picker/navigation semantics. No closure introduces a new work-item subtype or second persistence authority. Custom Views and Favorites remain deferred and therefore create no V1 implementation obligation until a later product/UI closure reactivates them.
 
 A future Workspace Issues collection is intentionally not mapped as a V1 page. When introduced, it should query all Workflow Issues across real Projects and reuse the shared Issue collection/filter presentation; it must not reintroduce a Projectless state.
 
@@ -67,7 +68,7 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 
 | Capability | Inputs / dependencies | Owner |
 |---|---|---|
-| Core entity/config/workspace-state contracts, including fixed Estimate levels, Estimate weight Configuration, and `defaultProjectId?` | Product + Domain | `domain/model` |
+| Core entity/config/workspace-state contracts, including fixed Estimate levels, Estimate weight Configuration, and required normal-state `defaultProjectId` | Product + Domain | `domain/model` |
 | Value and state rules | Domain | `domain/rules` |
 | Field/domain/reference/workspace validation | Domain + Configuration + Workspace State | `domain/validation` |
 | Pure semantic mutation planning | validated planning state + normalized command | `domain/planning` |
@@ -122,7 +123,7 @@ Cycle persistence remains the existing Cycle record with `issueIds`; no Issue `c
 
 | Capability | Inputs / dependencies | Owner |
 |---|---|---|
-| Workspace bootstrap/discovery, including ordinary Default Project seed | Persistence + managed paths + default Configuration | `source-sync/bootstrap`, `source-sync/discovery` |
+| Workspace bootstrap/discovery, including ordinary Default Project seed and missing-reference `0000 Standalone.md` recovery | Persistence + managed paths + default Configuration + Workspace State | `source-sync/bootstrap`, `source-sync/discovery` |
 | Trail-write settlement/convergence | Persistence result + Runtime | `source-sync` |
 | External authoritative refresh | managed host events + loader + Runtime | `source-sync/refresh` |
 | Effective/query helpers | Runtime + temporal/config/workspace context | `query/shared` |
@@ -148,6 +149,8 @@ Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain 
 | Trail navigation + Default Project shortcut | UI Design + Workspace State/query + stable Project route | `ui/shell` |
 | Workspace Frame / responsive page composition / location-entry Inspector reveal | UI Design + current Obsidian pane capacity + location capabilities | `ui/shell`, `ui/pages`, `adapters/obsidian` |
 | Global Search surface and activation | UI Design + Search Query + normal navigation/Peek/Triage Review targets | `query/search`, `ui/pages/search`, shared `ui/patterns` / `ui/interactions`, `ui/shell` |
+| Runtime loading/pending/failure/Data-Issue/read-only feedback | UI Design + Runtime control/pending/health + LKG Query + performance calibration | shared `ui/patterns` / `ui/interactions`, `ui/shell`, `query`, `performance`, Obsidian adapter where host actions are needed |
+| Default Project Settings setter / delete replacement input | UI Design + required Workspace reference + Project Query/picker + Application mutation | Obsidian Settings adapter, shared Project Picker, `application`, `query` |
 | Stable entity presentation | UI Design + entity IDs + effective Runtime selection | `ui/entities` |
 | Shared Creation Composer / transient create UI state | UI Design + Query capability/defaults + target Application intents | `ui/interactions`, `ui/patterns` |
 | Shared collection Filter / location-scoped session state | UI Design + page registry + Query filter semantics | `ui/interactions`, `ui/patterns`, `query` |
@@ -193,6 +196,9 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Bootstrap/discovery/refresh/convergence | `plugin/src/source-sync/` | `main.ts` or feature services |
 | Derived/shared/page read selection | `plugin/src/query/` | UI rebuilding persistence/index logic |
 | Default Project resolution / legal default target candidate | `plugin/src/query/` | Domain Project subtype checks or title matching |
+| Default Project startup recovery | `plugin/src/source-sync/` + normal Project/plugin-data Persistence owners | Query fallback or UI title/path matching |
+| Default Project setter and delete-time replacement intent | `plugin/src/application/`, shared Project Picker, `plugin/src/adapters/obsidian/` Settings | direct Settings persistence writes or a second Default-Project model |
+| Runtime feedback presentation | `plugin/src/ui/patterns/`, `plugin/src/ui/interactions/`, `plugin/src/ui/shell/` consuming Runtime/Query | page-local save/error state machines or persisted feedback facts |
 | Business use cases | `plugin/src/application/` | UI or persistence |
 | Product composition | `plugin/src/ui/pages/` | Domain/Application |
 | Navigation and stable Project shortcut routing | `plugin/src/ui/shell/` | Project entity model or persistence filenames |

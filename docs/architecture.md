@@ -624,7 +624,7 @@ Low-frequency multi-source/reference repair for operations such as:
 
 - deleting/replacing a Label or StatusDefinition;
 - deleting Initiative while preserving Projects;
-- deleting Project while preserving Issues by moving them to an explicit legal replacement Project, clearing old Milestone relations, and clearing `workspaceState.defaultProjectId` when it referenced the deleted Project;
+- deleting Project while preserving Issues by moving them to an explicit legal replacement Project, clearing old Milestone relations, and replacing `workspaceState.defaultProjectId` when the deleted Project is the current Default;
 - deleting Issue while removing Cycle membership;
 - deleting Cycle while preserving Issues;
 - other operations that must update related authoritative references together.
@@ -641,7 +641,7 @@ prepare
 - `destructive` removes authoritative Domain carriers only after preparation has succeeded;
 - `commit` is the final plugin-data cutover and occurs at most once.
 
-When an Integrity Batch mixes Plugin Data with Domain repairs, materialization projects the ordered Domain effects before any I/O and proves each pre-commit Domain prefix remains legal under the currently committed hard Domain/Configuration invariants; it then validates the final Plugin Data cutover. Optional `workspaceState.defaultProjectId` is deliberately not a hard Domain-graph invariant across destructive failure edges: deleting the referenced Project may leave that soft workspace preference dangling after the destructive stage until the final Plugin Data `commit` clears it. Query/navigation resolve such a missing Default as absent, and successful execution still clears the reference in the final cutover. A mixed Configuration/Domain repair is otherwise allowed only when the Entity repairs can first produce a state legal under both the old and new hard configuration, after which plugin data may commit last. If no safe staged bridge exists, the mutation is rejected before persistence rather than relying on write order or rollback to make an illegal prefix acceptable.
+When an Integrity Batch mixes Plugin Data with Domain repairs, materialization projects the ordered Domain effects before any I/O and proves each pre-commit Domain prefix remains legal under the currently committed hard Domain/Configuration invariants; it then validates the final Plugin Data cutover. Required `workspaceState.defaultProjectId` is part of the intended final Workspace graph: deleting the current Default Project therefore requires another existing Project as the explicit replacement Default, and the logical plan contains that Workspace State replacement rather than a clear-to-absent effect. Physical multi-source execution still uses the existing data-loss-averse Integrity Batch/recovery model rather than pretending filesystem operations are globally atomic; a failed partial execution is reconciled through Source Sync/LKG/Data-Issue handling instead of inventing a second Default-Project transaction system. A mixed Configuration/Domain repair is otherwise allowed only when the Entity repairs can first produce a state legal under both the old and new hard configuration, after which plugin data may commit last. If no safe staged bridge exists, the mutation is rejected before persistence rather than relying on write order or rollback to make an illegal prefix acceptable.
 
 The executor validates this topology independently of the materializer, stops at the first failed operation, and reports the durable operation prefix that completed before the error. Existing Source Sync recovery then clears invalid optimism and rereads authoritative state. Integrity Batch does not add general rollback, recursive compensation, a transaction graph, or an all-or-nothing filesystem guarantee. For destination-first destructive flows such as Project deletion, a detectable duplicate/error prefix remains preferable to silent source loss when a later destructive step fails.
 
@@ -669,14 +669,17 @@ After Obsidian layout is ready:
 ```text
 load plugin data
 → discover managed Domain sources
-→ read / parse / validate
+→ read / parse / validate source records
+→ recover required Default Project reference when missing
 → reference/workspace validation
 → build ownership + indexes
 → publish committed Runtime
 → ready
 ```
 
-Fresh installation explicitly bootstraps required managed structure and one ordinary Project seed titled `Standalone` at reserved physical sequence `0000`, then stores that Project's stable ID as `workspaceState.defaultProjectId`. The seed uses the ordinary Project carrier, default Project-creation lifecycle semantics, and normal relationship/mutation rules; there is no Standalone source kind or lifecycle branch, and `0000` is not Default identity. Missing required containers in an established Workspace are Data Issues, not silently replaced empty state. A missing Project referenced by Workspace State is surfaced as reference-integrity damage rather than silently recreated, but the optional Default reference is soft for Domain-graph validity and resolves as absent in Query/navigation until repaired or cleared.
+Fresh installation explicitly bootstraps required managed structure and one ordinary Project seed titled `Standalone` at reserved path `Projects/0000 Standalone.md`, then stores that Project's stable ID as `workspaceState.defaultProjectId`. The seed uses the ordinary Project carrier, default Project-creation lifecycle semantics, and normal relationship/mutation rules; there is no Standalone source kind or lifecycle branch, and `0000` is not Default identity.
+
+A missing persisted Default reference has one deliberately narrow startup recovery path before normal ready Runtime is published: inspect `Projects/0000 Standalone.md`; when it is a valid ordinary Trail Project, persist that Project's stable ID as the Default, otherwise bootstrap recovery recreates the standard `0000 Standalone.md` Project and persists its new stable ID. Query does not perform this recovery and does not manufacture an in-memory fallback after Trail is ready. Missing unrelated required containers or other invalid managed data continue to use the normal validation/Data-Issue path rather than turning bootstrap into a general silent-repair system.
 
 ### 5.10 External managed-persistence change
 
@@ -725,13 +728,21 @@ Started/Active Workflow: Priority → firstStartedAt → stable ID
 
 Project Board columns = Issue Status and Board is exposed only for Started Projects. The Default Project follows exactly the same Board/List/lifecycle rules as every other Project. Current Cycle Board can use Status columns × Project swimlanes. Normal Label is primarily a filter facet; promoted dimensions such as Area may be curated grouping dimensions.
 
-When a consumer needs an initial Project choice, Query may resolve `workspaceState.defaultProjectId` against Effective Runtime and the same target-capability rules used for all Projects. UI preselects it only when legal; otherwise the user must choose a legal Project. Query never manufactures a fallback Project or silently changes Project/Issue lifecycle.
+When a consumer needs an initial Project choice, Query resolves the required `workspaceState.defaultProjectId` against Effective Runtime and the same target-capability rules used for all Projects. UI preselects it only when legal for that specific operation; when the current Default is not legal, the user must choose another legal Project. Query never manufactures a fallback Project or silently changes Project/Issue lifecycle.
 
 ### 5.13 Continuous, discrete, and input interaction
 
 - **Continuous**: scroll/drag/resize/hover animation remains local UI state; domain action occurs on committed interaction such as drop.
 - **Discrete**: status/priority/complete/move/cycle actions emit semantic Application intents and may update optimistic state immediately.
 - **Input**: typing remains local draft; Save/Enter emits one semantic mutation rather than writing every keystroke.
+
+### 5.14 Runtime feedback boundary
+
+Runtime owns `control`, ordered optimistic `pending`, and Source Health; UI owns how much of that state becomes visible. A Runtime transition does not require a one-to-one visual transition.
+
+Normal local mutations remain optimistic and may be visually silent while their pending plans settle. `loading`, `refreshing`, or pending work is promoted to a lightweight user-visible state only when it lasts long enough to be perceptible/useful; the exact delay is a performance/UI calibration backed by representative local-Vault measurements rather than a new Runtime state or product constant.
+
+Mutation failure removes invalid optimism and returns the UI to reliable committed/LKG state before the failure is presented. Source Health remains the persistent signal for Data Issues, while `read-only-error` remains the coarse fail-closed signal when safe mutation cannot continue. UI feedback must consume these existing mechanisms rather than adding a second save/sync/error state machine.
 
 ## 6. Quality Strategy
 

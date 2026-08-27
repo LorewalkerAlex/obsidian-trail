@@ -202,7 +202,9 @@ Projects
 Cycles
 ```
 
-The row is not a special Standalone location and does not identify a Project by title. Workspace State stores a stable `defaultProjectId`; when that reference resolves, the row renders the referenced Project's current title and opens the same normal `Project(projectId)` location used everywhere else. Renaming the Project therefore renames the shortcut automatically. Assigning it to an Initiative, changing lifecycle Status, or editing any other Project property does not change the navigation mechanism. If the referenced Project is deleted, the Default Project reference is cleared and this shortcut disappears; Trail does not silently create or choose another Project.
+The row is not a special Standalone location and does not identify a Project by title. Normal ready Workspace State always resolves one stable `defaultProjectId`; the row renders that ordinary Project's current title and opens the same normal `Project(projectId)` location used everywhere else. Renaming the Project therefore renames the shortcut automatically. Assigning it to an Initiative, changing lifecycle Status, or editing any other Project property does not change the navigation mechanism.
+
+Changing the Workspace Default immediately changes this shortcut to the newly referenced Project. Deleting the current Default Project requires another Project to be chosen as the replacement Default before deletion completes, so the normal ready navigation does not intentionally lose this row. Fresh/bootstrap recovery of a missing persisted reference is owned below the UI and completes before Trail presents normal ready navigation.
 
 The same Project continues to appear normally in Projects Root, grouped under its actual Initiative or `No Initiative`. The shortcut is only a high-frequency placement of a normal Project target, not a duplicate Project, collection, or workspace.
 
@@ -2123,16 +2125,128 @@ Search must support a keyboard-first flow: typing updates results, the current r
 
 On very wide panes, Search results use a comfortable scan width instead of stretching one result row across the entire display. On constrained panes, the result list remains the primary single-column surface; any Peek follows the shared Peek responsive treatment inside the Main View. Search itself does not require whole-page horizontal scrolling.
 
-## 15. Remaining V1 UI Design Closure
+## 15. Runtime / Data-Issue / Optimistic Feedback
 
-Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, Home content/data semantics, Workspace Grid/responsive composition, and Search are now substantially resolved, but V1 UI is **not yet frozen**. The remaining product-facing interaction answers are:
+### 15.1 Feedback principle
 
-- **Runtime/Data-Issue feedback** - map `loading`, `refreshing`, `read-only-error`, optimistic pending, mutation failure, and recoverable Data Issue states to coherent user-visible UI, including feedback for the already-resolved shared actions.
-- **Default Project setter** - provide a lightweight V1 interaction for explicitly setting or replacing the Workspace Default Project after bootstrap without introducing special Project semantics.
+For an equivalent responsibility, Trail follows current Linear feedback behavior and visual rhythm unless Trail's local Markdown/LKG architecture requires a semantic difference. Trail does not invent a parallel save/sync/error design language simply because the underlying persistence is Markdown.
 
-These are not deferred beyond V1. Runtime/Data-Issue feedback is the immediate next design closure, followed by the Default Project setter and final V1 UI freeze.
+The core rule is:
 
-## 16. Explicitly Deferred Beyond Current V1 UI Closure
+> **Normal local success is silent and optimistic. Persistent feedback is reserved for conditions that actually deserve attention.**
+
+Runtime state and visual feedback are therefore intentionally not one-to-one. Trail may pass through `pending` or `refreshing` without showing any dedicated UI when the local operation settles too quickly for feedback to help.
+
+### 15.2 Normal optimistic mutations
+
+Normal local actions such as Status/Priority/Due changes, drag/drop, Triage Accept/Defer, Project edits, and creation update the effective UI immediately through the existing optimistic Runtime projection.
+
+The ordinary fast path shows no `Saving`, no `Saved`, and no success toast:
+
+```text
+user action
+→ optimistic UI changes immediately
+→ local Markdown / plugin-data persistence settles
+→ confirmed state replaces optimism
+→ no extra success message
+```
+
+A pending marker may exist as internal/runtime state without becoming visible presentation. Existing POC `Saving` chips or status panels are not target UI merely because the Runtime exposes pending state.
+
+### 15.3 Loading, refreshing, and unusually slow local work
+
+Trail is local-first, so normal startup, refresh, and persistence are expected to complete quickly. V1 does not freeze an arbitrary millisecond threshold for when an operation becomes visibly slow.
+
+If initial loading or a refresh completes on the normal fast path, no large status panel appears. If it lasts long enough to be useful to the user, Trail may surface the same quiet, low-attention status grammar Linear uses for sustained syncing/loading: a compact shell-level `Loading`, `Saving`, or `Refreshing` indication rather than a page-blocking card. Completion simply removes that indication; there is no follow-up `Saved` confirmation.
+
+The exact reveal delay, whether a count is useful, and the threshold at which the state becomes perceptible are **performance-calibration decisions**. They must be based on representative local Vault/Project/Issue benchmarks later rather than guessed in product design.
+
+While Runtime is `refreshing`, the last-known-good content remains readable and normal mutation is paused according to Architecture. Presentation changes, navigation, Search, Peek, and other read-only interactions remain available where their data is trustworthy.
+
+### 15.4 Mutation failure
+
+When a submitted mutation fails, the failed optimistic plan is removed and the affected UI returns to reliable committed/LKG state. The user then receives a concise Linear-style transient error toast/notice tied to the attempted action, for example:
+
+```text
+Couldn't update issue status
+```
+
+The message explains the user-visible failure, not internal queue/parser/transaction terminology. Trail does not pair every mutation with a success toast merely to make failure presentation symmetrical.
+
+### 15.5 Data Issues and last-known-good presentation
+
+A Data Issue is persistent source health, not a one-shot mutation error. When one managed source is invalid but Trail has reliable last-known-good data, that content remains visible and the warning stays present until the source becomes healthy again.
+
+Trail uses the closest Linear warning/error visual language rather than creating a separate diagnostics product. The affected entity/location shows a compact persistent warning such as:
+
+```text
+⚠ Showing the last valid version
+  This Project can't be edited until its Markdown source is valid again.
+  Open source
+```
+
+`Open source` is a Trail-specific action because authoritative Markdown is user-accessible. Normal product copy does not expose parser stages, opaque IDs, source ranges, stack traces, or internal error codes unless a development diagnostics surface explicitly asks for them.
+
+When one or more Data Issues exist outside the currently visible entity, Trail may show one quiet workspace-level warning glyph/status in the Navigation/header area so Home, Search, and other aggregate views do not imply that every source is current. It is a status affordance, not a new Data Health page or dashboard. Source-scoped mutation remains disabled only as broadly as the existing `control + health + ownership` policy requires.
+
+### 15.6 Read-only and blocking failure
+
+If Trail enters `read-only-error` while a trustworthy last-known-good snapshot still exists, normal content stays visible and readable. A persistent Linear-style warning makes the read-only condition clear, while mutation affordances are unavailable. Trail does not replace useful LKG content with a full-page error merely because writes are paused.
+
+A blocking error state is reserved for startup/refresh conditions where Trail cannot establish any trustworthy readable state. That surface may explain that Trail could not load safely and provide the smallest applicable recovery action such as opening the affected source or retrying. It must not fabricate empty/healthy-looking workspace data.
+
+## 16. Default Project Setter
+
+### 16.1 Location and shape
+
+Default Project is a Workspace preference, not a high-frequency Project property. V1 exposes one primary setter in the native Obsidian Trail Settings surface:
+
+```text
+Trail Settings
+
+Workspace
+────────────────────────────────
+Default project
+Trail                                      Change
+```
+
+The current Project title is displayed from the resolved stable Project reference. `Change` opens the shared searchable Project Picker rather than a small native dropdown so the interaction remains usable with a long-lived Workspace containing many Projects.
+
+### 16.2 Selection semantics
+
+The picker lists existing ordinary Projects and marks the current Default. There is no `No default project`, Clear, or empty choice in normal V1 UI.
+
+Selecting another Project changes only `workspaceState.defaultProjectId`:
+
+```text
+Default Project A
+→ choose Project B
+→ Workspace reference becomes B
+```
+
+It does not move Issues, change Project lifecycle, change Initiative membership, rename either Project, or recreate `Standalone`. A Project may remain the Default in any of its legal lifecycle states; downstream creation/move interactions preselect it only when it is a legal target for that specific operation.
+
+Normal setter success follows Section 15 and is silent/optimistic. Failure restores the previous resolved Default and uses the same transient error-feedback pattern as other mutations.
+
+### 16.3 Deleting the current Default
+
+Deleting the current Default Project requires another existing Project to be selected as the replacement Default before deletion can complete. The resulting Workspace State therefore continues to resolve one Default Project, and the Navigation shortcut switches to that replacement rather than disappearing.
+
+The same shared Project Picker can supply this required input. V1 does not add a special Default-Project subtype or separate Standalone management flow.
+
+### 16.4 Startup recovery is not a settings workflow
+
+If persisted Workspace State lacks `defaultProjectId`, Source Sync performs the canonical `Projects/0000 Standalone.md` bootstrap/recovery before normal ready UI appears. Settings does not present an empty Default state or ask the user to repair routine bootstrap absence manually.
+
+V1 does not add secondary `Set as default` actions to every Project context menu/Inspector. Such convenience can be added later only if real use shows that changing Default Project is frequent enough to justify another entry point.
+
+## 17. V1 UI Freeze
+
+Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are now resolved at the V1 product-interaction level.
+
+**V1 `ui.md` is frozen for formal implementation alignment.** Implementation may still calibrate the values explicitly listed in Section 19 against real Obsidian/Linear evidence, but it must not reopen the resolved product behavior merely because the current POC uses different panels, forms, layout, or error presentation.
+
+## 18. Explicitly Deferred Beyond Current V1 UI Closure
 
 The following product conveniences are deferred and do not block V1 UI freeze or formal implementation of the supported workflows:
 
@@ -2143,7 +2257,7 @@ The following product conveniences are deferred and do not block V1 UI freeze or
 
 Their existing Domain/Data/Workspace-state concepts do not require speculative V1 UI or implementation work.
 
-## 17. Implementation-Time Calibration Decisions
+## 19. Implementation-Time Calibration Decisions
 
 The following may remain replaceable until the relevant real-Obsidian surface exists and can be calibrated against current references:
 
@@ -2155,6 +2269,9 @@ The following may remain replaceable until the relevant real-Obsidian surface ex
 - exact Home module positions/spans, border treatment, compact representations, and any final width-dependent hide decision consistent with the frozen Home content and Section 13 behavior;
 - exact Triage Queue/Review width ratio, transition threshold, and constrained Queue-context visual treatment;
 - exact Search content measure, group spacing, empty-query/recent treatment, and keyboard bindings consistent with Section 14 semantics;
+- exact sustained-duration thresholds and optional count treatment for surfacing `Loading` / `Saving` / `Refreshing`, based on representative local performance tests rather than guessed constants;
+- exact transient error-toast duration, placement, animation, and Obsidian-host integration while preserving the frozen Linear-like low-noise behavior;
+- exact Default Project picker width, row metadata density, and search/focus mechanics while preserving the frozen Settings location and no-empty-choice rule;
 - exact lower-level Project Issue ordering/clustering algorithm;
 - exact lower-level Cycle List ordering within the resolved Status/Project coherence rules;
 - exact default optional Issue property set for Project Workspace/Cycle List vs Board beyond the hierarchy defined above;

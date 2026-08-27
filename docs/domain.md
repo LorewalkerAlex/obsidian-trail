@@ -21,7 +21,7 @@ Trail uses the following canonical terms.
 - **Label** — a selectable value belonging to exactly one LabelGroup.
 - **Custom View** — persisted user workspace state describing a supported saved selection and presentation.
 - **Favorite** — an ordered navigation reference to a supported Trail target.
-- **Default Project** — an optional Workspace State reference to one ordinary Project used for high-frequency navigation and initial Project selection.
+- **Default Project** — the required normal-operation Workspace State reference to one ordinary Project used for high-frequency navigation and initial Project selection.
 
 Names displayed to the user may change without changing stable identity or canonical semantics.
 
@@ -38,7 +38,7 @@ Workspace owns:
 - Estimate aggregation weights for the fixed T-Shirt levels;
 - Cycle default planning rule;
 - temporal/timezone policy;
-- Custom Views, Favorites, Home composition, and the optional Default Project reference.
+- Custom Views, Favorites, Home composition, and the required Default Project reference.
 
 ### 2.2 Core Entities
 
@@ -178,22 +178,25 @@ A value does not become an Entity merely because many Entities use it.
 
 ### 2.10 User workspace state
 
-Custom Views, Favorites, Home composition, and the optional Default Project reference are persisted user workspace state. They describe how the user organizes, navigates, and presents Trail; they are not Core Domain Data and do not redefine Project behavior.
+Custom Views, Favorites, Home composition, and the required Default Project reference are persisted user workspace state. They describe how the user organizes, navigates, and presents Trail; they are not Core Domain Data and do not redefine Project behavior.
 
-The Default Project, when present, references one ordinary Project by stable identity. The reference does not make that Project a subtype, does not constrain its Status or Initiative membership, and does not prevent rename or deletion. A fresh Workspace may seed an ordinary Project titled `Standalone` and store its ID as the initial Default Project, but `Standalone` is not canonical Domain identity.
+During normal ready operation, the Default Project references exactly one existing ordinary Project by stable identity. The reference does not make that Project a subtype and does not constrain its Status or Initiative membership. Changing the Default Project changes only the Workspace reference. Deleting the currently referenced Project is legal only when the same user intent supplies another existing Project as the replacement Default, so the resulting canonical Workspace State still resolves exactly one Default Project.
+
+Fresh bootstrap and startup recovery may create or adopt the ordinary Project titled `Standalone` at the reserved bootstrap path when the persisted reference is missing. That recovery belongs to Source Sync/bootstrap; neither the `Standalone` title nor physical sequence `0000` becomes Domain identity.
 
 ## 3. Relationships
 
 Canonical relationships are:
 
 ```text
-Project        → Initiative   0..1
-Milestone      → Project      exactly 1
-Triage Issue   → Project      none
-Triage Issue   → Milestone    none
-Workflow Issue → Project      exactly 1
-Workflow Issue → Milestone    0..1, within WorkflowIssue.project scope
-Cycle          ↔ Workflow Issue planning membership
+Workspace Default → Project      exactly 1 during normal ready operation
+Project           → Initiative   0..1
+Milestone         → Project      exactly 1
+Triage Issue      → Project      none
+Triage Issue      → Milestone    none
+Workflow Issue    → Project      exactly 1
+Workflow Issue    → Milestone    0..1, within WorkflowIssue.project scope
+Cycle             ↔ Workflow Issue planning membership
 ```
 
 ### 3.1 Project and Initiative

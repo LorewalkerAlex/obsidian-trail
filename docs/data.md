@@ -276,13 +276,17 @@ Relative temporal conditions, when supported, remain relative (for example “ov
 
 ### 1.11 Default Project, Favorites and Home
 
-Workspace State may contain one optional stable Project reference:
+Canonical ready Workspace State contains one stable Project reference:
 
 ```text
-defaultProjectId?: ProjectId
+defaultProjectId: ProjectId
 ```
 
-The referenced record is an ordinary Project. `defaultProjectId` is not Project identity, is not derived from title, and does not require a Project subtype or `systemRole` field. A fresh Workspace seeds a normal Project titled `Standalone` at the reserved initial path `Projects/0000 Standalone.md` and stores its stable ID here. Sequence `0000` is only a fresh-bootstrap physical convention for that initial seed: it does not define Default identity, it remains attached to the seeded Project across title rename, it is not reassigned when another Project later becomes Default, and it is not recreated when the seed is deleted. Rename leaves the reference intact, while a legal delete clears the reference rather than inventing a replacement. A dedicated user-facing mechanism for changing the Default Project may be added when needed and does not change this data contract.
+The referenced record is an ordinary Project and must resolve to an existing Project in normal ready state. `defaultProjectId` is not Project identity, is not derived from title, and does not require a Project subtype or `systemRole` field.
+
+A fresh Workspace seeds a normal Project titled `Standalone` at the reserved initial path `Projects/0000 Standalone.md` and stores its stable ID here. If persisted Workspace State lacks `defaultProjectId` at startup, Source Sync performs the narrow bootstrap-recovery path before publishing normal ready Runtime: inspect `Projects/0000 Standalone.md`; if it is a valid ordinary Trail Project, store that Project's stable ID, otherwise recreate a standard bootstrap Project at that path and store the new stable ID.
+
+Sequence `0000` remains only a bootstrap/recovery physical convention for that source; it does not define Default identity and is not reassigned when another Project later becomes Default. Renaming a referenced Project leaves the stable reference intact. Replacing the Default Project changes only this Workspace reference. Deleting the current Default Project requires a replacement `ProjectId` so the final authoritative Workspace State still has a valid `defaultProjectId`; normal product behavior does not persist a cleared Default state.
 
 ```text
 FavoritesState {
@@ -320,7 +324,7 @@ Project.initiativeId?
 Milestone.projectId
 WorkflowIssue.projectId
 WorkflowIssue.milestoneId?
-WorkspaceState.defaultProjectId?
+WorkspaceState.defaultProjectId
 ```
 
 The following are not duplicated as authoritative collections:
@@ -348,9 +352,9 @@ Native Obsidian links are navigational/document relationships and do not become 
 
 ### 2.5 Default Project is a workspace reference, not Project identity
 
-The Workspace Default Project is represented only by optional `WorkspaceState.defaultProjectId`. It points to the same stable ID used by an ordinary Project record; the reference itself adds no second Project identity, path, kind, title convention, or lifecycle field.
+The Workspace Default Project is represented only by required normal-state `WorkspaceState.defaultProjectId`. It points to the same stable ID used by an ordinary Project record; the reference itself adds no second Project identity, path, kind, title convention, or lifecycle field.
 
-Fresh bootstrap separately reserves physical Project sequence `0000` for the initial seed. That reservation belongs to the seeded Project source, not to Default identity: renaming the seed updates the readable filename suffix while preserving `0000`, and changing the Default Project does not move another Project into `0000`. `Standalone` is only the initial title; another ordinary Project could legally have the same title.
+Fresh bootstrap separately reserves physical Project sequence `0000` for the initial `Standalone` seed. Startup recovery may consult the exact `Projects/0000 Standalone.md` bootstrap path only when the persisted Default reference is missing. That physical convention remains recovery input rather than identity: changing the Default Project does not move another Project into `0000`, and the current Default may have any legal Project title, Initiative membership, or lifecycle Status.
 
 ## 3. Authority & Derivation
 
@@ -372,7 +376,7 @@ Project configuration cannot introduce a Project StatusDefinition in Backlog; Is
 
 Default Project, Custom Views, Favorites, and Home composition are authoritative user organization/navigation state, not Core Domain history.
 
-Deleting a View does not delete referenced Entities. Deleting the Project referenced by `defaultProjectId` clears that Workspace State reference as part of the legal delete mutation; Trail does not silently choose or create another default.
+Deleting a View does not delete referenced Entities. Deleting the Project referenced by `defaultProjectId` requires another existing Project as the replacement Default in the same legal user intent, so the resulting Workspace State still contains one valid required reference.
 
 ### 3.4 Derived and runtime state
 

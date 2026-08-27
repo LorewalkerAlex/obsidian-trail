@@ -102,13 +102,17 @@ Every newly created normal Workflow Issue is born in `Backlog`, regardless of wh
 
 ### 3.6 Default Project
 
-A Workspace may hold one optional **Default Project** reference for high-frequency routing and initial selection. The referenced object is an ordinary Project with no special Domain type, lifecycle, relationship, or deletion rule.
+A Workspace has exactly one **Default Project** reference during normal Trail operation. The referenced object is an ordinary Project with no special Domain type, lifecycle, relationship, or hidden execution privilege.
 
-A fresh Workspace seeds one normal Project titled `Standalone` and makes that Project the initial Default Project. The seed uses normal Project creation semantics and may immediately be renamed, assigned to an Initiative, moved through any legal Project lifecycle transition, given Milestones and properties, or deleted like any other Project.
+A fresh Workspace seeds one normal Project titled `Standalone` at `Projects/0000 Standalone.md` and makes that Project the initial Default Project. The seed uses normal Project creation/default-Status semantics and may later be renamed, assigned to an Initiative, moved through any legal Project lifecycle transition, given Milestones and properties, or deleted subject to the same rules as any other Project plus the requirement that another Default Project be chosen first when it is the current Default.
 
-`Standalone` is therefore a default title and starting arrangement, not identity or canonical Project semantics. The Default Project reference follows stable Project identity, so renaming the Project also changes the visible shortcut label. If the referenced Project is deleted, Trail clears the Default Project reference rather than silently recreating or replacing it.
+`Standalone` is therefore a bootstrap/recovery title and starting arrangement, not identity or canonical Project semantics. The Default Project reference follows stable Project identity, so renaming the Project also changes the visible shortcut label. Changing the Default Project replaces only the Workspace reference; it does not move Issues, change Project Status, rewrite Initiative membership, or otherwise mutate either Project.
 
-When a workflow needs an explicit Project target, Trail may preselect the Default Project only when it is a legal target for that operation. If it is not legal or no Default Project exists, the user chooses another legal Project. Trail does not reinterpret an omitted Project as a hidden fallback inside Domain logic. V1 also requires a lightweight user-facing way to set or replace the Default Project after bootstrap; the exact interaction is a UI-design decision, not a new Project subtype or Domain rule.
+If persisted Workspace State has no `defaultProjectId` at startup, Trail performs one narrow recovery before normal ready state: it checks `Projects/0000 Standalone.md`; if that source is a valid ordinary Trail Project, Trail records its stable ID as the Default Project, otherwise bootstrap recovery recreates a standard `0000 Standalone.md` Project and records the new stable ID. This recovery does not make the path/title into identity and is not a general title-based Project lookup rule.
+
+Deleting the current Default Project requires selecting another existing Project as the replacement Default before deletion can complete. Trail does not intentionally leave a normal ready Workspace without a Default Project.
+
+When a workflow needs an explicit Project target, Trail may preselect the Default Project only when it is legal for that operation. If the current Default is not legal, the user chooses another legal Project. Trail does not reinterpret an omitted Project target as a hidden Domain fallback. V1 exposes a lightweight Workspace setting for replacing the Default Project; it does not expose a `No default project` choice.
 
 ### 3.7 Triage
 
