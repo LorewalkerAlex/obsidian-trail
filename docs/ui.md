@@ -326,7 +326,7 @@ For Triage and Historical Cycle, the V1 target is deliberately simpler:
 Filter                                             Display
 ```
 
-The binary layout switch occupies one control slot rather than two permanent peer buttons. Not Started, Done, and Cancelled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation. Triage is always a List. Historical Cycle is also List-only because it is passive final-membership history rather than a historical execution Board.
+The binary layout switch occupies one control slot rather than two permanent peer buttons. Planned, Completed, and Canceled Project Workspaces are List-only because Board is an execution workflow surface; they omit the List/Board toggle rather than exposing an unavailable presentation. Triage is always a List. Historical Cycle is also List-only because it is passive final-membership history rather than a historical execution Board.
 
 Trail V1 uses one **simplified shared Filter interaction** across supported collections. It borrows Linear's low-friction property/value selection rhythm but deliberately omits the advanced operator builder, nested boolean grammar, AI filtering, and saved-view machinery. The common interaction is:
 
@@ -401,7 +401,7 @@ Initiative Focus does not repeat Initiative as a filter because the location alr
 
 `Display` is not a generic view builder. In Projects Root it controls supported secondary Project-row properties and Timeline presentation choices. In Project Workspace and Current Cycle it controls supported secondary Issue Row/Card properties. In Historical Cycle it controls supported flat List-row metadata. In Triage it is limited to supported ordering choices. In Initiative Focus it controls the same supported Project-row secondary properties as the shared Project collection, without Initiative grouping because the location already supplies that dimension. V1 does not need a generic Group/Sub-group builder, manual ordering, or a generic Sort builder for these surfaces.
 
-`Create Issue` is not a generic View Bar configuration control. Exact placement of the Project-local create affordance is a composition detail, but it must not visually imply that creation inherits a Todo/Started/Completed group.
+`Create Issue` is not a generic View Bar configuration control. Exact placement of the Project-local create affordance is a composition detail, but it must not visually imply that creation inherits a Todo/In Progress/Done group.
 
 ### 5.4 Projects Root and Initiative Focus
 
@@ -476,12 +476,12 @@ Default row semantics are:
 - Priority uses the shared compact Priority glyph and picker.
 - Progress is derived and read-only. Wide rows may show a thin bar plus percentage; compact rows may reduce this to percentage. Undefined Progress displays `—` rather than fabricated 0%/100%.
 - Due is the Project's own Due and uses the shared temporal emphasis grammar. It may open the normal date picker.
-- Attention is exception-driven rather than a permanently occupied column. No meaningful attention means no visual footprint. Temporal pressure or Cancelled-Project cleanup may expose a compact signal/reason. When that reason is exactly expressible by the shared Filter grammar, activating it may open Project Workspace with that normal temporary Filter; an unrepresentable derived bucket does not justify hidden Filter state or a one-off operator.
+- Attention is exception-driven rather than a permanently occupied column. No meaningful attention means no visual footprint. Temporal pressure or Canceled-Project cleanup may expose a compact signal/reason. When that reason is exactly expressible by the shared Filter grammar, activating it may open Project Workspace with that normal temporary Filter; an unrepresentable derived bucket does not justify hidden Filter state or a one-off operator.
 - Labels are optional secondary display and use the shared compact dot grammar. They are off by default in the Projects Root row unless enabled through Display.
 
 The row itself is a navigation surface: activating the title or ordinary row area opens Project Workspace. Activating an inline property edits that property and does not trigger row navigation. Progress remains read-only. Right-click or a low-noise overflow affordance opens Project actions such as status/priority/due changes, Initiative movement, and destructive actions where legal. V1 does not require drag-between-Initiative-groups as a second relationship-editing mechanism.
 
-Done and Cancelled Projects remain in their current Initiative group rather than moving to a separate Archive surface. Terminal rows settle below active work and use reduced visual weight. A Cancelled Project with unresolved non-terminal child Issues keeps its cleanup Attention prominent even when the rest of the row is muted.
+Completed and Canceled Projects remain in their current Initiative group rather than moving to a separate Archive surface. Closed Project rows settle below active work and use reduced visual weight. A Canceled Project with unresolved open child Issues keeps its cleanup Attention prominent even when the rest of the row is muted.
 
 Default Project-collection ordering is deterministic and explainable:
 
@@ -493,7 +493,7 @@ Project lifecycle category
 → stable deterministic fallback
 ```
 
-The default lifecycle order is In Progress, Not Started, Done, then Cancelled. V1 does not use activity, Progress, Attention score, manual rank, or persisted focus score as hidden ordering state.
+With the default Project Status configuration, the lifecycle order is In Progress, Planned, Completed, then Canceled. V1 does not use activity, Progress, Attention score, manual rank, or persisted focus score as hidden ordering state.
 
 Responsive reduction preserves title and Status identity first, then meaningful exception Attention and Priority. Progress bar may collapse to a percentage; ordinary Due, optional Labels, and other secondary text progressively disappear rather than wrapping the row into a mini details view. An overdue Due may receive higher preservation priority because its current semantic emphasis is exceptional.
 
@@ -512,11 +512,11 @@ Timeline does not render a Project merely because the Project exists. A Project 
 For a Project with current child Issues, render it when at least one of the following temporal signals exists:
 
 - at least one current child Issue has `firstStartedAt`;
-- the Project is currently in the Started/In Progress lifecycle category;
+- the Project current Status belongs to the Started category (default visible Status `In Progress`);
 - at least one currently eligible Project, Milestone, or Issue Due exists;
-- every current child Issue is terminal, allowing a closed never-started lifecycle envelope to be derived.
+- every current child Issue is closed, allowing a closed never-started lifecycle envelope to be derived.
 
-Otherwise omit the Project from Timeline. In particular, a Not Started Project containing only never-started non-terminal Issues and no eligible Due does not appear in Timeline.
+Otherwise omit the Project from Timeline. In particular, a Planned Project containing only never-started open Issues and no eligible Due does not appear in Timeline.
 
 Timeline eligibility is a presentation projection only. It does not mutate the underlying filtered Project collection or create a new Project lifecycle fact.
 
@@ -530,7 +530,7 @@ The historical/current span uses one of two evidence modes.
 start = earliest current child Issue.firstStartedAt
 ```
 
-If any Issue that has `firstStartedAt` is currently non-terminal, the solid execution envelope extends to `today`. Otherwise it ends at the latest current `terminalAt` among Issues that also have `firstStartedAt`.
+If any Issue that has `firstStartedAt` is currently open, the solid execution envelope extends to `today`. Otherwise it ends at the latest current `terminalAt` among Issues that also have `firstStartedAt`.
 
 ```text
 execution evidence     ━━━━━━━━━━━━━━━
@@ -549,7 +549,7 @@ origin = earliest current child Issue.createdAt
 `createdAt` alone does not make a Project visible. Once the Project is otherwise Timeline-eligible, the faint span is derived from the current data shape:
 
 - current Started/In Progress Project: faint span from earliest `createdAt` through `today`;
-- all current child Issues terminal and never started: faint span from earliest `createdAt` through the latest current Issue `terminalAt`;
+- all current child Issues closed and never started: faint span from earliest `createdAt` through the latest current Issue `terminalAt`;
 - otherwise, eligible Due may provide the second temporal boundary; if at least one eligible Due lies in the future, the left-side faint span runs through `today` and the future portion follows the Today-to-Due rule below; if no eligible Due lies in the future, the faint span may end at the latest eligible Due that is later than the origin;
 - if a candidate endpoint is not later than the origin, do not fabricate a reverse or zero-length bar; retain only independently valid markers.
 
@@ -558,26 +558,26 @@ planning/lifecycle evidence     ───────────────
 execution evidence              ━━━━━━━━━━━━━━━
 ```
 
-Project Status does not rewrite Issue lifecycle evidence. A Not Started Project may therefore display a solid execution envelope when its current Issues contain `firstStartedAt`; an In Progress Project may display only faint planning evidence when none of its current Issues has started. Timeline presents the current facts rather than repairing such combinations.
+Project Status does not rewrite Issue lifecycle evidence. A Planned Project may therefore display a solid execution envelope when its current Issues contain `firstStartedAt`; an In Progress Project may display only faint planning evidence when none of its current Issues has started. Timeline presents the current facts rather than repairing such combinations.
 
 #### 5.6.3 Due markers
 
-Due is a separate marker layer rather than a source of canonical Project start/end dates. A Due is eligible only while its **own corresponding entity** remains non-terminal/currently incomplete:
+Due is a separate marker layer rather than a source of canonical Project start/end dates. A Due is eligible only while its **own corresponding entity** remains open/currently incomplete:
 
 ```text
 Project Due
-→ visible only while Project is Not Started / In Progress
+→ visible only while Project is Planned / In Progress
 
 Issue Due
-→ visible only while Issue is non-terminal
+→ visible only while Issue is open
 
 Milestone Due
 → visible only while Milestone is not derived complete
 ```
 
-Milestone has no independent Done/Cancelled workflow Status; completion remains derived from its current Issue scope.
+Milestone has no independent Completed/Canceled workflow Status; completion remains derived from its current Issue scope.
 
-A parent becoming terminal does not silently erase an independently active child's Due. For example, a Cancelled Project hides the Project's own Due, while an unresolved child Issue may still expose its Issue Due. Conversely, Completed/Canceled Issues and derived-complete Milestones contribute no Due marker even if their stored Due remains present.
+A parent becoming closed does not silently erase an independently active child's Due. For example, a Canceled Project hides the Project's own Due, while an unresolved child Issue may still expose its Issue Due. Conversely, Completed/Canceled Issues and derived-complete Milestones contribute no Due marker even if their stored Due remains present.
 
 Past eligible Due values remain visible and may receive normal Overdue emphasis. Timeline does not repair conflicting or unusual dates. Project, Milestone, and Issue Due markers use different visual weight while sharing the same temporal grammar; exact glyphs, collision handling, and dense-marker aggregation remain visual-calibration decisions.
 
@@ -597,7 +597,7 @@ today ───────────────── futureDueHorizon
 
 When no eligible future Due exists, render no Today-to-Due span. The future span is independent from the historical execution/planning envelope: if execution ended before today, the gap between the historical endpoint and today remains visually empty rather than being filled with invented activity.
 
-Because eligibility belongs to each corresponding entity, a terminal Project may still show a future span when an unresolved child Issue has an eligible future Due. This is an objective projection of current data, not an attempt to reinterpret the Project's business state.
+Because eligibility belongs to each corresponding entity, a closed Project may still show a future span when an unresolved child Issue has an eligible future Due. This is an objective projection of current data, not an attempt to reinterpret the Project's business state.
 
 #### 5.6.5 Query and UI boundary
 
@@ -690,7 +690,7 @@ Project is a required structural relation and belongs in the light creation head
 
 At normal pane widths, Priority, Labels, Milestone, Estimate, and Due are directly available. Only when width is genuinely constrained may lower-priority property controls progressively move into a secondary/overflow treatment; they are not hidden by default merely to keep the Composer artificially sparse.
 
-Creation Status is **not** an editable Composer property. Every normal Workflow Issue begins in the Domain-defined Backlog StatusDefinition; the UI does not show a fake disabled Backlog dropdown or inherit Todo/Started/Completed from a nearby section/column. Cycle is also not a creation property.
+Creation Status is **not** an editable Composer property. Every normal Workflow Issue begins in the Domain-defined Backlog StatusDefinition; the UI does not show a fake disabled Backlog dropdown or inherit Todo/In Progress/Done from a nearby section/column. Cycle is also not a creation property.
 
 Invocation rules are:
 
@@ -757,10 +757,10 @@ Trail follows the same broad usability principle visible in Linear's read-only/a
 
 Concretely:
 
-- a Done/Cancelled Project does not expose an active Project-local Create Issue action;
+- a Completed/Canceled Project does not expose an active Project-local Create Issue action;
 - when an unavailable action is useful to explain, a disabled/unavailable presentation may give a concise reason and recovery such as reopening the Project rather than failing only after Composer completion;
 - relation pickers show/select only legal normal targets, or mark a target unavailable when retaining it in the list materially helps the user understand why it cannot be chosen;
-- an illegal or absent Default Project is treated as no prefill, never as permission for a hidden fallback;
+- a Default Project that is not a legal target is treated as no prefill, never as permission for a hidden fallback;
 - UI never changes Status or another relation silently just to make a target legal;
 - Domain/Application still revalidate on submit, so a context that becomes illegal while the Composer is open cannot bypass canonical rules. Exact mutation-failure presentation belongs to the later runtime/feedback closure.
 
@@ -855,68 +855,58 @@ actual Project Workflow Issues
 → supported presentation for current Project capability
 ```
 
-A Project can therefore be Cancelled while still showing Backlog/Todo/Started child Issues. Those children are unresolved cleanup work, not hidden merely because the Project was cancelled.
+A Project can therefore be Canceled while still showing Backlog/Todo/In Progress child Issues. Those children are unresolved cleanup work, not hidden merely because the Project was canceled.
 
 Project Status must not be used as a shortcut for rewriting, filtering away, or fabricating child data.
 
 ### 6.2 Lifecycle-dependent workspace role
 
-Project lifecycle has four UI roles:
+With the default Project Status configuration, Project Workspace has four UI roles:
 
-| Project lifecycle | Workspace role | Layout |
-| --- | --- | --- |
-| Not Started | planning-only | List |
-| In Progress | planning + execution | List / Board |
-| Done | settled review | List |
-| Cancelled | cleanup/review | List |
+| Project Status | System category | Workspace role | Layout |
+| --- | --- | --- | --- |
+| Planned | Unstarted | planning-only | List |
+| In Progress | Started | planning + execution | List / Board |
+| Completed | Completed | settled review | List |
+| Canceled | Canceled | cleanup/review | List |
 
 The Default Project has no special workspace role. It uses the same lifecycle-dependent Project Workspace behavior, layouts, capabilities, Milestones, and Inspector as any other Project.
 
 ### 6.3 Board Status projection
 
-Board is the execution-focused presentation and is available only for In Progress Projects.
+Board is the execution-focused presentation and is available only for Projects whose current Status belongs to the Started category (the default visible Status is `In Progress`).
 
-Its visible Status projection contains:
+Board columns are **concrete configured Issue StatusDefinitions**, not StatusCategory headings. The default visible columns are:
 
 ```text
-Unstarted   → default presentation example: Todo
-Started     → default presentation example: In Progress
-Completed   → default presentation example: Done
+Todo
+In Progress
+Done
 ```
 
-Backlog and Canceled work do not appear as normal Board columns.
+Those Statuses respectively belong to the Unstarted, Started, and Completed system categories. Backlog and Canceled work do not appear as normal Board columns.
 
-If Workspace configuration defines multiple concrete Issue StatusDefinitions inside one included category, Board preserves those concrete configured Statuses and configured order rather than collapsing Domain identity into hard-coded strings.
+If Workspace configuration defines multiple concrete Issue StatusDefinitions inside one included category, each concrete Status remains its own peer Board column in configured order. Board never adds a second category nesting level.
 
 Dragging an Issue card across columns means **Status change only**. Same-column drag does not create a persisted manual order.
 
-Board does not become a creation-by-column mechanism. New normal Workflow Issues are always created in Backlog, so a Todo/Started/Done column `+` must not silently create directly into that Status.
+Board does not become a creation-by-column mechanism. New normal Workflow Issues are always created in Backlog, so a Todo/In Progress/Done column `+` must not silently create directly into that Status.
 
 ### 6.4 List Status projection
 
 List is the complete planning/review presentation and includes the full Workflow Issue lifecycle.
 
-Default category order is:
-
-```text
-Completed
-Started
-Unstarted
-Backlog
-Canceled
-```
-
-With default Status names this reads naturally as:
+With the default Status configuration, the visible Status sections are:
 
 ```text
 Done
 In Progress
 Todo
 Backlog
-Cancelled
+Canceled
 ```
 
-Concrete StatusDefinitions retain configured order inside the relevant category.
+These are concrete StatusDefinition names. System StatusCategory remains an internal lifecycle semantic used for rules and default category-level ordering; it is not an extra selectable level in the List. Concrete StatusDefinitions retain configured order within the relevant category.
 
 Status sections may be collapsible UI state. Collapse state is presentation state, not Domain data.
 
@@ -942,7 +932,7 @@ A filter does not:
 - seed arbitrary properties during creation;
 - justify new canonical data fields.
 
-Milestone and derived attention entries may apply a temporary Issue Filter in Project Workspace as a navigation shortcut when the intended subset is exactly expressible by the shared grammar. The resulting filter remains represented by the normal Filter UI and is cleared there rather than maintaining a second hidden Inspector filter state. Derived attention buckets that require an unavailable range/exclusion operator remain presentation only in V1 rather than creating private filter semantics.
+Milestone and derived attention entries may apply a temporary Issue Filter in Project Workspace as a navigation shortcut when the intended subset is exactly expressible by the shared grammar. The resulting filter remains represented by the normal Filter UI/chips. Inspector does not maintain a second private filter state. Derived attention buckets that require an unavailable range/exclusion operator remain presentation only in V1 rather than creating private filter semantics.
 
 ### 6.6 Workflow Issue creation and default Project selection
 
@@ -960,13 +950,13 @@ Project-local Create Issue
 → default Issue Backlog StatusDefinition
 ```
 
-Any context-less surface that creates a Workflow Issue directly must also submit an explicit Project relation. Its Project picker may initialize to the Workspace Default Project when that Project can legally accept the new Backlog Issue. If the Default Project is absent or not a legal target, no hidden fallback or lifecycle rewrite occurs; the user chooses another legal Project before submission.
+Any context-less surface that creates a Workflow Issue directly must also submit an explicit Project relation. Its Project picker may initialize to the Workspace Default Project when that Project can legally accept the new Backlog Issue. If the Default Project is not a legal target, there is no hidden fallback or lifecycle rewrite; the user chooses another legal Project before submission.
 
 When Triage Accept chooses **Issue**, it opens the same standard Issue Composer and therefore follows exactly this same creation contract: Project is required, the Default Project is only an initial selection when legal, and the selected Project ID is submitted explicitly to Application/Domain. When Triage Accept chooses **Project**, the normal Project Composer and defaults apply instead. Triage-specific review/Accept composition is defined in Section 10; shared creation composition and invocation are defined in Section 5.7.
 
-The creation surface does **not** seed Todo/Started/Completed Status from a nearby List section or Board column. Every normal Workflow Issue is born in Backlog first; execution advancement is a separate user action subject to Project capability.
+The creation surface does **not** seed Todo/In Progress/Done Status from a nearby List section or Board column. Every normal Workflow Issue is born in Backlog first; execution advancement is a separate user action subject to Project capability.
 
-In a Not Started Project, the new Backlog Issue can be planned but cannot advance into Todo/Started execution. In an In Progress Project, it can later advance normally. Done/Cancelled Projects do not expose an active Project-local creation action and are not legal default/selection targets for a new non-terminal child under the normal capability rules.
+In a Planned Project, the new Backlog Issue can be planned but cannot advance into normal execution. In an In Progress Project, it can later advance normally. Completed/Canceled Projects do not expose an active Project-local creation action and are not legal default/selection targets for a new open child under the normal capability rules.
 
 ### 6.7 Automatic ordering
 
@@ -993,14 +983,14 @@ Project lifecycle
 → visible/enabled UI controls
 ```
 
-High-level Project capability matrix:
+With the default Project Status configuration:
 
-| Capability | Not Started | In Progress | Done | Cancelled |
+| Capability | Planned | In Progress | Completed | Canceled |
 | --- | ---: | ---: | ---: | ---: |
 | Read/filter/inspect current child data | yes | yes | yes | yes |
 | Create child Issue | yes → Backlog | yes → Backlog | no | no |
 | Accept moved-in Backlog Issue | yes | yes | no | no |
-| Accept moved-in Todo/Started Issue | no | yes | no | no |
+| Accept moved-in Todo/In Progress Issue | no | yes | no | no |
 | Edit/plan Backlog child | yes | yes | no | no |
 | Advance Backlog → execution | no | yes | no | no |
 | Normal Issue workflow | no | yes | no | no |
@@ -1009,9 +999,9 @@ High-level Project capability matrix:
 | Create/edit Milestone | yes | yes | no | no |
 | Board | no | yes | no | no |
 
-Not Started is therefore **planning-capable, execution-disabled**, not read-only.
+Planned is therefore **planning-capable, execution-disabled**, not read-only.
 
-If a Not Started Project contains an Issue already in Todo/Started because the Project was reopened from a terminal state, Trail does not rewrite it. Normal execution controls remain unavailable; legal cleanup such as Cancel or Move Out remains available.
+If a Planned Project contains an Issue already in an execution Status because the Project was reopened from a closed state, Trail does not rewrite it. Normal execution controls remain unavailable; legal cleanup such as Cancel or Move Out remains available.
 
 A target Project picker also consumes effective capability. If the current Issue cannot legally move to a target Project without changing Status, that target is unavailable. Normal Move never silently rewrites Status.
 
@@ -1303,7 +1293,7 @@ Normal Project property rows are:
 
 Project title/description remain narrative/main-context content rather than duplicating every field in Inspector.
 
-Project metadata such as title/description/Initiative/Priority/Due/Labels can remain editable in terminal Projects where the operation is organization/correction rather than resumed execution.
+Project metadata such as title/description/Initiative/Priority/Due/Labels can remain editable in Completed/Canceled Projects where the operation is organization/correction rather than resumed execution.
 
 ### 9.2 Project Status dropdown and transition matrix
 
@@ -1312,19 +1302,28 @@ Status is changed by clicking the visible Project Status row and choosing among 
 The category-level transition matrix is:
 
 ```text
-Not Started → In Progress | Cancelled
-In Progress → Done | Cancelled
-Done        → Not Started | In Progress
-Cancelled   → Not Started | In Progress
+Unstarted → Started | Canceled
+Started   → Completed | Canceled
+Completed → Unstarted | Started
+Canceled  → Unstarted | Started
 ```
 
-Concrete StatusDefinitions belonging to the legal target categories can be presented according to configured names/order.
+With the default Project Status configuration this appears to the user as:
 
-`In Progress → Not Started` is unavailable.
+```text
+Planned     → In Progress | Canceled
+In Progress → Completed | Canceled
+Completed   → Planned | In Progress
+Canceled    → Planned | In Progress
+```
 
-Selecting Done is guarded by Domain rules. If non-terminal child Issues remain, the option must explain why completion is unavailable and offer a direct route/filter to those blocking Issues rather than silently completing/cancelling them.
+Concrete StatusDefinitions belonging to the legal target categories are presented according to configured names/order.
 
-Reopening Done/Cancelled simply means selecting a legal Not Started or In Progress status. No hidden previous status is restored.
+`Started → Unstarted` is unavailable regardless of the concrete Status names.
+
+Selecting a Completed-category Status is guarded by Domain rules. If open child Issues remain, the option must explain why completion is unavailable and offer a direct route/filter to those blocking Issues rather than silently completing/canceling them.
+
+Reopening a Completed/Canceled Project simply means selecting a legal Unstarted- or Started-category Status. No hidden previous status is restored.
 
 Changing Project Status never rewrites child Issue Status or relations.
 
@@ -1340,7 +1339,7 @@ Progress
 
 The bar answers only:
 
-> How much current non-cancelled Project work is complete?
+> How much current non-canceled Project work is complete?
 
 Computation is owned by Domain/Query:
 
@@ -1356,7 +1355,7 @@ If the effective denominator is empty, display `—`/unavailable rather than fab
 
 Hover/focus may expose exact counts such as `8 / 12 completed`. The default Inspector need not spell those counts out in permanent prose.
 
-Project Status remains independent. An In Progress Project can legitimately show 100% until the user explicitly marks the Project Done.
+Project Status remains independent. An In Progress Project can legitimately show 100% until the user explicitly moves the Project to a Completed-category Status.
 
 ### 9.4 Temporal Attention bar
 
@@ -1380,7 +1379,7 @@ The mutually exclusive segments are:
 [ Overdue ][ Due This Week ][ Later Due ]
 ```
 
-Done/Canceled/Due-less Issues do not participate.
+Completed/Canceled/Due-less Issues do not participate.
 
 Default rendering is graphical and low-text, for example:
 
@@ -1400,7 +1399,7 @@ This is not a persisted `Health` score and is not a Status chart.
 
 Temporal Attention is one projection, not the complete definition of “things needing attention.”
 
-A Cancelled Project with unresolved non-terminal child Issues should expose a compact Project-attention indicator/reason because the Project lifecycle has ended while work still needs disposition. Clicking the signal can filter to unresolved child Issues.
+A Canceled Project with unresolved open child Issues should expose a compact Project-attention indicator/reason because the Project lifecycle has ended while work still needs disposition. Clicking the signal can filter to unresolved child Issues.
 
 Future Health may combine explainable evidence such as Progress, temporal pressure, Project/Milestone Due, lifecycle context, and activity. The score/weighting is intentionally not frozen until an actual consumer such as Home Project focus needs it.
 
@@ -1432,7 +1431,7 @@ The active filter is represented by normal Filter UI/chips. Inspector does not m
 
 ### 9.7 Milestone create/edit/delete
 
-While Project capability allows Milestone planning (Not Started/In Progress), the section header may expose a compact `+`.
+While Project capability allows Milestone planning (Planned/In Progress), the section header may expose a compact `+`.
 
 Quick create stays small:
 
@@ -1450,29 +1449,29 @@ Owning Project is not normally reparented.
 
 Deleting a Milestone preserves its Issues. Confirmation should explain that linked Issues remain and lose/replace the Milestone relation; it must not imply cascade deletion of Issues.
 
-In Done/Cancelled Projects the Milestone section remains readable summary context; create/edit/delete/assignment affordances are not normally shown.
+In Completed/Canceled Projects the Milestone section remains readable summary context; create/edit/delete/assignment affordances are not normally shown.
 
 ### 9.8 Delete Project
 
 Delete is not Project Status and does not belong inside the Status picker.
 
-It lives in low-frequency Project overflow/destructive actions and requires confirmation because its relation effects are material. If the Project owns Workflow Issues, deletion requires an explicit legal replacement Project:
+It lives in low-frequency Project overflow/destructive actions and requires confirmation because its relation effects are material. If the Project owns Workflow Issues, deletion requires an explicit legal replacement Project for those Issues. If the Project is also the current Default Project, deletion additionally requires an explicit replacement Default Project before it can complete.
 
 ```text
 Delete Project
 ├─ preserve child Workflow Issues
-├─ move them to the selected replacement Project
+├─ move them to the selected legal replacement Project when children exist
 ├─ clear their old Project-scoped Milestone relation
 ├─ remove Project-scoped Milestones
-├─ remove Project
-└─ if it was the Default Project, clear defaultProjectId
+├─ if it was the Default Project, set the selected replacement Default Project
+└─ remove Project
 ```
 
-The replacement picker may initially select the current Default Project only when it exists, is not the Project being deleted, and can legally accept the affected Issues under normal Project capability rules. Otherwise the user must choose another legal Project. Delete never silently changes Issue Status merely to make a replacement Project acceptable. If the Project has no child Workflow Issues, no replacement Project is required.
+The Issue-destination Project and replacement Default Project are separate semantic choices even when the same ordinary Project is selected for both. Delete never silently changes Issue Status merely to make an Issue destination acceptable. If the Project has no child Workflow Issues, no Issue-destination Project is required; deleting the current Default still requires a replacement Default.
 
-Deleting the current Default Project is otherwise an ordinary Project deletion. The replacement used for its Issues does not automatically become the new Default Project, and the sidebar shortcut disappears after the Default Project reference is cleared.
+The replacement-Default selection follows the same ordinary Project Picker semantics as Section 16. The resulting ready Workspace always retains one valid `defaultProjectId`, and the sidebar shortcut switches to the selected replacement rather than disappearing.
 
-The confirmation should state useful concrete consequences/counts and the selected destination rather than generic dramatic wording. Recovery/undo claims must match actual implementation capability.
+The confirmation should state useful concrete consequences/counts and selected destinations rather than generic dramatic wording. Recovery/undo claims must match actual implementation capability.
 
 ## 10. Triage
 
@@ -1649,12 +1648,12 @@ Current Cycle scope is exactly the live Workflow Issues whose IDs are in the Ope
 
 Default layout is **Board**, with List available through the normal single layout toggle.
 
-Cycle Board reuses the same execution Status projection as Project Board:
+Cycle Board reuses the same concrete Issue StatusDefinition projection as Project Board. With the default Issue Status configuration, the visible columns are:
 
 ```text
-Unstarted
-Started
-Completed
+Todo
+In Progress
+Done
 ```
 
 Backlog and Canceled Cycle members remain valid members but do not become normal Board columns. They remain visible in Current Cycle List. Dragging between Board columns means Status change only and remains subject to the owning Project's normal capability rules.
@@ -1713,9 +1712,9 @@ Historical Cycle uses the same Filter field registry because its rows resolve th
 
 Cycle membership is explicit selection, not a Workflow property mutation. Adding/removing membership changes the Open Cycle's membership only and never changes Issue Status, Project, Milestone, Priority, Estimate, Labels, or Due.
 
-Current Cycle provides a low-noise `Add issues` flow using the shared searchable/filterable Issue selection grammar. To keep Cycle-level discovery focused on current execution, this entry point proactively surfaces non-terminal Workflow Issues from In Progress Projects and excludes Issues already in the Current Cycle. This is only a discovery policy; it is not Domain membership legality.
+Current Cycle provides a low-noise `Add issues` flow using the shared searchable/filterable Issue selection grammar. To keep Cycle-level discovery focused on current execution, this entry point proactively surfaces open Workflow Issues from In Progress Projects and excludes Issues already in the Current Cycle. This is only a discovery policy; it is not Domain membership legality.
 
-Project Workspace remains an equally important planning entry point. In a Not Started Project, a Backlog Issue may be explicitly added to the Current Cycle from that Project's Issue context/selection even though it was not discoverable from Cycle-level `Add issues`. The Issue remains Backlog and the Project remains Not Started. It therefore appears in Current Cycle List and will appear in Board only after ordinary Project capability later permits a Status that belongs to the Board execution projection.
+Project Workspace remains an equally important planning entry point. In a Planned Project, a Backlog Issue may be explicitly added to the Current Cycle from that Project's Issue context/selection even though it was not discoverable from Cycle-level `Add issues`. The Issue remains Backlog and the Project remains Planned. It therefore appears in Current Cycle List and will appear in Board only after ordinary Project capability later permits a Status that belongs to the Board execution projection.
 
 Issue context/selection surfaces reuse shared actions:
 
@@ -1748,7 +1747,7 @@ Close Cycle
 
 Closing does not automatically start another Cycle.
 
-A later `Start next cycle` uses the normal Start Cycle flow with one convenience: members of the previous Cycle that are **currently non-terminal** may be initially selected as carry-over candidates. The user can deselect any candidate, add other Issues, or cancel the flow and remain without a Current Cycle. Candidate state is calculated from current Issue facts when the flow opens; Trail does not save an unfinished-at-close snapshot or perform automatic rollover.
+A later `Start next Cycle` uses the normal Start Cycle flow with one convenience: members of the previous Cycle that are **currently open** may be initially selected as next-Cycle candidates. The user can deselect any candidate, add other Issues, or cancel the flow and remain without a Current Cycle. Candidate state is calculated from current Issue facts when the flow opens; Trail does not save an unfinished-at-close snapshot or perform automatic rollover.
 
 ### 11.6 Progress and Effort
 
@@ -1841,7 +1840,7 @@ Filter                                      Display
 Issue A     Project A     In Progress    M    ●●
 Issue B     Project A     Done           L    ●
 Issue C     Project B     Backlog        —
-Issue D     Project C     Cancelled      S
+Issue D     Project C     Canceled       S
 ```
 
 Status and Project are ordinary row fields. Other shared fields such as Priority, Milestone, Labels, Due, and Estimate may be shown through the normal Display rules. The list remains visually flat even when ordering keeps related Project work coherent.
@@ -1881,7 +1880,7 @@ Remain  = other active Triage entries
 
 The preferred information form is a small combination of bars plus counts rather than a Triage item list.
 
-**In Progress Projects** includes only Projects in the Started/In Progress lifecycle category and represents each with its existing Project Progress projection. The default module is a compact set of progress micro-bars plus a small aggregate count. Project title and exact progress may be progressively disclosed on hover/focus rather than permanently consuming horizontal space. It does not create a hidden Home ranking or Health score.
+**In Progress Projects** includes only Projects in the Started lifecycle category (default visible Status `In Progress`) and represents each with its existing Project Progress projection. The default module is a compact set of progress micro-bars plus a small aggregate count. Project title and exact progress may be progressively disclosed on hover/focus rather than permanently consuming horizontal space. It does not create a hidden Home ranking or Health score.
 
 ### 12.2 Lifecycle Activity Heatmap
 

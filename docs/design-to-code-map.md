@@ -21,23 +21,24 @@ Representative mappings:
 | Quick Capture creates Triage work | Triage Issue context + required review Due; no Project/Milestone | title-first UI draft → standard Triage Composer → normal semantic create plan; no mutation before Create | shared creation `ui/interactions` / `ui/patterns`, `application/triage`, `domain/planning`, shared mutation/persistence | UI interaction + planner + application + representative host |
 | Standard creation surfaces | Existing Triage/Workflow Issue/Project/Initiative contracts and defaults; no new draft Domain entity | one shared Creation Composer shell + shared title/body/property controls + invocation prefill + capability-gated target selection | shared `ui/interactions`, `ui/patterns`, `ui/primitives`, page invocation owners, normal target Application modules | UI interaction + target application/planner + representative host where keyboard/focus requires it |
 | Triage review queue | Triage Issue + Due/Priority/Labels; Review Set is derived, not persisted | page selector + shared filter/sort + transient sequential review state | `query`, `ui/pages/triage`, shared `ui/interactions`/filter primitives | query + UI |
-| Accept Triage | source Triage identity is replaced by a new standard Workflow Issue or Project; V1 auto-seeds title/body only; source removed only after target exists | target-kind choice + standard target Composer/use case + destination-first Source Transition | `ui/pages/triage`, shared creation `ui/interactions`, `application/triage`, `application/issues` / `application/projects`, shared mutation/source-sync | planner/application + UI + transition/source-sync + representative host |
+| Accept Triage | source Triage identity is replaced by a new standard Workflow Issue or Project; Workflow target always has one explicit legal Project; V1 auto-seeds title/body only | target-kind choice + standard target Composer/use case + destination-first Source Transition | `ui/pages/triage`, shared creation `ui/interactions`, `application/triage`, `application/issues` / `application/projects`, shared mutation/source-sync | planner/application + UI + transition/source-sync + representative host |
 | Create Workflow Issue | Workflow Issue requires exactly one Project and begins in Backlog | standard Issue Composer + explicit legal target Project + semantic create plan; context/default only prefill the final explicit selection | shared creation `ui/interactions`, `query`, `domain/planning`, `application/issues`, shared mutation | planner + application + UI |
-| Create Project / Initiative | Existing entity contracts/defaults; Project uses configured Unstarted default; Initiative has no Status | standard entity Composer + optional context prefill + normal semantic create plan | shared creation `ui/interactions`, `application/projects` / `application/initiatives`, `domain/planning`, shared mutation | planner + application + UI |
+| Create Project / Initiative | Existing entity contracts/defaults; Project uses configured Unstarted-category default; Initiative has no Status | standard entity Composer + optional context prefill + normal semantic create plan | shared creation `ui/interactions`, `application/projects` / `application/initiatives`, `domain/planning`, shared mutation | planner + application + UI |
 | Change Issue Status | StatusDefinition + lifecycle/Estimate + owning-Project capability invariants | Replace plan + Single Transaction | `domain/planning`, `application/issues`, shared mutation | planner + application/UI |
 | Move Issue between Projects | stable Issue identity + required target Project + Milestone scope + placement integrity | legal-target selection + Source Transition | `domain/planning`, `application/issues`, `query`, `mutation` | planner + application + representative host |
-| Default Project | required normal-state Workspace `defaultProjectId` referencing one ordinary Project; missing persisted reference uses the narrow `0000 Standalone.md` startup recovery | fresh seed + missing-reference startup recovery + settings replacement + normal Project navigation | `domain/model`, `domain/validation`, `source-sync/bootstrap`, `persistence/plugin-data`, `query`, `ui/shell`, Obsidian Settings adapter | workspace validation/bootstrap + query/navigation/settings + representative host |
+| Default Project | required normal-ready Workspace `defaultProjectId` referencing one ordinary Project; persisted pre-ready state may omit it only for narrow startup recovery | fresh seed + missing-reference startup recovery + settings replacement + normal Project navigation | `domain/model`, `domain/validation`, `source-sync/bootstrap`, `persistence/plugin-data`, `query`, `ui/shell`, Obsidian Settings adapter | workspace validation/bootstrap + query/navigation/settings + representative host |
 | Delete Project | child Workflow Issues require an explicit legal replacement Project; old Project Milestones removed; deleting the current Default additionally requires an explicit replacement Default Project | semantic multi-entity plan + Workspace State replacement + Integrity Batch | `domain/planning`, `application/projects`, `query`, `mutation`, `source-sync` | planner + materialization/execution + representative host |
-| Projects Root / Initiative Focus | Project->Initiative relation + derived Project summaries; Initiative Focus is the same Project collection scoped to one Initiative | Projects Root Project collection + Initiative-scoped List-only Project collection reusing Project Row/actions/filter/order | `query`, `ui/pages/projects`, reusable Project collection/row/filter components | query + UI |
-| Project Workspace Board/List | same Project Issue set, Status presentation; Default Project is not a separate workspace kind | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
+| Projects Root / Initiative Focus | Project→Initiative relation + derived Project summaries; Initiative Focus is the same Project collection scoped to one Initiative | Projects Root Project collection + Initiative-scoped List-only Project collection reusing Project Row/actions/filter/order | `query`, `ui/pages/projects`, reusable Project collection/row/filter components | query + UI |
+| Project Workspace Board/List | same Project Issue set; UI groups/columns by concrete StatusDefinitions while StatusCategory remains the rule-level lifecycle semantic | effective query + page presentation | `query`, `ui/pages/projects`, reusable board/entity components | query + UI |
 | Shared collection Filter | supported collection facts + location-scoped session-only UI Filter state; no persisted query/view object | shared property/value filter projection + reusable popover/applied-clause interaction; discrete values OR within a property, properties AND, Due uses cutoff semantics | `query`, shared `ui/interactions` / `ui/patterns`, page registry consumers | query semantics + shared UI interaction |
 | Shared Selection / Action system | existing entity capabilities and Application intents; no Selection/Bulk Domain entity | transient selection + one Action Registry consumed by Context Menu, Command Menu, overflow, Bulk surfaces, and keyboard dispatch; Bulk target candidates are the intersection of ordinary legal targets | `query`, shared `ui/interactions` / `ui/patterns`, existing `application` use cases, Obsidian adapter for final keybinding integration | shared UI interaction + focused application + representative host for keyboard/focus |
-| Estimate level / weight mapping | Issue Estimate is fixed T-Shirt `S/M/L/XL`; Workspace Configuration maps levels to numeric weights, default `1/2/5/10` | canonical enum validation/persistence + configuration lookup + weighted derived aggregation | `domain/model`, `domain/validation`, `markdown/schema` / codecs, `persistence/plugin-data`, `query/derived`, shared property/filter UI | domain/data/config + derived query + UI |
+| Estimate level / weight mapping | Issue Estimate target is fixed T-Shirt `S/M/L/XL`; Workspace Configuration maps levels to numeric weights, default `1/2/5/10` | canonical enum validation/persistence + configuration lookup + weighted derived aggregation | `domain/model`, `domain/validation`, `markdown/schema` / codecs, `persistence/plugin-data`, `query/derived`, shared property/filter UI | domain/data/config + derived query + UI |
 | Milestone management | Project-scoped Milestone + same-Project Workflow Issue relation | semantic plans + same-source/Integrity operations | `domain/planning`, `application/milestones`, shared mutation | planner + application + UI |
+| Milestone Progress | current associated Issues; Canceled excluded from numerator and denominator; Completed counts as complete | reusable derived aggregation | `query/derived`, `ui/entities` / Project Inspector composition | derived query + UI |
 | Initiative organization | Project→Initiative relation; derived Initiative progress | semantic plans + derived query | `domain/planning`, `application/initiatives`, `query` | planner + query + UI |
 | Current Cycle Issue collection | Open Cycle `issueIds` + live Workflow Issue facts; Issue records have no Cycle field | Cycle selector + shared Issue Filter/List/Board presentation + runtime membership indexes | `query`, `ui/pages/cycles`, reusable `ui/entities` / `ui/interactions` | query + UI |
 | Current Cycle membership | Open Cycle owns membership; membership is independent of Issue Status/Project/etc. | semantic add/remove plans + entry-point-specific candidate selectors | `domain/planning`, `application/cycles`, `query`, shared selection/context actions | planner + application + query/UI |
-| Cycle lifecycle | at most one Open Cycle; explicit start/close; Closed membership frozen; next-Cycle candidates are derived from previous members' current non-terminal state | semantic plans + current-Cycle selector + candidate derivation | `domain/planning`, `application/cycles`, `query`, `ui/pages/cycles` | planner + application + query/UI |
+| Cycle lifecycle | at most one Open Cycle; user actions are Start Cycle / Close Cycle / Start next Cycle; Closed membership frozen; next-Cycle candidates are derived from previous members' current open state | semantic plans + current-Cycle selector + next-Cycle candidate selector | `domain/planning`, `application/cycles`, `query`, `ui/pages/cycles` | planner + application + query/UI |
 | Cycle Progress / Effort | Progress uses Completed / non-Canceled current members; Effort sums the current configured weight of each present member T-Shirt Estimate regardless of Status | reusable derived aggregation over Cycle membership + Estimate weight Configuration | `query/derived`, `ui/pages/cycles`, Cycle Inspector composition | query + UI |
 | Historical Cycle | Closed Cycle final `issueIds` + current live Workflow Issue fields; no Issue/Status/Estimate snapshot | closed-Cycle selectors + flat List projection | `query`, `ui/pages/cycles`, reusable Issue Row/filter primitives | query + UI |
 | Labels and Status configuration | configuration definitions + reference integrity | configuration plans + Integrity Batch as needed | `domain/model`, `domain/validation`, `application/configuration`, `mutation` | validation + mutation + application |
@@ -50,13 +51,13 @@ Representative mappings:
 
 Creation does not introduce a second domain model or a page-specific stack. Triage, Issue, Project, and Initiative creation share one Composer infrastructure and the same lower-level property/menu/focus primitives; invocation context supplies only initial UI state and never bypasses canonical target legality. Quick Capture is only a title-first entry into the Triage Composer. V1 does not introduce a persisted Draft entity, Create-more semantics, or pre-Create mutation.
 
-Cycle UI does not introduce another work-item model, Board engine, Filter grammar, or snapshot subsystem. It composes the existing Cycle record and runtime membership indexes with shared Issue collection/query/UI capabilities. Cycle-level discovery may intentionally narrow candidates by entry-point context without turning that narrowing into a Domain membership invariant.
+Cycle UI does not introduce another work-item model, Board engine, Filter grammar, or snapshot subsystem. It composes the existing Cycle record and runtime membership indexes with shared Issue collection/query/UI capabilities. User-visible actions use Start/Close/Start next terminology; Open/Closed remains the Domain/Data lifecycle state. Cycle-level discovery may intentionally narrow candidates by entry-point context without turning that narrowing into a Domain membership invariant.
 
-The shared Filter grammar is now resolved once across Projects Root, Project Workspace, Triage, Current Cycle, and Historical Cycle. Pages supply only their supported property registry and collection scope. Filter clauses are location-scoped session-only UI state, not canonical Runtime or persistence; Project Workspace does not add a redundant Cycle filter, and Current Cycle membership is surfaced there through the shared Row/Card marker instead. No consumer may reintroduce a page-local boolean builder, hidden quick-filter state, or persisted Filter object to implement this V1 behavior.
+The shared Filter grammar is resolved once across Projects Root, Project Workspace, Triage, Current Cycle, and Historical Cycle. Pages supply only their supported property registry and collection scope. Filter clauses are location-scoped session-only UI state, not canonical Runtime or persistence; Project Workspace does not add a redundant Cycle filter, and Current Cycle membership is surfaced there through the shared Row/Card marker instead. No consumer may reintroduce a page-local boolean builder, hidden quick-filter state, or persisted Filter object to implement this V1 behavior.
 
 The shared Selection/Action system is resolved the same way: one transient selection model and one Action Registry feed Context Menu, Command Menu, overflow actions, optional Bulk surfaces, and keyboard dispatch. Presentation surfaces may expose different useful subsets, but they resolve the same Action IDs and ordinary Query/Application capabilities. Bulk adds no new Domain legality model: a selection may execute only a common action with a common target, and target-bearing controls use the intersection of each selected item's ordinary legal targets. Exact shortcut bindings remain host calibration so Obsidian conflicts do not leak into action semantics.
 
-Initiative Focus, Home content, Workspace Grid/responsive composition, global Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are now frozen at the V1 target-interaction level. Runtime feedback consumes existing control/pending/health/LKG mechanisms and follows Linear's low-noise grammar; the Default setter consumes the required Workspace reference and ordinary Project picker/navigation semantics. No closure introduces a new work-item subtype or second persistence authority. Custom Views and Favorites remain deferred and therefore create no V1 implementation obligation until a later product/UI closure reactivates them.
+Initiative Focus, Home content, Workspace Grid/responsive composition, global Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are frozen at the V1 target-interaction level. Runtime feedback consumes existing control/pending/health/LKG mechanisms and follows Linear's low-noise grammar; the Default setter consumes the required Workspace reference and ordinary Project picker/navigation semantics. No closure introduces a new work-item subtype or second persistence authority. Custom Views and Favorites remain deferred and therefore create no V1 implementation obligation until a later product/UI closure reactivates them.
 
 A future Workspace Issues collection is intentionally not mapped as a V1 page. When introduced, it should query all Workflow Issues across real Projects and reuse the shared Issue collection/filter presentation; it must not reintroduce a Projectless state.
 
@@ -68,7 +69,7 @@ The table is traceability, not a duplicate feature specification. Product, Domai
 
 | Capability | Inputs / dependencies | Owner |
 |---|---|---|
-| Core entity/config/workspace-state contracts, including fixed Estimate levels, Estimate weight Configuration, and required normal-state `defaultProjectId` | Product + Domain | `domain/model` |
+| Core entity/config/workspace-state contracts, including fixed Estimate target levels, Estimate weight Configuration target, and required normal-ready `defaultProjectId` | Product + Domain | `domain/model` |
 | Value and state rules | Domain | `domain/rules` |
 | Field/domain/reference/workspace validation | Domain + Configuration + Workspace State | `domain/validation` |
 | Pure semantic mutation planning | validated planning state + normalized command | `domain/planning` |
@@ -79,7 +80,7 @@ Creation UI state does not create a Draft Domain entity. Canonical entity creati
 
 Triage's user-facing queue/review model does not create a new Domain entity. Domain continues to own the Triage-context Issue contract and the target-creation/source-removal semantics; UI/Query own Review Set, filtering, ordering presentation, and sequential review state.
 
-Cycle membership likewise does not create an Issue-side Cycle property. Domain owns the Open/Closed Cycle lifecycle and Cycle-owned Workflow Issue membership; Query/UI own current/historical collection projection, candidate discovery, filtering, ordering, Progress/Effort presentation, and Board/List composition.
+Cycle membership likewise does not create an Issue-side Cycle property. Domain owns the Open/Closed Cycle lifecycle and Cycle-owned Workflow Issue membership; Query/UI own current/historical collection projection, next-Cycle candidate discovery, filtering, ordering, Progress/Effort presentation, and Board/List composition.
 
 ### 2.2 Persistence capabilities
 
@@ -92,7 +93,7 @@ Cycle membership likewise does not create an Issue-side Cycle property. Domain o
 | Source/plugin-data ports | architecture host boundary | `persistence/ports` |
 | Authoritative Domain source repository | ports + codecs/schema | `persistence/domain-sources` |
 | Plugin configuration/workspace-state repository | plugin-data port + Data contracts | `persistence/plugin-data` |
-| Weekly Note persistence | utility source contract | `persistence/utility-sources` |
+| Weekly Update utility persistence | utility source contract | `persistence/utility-sources` |
 
 Normal runtime has no `Projectless Issues` path, source kind, codec, or repository branch. Every Workflow Issue is physically owned by its Project carrier.
 
@@ -100,7 +101,7 @@ Creation adds no draft persistence path. An unfinished Composer is UI state only
 
 Filter adds no persistence path either. Active clauses live only in location-scoped UI session state; they are not written to Markdown, Plugin Data, Workspace State, Custom Views, or the committed/effective canonical Runtime store.
 
-Issue persistence stores the fixed Estimate level (`small | medium | large | xlarge`), while Plugin Configuration stores the numeric weight for each fixed level. A weight change does not rewrite Issue Markdown. Legacy numeric Estimate persistence, if retained, requires explicit one-way migration rather than dual normal-runtime parsing.
+Issue persistence target stores the fixed Estimate level (`small | medium | large | xlarge`), while Plugin Configuration stores the numeric weight for each fixed level. A weight change does not rewrite Issue Markdown. Legacy numeric Estimate persistence, if retained, requires explicit one-way migration rather than dual normal-runtime parsing.
 
 Cycle persistence remains the existing Cycle record with `issueIds`; no Issue `cycleId`, Cycle analytics snapshot, per-membership timestamp, future-Cycle carrier, or second history store is introduced by the UI closure.
 
@@ -128,18 +129,18 @@ Cycle persistence remains the existing Cycle record with `issueIds`; no Issue `c
 | External authoritative refresh | managed host events + loader + Runtime | `source-sync/refresh` |
 | Effective/query helpers | Runtime + temporal/config/workspace context | `query/shared` |
 | Legal Project target/default-candidate selection | Effective Runtime + Workspace State + Project/Issue capability | `query` |
-| Derived calculations, including configured Estimate-weight aggregation and Home lifecycle/stock/Due projections | Domain facts + temporal/config context | `query/derived` |
+| Derived calculations, including Milestone Progress and target Estimate-weight/Home projections | Domain facts + temporal/config context | `query/derived` |
 | Product page selectors | shared query + product page needs | `query` page-specific modules |
 | User use cases | Domain/Query/Mutation contracts | `application/<business-area>` |
 | Create-time similarity guard | effective Runtime + text/relation signals | `application/similarity` plus query/helper logic |
 
-Default selection is a UI/query concern. Application/Domain Workflow commands receive the explicit Project chosen for the operation rather than interpreting an absent Project as `Standalone`.
+Default selection is a UI/query concern. Application/Domain Workflow commands receive the explicit Project chosen for the operation rather than interpreting an absent Project as `Standalone` or `No Project`.
 
 The shared Composer consumes legal-target/default-candidate Query output rather than reimplementing capability rules. Project-local or Milestone-local invocation may prefill a relation; Home/context-neutral creation may prefill the legal Default Project; the final selected relation is still explicit. If Project changes, Project-scoped dependent choices such as an incompatible Milestone are cleared in UI state before submit.
 
-Triage Accept does not get a parallel create stack. The Triage surface selects the target kind and initializes the standard Issue/Project Composer with title/body; normal target Application/Domain rules own target creation, while `application/triage` owns consuming the source only after successful target establishment.
+Triage Accept does not get a parallel create stack. The Triage surface selects the target kind and initializes the standard Issue/Project Composer with title/body; normal target Application/Domain rules own target creation, while `application/triage` owns consuming the source only after successful target establishment. A Workflow target always receives an explicit Project ID.
 
-Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain any Workflow Issue allowed by the Domain relationship; a Cycle-level Add selector may primarily surface non-terminal work from In Progress Projects, while Project-local actions can add Backlog work from a Not Started Project. Both routes submit the same explicit membership intent to `application/cycles`.
+Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain any Workflow Issue allowed by the Domain relationship; the target Query capability is a next-Cycle candidate selector for the Start-next convenience rather than a “rollover” product concept. The current rollover-named implementation is tracked as an alignment gap in `implementation.md`.
 
 ### 2.5 UI, host, and cross-cutting capabilities
 
@@ -180,7 +181,7 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Carrier grammar | `plugin/src/markdown/codecs/` | Domain/Persistence feature-specific parsers |
 | Authoritative Domain source I/O/repository | `plugin/src/persistence/domain-sources/` | Application/UI |
 | Plugin data repository | `plugin/src/persistence/plugin-data/` | UI/Settings direct save calls |
-| Utility source persistence | `plugin/src/persistence/utility-sources/` | Domain runtime |
+| Weekly Update utility persistence | `plugin/src/persistence/utility-sources/` | Domain runtime |
 | Host-agnostic persistence ports | `plugin/src/persistence/ports/` | Domain |
 | Mutation plan contract | `plugin/src/mutation/plans/` | feature-local plan types |
 | Mutation coordination | `plugin/src/mutation/coordinator/` | page-local pending logic |
@@ -195,8 +196,10 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Runtime control/source health | `plugin/src/runtime/control/` and runtime state | Application-specific lifecycle systems |
 | Bootstrap/discovery/refresh/convergence | `plugin/src/source-sync/` | `main.ts` or feature services |
 | Derived/shared/page read selection | `plugin/src/query/` | UI rebuilding persistence/index logic |
+| Milestone Progress aggregation | `plugin/src/query/derived/` | UI count arithmetic |
+| Cycle next-candidate selection | `plugin/src/query/cycles/` | UI-local “rollover” logic |
 | Default Project resolution / legal default target candidate | `plugin/src/query/` | Domain Project subtype checks or title matching |
-| Default Project startup recovery | `plugin/src/source-sync/` + normal Project/plugin-data Persistence owners | Query fallback or UI title/path matching |
+| Default Project startup recovery | `plugin/src/source-sync/bootstrap/` + normal Project/plugin-data Persistence owners | Query fallback or UI title/path matching |
 | Default Project setter and delete-time replacement intent | `plugin/src/application/`, shared Project Picker, `plugin/src/adapters/obsidian/` Settings | direct Settings persistence writes or a second Default-Project model |
 | Runtime feedback presentation | `plugin/src/ui/patterns/`, `plugin/src/ui/interactions/`, `plugin/src/ui/shell/` consuming Runtime/Query | page-local save/error state machines or persisted feedback facts |
 | Business use cases | `plugin/src/application/` | UI or persistence |
@@ -275,6 +278,7 @@ plugin/src/
 │
 ├─ query/
 │  ├─ derived/
+│  ├─ cycles/
 │  ├─ shared/
 │  └─ page-specific selectors
 │

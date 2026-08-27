@@ -32,7 +32,7 @@ Projects             ~ 2,000
 Issues               ~ 20,000–40,000; tests may reach 50,000
 Cycles               ~ 260–300
 Labels               ~ 200–300
-Saved Views          small; normally < 10
+Custom Views         small; normally < 10
 Heavy Project        500–1,000 Issues
 Large result list    thousands of Issues
 ```
@@ -297,7 +297,7 @@ Domain Markdown repositories combine SourceIO, explicit codecs, current schema, 
 
 Application/Feature code does not duplicate `Vault.process → reread → parse → validate` stacks.
 
-Weekly Note uses a separate utility-source repository because it is not Domain Data, while still reusing appropriate Markdown/source I/O mechanisms.
+The `Weekly Update.md` utility uses a separate utility-source repository because it is not Domain Data. That persistence backs the user-facing Weekly Meeting Notes module while reusing appropriate Markdown/source I/O mechanisms.
 
 ### 3.7 Effective entity capability projection
 
@@ -335,9 +335,9 @@ Important rules:
 
 - every Workflow Issue is evaluated inside one real owning Project; no Projectless capability branch exists;
 - the Workspace Default Project is ordinary Project state plus a workspace reference, so its capabilities are exactly the same as any other Project in the same lifecycle;
-- Unstarted Project enables Backlog planning but blocks execution advancement.
-- Started Project enables normal planning + execution.
-- Completed/Canceled Projects block normal new child work; Canceled unresolved work exposes cleanup actions such as Cancel/Move Out.
+- Unstarted Project enables Backlog planning but blocks execution advancement;
+- Started Project enables normal planning + execution;
+- Completed/Canceled Projects block normal new child work; Canceled unresolved work exposes cleanup actions such as Cancel/Move Out;
 - Project Status transitions use legal destination sets rather than hard-coded UI names.
 
 UI surfaces consume this result rather than each implementing their own lifecycle matrix. Domain/Application still enforce legality when an intent is submitted; capability projection is not a security/consistency boundary by itself.
@@ -429,7 +429,7 @@ TrailWorkspaceShell
 └─ Content
 ```
 
-`LocationBar` owns current location/breadcrumb and object-level actions. `ViewBar` owns collection presentation controls. Its contract allows compatible capability slots such as Filter, Group, Sort, Display, layout selection, and collection actions when the consumer actually supports them. A lifecycle capability can remove an unavailable layout (for example Board on a non-Started Project) without changing the underlying Project data projection.
+`LocationBar` owns current location/breadcrumb and object-level actions. `ViewBar` owns collection presentation controls. Its contract allows compatible capability slots such as Filter, Group, Sort, Display, layout selection, and collection actions when the consumer actually supports them. A lifecycle capability can remove an unavailable layout without changing the underlying Project data projection.
 
 UI state ownership is orthogonal by responsibility:
 
@@ -654,7 +654,7 @@ Initiative                      → Initiatives/<sequence> <title>.md
 Project                         → Projects/<sequence> <title>.md
 Milestone                       → owning Project source
 Triage Issue                    → Collections/Triage.md
-Workflow Issue                → owning Project source (Project relationship required)
+Workflow Issue                  → owning Project source (Project relationship required)
 Cycle                           → Collections/Cycles.md
 ```
 
@@ -726,7 +726,7 @@ Backlog Workflow: Priority → createdAt → stable ID
 Started/Active Workflow: Priority → firstStartedAt → stable ID
 ```
 
-Project Board columns = Issue Status and Board is exposed only for Started Projects. The Default Project follows exactly the same Board/List/lifecycle rules as every other Project. Current Cycle Board can use Status columns × Project swimlanes. Normal Label is primarily a filter facet; promoted dimensions such as Area may be curated grouping dimensions.
+Project Board columns are concrete Issue StatusDefinitions and Board is exposed only for Started-category Projects. The Default Project follows exactly the same Board/List/lifecycle rules as every other Project. Current Cycle Board uses the same Status columns × Project swimlanes. Normal Label is primarily a filter facet; promoted dimensions such as Area may be curated grouping dimensions.
 
 When a consumer needs an initial Project choice, Query resolves the required `workspaceState.defaultProjectId` against Effective Runtime and the same target-capability rules used for all Projects. UI preselects it only when legal for that specific operation; when the current Default is not legal, the user must choose another legal Project. Query never manufactures a fallback Project or silently changes Project/Issue lifecycle.
 
@@ -847,7 +847,7 @@ Trail UI and any Obsidian shell-theme integration should share the same token ow
 
 Interactive primitives must support accessible focus-visible behavior, keyboard use where appropriate, clear disabled/selected/pending/error states, and restrained motion.
 
-Capability-driven omission/disablement must still provide enough explanation for blocked high-value actions. For example, attempting/inspecting Done when a Project has non-terminal children should expose the blocking reason and a route to those Issues rather than presenting an unexplained dead control.
+Capability-driven omission/disablement must still provide enough explanation for blocked high-value actions. For example, when a Completed-category Project Status is unavailable because open child Issues remain, the control should expose the blocking reason and a route to those Issues rather than presenting an unexplained dead control.
 
 ### 6.6 Reuse before build
 

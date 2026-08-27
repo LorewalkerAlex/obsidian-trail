@@ -270,7 +270,7 @@ CustomViewConfig {
 }
 ```
 
-`SavedViewSelectionSpec` may represent supported entity type, scope, filters, sort, and group dimensions. Exact operators/shapes are introduced only when the corresponding product capability is defined; V1 does not require an arbitrary boolean query AST.
+`SavedViewSelectionSpec` is the current internal type name for the Custom View selection contract. It may represent supported entity type, scope, filters, sort, and group dimensions. Exact operators/shapes are introduced only when the corresponding product capability is defined; V1 does not require an arbitrary boolean query AST. The product concept is consistently **Custom View**.
 
 Relative temporal conditions, when supported, remain relative (for example “overdue” or “within next 7 days”) and are evaluated against current time rather than materialized to fixed dates when the View is saved.
 
@@ -352,7 +352,7 @@ Native Obsidian links are navigational/document relationships and do not become 
 
 ### 2.5 Default Project is a workspace reference, not Project identity
 
-The Workspace Default Project is represented only by required normal-state `WorkspaceState.defaultProjectId`. It points to the same stable ID used by an ordinary Project record; the reference itself adds no second Project identity, path, kind, title convention, or lifecycle field.
+The Workspace Default Project is represented by canonical ready `WorkspaceState.defaultProjectId`. It points to the same stable ID used by an ordinary Project record; the reference itself adds no second Project identity, path, kind, title convention, or lifecycle field.
 
 Fresh bootstrap separately reserves physical Project sequence `0000` for the initial `Standalone` seed. Startup recovery may consult the exact `Projects/0000 Standalone.md` bootstrap path only when the persisted Default reference is missing. That physical convention remains recovery input rather than identity: changing the Default Project does not move another Project into `0000`, and the current Default may have any legal Project title, Initiative membership, or lifecycle Status.
 
@@ -571,7 +571,7 @@ Project lifecycle does not move Issue/Milestone records to different physical se
 
 `Collections/Triage.md` contains only Triage Issues.
 
-Triage Issues have required Due, no normal workflow status, no Project or Milestone relationship, and no Workflow `createdAt`.
+Triage Issues have required Due, no normal workflow Status, no Project or Milestone relationship, and no Workflow `createdAt`.
 
 Every Workflow Issue is stored in its owning ordinary Project carrier. No Projectless Workflow carrier exists in the current schema.
 
@@ -583,9 +583,9 @@ Cycle H2 is a human-readable derived label from temporal facts; it is not Cycle 
 
 Closing a Cycle updates the same record; it is not moved into a separate history section.
 
-### 4.10 Weekly Note utility
+### 4.10 Weekly Update utility
 
-`Collections/Weekly Update.md` is not Domain Data and is not part of the Domain Physical Schema Registry.
+`Collections/Weekly Update.md` is the persistence carrier behind the Home **Weekly Meeting Notes** module. It is not Domain Data and is not part of the Domain Physical Schema Registry.
 
 V1 structure:
 
@@ -601,9 +601,9 @@ V1 structure:
 ...
 ```
 
-`# Current` and `# Archive` are H1 structural boundaries, and dated Archive entries are H2 structural records. Weekly Note user content may contain ordinary Markdown and H3-H6 headings, but not H1/H2 headings because those depths are reserved by the utility structure.
+`# Current` and `# Archive` are H1 structural boundaries, and dated Archive entries are H2 structural records. Weekly Update user content may contain ordinary Markdown and H3-H6 headings, but not H1/H2 headings because those depths are reserved by the utility structure.
 
-Its two product operations are replacing Current content and manually archiving Current into a dated H2 while clearing Current. It has no stable Domain ID, Status, Due, runtime index, or automatic Issue/Cycle linkage.
+Its two persistence operations are replacing Current content and manually archiving Current into a dated H2 while clearing Current. It has no stable Domain ID, Status, Due, runtime index, or automatic Issue/Cycle linkage.
 
 ### 4.11 Field carriers and canonical metadata order
 
@@ -693,7 +693,9 @@ Logical top level:
 }
 ```
 
-Configuration conceptually contains statuses, labels, Estimate weights, cycle settings, and temporal settings. Workspace state contains optional `defaultProjectId`, Custom Views, Favorites, and Home state.
+Configuration conceptually contains statuses, labels, Estimate weights, cycle settings, and temporal settings. Workspace State contains Default Project, Custom Views, Favorites, and Home state.
+
+The physical decoder remains able to read a persisted Workspace State with no `defaultProjectId` so startup recovery can repair an older or incomplete pre-ready state. That omission is a recovery input only: canonical ready Workspace State requires the reference.
 
 Within Status persistence, fixed hierarchy (`issue/project` → applicable category) may encode entity type/category context so individual definition entries need not repeat those fields. Definition IDs remain opaque and stable. Project status persistence has no Backlog category branch.
 
@@ -756,7 +758,7 @@ Reference Validation
 → stable reference existence and scope
 
 Workspace Validation
-→ cross-workspace invariants such as duplicate IDs and max one Open Cycle
+→ cross-workspace invariants such as duplicate IDs, required Default Project, and max one Open Cycle
 ```
 
 Issues should preserve the smallest reliable scope and identify source/container, record, field/relation, and violated rule where trustworthy.
@@ -769,13 +771,15 @@ If file identity/structure is too damaged to establish reliable record boundarie
 
 How much of the product remains writable under a known Data Issue is an Architecture policy, not a Data model change.
 
-### 5.4 Configuration integrity
+### 5.4 Configuration and Workspace-State integrity
 
 `data.json` is referenced by Domain records, so invalid configuration is not silently replaced with fresh defaults.
 
 Configuration/Workspace State load or update must reject states that would leave missing/invalid Status, Label, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog and rejecting an Estimate weight configuration that omits a fixed T-Shirt level or provides a non-positive/non-finite weight.
 
-`defaultProjectId` is intentionally softer at destructive failure edges. A missing referenced Project is observable workspace/reference damage, but it is not a hard Domain-graph-invalid condition: Query/navigation resolve the missing Default as absent, while a successful explicit Project delete clears `defaultProjectId` in the final Plugin Data commit. This keeps Plugin Data commit-last compatible with destination-first/destructive Integrity Batch ordering without turning a failure prefix into silent Project replacement.
+Normal ready Workspace validation also requires `defaultProjectId` to resolve to an existing ordinary Project. The one intentional pre-ready exception is a missing persisted `defaultProjectId`: startup Source Sync handles that narrow bootstrap/recovery case before publishing ready Runtime. Explicit Trail Project deletion never clears the Default; deleting the current Default requires a replacement Default Project in the same committed mutation.
+
+A dangling non-empty Default Project ID caused by external persistence damage is a Data Issue, not permission to guess another Project by title.
 
 Old last-known-good runtime data may be useful to Architecture for viewing/recovery, but is not authority for further writes after hard persistence invariants become invalid.
 
@@ -789,7 +793,7 @@ Parser may accept valid metadata with non-canonical property order or set array 
 
 Fresh installation with no `Trail/` root is not corruption; explicit bootstrap creates the required current containers plus an ordinary seed Project titled `Standalone` at `Trail/Projects/0000 Standalone.md`, and persists that Project ID as the initial `workspaceState.defaultProjectId`. The seed uses the normal Project record/carrier and normal Project creation defaults; sequence `0000` is only its stable fresh-bootstrap physical slot. Its title, lifecycle, Initiative membership, properties, and later deletion remain ordinary Project behavior, and rename preserves `0000` while updating the readable suffix.
 
-Once a Workspace exists, disappearance of a required singleton such as Triage or Cycles is a Data Issue rather than a reason to silently create a new empty container that hides possible data loss. A missing Project referenced by `defaultProjectId` is likewise observable reference-integrity damage when caused by external persistence damage, but it does not hard-fail the Domain graph; Query/navigation treat the Default as absent. Explicit Trail Project deletion clears the reference in the final Plugin Data commit.
+If an existing Workspace's persisted `defaultProjectId` is missing, startup performs the narrow Default recovery described above before ready state. Disappearance of a required singleton such as Triage or Cycles, or a dangling non-empty Default Project reference caused by external damage, remains a Data Issue rather than a reason to silently create unrelated replacement state.
 
 Weekly Update is lazy-created utility state and is not a required Domain bootstrap container.
 

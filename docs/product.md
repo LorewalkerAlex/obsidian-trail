@@ -25,7 +25,7 @@ Trail V1 covers:
 - Peek, Context Menu, Selection, Bulk Actions, Command Menu, and keyboard-oriented interaction;
 - lightweight entity descriptions and properties;
 - ordinary Obsidian notes as the long-form knowledge/document layer;
-- a lightweight Weekly Note utility on Home.
+- lightweight Weekly Meeting Notes on Home, backed by the Trail-managed Weekly Update utility.
 
 ### 2.2 Out of scope for the core V1 model
 
@@ -49,7 +49,7 @@ Templates, recurring creation, integrations, inbox-like information surfaces, Cu
 
 ### 3.1 Workspace
 
-Workspace is the single personal Trail boundary. It owns workflow definitions, Label definitions, Estimate weights, defaults, shared temporal settings, Saved Views, Favorites, and Home configuration. It is not a normal user-created work item.
+Workspace is the single personal Trail boundary. It owns workflow definitions, Label definitions, Estimate weights, defaults, shared temporal settings, Custom Views, Favorites, and Home configuration. It is not a normal user-created work item.
 
 ### 3.2 Initiative
 
@@ -63,16 +63,25 @@ A Project is a coherent planning/execution context for related work. It often re
 
 It is the primary planning/execution workspace for a coherent body of work and can contain Milestones and Issues. A Project has an explicit lifecycle Status chosen by the user.
 
-Project lifecycle has four semantic categories:
+Project StatusDefinitions use four fixed system StatusCategories:
 
 ```text
-Not Started
-In Progress
-Done
-Cancelled
+Unstarted
+Started
+Completed
+Canceled
 ```
 
-Concrete Project Status names remain configurable through Project StatusDefinitions, but Project StatusDefinitions may belong only to the corresponding system categories `Unstarted`, `Started`, `Completed`, or `Canceled`. Project does not use the Issue `Backlog` lifecycle category.
+The V1 default user-facing Project Status names are:
+
+```text
+Planned
+In Progress
+Completed
+Canceled
+```
+
+Concrete Project Status names remain configurable through Project StatusDefinitions. A Project StatusDefinition always belongs to one of the four legal system categories above. Project does not use the Issue `Backlog` StatusCategory.
 
 Project Status does not decide which child data exists or how that data is reported. Project Workspace always reflects the actual current Issues, Milestones, and derived information. Project Status primarily controls which planning/execution mutations are currently legal and which execution-oriented presentations are useful.
 
@@ -88,7 +97,7 @@ An Issue is the smallest structured unit of work in Trail.
 
 Issues are flat. If an Issue is too large, the user restructures the work into a Project/Milestone and independent Issues rather than creating recursive Sub-issues. Finer execution steps can remain ordinary Markdown checklists inside related content.
 
-Normal Workflow Issue lifecycle continues to use five system categories:
+Normal Workflow Issue lifecycle uses five fixed system StatusCategories:
 
 ```text
 Backlog
@@ -98,7 +107,9 @@ Completed
 Canceled
 ```
 
-Every newly created normal Workflow Issue is born in `Backlog`, regardless of which UI surface initiated creation. Every Workflow Issue belongs to exactly one Project. A creation affordance therefore supplies an explicit Project relationship, but it does not silently seed Todo/Started/Completed status merely because it appeared near that group or Board column.
+The V1 default user-facing Issue Status names are `Backlog`, `Todo`, `In Progress`, `Done`, and `Canceled`. Concrete Issue Status names remain configurable inside their fixed system category.
+
+Every newly created normal Workflow Issue is born in the configured Issue Backlog StatusDefinition, regardless of which UI surface initiated creation. Every Workflow Issue belongs to exactly one Project. A creation affordance therefore supplies an explicit Project relationship, but it does not silently seed Todo/In Progress/Done merely because it appeared near that group or Board column.
 
 ### 3.6 Default Project
 
@@ -126,7 +137,7 @@ Triage review Due means the latest time by which the entry should be reviewed ag
 
 ### 3.8 Cycle
 
-A Cycle is a user-opened personal planning timebox that answers: “what do I intend to focus on during this period?”
+A Cycle is a user-started personal planning timebox that answers: “what do I intend to focus on during this period?”
 
 A Cycle is fundamentally a selected collection of Workflow Issues plus its actual start, planned end, and optional actual close. It does not create another Issue type or workflow. Cycle membership is orthogonal to Issue Status, Project, Milestone, Priority, Estimate, Labels, and Due, and a Cycle may contain Workflow Issues from multiple Projects.
 
@@ -136,7 +147,7 @@ Cycle membership itself is intentionally permissive: any Workflow Issue may be s
 
 ### 3.9 Status, Priority, Estimate, Due, and Labels
 
-- **Status** expresses workflow lifecycle. Issue and Project Status definitions are configured separately. Issues support all five system StatusCategories; Projects support all except Backlog.
+- **Status** expresses workflow lifecycle. Issue and Project StatusDefinitions are configured separately while both use the shared fixed StatusCategory vocabulary. Issues support all five categories; Projects support all except Backlog.
 - **Priority** expresses relative importance: Urgent, High, Medium, Low, or unset.
 - **Estimate** is a fixed T-Shirt work-size level for Issues: S, M, L, or XL. The level is the canonical Issue fact and is not a duration. Workspace Configuration maps the fixed levels to numeric aggregation weights; V1 defaults are S=1, M=2, L=5, XL=10, and changing those weights does not rewrite an Issue's Estimate level.
 - **Due** is the canonical time target/attention fact. Context determines how it is presented.
@@ -144,7 +155,7 @@ Cycle membership itself is intentionally permissive: any Workflow Issue may be s
 
 ### 3.10 Filters and deferred workspace conveniences
 
-A Filter is a temporary read configuration used by the supported V1 workspaces. Filter state is location-scoped, session-only UI state: it survives ordinary in-session presentation changes and returning to the same location, but it is not Domain Data, synchronized Workspace State, or a saved View. Trail intentionally favors a simpler product-specific filter interaction over importing Linear's advanced filter/view-builder behavior. Ordinary discrete properties use selected values as an OR set, different property clauses combine as AND, and no selected value means that property does not filter the collection.
+A Filter is a temporary read configuration used by the supported V1 workspaces. Filter state is location-scoped, session-only UI state: it survives ordinary in-session presentation changes and returning to the same location, but it is not Domain Data, synchronized Workspace State, or a Custom View. Trail intentionally favors a simpler product-specific filter interaction over importing Linear's advanced filter/view-builder behavior. Ordinary discrete properties use selected values as an OR set, different property clauses combine as AND, and no selected value means that property does not filter the collection.
 
 Custom Views and Favorites remain valid future workspace-state concepts, but their user-facing V1 interaction and navigation are deferred. They do not need to be implemented or used to shape current sidebar composition before a later product/UI closure explicitly reactivates them.
 
@@ -160,7 +171,7 @@ Current Cycle Summary
 Triage Summary
 Projects / Initiatives Summary
 Activity Heatmap
-Weekly Note
+Weekly Meeting Notes
 ```
 
 Current Cycle, Triage, and Projects / Initiatives summaries are both overview and routing surfaces. Activity Heatmap is a lightweight derived visualization from retained Workflow Issue lifecycle facts; it is not a complete activity/event log.
@@ -195,9 +206,11 @@ Projects Root
 └─ Project Workspace
 ```
 
-Initiative Focus is a scoped multi-Project location for one Initiative. It is not a mandatory parent path for a Project, and Projects may still be deep-linked directly from Home, Search, the Default Project shortcut, or other supported navigation.
+Initiative Focus is a scoped Project collection for one Initiative. It is List-only and reuses the same Project Summary Row, Project actions, Filter, ordering, Selection, responsive behavior, and standard Project creation interaction as Projects Root while omitting the already-fixed Initiative grouping dimension. It does not become a multi-Project Issue workspace, Board, or Timeline.
 
-Projects Root remains the Project-summary collection and supports List plus the lightweight Project Timeline derived from current temporal evidence. The final Initiative Focus presentation is intentionally reopened for UI closure: the working direction is a project-like workspace spanning multiple Projects, likely reusing the same shared Issue collection mechanics that make Current Cycle a multi-Project Board/List surface with explicit Project context. Product does not freeze the old assumption that Initiative Focus must be the same Project-summary List/Timeline collection as Projects Root.
+Initiative Focus is not a mandatory parent path for a Project. Projects may still be deep-linked directly from Home, Search, the Default Project shortcut, or other supported navigation.
+
+Projects Root remains the all-Project summary collection and supports List plus the lightweight Project Timeline derived from current temporal evidence.
 
 ### 4.3 Project Workspace
 
@@ -211,41 +224,50 @@ actual Project Issues / Milestones / facts
 → lifecycle-dependent available actions/presentations
 ```
 
-V1 lifecycle capability is:
+With the default Project Status names, V1 lifecycle capability is:
 
-| Project lifecycle | Primary role | Main Issue capability |
-| --- | --- | --- |
-| Not Started | planning | build/organize Backlog; no execution advancement |
-| In Progress | planning + execution | normal Issue workflow execution |
-| Done | settled | review plus relation cleanup/move-out only |
-| Cancelled | cleanup | unresolved work may be cancelled or moved out |
+| Project Status | System category | Primary role | Main Issue capability |
+| --- | --- | --- | --- |
+| Planned | Unstarted | planning | build/organize Backlog; no execution advancement |
+| In Progress | Started | planning + execution | normal Issue workflow execution |
+| Completed | Completed | settled | review plus relation cleanup/move-out only |
+| Canceled | Canceled | cleanup | unresolved work may be canceled or moved out |
 
-A Not Started Project can create and accept Backlog Issues and plan them. It cannot advance work from Backlog into Todo/Started execution.
+A Planned Project can create and accept Backlog Issues and plan them. It cannot advance work from Backlog into Todo/In Progress execution.
 
-An In Progress Project enables normal Issue execution and is the only Project lifecycle that exposes the execution Board.
+A Project whose Status belongs to the Started category enables normal Issue execution. With the V1 defaults, that visible Status is `In Progress`; Started is the only Project lifecycle category that exposes the execution Board.
 
-A Done Project contains no non-terminal child Issues at the moment it enters Done. It does not accept new non-terminal work or resume child execution until explicitly reopened.
+A Completed Project contains no unfinished child Issues at the moment it enters Completed. It does not accept new unfinished work or resume child execution until explicitly reopened.
 
-A Cancelled Project may still contain unresolved child Issues. Cancellation does not silently cancel, complete, move, or otherwise rewrite those Issues. Such unresolved work becomes derived Project attention until the user cancels it or moves it to another legal Project.
+A Canceled Project may still contain unresolved child Issues. Cancellation does not silently cancel, complete, move, or otherwise rewrite those Issues. Such unresolved work becomes derived Project attention until the user cancels it or moves it to another legal Project.
 
 ### 4.4 Project Status transitions
 
-Project Status is edited through the same compact Status control used to display it. Opening the control shows only transitions legal from the current lifecycle state.
+Project Status is edited through the same compact Status control used to display it. Opening the control shows only transitions legal from the current lifecycle category. Concrete configured StatusDefinitions inside a legal destination category may be shown by their configured names.
 
 The V1 category transition matrix is:
 
 ```text
-Not Started → In Progress | Cancelled
-In Progress → Done | Cancelled
-Done        → Not Started | In Progress
-Cancelled   → Not Started | In Progress
+Unstarted → Started | Canceled
+Started   → Completed | Canceled
+Completed → Unstarted | Started
+Canceled  → Unstarted | Started
 ```
 
-`In Progress → Not Started` is not allowed. Not Started is a real pre-execution lifecycle state, not Pause.
+With the V1 default Status names, that reads:
 
-Selecting Done is legal only when every current child Issue is already Completed or Canceled. Completing Issues does not automatically complete the Project.
+```text
+Planned     → In Progress | Canceled
+In Progress → Completed | Canceled
+Completed   → Planned | In Progress
+Canceled    → Planned | In Progress
+```
 
-Reopening a Done or Cancelled Project may therefore choose either Not Started or In Progress explicitly. Trail does not persist or restore a hidden `previousStatus`.
+`Started → Unstarted` is not allowed. Unstarted is a real pre-execution lifecycle state, not Pause.
+
+Selecting a Completed-category Status is legal only when every current child Issue is already Completed or Canceled. Completing Issues does not automatically complete the Project.
+
+Reopening a Completed or Canceled Project may therefore choose either an Unstarted- or Started-category Status explicitly. Trail does not persist or restore a hidden `previousStatus`.
 
 Changing Project Status never rewrites child Issue Statuses or relationships as a side effect.
 
@@ -255,9 +277,9 @@ Moving an Issue never silently changes its Issue Status merely to make a target 
 
 Target acceptance is capability-based:
 
-- Not Started Project accepts new/moved-in Backlog Issues;
-- In Progress Project accepts Issues whose current lifecycle can legally continue there;
-- terminal Projects accept only relationship changes that are legal under the normal Project capability rules;
+- Unstarted-category Project accepts new/moved-in Backlog Issues;
+- Started-category Project accepts Issues whose current lifecycle can legally continue there;
+- Completed/Canceled Projects accept only relationship changes that are legal under the normal Project capability rules;
 - every Workflow Issue remains related to exactly one real Project.
 
 If the target cannot accept the Issue's current Status, that target is unavailable. A future explicit compound action may combine a Status change with a Project move, but normal Move does not hide that mutation.
@@ -285,17 +307,17 @@ unfinished child Issues with Due
 
 Completed, Canceled, and Due-less Issues do not enter this temporal distribution.
 
-Project Attention may also expose other explainable exceptional reasons, such as a Cancelled Project that still owns unresolved non-terminal Issues. Health remains a future derived capability: it may consume Progress, temporal pressure, Project/Milestone Due, lifecycle context, and other evidence, but V1 does not freeze a score or persist Health.
+Project Attention may also expose other explainable exceptional reasons, such as a Canceled Project that still owns unresolved Issues. Health remains a future derived capability: it may consume Progress, temporal pressure, Project/Milestone Due, lifecycle context, and other evidence, but V1 does not freeze a score or persist Health.
 
 ### 4.7 Project milestones
 
 Milestones are Project checkpoints and Issue classification context, not a second execution hierarchy.
 
-- Milestone progress uses the same Completed/non-Canceled Issue progress semantics within the Milestone scope.
+- Milestone Progress uses the same Completed/non-Canceled Issue progress semantics within the Milestone scope.
 - Milestone has no manual Status or manual completion action.
 - Project Workspace does not create a permanent Milestone workspace/page merely to browse its Issues.
 - Selecting a Milestone in Project details is a quick filter over the current Project Issue collection.
-- Milestone planning is available while a Project is Not Started or In Progress; terminal Projects present Milestones as read-oriented summary context.
+- Milestone planning is available while a Project is in an Unstarted or Started category; Completed/Canceled Projects present Milestones as read-oriented summary context.
 
 ### 4.8 Cycles
 
@@ -303,14 +325,14 @@ Cycles is the focused workspace for the user's current planning timebox. When a 
 
 A Current Cycle is another scoped Workflow Issue collection, not another workflow. It reuses the same Issue collection mechanics as Project Workspace with Cycle-specific presentation defaults:
 
-- Board is the default layout and uses Status columns with Project swimlanes;
+- Board is the default layout and uses concrete configured Status columns with Project swimlanes;
 - Project swimlanes provide Board context and are presentation, not drag targets;
 - List remains available, shows the full Workflow lifecycle, displays Project as Issue metadata, and keeps Issues from the same Project visually coherent within a Status;
 - Filter reuses Trail's shared simplified filter interaction with a Cycle-appropriate field registry rather than importing Linear's advanced filter/view-builder behavior or introducing Cycle-specific syntax.
 
 Board continues to use the normal execution projection. Backlog and Canceled members remain part of the Cycle and remain visible in List even though they are not normal Board columns. Moving a member between Issue Statuses or Projects does not add/remove Cycle membership; presentation updates from the live Issue facts.
 
-Adding/removing membership is always explicit and changes only the Open Cycle's Issue selection. Cycle-level `Add Issues` may proactively surface non-terminal work from In Progress Projects because that is the most useful execution discovery set, but this is a UI discovery policy rather than membership legality. A Backlog Issue from a Not Started Project may still be added from that Project's own planning surface. V1 does not expose future Cycle objects or a generic multi-Cycle property picker.
+Adding/removing membership is always explicit and changes only the Open Cycle's Issue selection. Cycle-level `Add Issues` may proactively surface unfinished work from In Progress Projects because that is the most useful execution discovery set, but this is a UI discovery policy rather than membership legality. A Backlog Issue from a Planned Project may still be added from that Project's own planning surface. V1 does not expose future Cycle objects or a generic multi-Cycle property picker.
 
 Current Cycle Progress uses the same Completed/non-Canceled formula as Project Progress over the Current Cycle's live member set. `Effort` is a separate live aggregate over every member that currently has an Estimate, regardless of Status:
 
@@ -323,7 +345,7 @@ These values are current projections, not stored Cycle analytics or close-time s
 
 Closing a Cycle is explicit. Close records the actual end and freezes that Cycle's final membership without changing any member's Status, Project, Milestone, Priority, Estimate, Labels, or Due. Reaching the planned end never auto-closes the Cycle.
 
-Starting the next Cycle is another explicit Start Cycle flow. Previous members that are currently unfinished/non-terminal may be preselected as carry-over candidates; the user may deselect any of them, add other legal Workflow Issues, or cancel and leave the Workspace with no Current Cycle. Trail does not perform automatic rollover.
+Starting the next Cycle is another explicit `Start next Cycle` flow. Previous members that are currently unfinished may be preselected as next-Cycle candidates; the user may deselect any of them, add other legal Workflow Issues, or cancel and leave the Workspace with no Current Cycle. Trail does not perform automatic rollover.
 
 Historical Cycles are passive membership history. Their final Issue membership is retained, but V1 does not snapshot Issue Status, Project, Estimate, Progress, or other analytics at close. A Historical Cycle opens as a flat List-only collection whose rows resolve the member Issues' current live fields; Status and Project are displayed as ordinary row metadata rather than grouping the collection. Historical membership cannot be normally edited.
 
@@ -331,19 +353,21 @@ Historical Cycles are passive membership history. Their final Issue membership i
 
 Trail should first use mature page-specific filters, groups, sorting, and presentations rather than exposing a generic query language.
 
-The V1 Workspace navigation exposes the current Default Project shortcut, `Projects`, and `Cycles`. The Default Project row opens the same normal Project Workspace reached from Projects Root; it is not a second workspace or duplicate collection. `Projects` is the single top-level entry for the Project portfolio and Initiative focus. Initiative does not need a parallel top-level navigation entry.
+The V1 Workspace navigation exposes the current Default Project shortcut, `Projects`, and `Cycles`. The Default Project row opens the same normal Project Workspace reached from Projects Root; it is not a second workspace or duplicate collection. `Projects` is the single top-level entry for the Project portfolio and Initiative Focus. Initiative does not need a parallel top-level navigation entry.
 
 A future Workspace-level `Issues` collection may provide an all-Workflow-Issue browse surface across Projects, but it is deferred and does not shape V1 sidebar composition or restore a `No Project` state.
 
-Search finds objects and remains a required V1 global surface whose detailed composition still needs UI closure. Command Menu is primarily for actions. Custom Views and Favorites are deferred beyond the current V1 UI closure and therefore do not shape the V1 sidebar or implementation plan.
+Search is a required V1 global Trail location entered from the Navigation header. It searches Initiatives, Projects, Workflow Issues, and Triage entries; it does not become general Obsidian Vault search, a saved-query system, or another Inspector-owned workspace. Project/Initiative results navigate normally, Workflow Issue results use the shared Peek before explicit Full Item open, and Triage results enter the normal Triage Review Surface.
+
+Command Menu is primarily for actions. Custom Views and Favorites are deferred beyond the current V1 UI closure and therefore do not shape the V1 sidebar or implementation plan.
 
 ### 4.10 Peek and interaction model
 
 Peek is a cross-workspace interaction capability for inspecting lightweight information without losing the current context.
 
-Peek, Selection, Bulk Actions, Context Menu, Command Menu, keyboard shortcuts, Search, and Undo/Recovery form one interaction system rather than separate per-page inventions.
+Peek, Selection, Bulk Actions, Context Menu, Command Menu, keyboard shortcuts, Search, and later recovery/undo capabilities form one interaction system rather than separate per-page inventions.
 
-Fast operations should provide immediate visible feedback and a low-cost recovery path. Interactive elements require clear hover, focus, pressed, selected, disabled, and focus-visible states without excessive motion.
+Fast successful local operations are normally silent and optimistic. Sustained work may use a quiet shell status; mutation failures use concise transient feedback; persistent Data Issues/read-only state remain visible only while unhealthy. Interactive elements require clear hover, focus, pressed, selected, disabled, and focus-visible states without excessive motion.
 
 Contextual submenus should use a mature pointer-grace/safe-triangle pattern where necessary so diagonal pointer movement does not accidentally close the submenu.
 
@@ -377,7 +401,9 @@ Projects
 Cycles
 ```
 
-Search and Quick Capture are high-frequency global actions rather than ordinary peer navigation rows. The row shown as `Standalone` in a fresh Workspace is the current Default Project shortcut: it resolves by stable Project ID and renders the Project's current title, so it may later display another name or disappear when no Default Project reference exists. Activating it opens the same Project Workspace as any other Project route. `Projects` opens the unified project-first Projects workspace; Initiative focus is reached from that workspace rather than through a separate top-level Initiative entry. Favorites are not part of the currently resolved sidebar composition; their eventual presentation remains deferred. Cycles does not expand Previous Cycle history. Triage may later show a compact attention indicator derived from workload/time urgency; whether that presentation uses color, count, or both remains a UI-detail answer rather than a new persisted fact.
+Search and Quick Capture are high-frequency global actions rather than ordinary peer navigation rows. The row shown as `Standalone` in a fresh Workspace is the current Default Project shortcut: it resolves by stable Project ID and renders the Project's current title. During normal ready operation the shortcut always resolves one current Default Project; startup recovery repairs a missing persisted reference before normal ready navigation is published. Activating the row opens the same Project Workspace as any other Project route.
+
+`Projects` opens the unified project-first Projects workspace; Initiative Focus is reached from that workspace rather than through a separate top-level Initiative entry. Favorites are not part of the currently resolved sidebar composition; their eventual presentation remains deferred. Cycles does not expand Previous Cycle history. Triage may later show a compact attention indicator derived from workload/time urgency; whether that presentation uses color, count, or both remains a UI-detail answer rather than a new persisted fact.
 
 The main Trail workspace uses a stable composition:
 
@@ -400,25 +426,25 @@ These surfaces compose shared property/entity capabilities instead of cloning fi
 
 ### 4.13 Obsidian-native documents
 
-Trail entities support lightweight title, description/notes, properties, and actions.
+Trail entities support lightweight title, description, properties, and actions.
 
 Long-form design documents, research, meeting notes, and knowledge remain ordinary Obsidian Markdown documents. Native links and backlinks connect those documents to file-backed Trail entities. Trail should open the native document rather than recreate a separate rich-document experience.
 
-### 4.14 Weekly Note
+### 4.14 Weekly Meeting Notes
 
-Weekly Note is a lightweight Home utility backed by one Markdown file. Users can edit the Current section and manually archive it into dated entries. It does not automatically create or link Issues/Cycles and is not a Domain entity.
+Weekly Meeting Notes is a lightweight Home utility backed by `Trail/Collections/Weekly Update.md`. Users can edit the Current section and manually archive it into dated entries. It does not automatically create or link Issues/Cycles and is not a Domain entity.
 
 ## 5. Product Rules
 
 1. **Issue is the smallest structured work item.** No Sub-issue hierarchy is introduced.
 2. **Initiative, Project, Milestone, and Issue have different jobs.** They must not substitute for one another merely to satisfy a UI or storage convenience.
 3. **Area is classification, not hierarchy.** It is expressed through structured Labels/Views rather than an Area entity.
-4. **Project lifecycle is explicit and four-state.** Projects use Not Started, In Progress, Done, and Cancelled semantics; Project does not use Backlog.
+4. **Project lifecycle is explicit and four-category.** Project StatusDefinitions use Unstarted, Started, Completed, or Canceled; V1 defaults are Planned, In Progress, Completed, and Canceled. Project does not use Backlog.
 5. **Project Status controls capability, not child truth.** Changing Project Status never rewrites child Issues, and Project Workspace continues to report actual child data.
-6. **Project completion is guarded.** Done requires all current child Issues to be Completed or Canceled; Issue completion does not automatically complete the Project.
+6. **Project completion is guarded.** A Completed-category Project requires all current child Issues to be Completed or Canceled; Issue completion does not automatically complete the Project.
 7. **Milestone completion and Initiative completion are derived.** They are not manually maintained workflow Statuses.
 8. **Every normal Workflow Issue is born in Backlog and belongs to exactly one Project.** Creation location does not silently choose another Issue lifecycle Status, and `No Project` is not a valid Workflow state.
-9. **Default Project is routing state, not a Project subtype.** A fresh Workspace seeds `Standalone` as an ordinary Project and references it for default selection/navigation; the Project itself gains no special Domain behavior.
+9. **Default Project is required routing state, not a Project subtype.** A fresh Workspace seeds `Standalone` as an ordinary Project and references it for default selection/navigation; startup repairs a missing persisted reference before normal ready state, and deleting the current Default requires an explicit replacement Default.
 10. **Cycle planning is explicit, selection-based, and independent of Workflow lifecycle.** An Open Cycle may select any Workflow Issue; joining/leaving a Cycle changes only Cycle membership, and Issue Status/Project changes never silently add or remove membership. Cycle Progress and Effort are live derived projections, while historical Cycles retain final membership rather than close-time Issue snapshots.
 11. **Triage stays distinct from normal Workflow and Project planning.** A Triage entry is intake/review state, not a normal Workflow Issue surface. Accept creates a new standard Workflow Issue or Project with new identity rather than changing the Triage record in place; only title and description/body are automatically seeded in V1, and the source is removed only after the target is safely created.
 12. **Drag has one global meaning for Issue cards: Status change.** Relationship changes use explicit actions.

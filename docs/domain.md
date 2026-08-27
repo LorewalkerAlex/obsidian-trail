@@ -11,9 +11,9 @@ Trail uses the following canonical terms.
 - **Issue** — the smallest structured unit of work.
 - **Triage Issue** — an Issue in intake context, before normal workflow.
 - **Workflow Issue** — an Issue participating in the normal workflow lifecycle.
-- **Cycle** — an explicitly opened/closed personal planning timebox.
+- **Cycle** — an explicitly opened/closed personal planning timebox; the user-facing creation action is **Start Cycle**.
 - **StatusCategory** — the fixed system semantic categories Backlog, Unstarted, Started, Completed, Canceled.
-- **StatusDefinition** — a configurable named status with stable identity, applicable to Projects or Issues only in categories legal for that entity type.
+- **StatusDefinition** — a configurable named Status with stable identity, applicable to Projects or Issues only in categories legal for that entity type.
 - **Priority** — Urgent, High, Medium, Low, or unset.
 - **Estimate** — a fixed T-Shirt Issue work-size level: S, M, L, or XL; it is ordinal relative size, not elapsed time or duration.
 - **Due** — a canonical user-set time target/attention fact.
@@ -23,7 +23,7 @@ Trail uses the following canonical terms.
 - **Favorite** — an ordered navigation reference to a supported Trail target.
 - **Default Project** — the required normal-operation Workspace State reference to one ordinary Project used for high-frequency navigation and initial Project selection.
 
-Names displayed to the user may change without changing stable identity or canonical semantics.
+Names displayed to the user may change without changing stable identity or canonical semantics. StatusCategory is system vocabulary; normal product surfaces display concrete StatusDefinition names.
 
 ## 2. Model
 
@@ -84,16 +84,16 @@ Canonical Project facts:
 
 Project Status is an explicit user lifecycle judgment. It is independent from child Issue completion ratio, actual activity time, and derived Health/Attention.
 
-Project lifecycle uses four semantic categories:
+Project lifecycle uses four system StatusCategories. The V1 defaults are:
 
 ```text
-Unstarted   → user-facing default meaning: Not Started
-Started     → user-facing default meaning: In Progress
-Completed   → user-facing default meaning: Done
-Canceled    → user-facing default meaning: Cancelled
+Unstarted   → Planned
+Started     → In Progress
+Completed   → Completed
+Canceled    → Canceled
 ```
 
-Project does not use the `Backlog` StatusCategory.
+These right-hand names are default StatusDefinitions, not aliases for the category. Project does not use the `Backlog` StatusCategory.
 
 ### 2.5 Milestone
 
@@ -141,6 +141,8 @@ Started
 Completed
 Canceled
 ```
+
+The V1 default StatusDefinitions are `Backlog`, `Todo`, `In Progress`, `Done`, and `Canceled` respectively.
 
 ### 2.7 Cycle
 
@@ -248,7 +250,7 @@ An Open Cycle may select a Workflow Issue regardless of that Issue's current Sta
 
 Cycle membership does not imply or change Status, Project, Milestone, Priority, Estimate, Labels, or Due. Conversely, later changes to those Issue facts do not implicitly add or remove Cycle membership.
 
-UI candidate discovery may intentionally surface a narrower set for a particular planning entry point, such as non-terminal work from Started Projects in a Cycle-level Add flow. That is read-side/product selection policy, not a Domain membership invariant. A Backlog Issue in an Unstarted Project remains a legal Open-Cycle member when the user explicitly adds it from that Project context.
+UI candidate discovery may intentionally surface a narrower set for a particular planning entry point, such as unfinished work from Started Projects in a Cycle-level Add flow. That is read-side/product selection policy, not a Domain membership invariant. A Backlog Issue in an Unstarted Project remains a legal Open-Cycle member when the user explicitly adds it from that Project context.
 
 Closed Cycle membership is retained as a minimal historical fact. A Workflow Issue can therefore appear in multiple historical Cycles over time; Cycle membership is not represented as a single `cycleId` on Issue.
 
@@ -443,13 +445,13 @@ Deleting a Milestone preserves Issues and clears/replaces their Milestone relati
 
 At most one Cycle may be Open at a time, and it is valid to have none.
 
-Opening a Cycle records its actual start and a concrete planned end. The configured EndOfNextWeek default is a suggestion rule: calendar weeks run Monday through Sunday and the default points to the Sunday of the following natural week. A user may choose another end before creation; later configuration changes do not rewrite existing Cycles. An Open Cycle may begin with an empty member set and accept membership later.
+Starting a Cycle records its actual start and a concrete planned end. The configured EndOfNextWeek default is a suggestion rule: calendar weeks run Monday through Sunday and the default points to the Sunday of the following natural week. A user may choose another end before creation; later configuration changes do not rewrite existing Cycles. An Open Cycle may begin with an empty member set and accept membership later.
 
 While a Cycle is Open, membership changes are explicit Cycle mutations and may add/remove any Workflow Issue. They do not change member Issue facts. Reaching `plannedEnd` does not automatically close the Cycle.
 
-Closing a Cycle sets actual `endedAt` and freezes normal planning membership. Closing does not mutate any member Issue fact and does not automatically open a successor.
+Closing a Cycle sets actual `endedAt` and freezes normal planning membership. Closing does not mutate any member Issue fact and does not automatically start a successor.
 
-A separate Start Next Cycle flow may use the previous Cycle's final membership as a discovery input. Previous members that are currently non-terminal may be initially selected as carry-over candidates; the user may deselect any candidates, add other Workflow Issues, or cancel the flow entirely, leaving no Current Cycle. Candidate selection is evaluated from current Issue facts when the flow runs; Trail does not persist an unfinished-at-close snapshot or perform automatic rollover.
+A separate Start next Cycle flow may use the previous Cycle's final membership as a discovery input. Previous members that are currently non-terminal may be initially selected as next-Cycle candidates; the user may deselect any candidates, add other Workflow Issues, or cancel the flow entirely, leaving no Current Cycle. Candidate selection is evaluated from current Issue facts when the flow runs; Trail does not persist an unfinished-at-close snapshot or perform automatic rollover.
 
 ### 4.12 Delete relation resolution
 
@@ -459,11 +461,11 @@ A delete operation resolves affected relationships as one legal domain mutation:
 
 - Delete Initiative: preserve Projects, normally clearing Initiative membership or reassigning as explicitly chosen.
 - Delete Milestone: preserve Issues, clearing or replacing their Milestone relation.
-- Delete Project: if child Workflow Issues exist, require an explicit legal replacement Project, preserve those Issues by moving them to that Project, clear any old Project-scoped Milestone relation, remove the deleted Project's Milestones, then remove the Project. If Workspace State references the deleted Project as Default Project, clear that reference rather than silently choosing another default.
+- Delete Project: if child Workflow Issues exist, require an explicit legal replacement Project, preserve those Issues by moving them to that Project, clear any old Project-scoped Milestone relation, remove the deleted Project's Milestones, then remove the Project. If Workspace State references the deleted Project as Default Project, the same deletion intent must also supply another existing Project as the replacement Default.
 - Delete Issue: remove the Issue and its Cycle memberships; do not delete unrelated entities.
 - Delete Cycle: preserve Issues and their Status/Project relationships; Cycle history context is intentionally removed.
 
-Required references without a genuine default require an explicit legal replacement or cancellation rather than an invented default.
+Required references without a genuine automatic default require an explicit legal replacement or cancellation rather than an invented default.
 
 ## 5. Rules & Invariants
 
@@ -482,7 +484,7 @@ Every committed mutation must leave the whole affected canonical graph legal.
 
 ### 5.2 Core invariants
 
-The following must always hold:
+The following must always hold in canonical ready state:
 
 1. Core Entity identities are stable and unique in the Workspace.
 2. Project Status references a Project StatusDefinition whose category is Unstarted, Started, Completed, or Canceled.
@@ -501,7 +503,9 @@ The following must always hold:
 15. Closed Cycle membership is not changed by normal planning actions.
 16. Label selection obeys registration and Single/Multiple semantics.
 17. Configuration defaults/reference targets match the intended entity type/category and do not leave dangling references.
-18. Default Project, when present, references an existing ordinary Project and adds no Project-specific invariant.
+18. Default Project is present and resolves to an existing ordinary Project; it adds no Project-specific invariant.
+
+Persisted pre-ready Workspace State may temporarily omit `defaultProjectId` only so bootstrap/recovery can repair it before canonical ready state is published.
 
 ### 5.3 Label rules
 
