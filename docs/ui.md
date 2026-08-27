@@ -1552,7 +1552,7 @@ Description / body
 Accept       Defer      Delete       ···
 ```
 
-Title and lightweight Markdown description/body are directly editable without a permanent Edit/Save/Cancel shell. Priority, Labels, and Review Due are compact enrichment properties. Exact review-pane width, side/below placement, and responsive geometry are full-shell calibration decisions; the queue/review interaction contract is fixed.
+Title and lightweight Markdown description/body are directly editable without a permanent Edit/Save/Cancel shell. Priority, Labels, and Review Due are compact enrichment properties. When the main Trail pane can comfortably support both surfaces, the compact Queue and Review Surface remain visible side by side inside the Main View. When that composition would make either surface unusably narrow, Review becomes the focused Main View surface while compact queue context, collection position, and previous/next navigation remain available; the user can return to the full Queue without leaving Triage. Review never moves into the persistent Right Inspector. Exact queue/review widths and transition thresholds remain full-shell calibration decisions.
 
 Adjacent-item navigation is first-class so a user can process a review session continuously. Completing a successful Accept, Defer, or Delete selects the next entry according to the current visible/ordered queue when one exists.
 
@@ -1968,41 +1968,171 @@ It is shell/action affordance rather than another Home analytics module.
 
 ### 12.7 Composition boundary
 
-This section freezes **what Home can show and how each module derives its information**. It deliberately does not freeze where modules are placed, how many grid tracks they span, which borders/surfaces are visible, or which modules compress/hide at each Obsidian pane width.
+This section freezes **what Home can show and how each module derives its information**. Section 13 freezes how those modules and the other major Trail surfaces use available Obsidian pane space. Exact Home track count, numeric spans, borders/surfaces, and lower-level packing measurements remain implementation-time visual calibration rather than Domain or product data.
 
-Those questions are next resolved once through a shared responsive Workspace Grid so Home, Projects Root, Initiative Focus, Project Workspace, Triage, Cycles, Full Item, and Inspector compositions use one coherent spatial system without forcing every page into a dashboard appearance.
+## 13. Workspace Grid and Responsive Composition
 
-## 13. Responsive Behavior
+Trail responds to the **actual space currently available to its Obsidian Main View**, not to a separate mobile/desktop product mode and not to display resolution alone. Obsidian owns the window, sidebars, tab groups, splits, resize/collapse behavior, and therefore the amount of space Trail receives at any moment. Linear remains the primary visual/composition reference for equivalent work surfaces inside that host behavior.
 
-Trail must work across variable Obsidian pane widths using progressive disclosure rather than a second mobile layout.
+### 13.1 Spatial ownership
 
-General priority:
+Trail uses three composition responsibilities without requiring one universal fixed-column system:
+
+```text
+Obsidian Host
+→ owns window / splits / sidebars and determines Trail pane capacity
+
+Trail Workspace Frame
+→ aligns Location Bar / optional Context / optional View Bar / Content
+
+Page Composition
+→ decides the major regions appropriate to the current surface
+
+Component Internal Layout
+→ owns Row/Card metadata, Board columns/swimlanes, Timeline axis, charts, and other local geometry
+```
+
+The Workspace Frame does not impose one narrow global `max-width`. Collection, Board, Timeline, and Home surfaces may use the available Main View width. Content whose usability depends on readable line length, especially Issue Full Item body and Weekly Meeting Notes editing, may use an inner comfortable reading/editing measure without constraining the whole Trail workspace.
+
+The final CSS mechanism may use shared tracks, container queries, `minmax`, or a small number of page-specific composition states as implementation evidence requires. Track count itself is not a V1 product concept. A page must not be forced into a dashboard/card layout merely because Home is modular.
+
+### 13.2 Inspector ownership and page-entry composition
+
+The persistent Trail Inspector is an **Obsidian Right Sidebar view**, not a column inside the Trail Main View grid.
+
+Locations with no stable primary entity do not expose a Trail Inspector:
+
+```text
+Home
+Triage
+Search
+Projects Root
+```
+
+Locations with a stable primary entity may expose the matching Inspector:
+
+```text
+Initiative Focus   → Initiative Inspector
+Project Workspace → Project Inspector
+Current Cycle      → Current Cycle Inspector
+Historical Cycle   → Historical Cycle Inspector
+Issue Full Item    → Issue Inspector
+```
+
+Triage Review is part of the Triage Main View workflow and never becomes a Right Inspector merely because it may occupy the right side of a wide composition. Peek is likewise transient Main View UI and does not become the persistent Inspector.
+
+Inspector initial visibility is decided on **location entry**:
+
+```text
+enter Trail location
+→ resolve whether the location has a Trail Inspector target
+→ if none, do not present a Trail Inspector for this location
+   → leave unrelated Right Sidebar views and host layout untouched
+→ if present, evaluate the current Obsidian workspace capacity
+   → enough room for Navigation + useful Main View + Inspector: reveal the Trail Inspector initially
+   → constrained Main View: leave the Trail Inspector closed initially
+→ finish the location's initial composition
+```
+
+This automatic decision runs only when entering/loading the location. While that location remains active, user actions own Inspector visibility: resizing the window, resizing host sidebars, opening/closing the Inspector, switching List/Board, opening Peek, or changing other local presentation does not cause Trail to reopen or collapse the Inspector automatically. Leaving the location and later entering another Inspector-capable location - including returning to the same entity location - performs a fresh entry-time capacity decision using the then-current Obsidian layout.
+
+Trail does not persist a per-entity or per-visit Inspector-open browsing preference merely to implement this behavior. The automatic action targets only the Trail Inspector view; it must not destructively close or replace unrelated Obsidian Right Sidebar views such as Backlinks, Outline, or another plugin view.
+
+### 13.3 Surface behavior as space changes
+
+Shared priority remains:
 
 - preserve current location before breadcrumb ancestry;
-- preserve title before secondary metadata;
-- preserve semantic icons before repeated text labels when meaning remains clear;
-- collapse/overflow low-priority actions before forcing horizontal page overflow;
-- compress Label display before increasing Card height without bound;
-- keep exact text available through tooltip, picker, Peek, Inspector, and accessibility labels;
-- preserve Progress/Attention semantic readability even when exact numeric/tooltip detail moves behind interaction;
-- let the right Inspector collapse through normal Obsidian host behavior rather than building a second custom pane system.
+- preserve title/identity before secondary metadata;
+- preserve semantic icons before repeated labels where meaning remains clear;
+- collapse or overflow low-priority actions before forcing whole-page horizontal overflow;
+- keep exact hidden/compressed values available through tooltip, picker, Peek, Inspector, Full Item, or accessibility text where applicable.
+
+Major surfaces then adapt according to their own role:
+
+| Surface | Normal/wide behavior | Constrained behavior |
+| --- | --- | --- |
+| Home | Multiple independent visual modules share the available width; charts/heatmap can receive materially more horizontal space while small pulse modules stay compact | Reduce parallel module packing and reflow toward fewer columns / compact representations; do not shrink charts into unreadable noise merely to preserve a wide arrangement |
+| Triage | Queue + Review may remain side by side inside Main View | Review becomes the focused Main View surface with compact Queue context/position/previous-next access rather than moving Review into the Right Sidebar |
+| Projects Root / Initiative Focus List | Compact single-line Project rows may expose more useful metadata | Remove secondary metadata progressively; preserve Project title and Status identity first, with meaningful exception Attention/Priority ahead of ordinary secondary fields |
+| Project / Cycle List | Compact single-line Issue rows may expose more useful metadata | Reduce secondary metadata without turning each row into a mini details view; preserve enclosing-scope identity such as Project in Cycle List where it remains necessary context |
+| Project / Cycle Board | Board uses available viewport for Status columns/cards; Cycle additionally owns Project swimlanes | Keep cards at a useful width and let the Board own horizontal scrolling; do not silently switch Board to List because the pane narrows |
+| Projects Timeline | Timeline uses available width for project rows and its time axis | Timeline owns horizontal navigation/scrolling and dense-marker handling; the whole Trail page does not become horizontally scrolling |
+| Full Item | Main View may be wide while the Markdown editor uses a comfortable content measure; Right Inspector remains host-owned | Editor naturally narrows with the pane; Inspector is not moved below the body by Trail |
+
+Cycle Board's Project swimlane identity must remain understandable while Status columns scroll; exact sticky-label behavior and swimlane width are implementation-time calibration. Board and Timeline overflow are component-owned exceptions to the rule that the Trail page itself should not need horizontal scrolling.
 
 For the shared Creation Composer, normal width keeps the resolved entity properties directly accessible; constrained panes progressively overflow lower-priority property controls without changing creation semantics or creating a separate compact form.
 
-Exact breakpoints remain visual-calibration decisions.
+### 13.4 Calibration environments
 
-## 14. Remaining V1 UI Design Closure
+Responsive behavior is calibrated in real Obsidian against common working environments such as approximately `1366×768` and `1440`-class laptop windows, `1920×1080`, `2560×1440`, and `3440×1440`, plus representative left/right Sidebar and central split combinations. These are validation environments, not product breakpoints.
 
-The core Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, and Home content/data semantics are substantially resolved, but V1 UI is **not yet frozen**. The following product-facing interaction answers remain before Trail treats the whole V1 UI authority as complete:
+Exact thresholds are derived from the useful size of the actual Trail pane and its content, not from a rule such as “screen >= 1920”. The exact breakpoint values, gutters, track implementation/count, card minimum widths, readable content measures, Inspector preferred width/reveal threshold, Home module spans/placement/compact-or-hide details, and Triage queue/review width ratio remain full-shell calibration decisions.
 
-- **Workspace Grid / responsive composition** - define the shared spatial grid and the composition of each major surface across useful Obsidian pane sizes. For Home this includes module placement, spans, compression, reflow, and which frozen modules remain visible at each size; for other pages it includes main/auxiliary regions, collection width, Inspector relationships, and responsive transitions. The grid is implementation infrastructure, not a rule that every page must look like a card dashboard; current Linear references remain the composition authority for equivalent surfaces.
-- **Search** - close the global search surface, result composition/grouping, keyboard navigation, activation behavior, and interaction with Peek/navigation.
+## 14. Search
+
+Search is Trail's global discovery surface for existing Trail work. It borrows Linear's compact, keyboard-first search rhythm while remaining scoped to Trail's own model and leaving ordinary Vault-note search to Obsidian.
+
+### 14.1 Entry and scope
+
+The primary visible entry is the high-frequency `Search` action in the Trail Navigation header beside `Capture`; Search is not another ordinary sidebar row. Activating it navigates the existing Trail tab to the `Search` location and focuses the search input immediately.
+
+V1 global Search covers:
+
+```text
+Initiatives
+Projects
+Workflow Issues
+Triage entries
+```
+
+Ordinary Obsidian notes are not absorbed into Trail Search merely because Trail runs inside Obsidian; host Vault Search remains the normal note-search capability. Search itself has no persistent Trail Inspector because the page is a discovery collection rather than a stable primary entity location.
+
+### 14.2 Result composition
+
+Results use a dense, scan-first list and are grouped by Trail entity kind rather than mixing every object into one visually ambiguous relevance stream. Title/identity is dominant; only small context needed to disambiguate a result is shown by default.
+
+V1 deliberately does not copy Linear's collaboration/team/user search dimensions, advanced query syntax, saved searches, or a second Filter builder. Exact empty-query/recent treatment may be calibrated later without creating a persisted search-history Domain model.
+
+### 14.3 Activation behavior
+
+Result activation follows the destination's existing interaction model:
+
+```text
+Project result
+→ Project Workspace
+
+Initiative result
+→ Initiative Focus
+
+Workflow Issue result
+→ open the shared Workflow Issue Peek inside Search
+→ explicit deeper open enters Issue Full Item
+
+Triage result
+→ navigate to Triage
+→ open that entry in the normal Triage Review Surface
+```
+
+Search does not create a Search-specific details model. Workflow Issue Peek remains transient Main View UI and does not create/change a persistent Inspector target. A Triage result uses Triage Review rather than Workflow Issue Peek because Review is the canonical Triage-detail workflow.
+
+### 14.4 Keyboard and responsive behavior
+
+Search must support a keyboard-first flow: typing updates results, the current result can be moved without the pointer, and the current target can be activated without leaving the keyboard. Exact key choices for result traversal, Peek, Full Item, escape/clear, and host-focus conflicts remain implementation-time shortcut calibration rather than product semantics.
+
+On very wide panes, Search results use a comfortable scan width instead of stretching one result row across the entire display. On constrained panes, the result list remains the primary single-column surface; any Peek follows the shared Peek responsive treatment inside the Main View. Search itself does not require whole-page horizontal scrolling.
+
+## 15. Remaining V1 UI Design Closure
+
+Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, Home content/data semantics, Workspace Grid/responsive composition, and Search are now substantially resolved, but V1 UI is **not yet frozen**. The remaining product-facing interaction answers are:
+
 - **Runtime/Data-Issue feedback** - map `loading`, `refreshing`, `read-only-error`, optimistic pending, mutation failure, and recoverable Data Issue states to coherent user-visible UI, including feedback for the already-resolved shared actions.
 - **Default Project setter** - provide a lightweight V1 interaction for explicitly setting or replacing the Workspace Default Project after bootstrap without introducing special Project semantics.
 
-These are not deferred beyond V1. Workspace Grid / responsive composition is the immediate next design closure because it determines the final spatial form of the already-frozen Home modules and the shared page compositions.
+These are not deferred beyond V1. Runtime/Data-Issue feedback is the immediate next design closure, followed by the Default Project setter and final V1 UI freeze.
 
-## 15. Explicitly Deferred Beyond Current V1 UI Closure
+## 16. Explicitly Deferred Beyond Current V1 UI Closure
 
 The following product conveniences are deferred and do not block V1 UI freeze or formal implementation of the supported workflows:
 
@@ -2013,13 +2143,18 @@ The following product conveniences are deferred and do not block V1 UI freeze or
 
 Their existing Domain/Data/Workspace-state concepts do not require speculative V1 UI or implementation work.
 
-## 16. Implementation-Time Calibration Decisions
+## 17. Implementation-Time Calibration Decisions
 
 The following may remain replaceable until the relevant real-Obsidian surface exists and can be calibrated against current references:
 
 - final pixel values, color values, opacity, radius, and spacing;
 - final icon choice where multiple existing Obsidian/Lucide equivalents are plausible;
 - final Label palette and color-assignment function;
+- exact Workspace Grid implementation mechanism, pane-width thresholds, gutters, track count/spans, and component minimum widths consistent with Section 13 behavior;
+- exact Inspector preferred width and entry-time reveal threshold, while preserving host ownership and the frozen entry-only automatic policy;
+- exact Home module positions/spans, border treatment, compact representations, and any final width-dependent hide decision consistent with the frozen Home content and Section 13 behavior;
+- exact Triage Queue/Review width ratio, transition threshold, and constrained Queue-context visual treatment;
+- exact Search content measure, group spacing, empty-query/recent treatment, and keyboard bindings consistent with Section 14 semantics;
 - exact lower-level Project Issue ordering/clustering algorithm;
 - exact lower-level Cycle List ordering within the resolved Status/Project coherence rules;
 - exact default optional Issue property set for Project Workspace/Cycle List vs Board beyond the hierarchy defined above;

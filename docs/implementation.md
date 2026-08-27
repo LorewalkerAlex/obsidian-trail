@@ -4,14 +4,14 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The verified public authority baseline used for this **Initiative Focus + Home content closure** is:
+The verified public authority baseline used for this **Workspace Grid + Search interaction closure** is:
 
 ```text
-b05fe14600012b06dd316559928b8e03178a5d6e
-docs: close shared interaction design
+0bd1270d57fd1d97fb59598efd1ac48458ed0357
+docs: close initiative and home design
 ```
 
-This is the pre-change authority baseline for the Initiative/Home documentation closure recorded here, not a claim that `b05fe14...` must remain the repository HEAD after this documentation checkpoint is published.
+This is the pre-change authority baseline for the Grid/Search documentation closure recorded here, not a claim that `0bd1270...` must remain the repository HEAD after this documentation checkpoint is published.
 
 The latest published implementation/code checkpoint is:
 
@@ -31,7 +31,7 @@ The implementation baseline already contains the completed Project Lifecycle, In
 
 Those checkpoints remain historical implementation evidence. This document does not rewrite their recorded behavior after later Product/Domain/UI decisions change the target.
 
-Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. Gate 8 now has resolved Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, and Home content/data semantics, but the full V1 UI authority is not yet frozen. The Estimate target remains the fixed T-Shirt `S/M/L/XL` Domain vocabulary with configurable aggregation weights; current code has not yet been aligned to that newer target. The immediate remaining bounded UI-design work is the shared Workspace Grid / responsive composition, followed by Search, runtime feedback states, and a Default Project setter before comprehensive Formal UI Implementation alignment.
+Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. Gate 8 now has resolved Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, Home content/data semantics, Workspace Grid/responsive composition, and global Search, but the full V1 UI authority is not yet frozen. The Estimate target remains the fixed T-Shirt `S/M/L/XL` Domain vocabulary with configurable aggregation weights; current code has not yet been aligned to that newer target. The immediate remaining bounded UI-design work is runtime/Data-Issue/optimistic feedback followed by a Default Project setter before comprehensive Formal UI Implementation alignment.
 
 ### 1.1 Historical implementation checkpoints
 
@@ -155,7 +155,7 @@ The resolved Cycle target similarly reuses the existing Cycle Domain/Data carrie
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action design, and Home content/data semantics are now resolved at the target-design level. Gate 8 should **not yet treat the entire V1 UI as frozen**: the next bounded UI-design closure is the shared Workspace Grid / responsive composition, then Search, runtime feedback states, and a Default Project setter. Formal shell/page implementation alignment follows that closure, together with the lower-layer Estimate model correction already exposed by the previous design checkpoint.
+Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action design, Home content/data semantics, Workspace Grid/responsive composition, and Search are now resolved at the target-design level. Gate 8 should **not yet treat the entire V1 UI as frozen**: the remaining bounded UI-design closure is runtime/Data-Issue/optimistic feedback followed by a lightweight Default Project setter. Formal shell/page implementation alignment follows that closure, together with the lower-layer Estimate model correction already exposed by the previous design checkpoint.
 
 ### 4.2 Required Workflow Project & Default Project slice
 
@@ -307,7 +307,11 @@ Cycle's page-specific target interaction is also resolved. Current Cycle is a Cy
 
 Initiative Focus target composition is now resolved. It is the standard Project collection scoped to one Initiative, reusing the Project Summary Row, Project actions, Selection, Filter, ordering, responsive behavior, and standard Project Composer. It is List-only, does not repeat Initiative grouping/filtering, does not expose Board/Timeline/Issue collection semantics, and uses the same lightweight narrative-context disclosure pattern as Project Workspace for the Initiative description. `New Project` prefills the current Initiative but leaves the relation editable. This is target design authority, not a claim that the current implementation already matches it.
 
-Home target content/data semantics are now resolved as a modular visual-first homepage. Work Pulse stays lightweight: Current Cycle period + Progress, Triage Overdue/Remain bars, and In Progress Project progress micro-bars. Personal modules are derived rather than persisted analytics: Lifecycle Activity Heatmap counts `createdAt`, `firstStartedAt`, and `terminalAt` events equally per day and uses one hue with intensity driven by total event count; Work Trend recomputes Backlog stock, Active stock, and daily Completed flow from the currently retained lifecycle timestamps; Temporal Orientation shows current date/week plus Triage Review Due and Workflow Issue Due markers; Weekly Meeting Notes remains the existing lightweight `Weekly Update.md` work-meeting talking-points utility with Current + Archive and only Open/Read, Edit Current, and Archive/Next behavior. Home introduces no Estimate weighting in the Heatmap, no daily snapshots, no activity log, no productivity score, no new weekly-note entity, and no hidden Home ranking model. Exact module positions/spans, visible borders/surfaces, and width-dependent keep/compress/hide rules remain for the shared Workspace Grid / responsive composition closure.
+Home target content/data semantics are now resolved as a modular visual-first homepage. Work Pulse stays lightweight: Current Cycle period + Progress, Triage Overdue/Remain bars, and In Progress Project progress micro-bars. Personal modules are derived rather than persisted analytics: Lifecycle Activity Heatmap counts `createdAt`, `firstStartedAt`, and `terminalAt` events equally per day and uses one hue with intensity driven by total event count; Work Trend recomputes Backlog stock, Active stock, and daily Completed flow from the currently retained lifecycle timestamps; Temporal Orientation shows current date/week plus Triage Review Due and Workflow Issue Due markers; Weekly Meeting Notes remains the existing lightweight `Weekly Update.md` work-meeting talking-points utility with Current + Archive and only Open/Read, Edit Current, and Archive/Next behavior. Home introduces no Estimate weighting in the Heatmap, no daily snapshots, no activity log, no productivity score, no new weekly-note entity, and no hidden Home ranking model. Workspace Grid behavior is now resolved at the interaction level: Home reflows modules according to actual Obsidian pane capacity while exact track count/spans, borders, and final compact-or-hide calibration remain implementation-time visual decisions.
+
+Workspace Grid/responsive composition is now resolved across the major surfaces. Obsidian owns sidebars/splits and therefore the Main View capacity; Trail has no one narrow global max width; Lists progressively reduce secondary metadata; Board/Timeline own their horizontal overflow; Full Item/Weekly Notes may use a comfortable inner content measure; Triage Review remains Main View UI and becomes focused when Queue+Review no longer fit side by side. Persistent Inspector is host-owned and only exists for stable primary-entity locations. On entry to an Inspector-capable Trail location, current Obsidian capacity decides whether Trail initially reveals its Inspector; after the location is active, user visibility changes and resize behavior are not automatically overridden. Returning to a location performs a fresh entry-time decision rather than restoring a persisted per-visit Inspector state.
+
+Global Search target interaction is also resolved. The Navigation-header Search action enters a focused Search location over Initiatives, Projects, Workflow Issues, and Triage entries. Results are grouped by entity kind; Project/Initiative results navigate normally, Workflow Issue results use the shared Peek before explicit Full Item open, and Triage results enter the normal Triage Review Surface. Search has no persistent Inspector and does not absorb ordinary Obsidian Vault-note search or introduce an advanced saved-query/filter model.
 
 Required Workflow Project & Default Project, Project Status Four-State Configuration Closure, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing & Weekly Note, Weekly Note hardening, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
 
@@ -316,15 +320,13 @@ Required Workflow Project & Default Project, Project Status Four-State Configura
 Continue the bounded design pass before comprehensive Formal UI Implementation:
 
 ```text
-1. shared Workspace Grid / responsive composition
-2. Search
-3. runtime / Data Issue / optimistic-feedback states
-4. Default Project setter
-5. freeze V1 ui.md
-6. formal UI implementation closure
+1. runtime / Data Issue / optimistic-feedback states
+2. Default Project setter
+3. freeze V1 ui.md
+4. formal UI implementation closure
 ```
 
-The Workspace Grid pass now owns the spatial composition question for every major surface, including which frozen Home modules appear, compress, reflow, or hide at each useful pane size. The grid must remain flexible infrastructure: current Linear composition is still the primary reference for equivalent pages, and the grid must not force every surface into a card/dashboard appearance.
+Workspace Grid/responsive composition and global Search are now closed at the target-interaction level. The next design pass should therefore start with runtime/loading/refreshing/read-only/pending/failure feedback rather than reopening spatial composition or Search semantics unless new evidence exposes a contradiction.
 
 Custom Views and Favorites are explicitly deferred and should not consume this closure. The future Workspace Issues collection remains deferred as well.
 
