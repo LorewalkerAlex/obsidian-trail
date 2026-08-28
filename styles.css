@@ -1,109 +1,363 @@
-body,
-.trail-view,
-.trail-navigation-view {
-  /* Direct Linear March 2026 dark-theme anchors. */
-  --trail-linear-bg-base: #0e1012;
-  --trail-linear-bg-sub: #060708;
-  --trail-linear-bg-hover: #141517;
-  --trail-linear-accent: #5e6ad2;
-
-  /* Linear theme editor exposes these as relative derived-theme offsets. */
-  --trail-linear-surface-elevated: lch(7.66% 2.41 265.732);
-  --trail-linear-surface-menu: lch(9.66% 2.41 265.732);
-
-  /* Text/border alpha remains a calibration value until direct tokens are exposed. */
-  --trail-linear-text-primary: rgba(255, 255, 255, 0.9);
-  --trail-linear-text-secondary: rgba(255, 255, 255, 0.68);
-  --trail-linear-text-muted: rgba(255, 255, 255, 0.43);
-  --trail-linear-text-faint: rgba(255, 255, 255, 0.27);
-  --trail-linear-border: rgba(255, 255, 255, 0.052);
-  --trail-linear-border-strong: rgba(255, 255, 255, 0.09);
-  --trail-linear-hover: rgba(255, 255, 255, 0.045);
-  --trail-linear-selected: rgba(255, 255, 255, 0.065);
-  --trail-linear-accent-soft: rgba(94, 106, 210, 0.15);
-  --trail-linear-danger: #e35d6a;
-  --trail-linear-success: #4bb782;
-  --trail-linear-warning: #d9a441;
-  --trail-linear-shadow: 0 14px 38px rgba(0, 0, 0, 0.44), 0 0 0 1px rgba(255, 255, 255, 0.045);
-  --trail-linear-radius-xs: 4px;
-  --trail-linear-radius-sm: 6px;
-  --trail-linear-radius-md: 8px;
-  --trail-linear-radius-lg: 10px;
-  --trail-linear-control-compact: 28px;
-  --trail-linear-control: 30px;
-  --trail-linear-font: Inter, var(--font-interface), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-  /* Current Linear contextual-menu grammar shared by host and Trail surfaces. */
-  --trail-menu-surface: var(--trail-linear-surface-menu);
-  --trail-menu-border: var(--trail-linear-border-strong);
-  --trail-menu-shadow: 0 12px 32px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.025);
-  --trail-menu-radius: 8px;
-  --trail-menu-padding: 4px;
-  --trail-menu-min-width: 220px;
-  --trail-menu-item-height: 28px;
-  --trail-menu-item-radius: 5px;
-  --trail-menu-item-padding-x: 8px;
-  --trail-menu-item-gap: 8px;
-  --trail-menu-font-size: 11px;
-  --trail-menu-icon-size: 14px;
-  --trail-menu-shortcut-size: 9.5px;
-  --trail-menu-hover: rgba(255, 255, 255, 0.055);
-  --trail-menu-separator: rgba(255, 255, 255, 0.055);
-}
-
-.trail-view,
-.trail-navigation-view {
-  height: 100%;
-  padding: 0;
-  color: var(--trail-linear-text-primary);
-  font-family: var(--trail-linear-font);
-}
-
 /*
- * Plugin-enabled application theme: while Trail is enabled, Obsidian chrome and
- * Trail product UI consume the same Linear-derived visual tokens. Disabling or
- * unloading the plugin removes this stylesheet and restores the user's theme.
+ * Trail stylesheet entry point.
+ *
+ * Obsidian ships one plugin styles.css, so Trail keeps the physical stylesheet
+ * centralized while enforcing logical ownership inside it:
+ *
+ *   1. design-token authority
+ *   2. Obsidian semantic-variable mapping
+ *   3. native Obsidian consumers
+ *   4. Trail shell carriers
+ *   5. Foundation Lab-only calibration specimens
+ *
+ * A visual fact belongs to one owner. Calibration replaces the owning value;
+ * it does not append a later override of the same responsibility.
  */
+
+/* --------------------------------------------------------------------------
+ * 1. Design-token authority
+ * -------------------------------------------------------------------------- */
+
+body {
+  /* Linear March 2026 dark reference anchors. */
+  --trail-reference-canvas: #0e1012;
+  --trail-reference-sidebar: #060708;
+  --trail-reference-hover: #141517;
+  --trail-reference-accent: #5e6ad2;
+  --trail-reference-elevated: lch(7.66% 2.41 265.732);
+  --trail-reference-overlay: lch(9.66% 2.41 265.732);
+
+  /* Semantic surfaces. */
+  --trail-surface-canvas: var(--trail-reference-canvas);
+  --trail-surface-sidebar: var(--trail-reference-sidebar);
+  --trail-surface-hover: var(--trail-reference-hover);
+  --trail-surface-elevated: var(--trail-reference-elevated);
+  --trail-surface-overlay: var(--trail-reference-overlay);
+
+  /* Semantic text. */
+  --trail-text-primary: rgba(255, 255, 255, 0.9);
+  --trail-text-secondary: rgba(255, 255, 255, 0.68);
+  --trail-text-muted: rgba(255, 255, 255, 0.43);
+  --trail-text-faint: rgba(255, 255, 255, 0.27);
+  --trail-text-on-accent: #ffffff;
+  --trail-text-accent: #aeb5ef;
+
+  /* Semantic lines and states. */
+  --trail-border-subtle: rgba(255, 255, 255, 0.052);
+  --trail-border-default: rgba(255, 255, 255, 0.09);
+  --trail-state-hover: rgba(255, 255, 255, 0.045);
+  --trail-state-hover-strong: rgba(255, 255, 255, 0.055);
+  --trail-state-selected: rgba(255, 255, 255, 0.065);
+  --trail-state-accent-soft: rgba(94, 106, 210, 0.15);
+  --trail-focus-border: rgba(130, 143, 255, 0.45);
+  --trail-focus-ring: rgba(94, 106, 210, 0.35);
+  --trail-focus-ring-quiet: rgba(94, 106, 210, 0.28);
+  --trail-host-focus-border: rgba(94, 106, 210, 0.5);
+  --trail-metadata-focus-border: rgba(94, 106, 210, 0.42);
+  --trail-metadata-focus-ring: rgba(94, 106, 210, 0.22);
+  --trail-selection-fill: rgba(94, 106, 210, 0.24);
+  --trail-accent-border: rgba(130, 143, 255, 0.24);
+  --trail-accent-border-hover: rgba(145, 157, 255, 0.28);
+  --trail-surface-quiet: rgba(255, 255, 255, 0.035);
+  --trail-surface-very-quiet: rgba(255, 255, 255, 0.025);
+  --trail-surface-disabled: rgba(255, 255, 255, 0.018);
+  --trail-row-divider: rgba(255, 255, 255, 0.032);
+  --trail-scrollbar-thumb: rgba(255, 255, 255, 0.085);
+  --trail-scrollbar-thumb-hover: rgba(255, 255, 255, 0.145);
+  --trail-scrollbar-thumb-lab: rgba(255, 255, 255, 0.11);
+  --trail-overlay-scrim: rgba(0, 0, 0, 0.52);
+  --trail-swatch-inset: rgba(0, 0, 0, 0.18);
+  --trail-label-border: rgba(94, 106, 210, 0.2);
+  --trail-label-background: rgba(94, 106, 210, 0.11);
+  --trail-checkmark-ink: #07100c;
+  --trail-navigation-mark-fill: rgba(255, 255, 255, 0.075);
+
+  /* Semantic colors. */
+  --trail-accent: var(--trail-reference-accent);
+  --trail-accent-hover: #6975d9;
+  --trail-danger: #e35d6a;
+  --trail-success: #4bb782;
+  --trail-warning: #d9a441;
+  --trail-progress: #d7a64a;
+  --trail-priority-high: #e07a5f;
+  --trail-label-accent: #b7bdf3;
+
+  /* Typography. */
+  --trail-font-ui: Inter, var(--font-interface), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --trail-font-size-meta: 9px;
+  --trail-font-size-caption: 9.5px;
+  --trail-font-size-supporting: 10.5px;
+  --trail-font-size-control: 11px;
+  --trail-font-size-body: 11.5px;
+  --trail-font-size-section: 12.5px;
+  --trail-font-size-subtitle: 14px;
+  --trail-font-size-page: 18px;
+  --trail-weight-regular: 450;
+  --trail-weight-medium: 500;
+  --trail-weight-emphasis: 560;
+  --trail-weight-strong: 580;
+  --trail-weight-heading: 650;
+
+  /* Spacing and geometry. */
+  --trail-space-1: 2px;
+  --trail-space-2: 4px;
+  --trail-space-3: 5px;
+  --trail-space-4: 6px;
+  --trail-space-5: 7px;
+  --trail-space-6: 8px;
+  --trail-space-7: 9px;
+  --trail-space-8: 10px;
+  --trail-space-9: 12px;
+  --trail-space-10: 14px;
+  --trail-space-11: 16px;
+  --trail-space-12: 18px;
+  --trail-space-13: 20px;
+  --trail-space-14: 24px;
+  --trail-space-15: 28px;
+  --trail-space-16: 32px;
+  --trail-radius-xs: 4px;
+  --trail-radius-sm: 6px;
+  --trail-radius-md: 8px;
+  --trail-radius-lg: 10px;
+  --trail-radius-pill: 999px;
+  --trail-control-height-sm: 24px;
+  --trail-control-height-md: 28px;
+  --trail-control-height-lg: 30px;
+  --trail-icon-size-sm: 12px;
+  --trail-icon-size-md: 14px;
+  --trail-icon-size-lg: 16px;
+
+  /* Elevation and motion. */
+  --trail-shadow-overlay: 0 14px 38px rgba(0, 0, 0, 0.44), 0 0 0 1px rgba(255, 255, 255, 0.045);
+  --trail-shadow-tooltip: 0 7px 20px rgba(0, 0, 0, 0.28);
+  --trail-motion-fast: 90ms ease;
+
+  /* Shared menu visual contract. */
+  --trail-menu-surface: var(--trail-surface-overlay);
+  --trail-menu-border: var(--trail-border-default);
+  --trail-menu-shadow: 0 12px 32px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.025);
+  --trail-menu-radius: var(--trail-radius-md);
+  --trail-menu-padding: var(--trail-space-2);
+  --trail-menu-min-width: 220px;
+  --trail-menu-item-height: var(--trail-control-height-md);
+  --trail-menu-item-radius: 5px;
+  --trail-menu-item-padding-x: var(--trail-space-6);
+  --trail-menu-item-gap: var(--trail-space-6);
+  --trail-menu-font-size: var(--trail-font-size-control);
+  --trail-menu-icon-size: var(--trail-icon-size-md);
+  --trail-menu-shortcut-size: var(--trail-font-size-caption);
+  --trail-menu-hover: var(--trail-state-hover-strong);
+  --trail-menu-separator: var(--trail-border-subtle);
+
+  /* Document/editor calibration contract. */
+  --trail-document-inline-title-size: 24px;
+  --trail-document-inline-title-weight: var(--trail-weight-heading);
+  --trail-document-inline-title-line-height: 1.22;
+  --trail-document-h1-size: 20px;
+  --trail-document-h2-size: 17px;
+  --trail-document-h3-size: 15px;
+  --trail-document-h4-size: 14px;
+  --trail-document-h5-size: 13px;
+  --trail-document-h6-size: 12px;
+  --trail-document-h1-weight: 650;
+  --trail-document-h2-weight: 630;
+  --trail-document-h3-weight: 610;
+  --trail-document-h4-weight: 590;
+  --trail-document-h5-weight: 570;
+  --trail-document-h6-weight: 550;
+  --trail-document-h1-line-height: 1.24;
+  --trail-document-h2-line-height: 1.28;
+  --trail-document-h3-line-height: 1.32;
+  --trail-document-h4-line-height: 1.34;
+  --trail-document-h5-line-height: 1.36;
+  --trail-document-h6-line-height: 1.38;
+}
+
+/* --------------------------------------------------------------------------
+ * 2. Obsidian semantic-variable mapping
+ *
+ * Trail's plugin stylesheet is loaded only while the plugin is enabled. The
+ * plugin lifecycle therefore owns the application-wide visual state; unloading
+ * the plugin removes these mappings and returns control to the user's theme.
+ * -------------------------------------------------------------------------- */
+
 body {
   color-scheme: dark;
-  --background-primary: var(--trail-linear-bg-base);
-  --background-primary-alt: var(--trail-linear-bg-base);
-  --background-secondary: var(--trail-linear-bg-sub);
-  --background-secondary-alt: var(--trail-linear-bg-sub);
-  --background-modifier-hover: var(--trail-linear-hover);
-  --background-modifier-active-hover: var(--trail-linear-selected);
-  --background-modifier-border: var(--trail-linear-border);
-  --background-modifier-border-hover: var(--trail-linear-border-strong);
-  --background-modifier-border-focus: rgba(94, 106, 210, 0.5);
-  --background-modifier-form-field: var(--trail-linear-bg-base);
-  --background-modifier-form-field-highlighted: var(--trail-linear-bg-hover);
-  --interactive-normal: var(--trail-linear-surface-elevated);
-  --interactive-hover: var(--trail-linear-bg-hover);
-  --interactive-accent: var(--trail-linear-accent);
-  --interactive-accent-hover: #6975d9;
-  --text-normal: var(--trail-linear-text-primary);
-  --text-muted: var(--trail-linear-text-muted);
-  --text-faint: var(--trail-linear-text-faint);
-  --text-on-accent: #ffffff;
-  --text-accent: #aeb5ef;
-  --divider-color: var(--trail-linear-border);
-  --divider-color-hover: var(--trail-linear-border-strong);
+
+  --background-primary: var(--trail-surface-canvas);
+  --background-primary-alt: var(--trail-surface-canvas);
+  --background-secondary: var(--trail-surface-sidebar);
+  --background-secondary-alt: var(--trail-surface-sidebar);
+  --background-modifier-hover: var(--trail-state-hover);
+  --background-modifier-active-hover: var(--trail-state-selected);
+  --background-modifier-border: var(--trail-border-subtle);
+  --background-modifier-border-hover: var(--trail-border-default);
+  --background-modifier-border-focus: var(--trail-host-focus-border);
+  --background-modifier-form-field: var(--trail-surface-canvas);
+  --background-modifier-form-field-highlighted: var(--trail-surface-hover);
+  --interactive-normal: var(--trail-surface-elevated);
+  --interactive-hover: var(--trail-surface-hover);
+  --interactive-accent: var(--trail-accent);
+  --interactive-accent-hover: var(--trail-accent-hover);
+  --text-normal: var(--trail-text-primary);
+  --text-muted: var(--trail-text-muted);
+  --text-faint: var(--trail-text-faint);
+  --text-on-accent: var(--trail-text-on-accent);
+  --text-accent: var(--trail-text-accent);
+  --divider-color: var(--trail-border-subtle);
+  --divider-color-hover: var(--trail-border-default);
   --scrollbar-bg: transparent;
-  --scrollbar-thumb-bg: rgba(255, 255, 255, 0.09);
-  --scrollbar-active-thumb-bg: rgba(255, 255, 255, 0.16);
-  --titlebar-background: var(--trail-linear-bg-sub);
-  --titlebar-background-focused: var(--trail-linear-bg-sub);
-  --tab-container-background: var(--trail-linear-bg-sub);
-  --ribbon-background: var(--trail-linear-bg-sub);
-  --status-bar-background: var(--trail-linear-bg-sub);
-  --modal-background: var(--trail-linear-surface-menu);
-  --prompt-background: var(--trail-linear-surface-menu);
+  --scrollbar-thumb-bg: var(--trail-scrollbar-thumb);
+  --scrollbar-active-thumb-bg: var(--trail-scrollbar-thumb-hover);
+  --titlebar-background: var(--trail-surface-sidebar);
+  --titlebar-background-focused: var(--trail-surface-sidebar);
+  --tab-container-background: var(--trail-surface-sidebar);
+  --ribbon-background: var(--trail-surface-sidebar);
+  --status-bar-background: var(--trail-surface-sidebar);
+  --modal-background: var(--trail-surface-overlay);
+  --prompt-background: var(--trail-surface-overlay);
+
+  /* Window and tab geometry. */
+  --header-height: 36px;
+  --titlebar-border-width: 0px;
+  --titlebar-border-color: transparent;
+  --titlebar-text-color: var(--trail-text-muted);
+  --titlebar-text-color-focused: var(--trail-text-secondary);
+  --titlebar-text-weight: var(--trail-weight-medium);
+  --tab-background-active: var(--trail-surface-canvas);
+  --tab-text-color: var(--trail-text-faint);
+  --tab-text-color-active: var(--trail-text-secondary);
+  --tab-text-color-focused: var(--trail-text-muted);
+  --tab-text-color-focused-active: var(--trail-text-primary);
+  --tab-text-color-focused-active-current: var(--trail-text-primary);
+  --tab-font-size: 12px;
+  --tab-font-weight: var(--trail-weight-medium);
+  --tab-divider-color: transparent;
+  --tab-outline-color: transparent;
+  --tab-outline-width: 0px;
+  --tab-curve: 0px;
+  --tab-radius: var(--trail-radius-sm);
+  --tab-radius-active: var(--trail-radius-sm);
+
+  /* Navigation tree. */
+  --nav-item-size: 12px;
+  --nav-item-color: var(--trail-text-muted);
+  --nav-item-color-hover: var(--trail-text-secondary);
+  --nav-item-color-active: var(--trail-text-primary);
+  --nav-item-color-selected: var(--trail-text-primary);
+  --nav-item-background-hover: var(--trail-state-hover);
+  --nav-item-background-active: var(--trail-surface-hover);
+  --nav-item-background-selected: var(--trail-state-selected);
+  --nav-item-padding: 2px 7px;
+  --nav-item-parent-padding: 2px 7px;
+  --nav-item-children-padding-start: 12px;
+  --nav-item-children-margin-start: 7px;
+  --nav-item-weight: 430;
+  --nav-item-weight-hover: 430;
+  --nav-item-weight-active: 540;
+  --nav-indentation-guide-width: 1px;
+  --nav-indentation-guide-color: var(--trail-surface-quiet);
+  --nav-collapse-icon-color: var(--trail-text-faint);
+  --nav-collapse-icon-color-collapsed: var(--trail-text-faint);
+
+  /* Properties. */
+  --metadata-background: transparent;
+  --metadata-padding: 0;
+  --metadata-border-color: transparent;
+  --metadata-border-radius: 0px;
+  --metadata-border-width: 0px;
+  --metadata-gap: 0px;
+  --metadata-divider-color: transparent;
+  --metadata-divider-color-hover: transparent;
+  --metadata-divider-color-focus: transparent;
+  --metadata-divider-width: 0px;
+  --metadata-property-padding: 0 2px;
+  --metadata-property-radius: 5px;
+  --metadata-property-radius-hover: 5px;
+  --metadata-property-radius-focus: 5px;
+  --metadata-property-background: transparent;
+  --metadata-property-background-hover: var(--trail-surface-disabled);
+  --metadata-property-background-active: var(--trail-state-hover);
+  --metadata-label-background-hover: transparent;
+  --metadata-label-background-active: transparent;
+  --metadata-label-font-size: var(--trail-font-size-body);
+  --metadata-label-font-weight: var(--trail-weight-regular);
+  --metadata-label-text-color: var(--trail-text-muted);
+  --metadata-label-text-color-hover: var(--trail-text-secondary);
+  --metadata-label-width: 8.25em;
+  --metadata-input-height: 26px;
+  --metadata-input-text-color: var(--trail-text-secondary);
+  --metadata-input-font-size: var(--trail-font-size-body);
+  --metadata-input-background: transparent;
+  --metadata-input-background-hover: var(--trail-state-hover);
+  --metadata-input-background-active: var(--trail-surface-hover);
+
+  /* Generic controls. */
+  --input-height: var(--trail-control-height-md);
+  --input-radius: var(--trail-radius-sm);
+  --input-font-weight: var(--trail-weight-regular);
+  --input-border-width: 1px;
+  --button-radius: var(--trail-radius-sm);
+  --pill-color: var(--trail-text-secondary);
+  --pill-color-hover: var(--trail-text-primary);
+  --pill-background: var(--trail-surface-quiet);
+  --pill-background-hover: var(--trail-state-hover);
+  --pill-border-color: var(--trail-border-subtle);
+  --pill-border-color-hover: var(--trail-border-default);
+  --pill-border-width: 1px;
+  --pill-padding-x: var(--trail-space-4);
+  --pill-padding-y: 1px;
+  --pill-radius: var(--trail-radius-pill);
+  --pill-weight: var(--trail-weight-medium);
+
+  /* Status/divider. */
+  --divider-width: 1px;
+  --divider-width-hover: 1px;
+  --status-bar-border-color: var(--trail-border-subtle);
+  --status-bar-border-width: 1px 0 0 0;
+  --status-bar-font-size: var(--trail-font-size-meta);
+  --status-bar-text-color: var(--trail-text-faint);
+  --status-bar-radius: 0px;
+
+  /* Native menu and document variables. */
+  --menu-padding: var(--trail-menu-padding);
+  --inline-title-size: var(--trail-document-inline-title-size);
+  --inline-title-weight: var(--trail-document-inline-title-weight);
+  --inline-title-line-height: var(--trail-document-inline-title-line-height);
+  --h1-size: var(--trail-document-h1-size);
+  --h2-size: var(--trail-document-h2-size);
+  --h3-size: var(--trail-document-h3-size);
+  --h4-size: var(--trail-document-h4-size);
+  --h5-size: var(--trail-document-h5-size);
+  --h6-size: var(--trail-document-h6-size);
+  --h1-weight: var(--trail-document-h1-weight);
+  --h2-weight: var(--trail-document-h2-weight);
+  --h3-weight: var(--trail-document-h3-weight);
+  --h4-weight: var(--trail-document-h4-weight);
+  --h5-weight: var(--trail-document-h5-weight);
+  --h6-weight: var(--trail-document-h6-weight);
+  --h1-line-height: var(--trail-document-h1-line-height);
+  --h2-line-height: var(--trail-document-h2-line-height);
+  --h3-line-height: var(--trail-document-h3-line-height);
+  --h4-line-height: var(--trail-document-h4-line-height);
+  --h5-line-height: var(--trail-document-h5-line-height);
+  --h6-line-height: var(--trail-document-h6-line-height);
+  --heading-spacing: 1.35em;
+  --p-spacing: 0.8rem;
 }
+
+/* --------------------------------------------------------------------------
+ * 3. Native Obsidian consumers
+ *
+ * Obsidian owns mechanics. Trail changes presentation through semantic host
+ * variables first and stable targeted selectors only where variables are not
+ * sufficient. A host consumer is styled once in this section.
+ * -------------------------------------------------------------------------- */
 
 body .app-container,
 body .horizontal-main-container,
 body .workspace {
-  background: var(--trail-linear-bg-base);
+  background: var(--trail-surface-canvas);
 }
 
 body .titlebar,
@@ -112,48 +366,52 @@ body .workspace-tab-header-container,
 body .workspace-ribbon,
 body .workspace-sidedock-vault-profile,
 body .status-bar {
-  background: var(--trail-linear-bg-sub);
+  background: var(--trail-surface-sidebar);
 }
 
 body .workspace-tab-header-container {
-  border-bottom-color: var(--trail-linear-border);
+  min-height: var(--header-height);
+  border-bottom: 1px solid var(--trail-border-subtle);
   box-shadow: none;
 }
 
 body .workspace-tab-header-container-inner {
-  gap: 2px;
-  padding: 5px 6px;
+  gap: var(--trail-space-1);
+  padding: 4px 5px 3px;
 }
 
 body .workspace-tab-header {
-  min-height: 30px;
+  height: var(--trail-control-height-md);
+  min-height: var(--trail-control-height-md);
   margin: 0 1px;
-  border-radius: 7px;
+  border: 0;
+  border-radius: var(--tab-radius);
   background: transparent;
-  color: var(--trail-linear-text-faint);
-}
-
-body .workspace-tab-header:hover {
-  background: rgba(255, 255, 255, 0.035);
-  color: var(--trail-linear-text-muted);
-}
-
-body .workspace-tab-header.is-active {
-  background: var(--trail-linear-bg-hover);
-  color: var(--trail-linear-text-primary);
+  color: var(--trail-text-faint);
   box-shadow: none;
 }
 
+body .workspace-tab-header:hover {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-muted);
+}
+
+body .workspace-tab-header.is-active {
+  background: var(--tab-background-active);
+  color: var(--trail-text-primary);
+  box-shadow: inset 0 0 0 1px var(--trail-border-subtle);
+}
+
 body .workspace-tab-header-inner {
-  gap: 5px;
-  padding: 0 7px;
+  gap: var(--trail-space-3);
+  padding: 0 var(--trail-space-5);
 }
 
 body .workspace-tab-header-inner-title {
   color: inherit;
-  font-family: var(--trail-linear-font);
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: var(--tab-font-size);
+  font-weight: var(--tab-font-weight);
+  letter-spacing: -0.005em;
 }
 
 body .workspace-tab-header-inner-icon,
@@ -164,32 +422,52 @@ body .workspace-tab-header-inner-close-button {
 
 body .workspace-tab-header-tab-list,
 body .workspace-tab-header-new-tab {
-  color: var(--trail-linear-text-faint);
+  color: var(--trail-text-faint);
+}
+
+body .workspace-tab-header-inner-icon svg,
+body .workspace-tab-header-inner-close-button svg,
+body .workspace-tab-header-new-tab svg,
+body .workspace-tab-header-tab-list svg {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  stroke-width: 1.7;
 }
 
 body .view-header {
-  min-height: 40px;
-  border-bottom: 1px solid var(--trail-linear-border);
-  background: var(--trail-linear-bg-base);
+  min-height: 36px;
+  border-bottom: 1px solid var(--trail-border-subtle);
+  background: var(--trail-surface-canvas);
   box-shadow: none;
 }
 
-body .view-header-title,
-body .view-header-title-parent {
-  color: var(--trail-linear-text-secondary);
-  font-family: var(--trail-linear-font);
-  font-size: 11.5px;
-  font-weight: 500;
+body .view-header-title-container {
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+body .view-header-breadcrumb,
+body .view-header-title-parent,
+body .view-header-title {
+  color: var(--trail-text-muted);
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-medium);
+}
+
+body .view-header-title {
+  color: var(--trail-text-secondary);
 }
 
 body .view-header .clickable-icon,
 body .workspace-ribbon .clickable-icon,
 body .workspace-sidedock-vault-profile .clickable-icon,
 body .workspace-tab-header-container .clickable-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--trail-linear-radius-sm);
-  color: var(--trail-linear-text-muted);
+  width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
+  padding: var(--trail-space-2);
+  border-radius: 5px;
+  color: var(--trail-text-muted);
   opacity: 0.82;
 }
 
@@ -197,97 +475,222 @@ body .view-header .clickable-icon:hover,
 body .workspace-ribbon .clickable-icon:hover,
 body .workspace-sidedock-vault-profile .clickable-icon:hover,
 body .workspace-tab-header-container .clickable-icon:hover {
-  background: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
   opacity: 1;
 }
 
+body .view-header .clickable-icon svg,
+body .workspace-ribbon .clickable-icon svg,
+body .workspace-sidedock-vault-profile .clickable-icon svg,
+body .workspace-tab-header-container .clickable-icon svg {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  stroke-width: 1.65;
+}
+
 body .workspace-ribbon {
-  border-right: 1px solid var(--trail-linear-border);
-  color: var(--trail-linear-text-muted);
+  border-right: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-muted);
 }
 
 body .workspace-ribbon .side-dock-ribbon-action {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   margin: 1px auto;
-  border-radius: var(--trail-linear-radius-sm);
-  color: var(--trail-linear-text-muted);
+  padding: var(--trail-space-3);
+  border-radius: 5px;
+  color: var(--trail-text-muted);
 }
 
 body .workspace-ribbon .side-dock-ribbon-action:hover,
 body .workspace-ribbon .side-dock-ribbon-action.is-active {
-  background: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+}
+
+body .workspace-ribbon .side-dock-ribbon-action svg {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  stroke-width: 1.65;
+}
+
+body .workspace-leaf-content[data-type="file-explorer"],
+body .workspace-leaf-content[data-type="search"],
+body .nav-files-container {
+  background: var(--trail-surface-sidebar);
+  color: var(--nav-item-color);
+  font-family: var(--trail-font-ui);
+}
+
+body .nav-header {
+  padding: 6px 7px 4px;
+}
+
+body .nav-buttons-container {
+  gap: 1px;
+}
+
+body .nav-action-button,
+body .nav-header .clickable-icon {
+  width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
+  padding: var(--trail-space-2);
+  border-radius: 5px;
+  color: var(--trail-text-muted);
+}
+
+body .nav-action-button:hover,
+body .nav-header .clickable-icon:hover {
+  background: var(--nav-item-background-hover);
+  color: var(--trail-text-primary);
+}
+
+body .nav-action-button svg,
+body .nav-header .clickable-icon svg {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  stroke-width: 1.65;
+}
+
+body .nav-files-container {
+  padding: 3px 6px 10px;
+}
+
+body .nav-files-container .tree-item-self,
+body .nav-files-container .nav-file-title,
+body .nav-files-container .nav-folder-title {
+  height: var(--trail-control-height-sm);
+  min-height: var(--trail-control-height-sm);
+  padding-top: 0;
+  padding-bottom: 0;
+  border-radius: 5px;
+  font-size: var(--nav-item-size);
+  line-height: var(--trail-control-height-sm);
+}
+
+body .nav-files-container .nav-file-title-content,
+body .nav-files-container .nav-folder-title-content {
+  line-height: var(--trail-control-height-sm);
+}
+
+body .nav-files-container .nav-folder-title-content {
+  font-weight: var(--trail-weight-medium);
+}
+
+body .nav-files-container .tree-item-icon,
+body .nav-files-container .nav-folder-collapse-indicator {
+  color: var(--nav-collapse-icon-color);
+  opacity: 0.72;
+}
+
+body .nav-files-container .tree-item-icon svg,
+body .nav-files-container .nav-folder-collapse-indicator svg {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+  stroke-width: 1.6;
+}
+
+body .nav-file-title.is-active,
+body .nav-folder-title.is-active,
+body .tree-item-self.is-active {
+  border: 0;
+  outline: 0;
+  background: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+  box-shadow: none;
+  font-weight: var(--nav-item-weight-active);
+}
+
+/* Obsidian places File Explorer focus ownership on the parent .has-focus. */
+body .workspace-leaf.mod-active .nav-folder.has-focus > .nav-folder-title,
+body .workspace-leaf.mod-active .nav-file.has-focus > .nav-file-title,
+body .workspace-leaf.mod-active .nav-folder.has-focus > .nav-folder-title:focus-within,
+body .workspace-leaf.mod-active .nav-file.has-focus > .nav-file-title:focus-within {
+  outline: 0;
+  box-shadow: none;
+}
+
+body .nav-file-title:focus-visible,
+body .nav-folder-title:focus-visible,
+body .tree-item-self:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px var(--trail-focus-ring-quiet);
+}
+
+body .nav-file-tag,
+body .nav-file-title-content::after {
+  color: var(--trail-text-faint);
+  font-size: 8px;
+  font-weight: var(--trail-weight-emphasis);
+  letter-spacing: 0.04em;
 }
 
 body .workspace-sidedock-vault-profile {
-  border-top: 1px solid var(--trail-linear-border);
-  color: var(--trail-linear-text-secondary);
+  min-height: 38px;
+  border-top: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-secondary);
 }
 
 body .workspace-sidedock-vault-profile-title {
-  color: var(--trail-linear-text-secondary);
-  font-family: var(--trail-linear-font);
-  font-size: 11.5px;
-  font-weight: 500;
+  color: var(--trail-text-secondary);
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-medium);
 }
 
 body .status-bar {
-  min-height: 22px;
-  border-top: 1px solid var(--trail-linear-border);
-  color: var(--trail-linear-text-faint);
+  min-height: 19px;
+  padding: 0 var(--trail-space-6);
+  border-top: 1px solid var(--trail-border-subtle);
+  color: var(--status-bar-text-color);
   box-shadow: none;
-  font-family: var(--trail-linear-font);
-  font-size: 9.5px;
+  font-family: var(--trail-font-ui);
+  font-size: var(--status-bar-font-size);
 }
 
 body .workspace-leaf-resize-handle {
-  border-color: var(--trail-linear-border);
+  border-color: var(--trail-border-subtle);
   background: transparent;
 }
 
-body .menu,
 body .suggestion-container,
 body .popover,
 body .modal,
 body .prompt {
-  border: 1px solid var(--trail-linear-border-strong);
-  border-radius: var(--trail-linear-radius-md);
-  background: var(--trail-linear-surface-menu);
-  color: var(--trail-linear-text-secondary);
-  box-shadow: var(--trail-linear-shadow);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-md);
+  background: var(--trail-surface-overlay);
+  color: var(--trail-text-secondary);
+  box-shadow: var(--trail-shadow-overlay);
 }
 
-body .menu-item,
 body .suggestion-item {
-  min-height: 28px;
+  min-height: 27px;
   border-radius: 5px;
-  color: var(--trail-linear-text-secondary);
-  font-family: var(--trail-linear-font);
-  font-size: 11px;
+  color: var(--trail-text-secondary);
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-control);
 }
 
-body .menu-item:hover,
-body .menu-item.selected,
 body .suggestion-item:hover,
 body .suggestion-item.is-selected {
-  background: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
 }
 
 body .tooltip {
-  border: 1px solid var(--trail-linear-border);
+  border: 1px solid var(--trail-border-subtle);
   border-radius: 5px;
-  background: var(--trail-linear-surface-menu);
-  color: var(--trail-linear-text-primary);
-  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.28);
-  font-family: var(--trail-linear-font);
-  font-size: 9.5px;
+  background: var(--trail-surface-overlay);
+  color: var(--trail-text-primary);
+  box-shadow: var(--trail-shadow-tooltip);
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-caption);
 }
 
 body .modal-bg {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--trail-overlay-scrim);
   backdrop-filter: none;
 }
 
@@ -300,37 +703,145 @@ body input[type="number"],
 body textarea,
 body select,
 body .dropdown {
-  border: 1px solid var(--trail-linear-border-strong);
-  border-radius: var(--trail-linear-radius-sm);
-  background: var(--trail-linear-bg-base);
-  color: var(--trail-linear-text-primary);
+  min-height: var(--input-height);
+  border: var(--input-border-width) solid var(--trail-border-default);
+  border-radius: var(--input-radius);
+  background: var(--trail-surface-canvas);
+  color: var(--trail-text-primary);
   box-shadow: none;
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-body);
 }
 
 body input:focus,
 body textarea:focus,
 body select:focus,
 body .dropdown:focus {
-  border-color: rgba(130, 143, 255, 0.45);
-  box-shadow: 0 0 0 1px rgba(94, 106, 210, 0.35);
+  border-color: var(--trail-focus-border);
+  box-shadow: 0 0 0 1px var(--trail-focus-ring);
+}
+
+body button:not(.clickable-icon) {
+  min-height: var(--trail-control-height-md);
+  border-radius: var(--button-radius);
+  box-shadow: none;
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-medium);
 }
 
 body button.mod-cta {
-  border-color: rgba(130, 143, 255, 0.24);
-  border-radius: var(--trail-linear-radius-sm);
-  background: var(--trail-linear-accent);
-  color: #ffffff;
-  box-shadow: none;
+  border-color: var(--trail-accent-border);
+  background: var(--trail-accent);
+  color: var(--trail-text-on-accent);
 }
 
 body button.mod-cta:hover,
 body button.mod-cta:focus-visible {
-  background: #6975d9;
+  background: var(--trail-accent-hover);
+}
+
+body .metadata-container {
+  margin-block-end: var(--trail-space-15);
+  color: var(--trail-text-secondary);
+  font-family: var(--trail-font-ui);
+  --input-height: var(--metadata-input-height);
+}
+
+body .metadata-properties-heading {
+  margin-bottom: var(--trail-space-3);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-emphasis);
+}
+
+body .metadata-property {
+  min-height: var(--trail-control-height-md);
+  border-radius: var(--metadata-property-radius);
+  background: var(--metadata-property-background);
+}
+
+body .metadata-property:hover {
+  background: var(--metadata-property-background-hover);
+}
+
+body .metadata-property .metadata-property-key,
+body .metadata-property .metadata-property-value {
+  min-height: var(--metadata-input-height);
+}
+
+body .metadata-property .metadata-property-key {
+  color: var(--metadata-label-text-color);
+}
+
+body .metadata-property .metadata-property-value {
+  color: var(--metadata-input-text-color);
+}
+
+body .metadata-property input.metadata-property-key-input,
+body .metadata-property .metadata-property-value input,
+body .metadata-property .metadata-property-value textarea,
+body .metadata-property .metadata-input-longtext,
+body .metadata-property .metadata-property-value .multi-select-container {
+  min-height: var(--metadata-input-height);
+  border: 1px solid transparent;
+  border-radius: var(--metadata-property-radius);
+  background: var(--metadata-input-background);
+  color: inherit;
+  box-shadow: none;
+  font-family: var(--trail-font-ui);
+  font-size: var(--metadata-input-font-size);
+  font-weight: var(--trail-weight-regular);
+}
+
+body .metadata-property input.metadata-property-key-input:hover,
+body .metadata-property .metadata-property-value input:hover,
+body .metadata-property .metadata-property-value textarea:hover,
+body .metadata-property .metadata-input-longtext:hover,
+body .metadata-property .metadata-property-value .multi-select-container:hover {
+  border-color: var(--trail-border-subtle);
+  background: var(--metadata-input-background-hover);
+}
+
+body .metadata-property input.metadata-property-key-input:focus,
+body .metadata-property .metadata-property-value input:focus,
+body .metadata-property .metadata-property-value textarea:focus,
+body .metadata-property .metadata-input-longtext:focus,
+body .metadata-property .metadata-property-value .multi-select-container.is-active {
+  border-color: var(--trail-metadata-focus-border);
+  background: var(--metadata-input-background-active);
+  box-shadow: 0 0 0 1px var(--trail-metadata-focus-ring);
+}
+
+body .metadata-add-button {
+  min-height: 26px;
+  padding: 0 var(--trail-space-3);
+  border-radius: 5px;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-control);
+}
+
+body .metadata-add-button:hover {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-secondary);
+}
+
+body .metadata-property-icon,
+body .metadata-property-warning-icon {
+  color: var(--trail-text-faint);
+  opacity: 0.7;
+}
+
+body .metadata-property-icon svg,
+body .metadata-property-warning-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 1.6;
 }
 
 body ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 body ::-webkit-scrollbar-track {
@@ -339,22 +850,181 @@ body ::-webkit-scrollbar-track {
 
 body ::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.09);
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-scrollbar-thumb);
   background-clip: padding-box;
 }
 
 body ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--trail-scrollbar-thumb-hover);
   background-clip: padding-box;
 }
 
+/* Native context menu. Obsidian owns behavior; Trail owns the visual contract. */
+body .menu {
+  min-width: var(--trail-menu-min-width);
+  padding: var(--trail-menu-padding);
+  border: 1px solid var(--trail-menu-border);
+  border-radius: var(--trail-menu-radius);
+  background: var(--trail-menu-surface);
+  color: var(--trail-text-secondary);
+  box-shadow: var(--trail-menu-shadow);
+  font-family: var(--trail-font-ui);
+}
+
+body .menu-item {
+  display: flex;
+  min-height: var(--trail-menu-item-height);
+  align-items: center;
+  gap: var(--trail-menu-item-gap);
+  padding: 0 var(--trail-menu-item-padding-x);
+  border-radius: var(--trail-menu-item-radius);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-menu-font-size);
+  line-height: var(--trail-menu-item-height);
+}
+
+body .menu-item:hover:not(.is-disabled):not(.is-label),
+body .menu-item.selected:not(.is-disabled):not(.is-label) {
+  background: var(--trail-menu-hover);
+  color: var(--trail-text-primary);
+}
+
+body .menu-item.is-disabled {
+  color: var(--trail-text-faint);
+}
+
+body .menu-item.is-warning {
+  color: var(--trail-danger);
+}
+
+body .menu-item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .menu-item-icon {
+  width: var(--trail-menu-icon-size);
+  min-width: var(--trail-menu-icon-size);
+  height: var(--trail-menu-icon-size);
+  color: var(--trail-text-muted);
+}
+
+body .menu-item-icon svg {
+  width: var(--trail-menu-icon-size);
+  height: var(--trail-menu-icon-size);
+  stroke-width: 1.65;
+}
+
+body .menu-item-icon .mod-submenu {
+  color: var(--trail-text-faint);
+}
+
+body .menu-item:hover .menu-item-icon,
+body .menu-item.selected .menu-item-icon {
+  color: var(--trail-text-secondary);
+}
+
+body .menu-item.is-warning .menu-item-icon,
+body .menu-item.is-warning:hover .menu-item-icon,
+body .menu-item.is-warning.selected .menu-item-icon {
+  color: var(--trail-danger);
+}
+
+body .menu-separator {
+  margin: var(--trail-space-2) var(--trail-space-4);
+  border-bottom-color: var(--trail-menu-separator);
+}
+
+/* Markdown/editor remains a separate host consumer with one typography owner. */
+body .workspace-leaf-content[data-type="markdown"] .view-content,
+body .markdown-source-view,
+body .markdown-reading-view,
+body .markdown-source-view.mod-cm6 .cm-editor,
+body .markdown-source-view.mod-cm6 .cm-scroller {
+  background: var(--trail-surface-canvas);
+}
+
+body .markdown-source-view,
+body .markdown-reading-view {
+  color: var(--trail-text-primary);
+}
+
+body .markdown-source-view.mod-cm6 .cm-cursor,
+body .markdown-source-view.mod-cm6 .cm-dropCursor {
+  border-left-color: var(--trail-accent);
+}
+
+body .markdown-source-view.mod-cm6 .cm-selectionBackground,
+body .markdown-source-view.mod-cm6 .cm-content ::selection,
+body .markdown-reading-view ::selection {
+  background: var(--trail-selection-fill);
+}
+
+body .inline-title,
+body .markdown-rendered h1,
+body .markdown-rendered h2,
+body .markdown-rendered h3,
+body .markdown-rendered h4,
+body .markdown-rendered h5,
+body .markdown-rendered h6,
+body .markdown-source-view.mod-cm6 .HyperMD-header {
+  color: var(--trail-text-primary);
+  font-family: var(--trail-font-ui);
+  letter-spacing: -0.012em;
+}
+
+body .inline-title {
+  margin-bottom: var(--trail-space-12);
+}
+
+body .markdown-rendered h1,
+body .markdown-source-view.mod-cm6 .HyperMD-header-1 {
+  letter-spacing: -0.015em;
+}
+
+body .markdown-rendered h2,
+body .markdown-source-view.mod-cm6 .HyperMD-header-2 {
+  letter-spacing: -0.012em;
+}
+
+body .markdown-rendered h3,
+body .markdown-source-view.mod-cm6 .HyperMD-header-3,
+body .markdown-rendered h4,
+body .markdown-source-view.mod-cm6 .HyperMD-header-4,
+body .markdown-rendered h5,
+body .markdown-source-view.mod-cm6 .HyperMD-header-5,
+body .markdown-rendered h6,
+body .markdown-source-view.mod-cm6 .HyperMD-header-6 {
+  letter-spacing: -0.008em;
+}
+
+body .markdown-source-view.mod-cm6 .cm-line,
+body .markdown-rendered p,
+body .markdown-rendered li {
+  color: var(--trail-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+ * 4. Trail shell carriers
+ * -------------------------------------------------------------------------- */
+
+.trail-view,
+.trail-navigation-view {
+  height: 100%;
+  padding: 0;
+  color: var(--trail-text-primary);
+  font-family: var(--trail-font-ui);
+}
+
 .trail-view {
-  background: var(--trail-linear-bg-base);
+  background: var(--trail-surface-canvas);
 }
 
 .trail-navigation-view {
-  background: var(--trail-linear-bg-sub);
+  background: var(--trail-surface-sidebar);
 }
 
 .trail-view__root,
@@ -368,14 +1038,15 @@ body ::-webkit-scrollbar-thumb:hover {
   height: 100%;
   min-height: 100%;
   overflow: auto;
-  scrollbar-color: rgba(255, 255, 255, 0.11) transparent;
+  container-type: inline-size;
+  scrollbar-color: var(--trail-scrollbar-thumb-lab) transparent;
   scrollbar-width: thin;
-  background: var(--trail-linear-bg-base);
-  color: var(--trail-linear-text-primary);
+  background: var(--trail-surface-canvas);
+  color: var(--trail-text-primary);
 }
 
 .trail-foundation::-webkit-scrollbar {
-  width: 8px;
+  width: 7px;
 }
 
 .trail-foundation::-webkit-scrollbar-track {
@@ -383,10 +1054,18 @@ body ::-webkit-scrollbar-thumb:hover {
 }
 
 .trail-foundation::-webkit-scrollbar-thumb {
-  border: 2px solid var(--trail-linear-bg-base);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.11);
+  border: 2px solid var(--trail-surface-canvas);
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-scrollbar-thumb-lab);
 }
+
+/* --------------------------------------------------------------------------
+ * 5. Foundation Lab-only calibration specimens
+ *
+ * Every class in this section is scaffold-only. Production primitives must be
+ * introduced under ui/primitives with typed semantic variants instead of
+ * importing these classes into product surfaces.
+ * -------------------------------------------------------------------------- */
 
 .trail-foundation-lab {
   box-sizing: border-box;
@@ -399,8 +1078,8 @@ body ::-webkit-scrollbar-thumb:hover {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 20px;
+  gap: var(--trail-space-14);
+  padding-bottom: var(--trail-space-13);
 }
 
 .trail-lab-eyebrow,
@@ -412,59 +1091,59 @@ body ::-webkit-scrollbar-thumb:hover {
 }
 
 .trail-lab-eyebrow {
-  color: var(--trail-linear-text-muted);
-  font-size: 10.5px;
-  font-weight: 500;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  font-weight: var(--trail-weight-medium);
   letter-spacing: 0.005em;
 }
 
 .trail-lab-hero h1 {
-  margin-top: 4px;
-  color: var(--trail-linear-text-primary);
-  font-size: 18px;
-  font-weight: 580;
+  margin-top: var(--trail-space-2);
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-page);
+  font-weight: var(--trail-weight-strong);
   line-height: 1.25;
   letter-spacing: -0.015em;
 }
 
 .trail-lab-hero__description {
   max-width: 540px;
-  margin-top: 5px;
-  color: var(--trail-linear-text-secondary);
+  margin-top: var(--trail-space-3);
+  color: var(--trail-text-secondary);
   font-size: 12px;
   line-height: 1.45;
 }
 
 .trail-lab-runtime {
   display: inline-flex;
-  min-height: 24px;
+  min-height: var(--trail-control-height-sm);
   align-items: center;
-  gap: 6px;
-  color: var(--trail-linear-text-muted);
-  font-size: 10.5px;
+  gap: var(--trail-space-4);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
   white-space: nowrap;
 }
 
 .trail-lab-runtime__dot,
 .trail-navigation-foundation__runtime-dot {
-  width: 6px;
-  height: 6px;
+  width: var(--trail-space-4);
+  height: var(--trail-space-4);
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--trail-linear-success);
+  background: var(--trail-success);
 }
 
 .trail-foundation-lab[data-runtime-control="loading"] .trail-lab-runtime__dot,
 .trail-foundation-lab[data-runtime-control="refreshing"] .trail-lab-runtime__dot {
-  background: var(--trail-linear-warning);
+  background: var(--trail-warning);
 }
 
 .trail-foundation-lab[data-runtime-control="read-only-error"] .trail-lab-runtime__dot {
-  background: var(--trail-linear-danger);
+  background: var(--trail-danger);
 }
 
 .trail-lab-runtime__revision {
-  color: var(--trail-linear-text-faint);
+  color: var(--trail-text-faint);
   font-variant-numeric: tabular-nums;
 }
 
@@ -475,21 +1154,21 @@ body ::-webkit-scrollbar-thumb:hover {
   gap: 8px 14px;
   margin-bottom: 26px;
   overflow: hidden;
-  border-top: 1px solid var(--trail-linear-border);
-  border-bottom: 1px solid var(--trail-linear-border);
-  color: var(--trail-linear-text-faint);
-  font-size: 9.5px;
+  border-top: 1px solid var(--trail-border-subtle);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
   white-space: nowrap;
 }
 
 .trail-lab-source-note__label {
-  color: var(--trail-linear-text-muted);
-  font-weight: 560;
+  color: var(--trail-text-muted);
+  font-weight: var(--trail-weight-emphasis);
 }
 
 .trail-lab-grid {
   display: grid;
-  gap: 24px;
+  gap: var(--trail-space-14);
 }
 
 .trail-lab-grid--two {
@@ -498,25 +1177,25 @@ body ::-webkit-scrollbar-thumb:hover {
 
 .trail-lab-section {
   min-width: 0;
-  margin-bottom: 28px;
+  margin-bottom: var(--trail-space-15);
 }
 
 .trail-lab-section__header {
-  padding: 0 0 9px;
+  padding: 0 0 var(--trail-space-7);
 }
 
 .trail-lab-section h2 {
-  color: var(--trail-linear-text-primary);
-  font-size: 12.5px;
-  font-weight: 580;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-strong);
   line-height: 1.35;
 }
 
 .trail-lab-section p {
   max-width: 660px;
   margin-top: 3px;
-  color: var(--trail-linear-text-muted);
-  font-size: 10.5px;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
   line-height: 1.4;
 }
 
@@ -525,8 +1204,8 @@ body ::-webkit-scrollbar-thumb:hover {
 .trail-lab-control-groups,
 .trail-lab-list,
 .trail-lab-property-panel {
-  border-top: 1px solid var(--trail-linear-border);
-  border-bottom: 1px solid var(--trail-linear-border);
+  border-top: 1px solid var(--trail-border-subtle);
+  border-bottom: 1px solid var(--trail-border-subtle);
   background: transparent;
 }
 
@@ -538,12 +1217,12 @@ body ::-webkit-scrollbar-thumb:hover {
 .trail-lab-swatch {
   display: grid;
   min-width: 0;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: var(--trail-space-6);
   min-height: 46px;
-  padding: 0 10px;
-  border-bottom: 1px solid var(--trail-linear-border);
+  padding: 0 var(--trail-space-8);
+  border-bottom: 1px solid var(--trail-border-subtle);
 }
 
 .trail-lab-swatch:nth-last-child(-n + 2) {
@@ -551,31 +1230,31 @@ body ::-webkit-scrollbar-thumb:hover {
 }
 
 .trail-lab-swatch:nth-child(odd) {
-  border-right: 1px solid var(--trail-linear-border);
+  border-right: 1px solid var(--trail-border-subtle);
 }
 
 .trail-lab-swatch__color {
   width: 19px;
   height: 19px;
-  border: 1px solid var(--trail-linear-border-strong);
+  border: 1px solid var(--trail-border-default);
   border-radius: 5px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 0 0 1px var(--trail-swatch-inset);
 }
 
-.trail-lab-swatch__color--base {
-  background: #0e1012;
+.trail-lab-swatch__color--canvas {
+  background: var(--trail-surface-canvas);
 }
 
 .trail-lab-swatch__color--sidebar {
-  background: #060708;
+  background: var(--trail-surface-sidebar);
 }
 
 .trail-lab-swatch__color--hover {
-  background: #141517;
+  background: var(--trail-surface-hover);
 }
 
 .trail-lab-swatch__color--accent {
-  background: #5e6ad2;
+  background: var(--trail-accent);
 }
 
 .trail-lab-swatch__meta {
@@ -586,21 +1265,16 @@ body ::-webkit-scrollbar-thumb:hover {
 
 .trail-lab-swatch__meta strong {
   overflow: hidden;
-  color: var(--trail-linear-text-secondary);
-  font-size: 10.5px;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
   font-weight: 530;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.trail-lab-swatch__meta span,
-.trail-lab-swatch code {
-  color: var(--trail-linear-text-faint);
-  font-size: 9px;
-}
-
-.trail-lab-swatch code {
-  font-family: var(--font-monospace);
+.trail-lab-swatch__meta span {
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-meta);
 }
 
 .trail-lab-type-row {
@@ -608,9 +1282,9 @@ body ::-webkit-scrollbar-thumb:hover {
   min-height: 38px;
   grid-template-columns: 78px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  padding: 0 10px;
-  border-bottom: 1px solid var(--trail-linear-border);
+  gap: var(--trail-space-9);
+  padding: 0 var(--trail-space-8);
+  border-bottom: 1px solid var(--trail-border-subtle);
 }
 
 .trail-lab-type-row:last-child {
@@ -618,36 +1292,36 @@ body ::-webkit-scrollbar-thumb:hover {
 }
 
 .trail-lab-type-row__label {
-  color: var(--trail-linear-text-faint);
-  font-size: 9.5px;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
 }
 
 .trail-lab-type-page {
-  color: var(--trail-linear-text-primary);
+  color: var(--trail-text-primary);
   font-size: 16px;
-  font-weight: 580;
+  font-weight: var(--trail-weight-strong);
   letter-spacing: -0.012em;
 }
 
 .trail-lab-type-section {
-  color: var(--trail-linear-text-primary);
-  font-size: 12.5px;
-  font-weight: 560;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-emphasis);
 }
 
 .trail-lab-type-body {
-  color: var(--trail-linear-text-secondary);
-  font-size: 11.5px;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-body);
 }
 
 .trail-lab-type-muted {
-  color: var(--trail-linear-text-muted);
-  font-size: 10.5px;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
 }
 
 .trail-lab-type-meta {
-  color: var(--trail-linear-text-faint);
-  font-size: 9.5px;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
   font-variant-numeric: tabular-nums;
 }
 
@@ -660,10 +1334,10 @@ body ::-webkit-scrollbar-thumb:hover {
   min-width: 0;
   grid-template-columns: 104px minmax(0, 1fr);
   align-items: center;
-  gap: 14px;
+  gap: var(--trail-space-10);
   min-height: 51px;
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--trail-linear-border);
+  padding: var(--trail-space-5) var(--trail-space-8);
+  border-bottom: 1px solid var(--trail-border-subtle);
 }
 
 .trail-lab-control-group:last-child {
@@ -672,9 +1346,9 @@ body ::-webkit-scrollbar-thumb:hover {
 
 .trail-lab-control-group__label {
   align-self: start;
-  padding-top: 8px;
-  color: var(--trail-linear-text-faint);
-  font-size: 9.5px;
+  padding-top: var(--trail-space-6);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
 }
 
 .trail-lab-control-row {
@@ -682,21 +1356,22 @@ body ::-webkit-scrollbar-thumb:hover {
   min-width: 0;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
+  gap: var(--trail-space-5);
 }
 
 .trail-lab-control-row--wide {
-  gap: 9px;
+  gap: var(--trail-space-7);
 }
 
-.trail-view .trail-button,
-.trail-view .trail-icon-button,
-.trail-view .trail-view-control,
-.trail-view .trail-segmented button,
-.trail-view .trail-property-control,
-.trail-navigation-view .trail-navigation-foundation__actions button {
+.trail-lab-button,
+.trail-lab-icon-button,
+.trail-lab-view-control,
+.trail-lab-segmented button,
+.trail-lab-property-control,
+.trail-navigation-foundation__actions button {
   appearance: none;
   box-sizing: border-box;
+  min-height: 0;
   margin: 0;
   border: 0;
   outline: 0;
@@ -705,125 +1380,126 @@ body ::-webkit-scrollbar-thumb:hover {
   font: inherit;
 }
 
-.trail-view .trail-button {
+.trail-lab-button {
   display: inline-flex;
-  height: var(--trail-linear-control-compact);
+  height: var(--trail-control-height-md);
   align-items: center;
   justify-content: center;
-  padding: 0 9px;
+  padding: 0 var(--trail-space-7);
   border: 1px solid transparent;
-  border-radius: var(--trail-linear-radius-sm);
+  border-radius: var(--trail-radius-sm);
   background-color: transparent;
-  color: var(--trail-linear-text-secondary);
-  font-size: 11px;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-control);
   font-weight: 530;
   line-height: 1;
   white-space: nowrap;
-  transition: background-color 90ms ease, border-color 90ms ease, color 90ms ease;
+  transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), color var(--trail-motion-fast);
 }
 
-.trail-view .trail-button--primary {
-  border-color: rgba(130, 143, 255, 0.24);
-  background-color: var(--trail-linear-accent);
-  color: #fff;
+.trail-lab-button--primary {
+  border-color: var(--trail-accent-border);
+  background-color: var(--trail-accent);
+  color: var(--trail-text-on-accent);
 }
 
-.trail-view .trail-button--primary:hover,
-.trail-view .trail-button--primary:focus-visible {
-  border-color: rgba(145, 157, 255, 0.28);
-  background-color: #6975d9;
+.trail-lab-button--primary:hover,
+.trail-lab-button--primary:focus-visible {
+  border-color: var(--trail-accent-border-hover);
+  background-color: var(--trail-accent-hover);
 }
 
-.trail-view .trail-button--secondary {
-  border-color: var(--trail-linear-border-strong);
-  background-color: var(--trail-linear-surface-elevated);
-  color: var(--trail-linear-text-secondary);
+.trail-lab-button--secondary {
+  border-color: var(--trail-border-default);
+  background-color: var(--trail-surface-elevated);
+  color: var(--trail-text-secondary);
 }
 
-.trail-view .trail-button--secondary:hover,
-.trail-view .trail-button--secondary:focus-visible,
-.trail-view .trail-button--secondary.is-demo-hover {
-  background-color: var(--trail-linear-bg-hover);
-  color: var(--trail-linear-text-primary);
+.trail-lab-button--secondary:hover,
+.trail-lab-button--secondary:focus-visible,
+.trail-lab-button--secondary.is-demo-hover {
+  background-color: var(--trail-surface-hover);
+  color: var(--trail-text-primary);
 }
 
-.trail-view .trail-button--ghost {
+.trail-lab-button--ghost {
   background-color: transparent;
-  color: var(--trail-linear-text-muted);
+  color: var(--trail-text-muted);
 }
 
-.trail-view .trail-button--ghost:hover,
-.trail-view .trail-button--ghost:focus-visible {
-  background-color: var(--trail-linear-hover);
-  color: var(--trail-linear-text-secondary);
+.trail-lab-button--ghost:hover,
+.trail-lab-button--ghost:focus-visible {
+  background-color: var(--trail-state-hover);
+  color: var(--trail-text-secondary);
 }
 
-.trail-view .trail-button:focus-visible,
-.trail-view .trail-icon-button:focus-visible,
-.trail-view .trail-view-control:focus-visible,
-.trail-view .trail-segmented button:focus-visible,
-.trail-view .trail-property-control:focus-visible,
-.trail-navigation-view .trail-navigation-foundation__actions button:focus-visible {
-  box-shadow: 0 0 0 1px var(--trail-linear-bg-base), 0 0 0 2px var(--trail-linear-accent);
+.trail-lab-button:focus-visible,
+.trail-lab-icon-button:focus-visible,
+.trail-lab-view-control:focus-visible,
+.trail-lab-segmented button:focus-visible,
+.trail-lab-property-control:focus-visible,
+.trail-navigation-foundation__actions button:focus-visible {
+  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
 }
 
-.trail-view .trail-button:disabled {
-  border-color: var(--trail-linear-border);
-  background-color: rgba(255, 255, 255, 0.018);
-  color: var(--trail-linear-text-faint);
+.trail-lab-button:disabled {
+  border-color: var(--trail-border-subtle);
+  background-color: var(--trail-surface-disabled);
+  color: var(--trail-text-faint);
   cursor: default;
 }
 
-.trail-view .trail-view-control {
+.trail-lab-view-control {
   display: inline-flex;
-  height: 28px;
+  height: var(--trail-control-height-md);
   align-items: center;
-  gap: 7px;
-  padding: 0 5px;
-  border-radius: var(--trail-linear-radius-sm);
+  gap: var(--trail-space-5);
+  padding: 0 var(--trail-space-3);
+  border-radius: var(--trail-radius-sm);
   background-color: transparent;
-  color: var(--trail-linear-text-secondary);
-  font-size: 11px;
-  font-weight: 500;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-medium);
 }
 
-.trail-view .trail-view-control:hover,
-.trail-view .trail-view-control:focus-visible {
-  background-color: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
+.trail-lab-view-control:hover,
+.trail-lab-view-control:focus-visible {
+  background-color: var(--trail-state-hover);
+  color: var(--trail-text-primary);
 }
 
 .trail-lab-control-divider {
   width: 1px;
-  height: 18px;
-  margin: 0 2px;
-  background: var(--trail-linear-border);
+  height: var(--trail-space-12);
+  margin: 0 var(--trail-space-1);
+  background: var(--trail-border-subtle);
 }
 
-.trail-view .trail-icon-button {
+.trail-lab-icon-button {
   position: relative;
   display: inline-grid;
-  width: var(--trail-linear-control-compact);
-  height: var(--trail-linear-control-compact);
+  width: var(--trail-control-height-md);
+  height: var(--trail-control-height-md);
   place-items: center;
   border: 1px solid transparent;
-  border-radius: var(--trail-linear-radius-sm);
+  border-radius: var(--trail-radius-sm);
   background-color: transparent;
-  color: var(--trail-linear-text-muted);
+  color: var(--trail-text-muted);
 }
 
-.trail-view .trail-icon-button:hover,
-.trail-view .trail-icon-button:focus-visible,
-.trail-view .trail-icon-button.is-demo-hover {
-  background-color: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
+.trail-lab-icon-button:hover,
+.trail-lab-icon-button:focus-visible,
+.trail-lab-icon-button.is-demo-hover {
+  background-color: var(--trail-state-hover);
+  color: var(--trail-text-primary);
 }
 
-.trail-view .trail-icon-button--quiet {
-  width: 24px;
-  height: 24px;
+.trail-lab-icon-button--quiet {
+  width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
 }
 
+/* Calibration-only glyphs. Production icons must use the adopted icon source. */
 .trail-lab-icon {
   position: relative;
   display: block;
@@ -925,8 +1601,8 @@ body ::-webkit-scrollbar-thumb:hover {
   height: 3px;
   border: 1px solid currentColor;
   border-radius: 50%;
-  background: var(--trail-linear-bg-base);
-  box-shadow: -4px 4px 0 -1px var(--trail-linear-bg-base), -4px 4px 0 0 currentColor, 1px 8px 0 -1px var(--trail-linear-bg-base), 1px 8px 0 0 currentColor;
+  background: var(--trail-surface-canvas);
+  box-shadow: -4px 4px 0 -1px var(--trail-surface-canvas), -4px 4px 0 0 currentColor, 1px 8px 0 -1px var(--trail-surface-canvas), 1px 8px 0 0 currentColor;
   content: "";
 }
 
@@ -934,101 +1610,101 @@ body ::-webkit-scrollbar-thumb:hover {
   display: inline-flex;
   min-height: 22px;
   align-items: center;
-  padding: 0 7px;
-  border: 1px solid var(--trail-linear-border);
+  padding: 0 var(--trail-space-5);
+  border: 1px solid var(--trail-border-subtle);
   border-radius: 5px;
-  background: var(--trail-linear-surface-menu);
-  color: var(--trail-linear-text-primary);
-  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.28);
-  font-size: 9.5px;
+  background: var(--trail-surface-overlay);
+  color: var(--trail-text-primary);
+  box-shadow: var(--trail-shadow-tooltip);
+  font-size: var(--trail-font-size-caption);
 }
 
 .trail-lab-field {
   display: grid;
   min-width: 180px;
-  gap: 4px;
+  gap: var(--trail-space-2);
 }
 
 .trail-lab-field__label {
-  color: var(--trail-linear-text-faint);
-  font-size: 9px;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-meta);
 }
 
 .trail-lab-field input {
   box-sizing: border-box;
   width: 100%;
-  height: var(--trail-linear-control);
+  height: var(--trail-control-height-lg);
   margin: 0;
-  padding: 0 8px;
-  border: 1px solid var(--trail-linear-border-strong);
-  border-radius: var(--trail-linear-radius-sm);
+  padding: 0 var(--trail-space-6);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-sm);
   outline: 0;
-  background: var(--trail-linear-bg-base);
+  background: var(--trail-surface-canvas);
   box-shadow: none;
-  color: var(--trail-linear-text-primary);
+  color: var(--trail-text-primary);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--trail-font-size-control);
 }
 
 .trail-lab-field input::selection {
-  background: var(--trail-linear-accent-soft);
+  background: var(--trail-state-accent-soft);
 }
 
 .trail-lab-field input:focus,
 .trail-lab-field.is-demo-focus input {
-  border-color: rgba(130, 143, 255, 0.45);
-  box-shadow: 0 0 0 1px rgba(94, 106, 210, 0.35);
+  border-color: var(--trail-focus-border);
+  box-shadow: 0 0 0 1px var(--trail-focus-ring);
 }
 
-.trail-segmented {
+.trail-lab-segmented {
   display: inline-flex;
-  height: var(--trail-linear-control);
+  height: var(--trail-control-height-lg);
   align-items: center;
   gap: 1px;
-  padding: 2px;
-  border: 1px solid var(--trail-linear-border);
-  border-radius: var(--trail-linear-radius-sm);
-  background: var(--trail-linear-bg-sub);
+  padding: var(--trail-space-1);
+  border: 1px solid var(--trail-border-subtle);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-surface-sidebar);
 }
 
-.trail-view .trail-segmented button {
-  height: 24px;
-  padding: 0 8px;
-  border-radius: 4px;
+.trail-lab-segmented button {
+  height: var(--trail-control-height-sm);
+  padding: 0 var(--trail-space-6);
+  border-radius: var(--trail-radius-xs);
   background: transparent;
-  color: var(--trail-linear-text-muted);
-  font-size: 10.5px;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
 }
 
-.trail-view .trail-segmented button.is-selected {
-  background: var(--trail-linear-surface-elevated);
-  color: var(--trail-linear-text-primary);
-  box-shadow: inset 0 0 0 1px var(--trail-linear-border);
+.trail-lab-segmented button.is-selected {
+  background: var(--trail-surface-elevated);
+  color: var(--trail-text-primary);
+  box-shadow: inset 0 0 0 1px var(--trail-border-subtle);
 }
 
 .trail-lab-list__header {
   display: flex;
-  height: 30px;
+  height: var(--trail-control-height-lg);
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px;
-  border-bottom: 1px solid var(--trail-linear-border);
-  color: var(--trail-linear-text-muted);
-  font-size: 9.5px;
-  font-weight: 500;
+  padding: 0 var(--trail-space-8);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-medium);
 }
 
 .trail-lab-list-row {
   display: grid;
   min-width: 0;
-  height: 32px;
+  height: var(--trail-space-16);
   grid-template-columns: 13px 62px minmax(0, 1fr) auto 22px;
   align-items: center;
-  gap: 7px;
-  padding: 0 9px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.032);
-  color: var(--trail-linear-text-secondary);
-  font-size: 10.5px;
+  gap: var(--trail-space-5);
+  padding: 0 var(--trail-space-7);
+  border-bottom: 1px solid var(--trail-row-divider);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
 }
 
 .trail-lab-list-row:last-child {
@@ -1037,77 +1713,77 @@ body ::-webkit-scrollbar-thumb:hover {
 
 .trail-lab-list-row:hover,
 .trail-lab-list-row.is-demo-hover {
-  background: var(--trail-linear-hover);
+  background: var(--trail-state-hover);
 }
 
 .trail-lab-list-row.is-selected {
-  background: var(--trail-linear-accent-soft);
+  background: var(--trail-state-accent-soft);
 }
 
 .trail-lab-list-row__id,
 .trail-lab-list-row__meta {
-  color: var(--trail-linear-text-faint);
-  font-size: 9.5px;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
   font-variant-numeric: tabular-nums;
 }
 
 .trail-lab-list-row__title {
   overflow: hidden;
-  color: var(--trail-linear-text-secondary);
+  color: var(--trail-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.trail-status-glyph {
+.trail-lab-status-glyph {
   position: relative;
   box-sizing: border-box;
   display: inline-block;
-  width: 12px;
-  height: 12px;
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
   flex: 0 0 auto;
-  border: 1.35px solid var(--trail-linear-text-muted);
+  border: 1.35px solid var(--trail-text-muted);
   border-radius: 50%;
 }
 
-.trail-status-glyph--progress {
-  border-color: #d7a64a;
-  background: conic-gradient(#d7a64a 0 40%, transparent 40% 100%);
+.trail-lab-status-glyph--progress {
+  border-color: var(--trail-progress);
+  background: conic-gradient(var(--trail-progress) 0 40%, transparent 40% 100%);
 }
 
-.trail-status-glyph--done {
-  border-color: var(--trail-linear-success);
-  background: var(--trail-linear-success);
+.trail-lab-status-glyph--done {
+  border-color: var(--trail-success);
+  background: var(--trail-success);
 }
 
-.trail-status-glyph--done::after {
+.trail-lab-status-glyph--done::after {
   position: absolute;
   top: 1.7px;
   left: 2.7px;
   width: 3.5px;
   height: 5px;
-  border-right: 1.3px solid #07100c;
-  border-bottom: 1.3px solid #07100c;
+  border-right: 1.3px solid var(--trail-checkmark-ink);
+  border-bottom: 1.3px solid var(--trail-checkmark-ink);
   content: "";
   transform: rotate(42deg);
 }
 
-.trail-label-chip {
+.trail-lab-label-chip {
   display: inline-flex;
   min-height: 18px;
   align-items: center;
-  padding: 0 6px;
-  border: 1px solid rgba(94, 106, 210, 0.2);
-  border-radius: 999px;
-  background: rgba(94, 106, 210, 0.11);
-  color: #b7bdf3;
-  font-size: 9px;
+  padding: 0 var(--trail-space-4);
+  border: 1px solid var(--trail-label-border);
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-label-background);
+  color: var(--trail-label-accent);
+  font-size: var(--trail-font-size-meta);
   white-space: nowrap;
 }
 
-.trail-label-chip--quiet {
-  border-color: var(--trail-linear-border-strong);
-  background: rgba(255, 255, 255, 0.025);
-  color: var(--trail-linear-text-muted);
+.trail-lab-label-chip--quiet {
+  border-color: var(--trail-border-default);
+  background: var(--trail-surface-very-quiet);
+  color: var(--trail-text-muted);
 }
 
 .trail-lab-property-panel {
@@ -1119,68 +1795,68 @@ body ::-webkit-scrollbar-thumb:hover {
   min-height: 37px;
   grid-template-columns: 86px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  padding: 0 10px;
-  color: var(--trail-linear-text-faint);
-  font-size: 9.5px;
+  gap: var(--trail-space-8);
+  padding: 0 var(--trail-space-8);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
 }
 
-.trail-view .trail-property-control {
+.trail-lab-property-control {
   display: inline-flex;
   width: fit-content;
   min-width: 0;
   height: 26px;
   align-items: center;
-  gap: 6px;
-  padding: 0 7px;
-  border: 1px solid var(--trail-linear-border-strong);
-  border-radius: var(--trail-linear-radius-sm);
-  background: var(--trail-linear-surface-elevated);
-  color: var(--trail-linear-text-secondary);
-  font-size: 10.5px;
+  gap: var(--trail-space-4);
+  padding: 0 var(--trail-space-5);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-surface-elevated);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
 }
 
-.trail-view .trail-property-control:hover,
-.trail-view .trail-property-control:focus-visible {
-  background: var(--trail-linear-bg-hover);
-  color: var(--trail-linear-text-primary);
+.trail-lab-property-control:hover,
+.trail-lab-property-control:focus-visible {
+  background: var(--trail-surface-hover);
+  color: var(--trail-text-primary);
 }
 
-.trail-view .trail-property-control--compact {
+.trail-lab-property-control--compact {
   min-width: 26px;
   justify-content: center;
-  padding: 0 6px;
+  padding: 0 var(--trail-space-4);
 }
 
-.trail-view .trail-property-control--static {
+.trail-lab-property-control--static {
   pointer-events: none;
 }
 
-.trail-priority-glyph {
+.trail-lab-priority-glyph {
   display: inline-flex;
-  width: 12px;
-  height: 12px;
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
   align-items: flex-end;
   gap: 1.25px;
-  color: #e07a5f;
+  color: var(--trail-priority-high);
 }
 
-.trail-priority-glyph span {
+.trail-lab-priority-glyph span {
   display: block;
   width: 2.25px;
   border-radius: 1px;
   background: currentColor;
 }
 
-.trail-priority-glyph span:nth-child(1) {
+.trail-lab-priority-glyph span:nth-child(1) {
   height: 3.5px;
 }
 
-.trail-priority-glyph span:nth-child(2) {
+.trail-lab-priority-glyph span:nth-child(2) {
   height: 6px;
 }
 
-.trail-priority-glyph span:nth-child(3) {
+.trail-lab-priority-glyph span:nth-child(3) {
   height: 9px;
 }
 
@@ -1190,7 +1866,7 @@ body ::-webkit-scrollbar-thumb:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
+  gap: var(--trail-space-3);
 }
 
 .trail-lab-overlay-stage {
@@ -1198,7 +1874,7 @@ body ::-webkit-scrollbar-thumb:hover {
   grid-template-columns: minmax(180px, 220px) minmax(390px, 1fr);
   align-items: start;
   gap: 26px;
-  padding-top: 4px;
+  padding-top: var(--trail-space-2);
 }
 
 .trail-lab-menu {
@@ -1218,54 +1894,54 @@ body ::-webkit-scrollbar-thumb:hover {
   gap: var(--trail-menu-item-gap);
   padding: 0 var(--trail-menu-item-padding-x);
   border-radius: var(--trail-menu-item-radius);
-  color: var(--trail-linear-text-secondary);
+  color: var(--trail-text-secondary);
   font-size: var(--trail-menu-font-size);
 }
 
 .trail-lab-menu__item.is-active {
   background: var(--trail-menu-hover);
-  color: var(--trail-linear-text-primary);
+  color: var(--trail-text-primary);
 }
 
 .trail-lab-menu__item--danger {
-  color: var(--trail-linear-danger);
+  color: var(--trail-danger);
 }
 
 .trail-lab-menu__item kbd {
-  color: var(--trail-linear-text-faint);
-  font-family: var(--trail-linear-font);
+  color: var(--trail-text-faint);
+  font-family: var(--trail-font-ui);
   font-size: var(--trail-menu-shortcut-size);
-  font-weight: 450;
+  font-weight: var(--trail-weight-regular);
 }
 
 .trail-lab-menu__separator {
   height: 1px;
-  margin: 4px 6px;
+  margin: var(--trail-space-2) var(--trail-space-4);
   background: var(--trail-menu-separator);
 }
 
 .trail-lab-composer {
   overflow: hidden;
-  border: 1px solid var(--trail-linear-border-strong);
-  border-radius: var(--trail-linear-radius-lg);
-  background: var(--trail-linear-surface-menu);
-  box-shadow: var(--trail-linear-shadow);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-lg);
+  background: var(--trail-surface-overlay);
+  box-shadow: var(--trail-shadow-overlay);
 }
 
 .trail-lab-composer__context {
   display: flex;
   min-height: 36px;
   align-items: center;
-  gap: 5px;
+  gap: var(--trail-space-3);
   padding: 7px 10px 0;
 }
 
-.trail-lab-composer__context .trail-icon-button {
+.trail-lab-composer__context .trail-lab-icon-button {
   margin-left: auto;
 }
 
 .trail-lab-composer__chevron {
-  color: var(--trail-linear-text-faint);
+  color: var(--trail-text-faint);
   font-size: 12px;
 }
 
@@ -1274,27 +1950,27 @@ body ::-webkit-scrollbar-thumb:hover {
 }
 
 .trail-lab-composer__title {
-  color: var(--trail-linear-text-primary);
-  font-size: 14px;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-subtitle);
   font-weight: 570;
   line-height: 1.35;
 }
 
 .trail-lab-composer__description {
-  margin-top: 5px;
-  color: var(--trail-linear-text-secondary);
-  font-size: 11.5px;
+  margin-top: var(--trail-space-3);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-body);
   line-height: 1.45;
 }
 
 .trail-lab-composer__suggestions {
   margin-top: 21px;
-  color: var(--trail-linear-text-faint);
-  font-size: 9.5px;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
 }
 
 .trail-lab-composer__properties {
-  margin-top: 9px;
+  margin-top: var(--trail-space-7);
 }
 
 .trail-lab-composer__footer {
@@ -1302,17 +1978,18 @@ body ::-webkit-scrollbar-thumb:hover {
   min-height: 45px;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 7px 10px;
-  border-top: 1px solid var(--trail-linear-border);
+  gap: var(--trail-space-8);
+  padding: var(--trail-space-5) var(--trail-space-8);
+  border-top: 1px solid var(--trail-border-subtle);
 }
 
 .trail-lab-composer__attachment {
-  color: var(--trail-linear-text-muted);
-  font-size: 16px;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-icon-size-lg);
   transform: rotate(-35deg);
 }
 
+/* Foundation navigation is scaffold-only until the formal shell phase. */
 .trail-navigation-foundation {
   position: relative;
   box-sizing: border-box;
@@ -1321,8 +1998,8 @@ body ::-webkit-scrollbar-thumb:hover {
   min-height: 100%;
   flex-direction: column;
   padding: 8px 7px 11px;
-  background: var(--trail-linear-bg-sub);
-  color: var(--trail-linear-text-primary);
+  background: var(--trail-surface-sidebar);
+  color: var(--trail-text-primary);
 }
 
 .trail-navigation-foundation__header {
@@ -1330,64 +2007,64 @@ body ::-webkit-scrollbar-thumb:hover {
   height: 32px;
   align-items: center;
   justify-content: space-between;
-  padding: 0 6px;
+  padding: 0 var(--trail-space-4);
 }
 
 .trail-navigation-foundation__identity {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 7px;
+  gap: var(--trail-space-5);
 }
 
 .trail-navigation-foundation__identity strong {
   overflow: hidden;
-  color: var(--trail-linear-text-primary);
+  color: var(--trail-text-primary);
   font-size: 12px;
-  font-weight: 580;
+  font-weight: var(--trail-weight-strong);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .trail-navigation-foundation__mark {
   position: relative;
-  width: 12px;
-  height: 12px;
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
   flex: 0 0 auto;
   border-radius: 50%;
   background:
-    linear-gradient(135deg, transparent 0 33%, rgba(255, 255, 255, 0.9) 33% 41%, transparent 41% 49%, rgba(255, 255, 255, 0.68) 49% 57%, transparent 57% 65%, rgba(255, 255, 255, 0.42) 65% 73%, transparent 73%),
-    rgba(255, 255, 255, 0.075);
+    linear-gradient(135deg, transparent 0 33%, var(--trail-text-primary) 33% 41%, transparent 41% 49%, var(--trail-text-secondary) 49% 57%, transparent 57% 65%, var(--trail-text-muted) 65% 73%, transparent 73%),
+    var(--trail-navigation-mark-fill);
 }
 
 .trail-navigation-foundation__actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--trail-space-1);
 }
 
 .trail-navigation-foundation__actions button {
   position: relative;
   display: inline-grid;
-  width: 24px;
-  height: 24px;
+  width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
   place-items: center;
-  border-radius: 6px;
+  border-radius: var(--trail-radius-sm);
   background-color: transparent;
-  color: var(--trail-linear-text-muted);
+  color: var(--trail-text-muted);
 }
 
 .trail-navigation-foundation__actions button:hover,
 .trail-navigation-foundation__actions button:focus-visible {
-  background-color: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
+  background-color: var(--trail-state-hover);
+  color: var(--trail-text-primary);
 }
 
 .trail-navigation-foundation__action-icon {
   position: relative;
   display: block;
-  width: 12px;
-  height: 12px;
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
 }
 
 .trail-navigation-foundation__action-icon--plus::before,
@@ -1431,51 +2108,52 @@ body ::-webkit-scrollbar-thumb:hover {
 
 .trail-navigation-foundation__section-label {
   margin: 17px 7px 5px;
-  color: var(--trail-linear-text-faint);
-  font-size: 9.5px;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
 }
 
 .trail-navigation-foundation__row {
   display: flex;
-  height: 28px;
+  height: var(--trail-control-height-md);
   align-items: center;
-  gap: 7px;
-  padding: 0 8px;
-  border-radius: var(--trail-linear-radius-sm);
-  background: var(--trail-linear-selected);
-  color: var(--trail-linear-text-primary);
-  font-size: 11.5px;
-  font-weight: 500;
+  gap: var(--trail-space-5);
+  padding: 0 var(--trail-space-6);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-state-selected);
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-medium);
 }
 
 .trail-navigation-foundation__row-icon {
   box-sizing: border-box;
-  width: 12px;
-  height: 12px;
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
   flex: 0 0 auto;
-  border: 1.1px solid var(--trail-linear-text-muted);
-  border-radius: 4px;
+  border: 1.1px solid var(--trail-text-muted);
+  border-radius: var(--trail-radius-xs);
 }
 
 .trail-navigation-foundation__reference {
   margin: 7px 8px 0 27px;
-  color: var(--trail-linear-text-faint);
-  font-size: 9px;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-meta);
   line-height: 1.35;
 }
 
 .trail-navigation-foundation__runtime {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--trail-space-4);
   margin-top: auto;
-  padding: 8px 7px 0;
-  border-top: 1px solid var(--trail-linear-border);
-  color: var(--trail-linear-text-faint);
-  font-size: 9px;
+  padding: var(--trail-space-6) var(--trail-space-5) 0;
+  border-top: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-meta);
 }
 
-@media (max-width: 860px) {
+/* Foundation Lab responds to its actual Obsidian pane, not window width. */
+@container (max-width: 860px) {
   .trail-foundation-lab {
     padding: 26px 24px 46px;
   }
@@ -1487,7 +2165,7 @@ body ::-webkit-scrollbar-thumb:hover {
   .trail-lab-source-note {
     flex-wrap: wrap;
     min-height: 0;
-    padding: 6px 0;
+    padding: var(--trail-space-4) 0;
     white-space: normal;
   }
 
@@ -1496,19 +2174,19 @@ body ::-webkit-scrollbar-thumb:hover {
   }
 }
 
-@media (max-width: 620px) {
+@container (max-width: 620px) {
   .trail-foundation-lab {
     padding: 22px 16px 38px;
   }
 
   .trail-lab-hero {
     flex-direction: column;
-    gap: 8px;
+    gap: var(--trail-space-6);
   }
 
   .trail-lab-control-group {
     grid-template-columns: 1fr;
-    gap: 5px;
+    gap: var(--trail-space-3);
   }
 
   .trail-lab-control-group__label {
@@ -1524,801 +2202,14 @@ body ::-webkit-scrollbar-thumb:hover {
   }
 
   .trail-lab-swatch:nth-last-child(2) {
-    border-bottom: 1px solid var(--trail-linear-border);
+    border-bottom: 1px solid var(--trail-border-subtle);
   }
 
   .trail-lab-list-row {
     grid-template-columns: 13px 54px minmax(0, 1fr) 22px;
   }
 
-  .trail-lab-list-row .trail-label-chip {
+  .trail-lab-list-row .trail-lab-label-chip {
     display: none;
   }
-}
-
-/* --------------------------------------------------------------------------
- * Obsidian-native consumers
- *
- * Obsidian supplies the mechanics. These stable component variables and
- * targeted geometry rules reconstruct the visible application primitives so
- * ordinary Obsidian and Trail consume the same Linear-derived system.
- * -------------------------------------------------------------------------- */
-
-body {
-  /* Window and tab geometry. */
-  --header-height: 36px;
-  --titlebar-border-width: 0px;
-  --titlebar-border-color: transparent;
-  --titlebar-text-color: var(--trail-linear-text-muted);
-  --titlebar-text-color-focused: var(--trail-linear-text-secondary);
-  --titlebar-text-weight: 500;
-  --tab-background-active: var(--trail-linear-bg-base);
-  --tab-text-color: var(--trail-linear-text-faint);
-  --tab-text-color-active: var(--trail-linear-text-secondary);
-  --tab-text-color-focused: var(--trail-linear-text-muted);
-  --tab-text-color-focused-active: var(--trail-linear-text-primary);
-  --tab-text-color-focused-active-current: var(--trail-linear-text-primary);
-  --tab-font-size: 12px;
-  --tab-font-weight: 500;
-  --tab-container-background: var(--trail-linear-bg-sub);
-  --tab-divider-color: transparent;
-  --tab-outline-color: transparent;
-  --tab-outline-width: 0px;
-  --tab-curve: 0px;
-  --tab-radius: 6px;
-  --tab-radius-active: 6px;
-
-  /* Navigation is the shared sidebar primitive for explorer/search/tree UIs. */
-  --nav-item-size: 12px;
-  --nav-item-color: var(--trail-linear-text-muted);
-  --nav-item-color-hover: var(--trail-linear-text-secondary);
-  --nav-item-color-active: var(--trail-linear-text-primary);
-  --nav-item-color-selected: var(--trail-linear-text-primary);
-  --nav-item-background-hover: var(--trail-linear-hover);
-  --nav-item-background-active: var(--trail-linear-bg-hover);
-  --nav-item-background-selected: var(--trail-linear-selected);
-  --nav-item-padding: 2px 7px;
-  --nav-item-parent-padding: 2px 7px;
-  --nav-item-children-padding-start: 12px;
-  --nav-item-children-margin-start: 7px;
-  --nav-item-weight: 430;
-  --nav-item-weight-hover: 430;
-  --nav-item-weight-active: 540;
-  --nav-indentation-guide-width: 1px;
-  --nav-indentation-guide-color: rgba(255, 255, 255, 0.035);
-  --nav-collapse-icon-color: var(--trail-linear-text-faint);
-  --nav-collapse-icon-color-collapsed: var(--trail-linear-text-faint);
-
-  /* Properties use flat rows and reveal framing only as interaction feedback. */
-  --metadata-background: transparent;
-  --metadata-padding: 0;
-  --metadata-border-color: transparent;
-  --metadata-border-radius: 0px;
-  --metadata-border-width: 0px;
-  --metadata-gap: 0px;
-  --metadata-divider-color: transparent;
-  --metadata-divider-color-hover: transparent;
-  --metadata-divider-color-focus: transparent;
-  --metadata-divider-width: 0px;
-  --metadata-property-padding: 0 2px;
-  --metadata-property-radius: 5px;
-  --metadata-property-radius-hover: 5px;
-  --metadata-property-radius-focus: 5px;
-  --metadata-property-background: transparent;
-  --metadata-property-background-hover: rgba(255, 255, 255, 0.018);
-  --metadata-property-background-active: var(--trail-linear-hover);
-  --metadata-label-background-hover: transparent;
-  --metadata-label-background-active: transparent;
-  --metadata-label-font-size: 11.5px;
-  --metadata-label-font-weight: 450;
-  --metadata-label-text-color: var(--trail-linear-text-muted);
-  --metadata-label-text-color-hover: var(--trail-linear-text-secondary);
-  --metadata-label-width: 8.25em;
-  --metadata-input-height: 26px;
-  --metadata-input-text-color: var(--trail-linear-text-secondary);
-  --metadata-input-font-size: 11.5px;
-  --metadata-input-background: transparent;
-  --metadata-input-background-hover: var(--trail-linear-hover);
-  --metadata-input-background-active: var(--trail-linear-bg-hover);
-
-  /* Generic controls share the same compact geometry Trail uses. */
-  --input-height: 28px;
-  --input-radius: 6px;
-  --input-font-weight: 450;
-  --input-border-width: 1px;
-  --button-radius: 6px;
-  --pill-color: var(--trail-linear-text-secondary);
-  --pill-color-hover: var(--trail-linear-text-primary);
-  --pill-background: rgba(255, 255, 255, 0.035);
-  --pill-background-hover: var(--trail-linear-hover);
-  --pill-border-color: var(--trail-linear-border);
-  --pill-border-color-hover: var(--trail-linear-border-strong);
-  --pill-border-width: 1px;
-  --pill-padding-x: 6px;
-  --pill-padding-y: 1px;
-  --pill-radius: 999px;
-  --pill-weight: 500;
-
-  /* Dividers/status remain present, but do not become visual rails. */
-  --divider-width: 1px;
-  --divider-width-hover: 1px;
-  --status-bar-background: var(--trail-linear-bg-sub);
-  --status-bar-border-color: var(--trail-linear-border);
-  --status-bar-border-width: 1px 0 0 0;
-  --status-bar-font-size: 9px;
-  --status-bar-text-color: var(--trail-linear-text-faint);
-  --status-bar-radius: 0px;
-}
-
-body .workspace-tab-header-container {
-  min-height: var(--header-height);
-  border-bottom: 1px solid var(--trail-linear-border);
-  background: var(--trail-linear-bg-sub);
-}
-
-body .workspace-tab-header-container-inner {
-  gap: 2px;
-  padding: 4px 5px 3px;
-}
-
-body .workspace-tab-header {
-  height: 28px;
-  min-height: 28px;
-  margin: 0 1px;
-  border: 0;
-  border-radius: var(--tab-radius);
-  background: transparent;
-  box-shadow: none;
-}
-
-body .workspace-tab-header:hover {
-  background: var(--trail-linear-hover);
-}
-
-body .workspace-tab-header.is-active {
-  background: var(--tab-background-active);
-  box-shadow: inset 0 0 0 1px var(--trail-linear-border);
-}
-
-body .workspace-tab-header-inner {
-  gap: 5px;
-  padding: 0 7px;
-}
-
-body .workspace-tab-header-inner-title {
-  font-size: var(--tab-font-size);
-  font-weight: var(--tab-font-weight);
-  letter-spacing: -0.005em;
-}
-
-body .workspace-tab-header-inner-icon svg,
-body .workspace-tab-header-inner-close-button svg,
-body .workspace-tab-header-new-tab svg,
-body .workspace-tab-header-tab-list svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 1.7;
-}
-
-body .view-header {
-  min-height: 36px;
-  border-bottom: 1px solid var(--trail-linear-border);
-  background: var(--trail-linear-bg-base);
-  box-shadow: none;
-}
-
-body .view-header-title-container {
-  justify-content: flex-start;
-  min-width: 0;
-}
-
-body .view-header-breadcrumb,
-body .view-header-title-parent,
-body .view-header-title {
-  color: var(--trail-linear-text-muted);
-  font-family: var(--trail-linear-font);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-body .view-header-title {
-  color: var(--trail-linear-text-secondary);
-}
-
-body .view-header .clickable-icon,
-body .workspace-ribbon .clickable-icon,
-body .workspace-sidedock-vault-profile .clickable-icon,
-body .workspace-tab-header-container .clickable-icon {
-  width: 24px;
-  height: 24px;
-  padding: 4px;
-  border-radius: 5px;
-  color: var(--trail-linear-text-muted);
-  opacity: 0.82;
-}
-
-body .view-header .clickable-icon:hover,
-body .workspace-ribbon .clickable-icon:hover,
-body .workspace-sidedock-vault-profile .clickable-icon:hover,
-body .workspace-tab-header-container .clickable-icon:hover {
-  background: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
-  opacity: 1;
-}
-
-body .view-header .clickable-icon svg,
-body .workspace-ribbon .clickable-icon svg,
-body .workspace-sidedock-vault-profile .clickable-icon svg,
-body .workspace-tab-header-container .clickable-icon svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 1.65;
-}
-
-body .workspace-ribbon {
-  border-right: 1px solid var(--trail-linear-border);
-  background: var(--trail-linear-bg-sub);
-}
-
-body .workspace-ribbon .side-dock-ribbon-action {
-  width: 26px;
-  height: 26px;
-  margin: 1px auto;
-  padding: 5px;
-  border-radius: 5px;
-  color: var(--trail-linear-text-muted);
-}
-
-body .workspace-ribbon .side-dock-ribbon-action:hover,
-body .workspace-ribbon .side-dock-ribbon-action.is-active {
-  background: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
-}
-
-body .workspace-ribbon .side-dock-ribbon-action svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 1.65;
-}
-
-body .workspace-leaf-content[data-type="file-explorer"],
-body .workspace-leaf-content[data-type="search"],
-body .nav-files-container {
-  background: var(--trail-linear-bg-sub);
-  color: var(--nav-item-color);
-  font-family: var(--trail-linear-font);
-}
-
-body .nav-header {
-  padding: 6px 7px 4px;
-}
-
-body .nav-buttons-container {
-  gap: 1px;
-}
-
-body .nav-action-button,
-body .nav-header .clickable-icon {
-  width: 24px;
-  height: 24px;
-  padding: 4px;
-  border-radius: 5px;
-  color: var(--trail-linear-text-muted);
-}
-
-body .nav-action-button:hover,
-body .nav-header .clickable-icon:hover {
-  background: var(--nav-item-background-hover);
-  color: var(--trail-linear-text-primary);
-}
-
-body .nav-action-button svg,
-body .nav-header .clickable-icon svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 1.65;
-}
-
-body .nav-files-container {
-  padding: 3px 6px 10px;
-}
-
-body .nav-files-container .tree-item-self,
-body .nav-files-container .nav-file-title,
-body .nav-files-container .nav-folder-title {
-  height: 24px;
-  min-height: 24px;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-radius: 5px;
-  font-size: var(--nav-item-size);
-  line-height: 24px;
-}
-
-body .nav-files-container .nav-file-title-content,
-body .nav-files-container .nav-folder-title-content {
-  line-height: 24px;
-}
-
-body .nav-files-container .nav-folder-title-content {
-  font-weight: 500;
-}
-
-body .nav-files-container .tree-item-icon,
-body .nav-files-container .nav-folder-collapse-indicator {
-  color: var(--nav-collapse-icon-color);
-  opacity: 0.72;
-}
-
-body .nav-files-container .tree-item-icon svg,
-body .nav-files-container .nav-folder-collapse-indicator svg {
-  width: 12px;
-  height: 12px;
-  stroke-width: 1.6;
-}
-
-body .nav-file-title.is-active,
-body .nav-folder-title.is-active,
-body .tree-item-self.is-active {
-  background: var(--nav-item-background-active);
-  color: var(--nav-item-color-active);
-  font-weight: var(--nav-item-weight-active);
-}
-
-body .nav-file-tag,
-body .nav-file-title-content::after {
-  color: var(--trail-linear-text-faint);
-  font-size: 8px;
-  font-weight: 560;
-  letter-spacing: 0.04em;
-}
-
-body .workspace-sidedock-vault-profile {
-  min-height: 38px;
-  border-top: 1px solid var(--trail-linear-border);
-  background: var(--trail-linear-bg-sub);
-}
-
-body .workspace-sidedock-vault-profile-title {
-  color: var(--trail-linear-text-secondary);
-  font-family: var(--trail-linear-font);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-body .status-bar {
-  min-height: 19px;
-  padding: 0 8px;
-  border-top: 1px solid var(--trail-linear-border);
-  background: var(--status-bar-background);
-  color: var(--status-bar-text-color);
-  box-shadow: none;
-  font-family: var(--trail-linear-font);
-  font-size: var(--status-bar-font-size);
-}
-
-body .workspace-leaf-resize-handle {
-  border-color: var(--trail-linear-border);
-  background: transparent;
-}
-
-body .menu,
-body .suggestion-container,
-body .popover,
-body .modal,
-body .prompt {
-  border: 1px solid var(--trail-linear-border-strong);
-  border-radius: var(--trail-linear-radius-md);
-  background: var(--trail-linear-surface-menu);
-  color: var(--trail-linear-text-secondary);
-  box-shadow: var(--trail-linear-shadow);
-}
-
-body .menu-item,
-body .suggestion-item {
-  min-height: 27px;
-  border-radius: 5px;
-  color: var(--trail-linear-text-secondary);
-  font-family: var(--trail-linear-font);
-  font-size: 11px;
-}
-
-body .menu-item:hover,
-body .menu-item.selected,
-body .suggestion-item:hover,
-body .suggestion-item.is-selected {
-  background: var(--trail-linear-hover);
-  color: var(--trail-linear-text-primary);
-}
-
-body .tooltip {
-  border: 1px solid var(--trail-linear-border);
-  border-radius: 5px;
-  background: var(--trail-linear-surface-menu);
-  color: var(--trail-linear-text-primary);
-  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.28);
-  font-family: var(--trail-linear-font);
-  font-size: 9.5px;
-}
-
-body .modal-bg {
-  background: rgba(0, 0, 0, 0.52);
-  backdrop-filter: none;
-}
-
-body input[type="text"],
-body input[type="search"],
-body input[type="email"],
-body input[type="url"],
-body input[type="password"],
-body input[type="number"],
-body textarea,
-body select,
-body .dropdown {
-  min-height: var(--input-height);
-  border: var(--input-border-width) solid var(--trail-linear-border-strong);
-  border-radius: var(--input-radius);
-  background: var(--trail-linear-bg-base);
-  color: var(--trail-linear-text-primary);
-  box-shadow: none;
-  font-family: var(--trail-linear-font);
-  font-size: 11.5px;
-}
-
-body input:focus,
-body textarea:focus,
-body select:focus,
-body .dropdown:focus {
-  border-color: rgba(130, 143, 255, 0.45);
-  box-shadow: 0 0 0 1px rgba(94, 106, 210, 0.35);
-}
-
-body button:not(.clickable-icon) {
-  min-height: 28px;
-  border-radius: var(--button-radius);
-  box-shadow: none;
-  font-family: var(--trail-linear-font);
-  font-size: 11.5px;
-  font-weight: 500;
-}
-
-body button.mod-cta {
-  border-color: rgba(130, 143, 255, 0.24);
-  background: var(--trail-linear-accent);
-  color: #ffffff;
-}
-
-body button.mod-cta:hover,
-body button.mod-cta:focus-visible {
-  background: #6975d9;
-}
-
-/* Stronger than the generic text-input rule above: Properties stay flat. */
-body .metadata-container {
-  margin-block-end: 28px;
-  color: var(--trail-linear-text-secondary);
-  font-family: var(--trail-linear-font);
-  --input-height: var(--metadata-input-height);
-}
-
-body .metadata-properties-heading {
-  margin-bottom: 5px;
-  color: var(--trail-linear-text-secondary);
-  font-size: 11.5px;
-  font-weight: 560;
-}
-
-body .metadata-property {
-  min-height: 28px;
-  border-radius: var(--metadata-property-radius);
-  background: var(--metadata-property-background);
-}
-
-body .metadata-property:hover {
-  background: var(--metadata-property-background-hover);
-}
-
-body .metadata-property .metadata-property-key,
-body .metadata-property .metadata-property-value {
-  min-height: var(--metadata-input-height);
-}
-
-body .metadata-property .metadata-property-key {
-  color: var(--metadata-label-text-color);
-}
-
-body .metadata-property .metadata-property-value {
-  color: var(--metadata-input-text-color);
-}
-
-body .metadata-property input.metadata-property-key-input,
-body .metadata-property .metadata-property-value input,
-body .metadata-property .metadata-property-value textarea,
-body .metadata-property .metadata-input-longtext,
-body .metadata-property .metadata-property-value .multi-select-container {
-  min-height: var(--metadata-input-height);
-  border: 1px solid transparent;
-  border-radius: var(--metadata-property-radius);
-  background: var(--metadata-input-background);
-  color: inherit;
-  box-shadow: none;
-  font-family: var(--trail-linear-font);
-  font-size: var(--metadata-input-font-size);
-  font-weight: 450;
-}
-
-body .metadata-property input.metadata-property-key-input:hover,
-body .metadata-property .metadata-property-value input:hover,
-body .metadata-property .metadata-property-value textarea:hover,
-body .metadata-property .metadata-input-longtext:hover,
-body .metadata-property .metadata-property-value .multi-select-container:hover {
-  border-color: var(--trail-linear-border);
-  background: var(--metadata-input-background-hover);
-}
-
-body .metadata-property input.metadata-property-key-input:focus,
-body .metadata-property .metadata-property-value input:focus,
-body .metadata-property .metadata-property-value textarea:focus,
-body .metadata-property .metadata-input-longtext:focus,
-body .metadata-property .metadata-property-value .multi-select-container.is-active {
-  border-color: rgba(94, 106, 210, 0.42);
-  background: var(--metadata-input-background-active);
-  box-shadow: 0 0 0 1px rgba(94, 106, 210, 0.22);
-}
-
-body .metadata-add-button {
-  min-height: 26px;
-  padding: 0 5px;
-  border-radius: 5px;
-  color: var(--trail-linear-text-muted);
-  font-size: 11px;
-}
-
-body .metadata-add-button:hover {
-  background: var(--trail-linear-hover);
-  color: var(--trail-linear-text-secondary);
-}
-
-body .metadata-property-icon,
-body .metadata-property-warning-icon {
-  color: var(--trail-linear-text-faint);
-  opacity: 0.7;
-}
-
-body .metadata-property-icon svg,
-body .metadata-property-warning-icon svg {
-  width: 13px;
-  height: 13px;
-  stroke-width: 1.6;
-}
-
-body ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
-
-body ::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-body ::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.085);
-  background-clip: padding-box;
-}
-
-body ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.145);
-  background-clip: padding-box;
-}
-
-/* Markdown content typography remains a separate calibration surface. */
-body .workspace-leaf-content[data-type="markdown"] .view-content,
-body .markdown-source-view,
-body .markdown-reading-view,
-body .markdown-source-view.mod-cm6 .cm-editor,
-body .markdown-source-view.mod-cm6 .cm-scroller {
-  background: var(--trail-linear-bg-base);
-}
-
-body .markdown-source-view,
-body .markdown-reading-view {
-  color: var(--trail-linear-text-primary);
-}
-
-body .markdown-source-view.mod-cm6 .cm-cursor,
-body .markdown-source-view.mod-cm6 .cm-dropCursor {
-  border-left-color: var(--trail-linear-accent);
-}
-
-body .markdown-source-view.mod-cm6 .cm-selectionBackground,
-body .markdown-source-view.mod-cm6 .cm-content ::selection,
-body .markdown-reading-view ::selection {
-  background: rgba(94, 106, 210, 0.24);
-}
-
-/* --------------------------------------------------------------------------
- * Native overlays and document/editor typography
- *
- * Obsidian DOM menus and Trail context menus consume one Linear-derived menu
- * contract; Obsidian remains the interaction/mechanics owner. The Markdown
- * surface follows Linear's restrained document hierarchy rather than inheriting
- * the larger default Obsidian heading scale.
- * -------------------------------------------------------------------------- */
-
-body {
-  --menu-padding: var(--trail-menu-padding);
-  --inline-title-size: 24px;
-  --inline-title-weight: 650;
-  --inline-title-line-height: 1.22;
-  --h1-size: 20px;
-  --h2-size: 17px;
-  --h3-size: 15px;
-  --h4-size: 14px;
-  --h5-size: 13px;
-  --h6-size: 12px;
-  --h1-weight: 650;
-  --h2-weight: 630;
-  --h3-weight: 610;
-  --h4-weight: 590;
-  --h5-weight: 570;
-  --h6-weight: 550;
-  --h1-line-height: 1.24;
-  --h2-line-height: 1.28;
-  --h3-line-height: 1.32;
-  --h4-line-height: 1.34;
-  --h5-line-height: 1.36;
-  --h6-line-height: 1.38;
-  --heading-spacing: 1.35em;
-  --p-spacing: 0.8rem;
-}
-
-body .menu {
-  min-width: var(--trail-menu-min-width);
-  padding: var(--trail-menu-padding);
-  border: 1px solid var(--trail-menu-border);
-  border-radius: var(--trail-menu-radius);
-  background: var(--trail-menu-surface);
-  color: var(--trail-linear-text-secondary);
-  box-shadow: var(--trail-menu-shadow);
-  font-family: var(--trail-linear-font);
-}
-
-body .menu-item {
-  display: flex;
-  min-height: var(--trail-menu-item-height);
-  align-items: center;
-  gap: var(--trail-menu-item-gap);
-  padding: 0 var(--trail-menu-item-padding-x);
-  border-radius: var(--trail-menu-item-radius);
-  color: var(--trail-linear-text-secondary);
-  font-size: var(--trail-menu-font-size);
-  line-height: var(--trail-menu-item-height);
-}
-
-body .menu-item:hover:not(.is-disabled):not(.is-label),
-body .menu-item.selected:not(.is-disabled):not(.is-label) {
-  background: var(--trail-menu-hover);
-  color: var(--trail-linear-text-primary);
-}
-
-body .menu-item.is-disabled {
-  color: var(--trail-linear-text-faint);
-}
-
-body .menu-item.is-warning {
-  color: var(--trail-linear-danger);
-}
-
-body .menu-item-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-body .menu-item-icon {
-  width: var(--trail-menu-icon-size);
-  min-width: var(--trail-menu-icon-size);
-  height: var(--trail-menu-icon-size);
-  color: var(--trail-linear-text-muted);
-}
-
-body .menu-item-icon svg {
-  width: var(--trail-menu-icon-size);
-  height: var(--trail-menu-icon-size);
-  stroke-width: 1.65;
-}
-
-body .menu-item-icon .mod-submenu {
-  color: var(--trail-linear-text-faint);
-}
-
-body .menu-item:hover .menu-item-icon,
-body .menu-item.selected .menu-item-icon {
-  color: var(--trail-linear-text-secondary);
-}
-
-body .menu-item.is-warning .menu-item-icon,
-body .menu-item.is-warning:hover .menu-item-icon,
-body .menu-item.is-warning.selected .menu-item-icon {
-  color: var(--trail-linear-danger);
-}
-
-body .menu-separator {
-  margin: 4px 6px;
-  border-bottom-color: var(--trail-menu-separator);
-}
-
-body .nav-file-title.is-active,
-body .nav-folder-title.is-active,
-body .tree-item-self.is-active {
-  border: 0;
-  outline: 0;
-  box-shadow: none;
-}
-
-/*
- * Obsidian owns File Explorer focus through the parent .has-focus state, not
- * the active title alone. Mouse/context-menu focus stays quiet like Linear;
- * keyboard focus keeps the smaller Trail focus-visible treatment below.
- */
-body .workspace-leaf.mod-active .nav-folder.has-focus > .nav-folder-title,
-body .workspace-leaf.mod-active .nav-file.has-focus > .nav-file-title,
-body .workspace-leaf.mod-active .nav-folder.has-focus > .nav-folder-title:focus-within,
-body .workspace-leaf.mod-active .nav-file.has-focus > .nav-file-title:focus-within {
-  outline: 0;
-  box-shadow: none;
-}
-
-body .nav-file-title:focus-visible,
-body .nav-folder-title:focus-visible,
-body .tree-item-self:focus-visible {
-  outline: 0;
-  box-shadow: inset 0 0 0 1px rgba(94, 106, 210, 0.28);
-}
-
-body .inline-title,
-body .markdown-rendered h1,
-body .markdown-rendered h2,
-body .markdown-rendered h3,
-body .markdown-rendered h4,
-body .markdown-rendered h5,
-body .markdown-rendered h6,
-body .markdown-source-view.mod-cm6 .HyperMD-header {
-  color: var(--trail-linear-text-primary);
-  font-family: var(--trail-linear-font);
-  letter-spacing: -0.012em;
-}
-
-body .inline-title {
-  margin-bottom: 18px;
-}
-
-body .markdown-rendered h1,
-body .markdown-source-view.mod-cm6 .HyperMD-header-1 {
-  letter-spacing: -0.015em;
-}
-
-body .markdown-rendered h2,
-body .markdown-source-view.mod-cm6 .HyperMD-header-2 {
-  letter-spacing: -0.012em;
-}
-
-body .markdown-rendered h3,
-body .markdown-source-view.mod-cm6 .HyperMD-header-3,
-body .markdown-rendered h4,
-body .markdown-source-view.mod-cm6 .HyperMD-header-4,
-body .markdown-rendered h5,
-body .markdown-source-view.mod-cm6 .HyperMD-header-5,
-body .markdown-rendered h6,
-body .markdown-source-view.mod-cm6 .HyperMD-header-6 {
-  letter-spacing: -0.008em;
-}
-
-body .markdown-source-view.mod-cm6 .cm-line,
-body .markdown-rendered p,
-body .markdown-rendered li {
-  color: var(--trail-linear-text-secondary);
 }

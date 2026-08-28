@@ -6,11 +6,11 @@ interface TrailFoundationLabProps {
   readonly revision: number;
 }
 
-const LINEAR_COLOR_SEED = [
-  { label: "Main base", token: "bgBase", value: "#0E1012", swatch: "base" },
-  { label: "Sidebar", token: "bgSub", value: "#060708", swatch: "sidebar" },
-  { label: "Hover", token: "bgBaseHover", value: "#141517", swatch: "hover" },
-  { label: "Accent", token: "accent", value: "#5E6AD2", swatch: "accent" },
+const FOUNDATION_SWATCHES = [
+  { label: "Canvas", role: "Primary work surface", swatch: "canvas" },
+  { label: "Sidebar", role: "Navigation surface", swatch: "sidebar" },
+  { label: "Hover", role: "Quiet interaction state", swatch: "hover" },
+  { label: "Accent", role: "Primary action and focus", swatch: "accent" },
 ] as const;
 
 function runtimeLabel(control: TrailRuntimeControl): string {
@@ -67,31 +67,29 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </header>
 
       <div className="trail-lab-source-note">
-        <span className="trail-lab-source-note__label">Linear 2026 dark</span>
-        <span>Base LCH 4.66 / 1.41 / 265.732</span>
-        <span>Elevated +3L / +1C</span>
-        <span>Menu +5L / +1C</span>
-        <span>Accent #5E6AD2</span>
-        <span>Contrast 27</span>
+        <span className="trail-lab-source-note__label">Linear 2026 dark reference</span>
+        <span>Observed theme-editor palette</span>
+        <span>Derived elevated surfaces</span>
+        <span>Shared overlay contract</span>
+        <span>Compact density</span>
       </div>
 
       <div className="trail-lab-grid trail-lab-grid--two">
         <LabSection
-          description="Direct anchors from Linear's March 2026 in-app theme editor; elevated surfaces use its published relative offsets."
-          title="Linear 2026 color seed"
+          description="The lab consumes resolved Trail design tokens; literal color values stay in the stylesheet token authority."
+          title="Visual token roles"
         >
           <div className="trail-lab-swatches">
-            {LINEAR_COLOR_SEED.map((color) => (
-              <div className="trail-lab-swatch" key={color.token}>
+            {FOUNDATION_SWATCHES.map((color) => (
+              <div className="trail-lab-swatch" key={color.swatch}>
                 <span
                   aria-hidden="true"
                   className={`trail-lab-swatch__color trail-lab-swatch__color--${color.swatch}`}
                 />
                 <span className="trail-lab-swatch__meta">
                   <strong>{color.label}</strong>
-                  <span>{color.token}</span>
+                  <span>{color.role}</span>
                 </span>
-                <code>{color.value}</code>
               </div>
             ))}
           </div>
@@ -127,40 +125,40 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </div>
 
       <LabSection
-        description="Controls stay compact. View controls remain quiet icon-plus-label actions rather than filled toolbar buttons."
+        description="These are calibration specimens, not production primitives. The primitive kit will expose typed semantic variants over the same tokens."
         title="Controls"
       >
         <div className="trail-lab-control-groups">
           <div className="trail-lab-control-group">
             <span className="trail-lab-control-group__label">Buttons</span>
             <div className="trail-lab-control-row">
-              <button className="trail-button trail-button--primary" type="button">Create issue</button>
-              <button className="trail-button trail-button--secondary" type="button">Save</button>
-              <button className="trail-button trail-button--ghost" type="button">Cancel</button>
-              <button className="trail-button trail-button--secondary is-demo-hover" type="button">Hover</button>
-              <button className="trail-button trail-button--secondary" disabled type="button">Disabled</button>
+              <button className="trail-lab-button trail-lab-button--primary" type="button">Create issue</button>
+              <button className="trail-lab-button trail-lab-button--secondary" type="button">Save</button>
+              <button className="trail-lab-button trail-lab-button--ghost" type="button">Cancel</button>
+              <button className="trail-lab-button trail-lab-button--secondary is-demo-hover" type="button">Hover</button>
+              <button className="trail-lab-button trail-lab-button--secondary" disabled type="button">Disabled</button>
             </div>
           </div>
 
           <div className="trail-lab-control-group">
             <span className="trail-lab-control-group__label">View controls</span>
             <div className="trail-lab-control-row">
-              <button className="trail-view-control" type="button">
+              <button className="trail-lab-view-control" type="button">
                 <CalibrationIcon kind="filter" />
                 Filter
               </button>
-              <button className="trail-view-control" type="button">
+              <button className="trail-lab-view-control" type="button">
                 <CalibrationIcon kind="sliders" />
                 Display
               </button>
               <span className="trail-lab-control-divider" />
-              <button aria-label="Search specimen" className="trail-icon-button" type="button">
+              <button aria-label="Search specimen" className="trail-lab-icon-button" type="button">
                 <CalibrationIcon kind="search" />
               </button>
-              <button aria-label="Create specimen" className="trail-icon-button is-demo-hover" type="button">
+              <button aria-label="Create specimen" className="trail-lab-icon-button is-demo-hover" type="button">
                 <CalibrationIcon kind="plus" />
               </button>
-              <button aria-label="More specimen" className="trail-icon-button" type="button">
+              <button aria-label="More specimen" className="trail-lab-icon-button" type="button">
                 <CalibrationIcon kind="dots" />
               </button>
               <span className="trail-lab-tooltip">Search</span>
@@ -178,7 +176,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
                 <span className="trail-lab-field__label">Search</span>
                 <input defaultValue="project" readOnly />
               </label>
-              <div aria-label="Layout specimen" className="trail-segmented" role="group">
+              <div aria-label="Layout specimen" className="trail-lab-segmented" role="group">
                 <button className="is-selected" type="button">List</button>
                 <button type="button">Board</button>
               </div>
@@ -198,24 +196,24 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
               <span>8</span>
             </div>
             <div className="trail-lab-list-row">
-              <span className="trail-status-glyph trail-status-glyph--todo" />
+              <span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />
               <span className="trail-lab-list-row__id">TRAIL-128</span>
               <span className="trail-lab-list-row__title">Refine empty state hierarchy</span>
-              <span className="trail-label-chip">Design</span>
+              <span className="trail-lab-label-chip">Design</span>
               <span className="trail-lab-list-row__meta">M</span>
             </div>
             <div className="trail-lab-list-row is-demo-hover">
-              <span className="trail-status-glyph trail-status-glyph--progress" />
+              <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
               <span className="trail-lab-list-row__id">TRAIL-134</span>
               <span className="trail-lab-list-row__title">Implement command menu surface</span>
-              <span className="trail-label-chip trail-label-chip--quiet">UI</span>
+              <span className="trail-lab-label-chip trail-lab-label-chip--quiet">UI</span>
               <span className="trail-lab-list-row__meta">L</span>
             </div>
             <div className="trail-lab-list-row is-selected">
-              <span className="trail-status-glyph trail-status-glyph--done" />
+              <span className="trail-lab-status-glyph trail-lab-status-glyph--done" />
               <span className="trail-lab-list-row__id">TRAIL-119</span>
               <span className="trail-lab-list-row__title">Reset legacy presentation</span>
-              <span className="trail-label-chip trail-label-chip--quiet">Core</span>
+              <span className="trail-lab-label-chip trail-lab-label-chip--quiet">Core</span>
               <span className="trail-lab-list-row__meta">S</span>
             </div>
           </div>
@@ -228,27 +226,27 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
           <div className="trail-lab-property-panel">
             <div className="trail-lab-property-row">
               <span>Status</span>
-              <button className="trail-property-control" type="button">
-                <span className="trail-status-glyph trail-status-glyph--progress" />
+              <button className="trail-lab-property-control" type="button">
+                <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
                 In progress
               </button>
             </div>
             <div className="trail-lab-property-row">
               <span>Priority</span>
-              <button className="trail-property-control" type="button">
-                <span aria-hidden="true" className="trail-priority-glyph"><span /><span /><span /></span>
+              <button className="trail-lab-property-control" type="button">
+                <span aria-hidden="true" className="trail-lab-priority-glyph"><span /><span /><span /></span>
                 High
               </button>
             </div>
             <div className="trail-lab-property-row">
               <span>Estimate</span>
-              <button className="trail-property-control trail-property-control--compact" type="button">M</button>
+              <button className="trail-lab-property-control trail-lab-property-control--compact" type="button">M</button>
             </div>
             <div className="trail-lab-property-row">
               <span>Labels</span>
               <div className="trail-lab-labels">
-                <span className="trail-label-chip">Design</span>
-                <span className="trail-label-chip trail-label-chip--quiet">UI</span>
+                <span className="trail-lab-label-chip">Design</span>
+                <span className="trail-lab-label-chip trail-lab-label-chip--quiet">UI</span>
               </div>
             </div>
           </div>
@@ -256,7 +254,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </div>
 
       <LabSection
-        description="Elevated menu and composer surfaces get the strongest separation. The composer mirrors Linear's current issue-creation structure."
+        description="The menu specimen and native Obsidian menu consume one visual contract; the composer mirrors Linear's current issue-creation structure."
         title="Overlays and composer"
       >
         <div className="trail-lab-overlay-stage">
@@ -275,10 +273,10 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
 
           <div className="trail-lab-composer" role="presentation">
             <div className="trail-lab-composer__context">
-              <button className="trail-property-control" type="button">Trail</button>
+              <button className="trail-lab-property-control" type="button">Trail</button>
               <span className="trail-lab-composer__chevron">›</span>
-              <button className="trail-property-control" type="button">Template</button>
-              <button aria-label="More composer options specimen" className="trail-icon-button trail-icon-button--quiet" type="button">
+              <button className="trail-lab-property-control" type="button">Template</button>
+              <button aria-label="More composer options specimen" className="trail-lab-icon-button trail-lab-icon-button--quiet" type="button">
                 <CalibrationIcon kind="dots" />
               </button>
             </div>
@@ -289,26 +287,26 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
               </div>
               <div className="trail-lab-composer__suggestions">
                 <span>Suggestions</span>
-                <span className="trail-label-chip trail-label-chip--quiet">Design</span>
-                <span className="trail-label-chip trail-label-chip--quiet">Core</span>
+                <span className="trail-lab-label-chip trail-lab-label-chip--quiet">Design</span>
+                <span className="trail-lab-label-chip trail-lab-label-chip--quiet">Core</span>
               </div>
               <div className="trail-lab-composer__properties">
-                <span className="trail-property-control trail-property-control--static">
-                  <span className="trail-status-glyph trail-status-glyph--todo" />
+                <span className="trail-lab-property-control trail-lab-property-control--static">
+                  <span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />
                   Backlog
                 </span>
-                <span className="trail-property-control trail-property-control--static">
-                  <span aria-hidden="true" className="trail-priority-glyph"><span /><span /><span /></span>
+                <span className="trail-lab-property-control trail-lab-property-control--static">
+                  <span aria-hidden="true" className="trail-lab-priority-glyph"><span /><span /><span /></span>
                   High
                 </span>
-                <span className="trail-property-control trail-property-control--static">Project Trail</span>
-                <span className="trail-property-control trail-property-control--static">M</span>
-                <span className="trail-property-control trail-property-control--static">…</span>
+                <span className="trail-lab-property-control trail-lab-property-control--static">Project Trail</span>
+                <span className="trail-lab-property-control trail-lab-property-control--static">M</span>
+                <span className="trail-lab-property-control trail-lab-property-control--static">…</span>
               </div>
             </div>
             <div className="trail-lab-composer__footer">
               <span className="trail-lab-composer__attachment" aria-hidden="true">⌁</span>
-              <button className="trail-button trail-button--primary" type="button">Create issue</button>
+              <button className="trail-lab-button trail-lab-button--primary" type="button">Create issue</button>
             </div>
           </div>
         </div>

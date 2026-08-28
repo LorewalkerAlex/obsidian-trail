@@ -6,11 +6,13 @@ This document owns Trail's resolved target UI presentation and interaction answe
 
 It consumes Product, Domain, Data, and Architecture decisions rather than redefining them. Current implementation appearance is not a design authority: existing POC layout, CSS, native controls, page-local navigation, and modal/detail carriers may be replaced when they do not match the target UI.
 
-Trail V1 targets **Obsidian-native architecture with Linear presentation**:
+Trail V1 targets **Obsidian-native mechanics with a Linear-faithful application presentation while the Trail plugin is enabled**:
 
-- Obsidian owns the window, tabs, Ribbon, sidebars, splits, resize/collapse behavior, and other host workspace mechanics.
-- Linear is the primary visual and interaction reference where Trail has an equivalent responsibility.
-- Trail owns product-specific composition, semantics, and the gaps that neither Obsidian nor an existing reusable primitive already solves.
+- Obsidian owns the window, tabs, Ribbon, sidebars, splits, resize/collapse behavior, focus/workspace mechanics, and other mature host responsibilities.
+- Trail plugin lifecycle owns the application-wide presentation state. While Trail is enabled/loaded, Obsidian chrome, native views, menus, properties, editor/document surfaces, status surfaces, and Trail-owned UI should consume one coherent Trail visual system even when the foreground leaf is not Trail. Disabling or unloading Trail returns presentation to the user's Obsidian theme without rewriting host workspace state.
+- Current Linear is the default presentation and interaction answer wherever Trail has an equivalent responsibility. Trail should reproduce the relevant geometry, density, typography, color hierarchy, icon language, hover/focus/selection states, spacing rhythm, overlay treatment, and layout behavior as closely as practical inside Obsidian.
+- Trail owns product-specific composition and semantics, plus differences required by Obsidian host constraints or Trail's own Domain. A Trail-specific visual answer is a deliberate divergence, not the default starting point when Linear already has an applicable answer.
+- Trail reproduces observable visual/interaction results rather than proprietary Linear source code, assets, DOM structure, or internal implementation.
 - UI design must not introduce new persisted Domain facts merely to support presentation, ranking, attention, color, ordering, or capability when those answers can be derived from existing facts.
 
 ### 1.1 Reference priority
@@ -23,7 +25,7 @@ When resolving a concrete UI element, use this order:
 4. current Obsidian host constraints and native UI behavior;
 5. a Trail-specific answer only where product semantics or host constraints genuinely differ.
 
-Linear is a **visual reference**, not Trail's feature specification. Trail should reuse the visual grammar of an equivalent Linear control without importing collaboration-first semantics, generic view-builder complexity, or unrelated configuration capabilities.
+Linear is not Trail's feature specification, but for an equivalent presentation/interaction responsibility it is the **default design answer rather than optional inspiration**. Trail should reuse the relevant Linear grammar without importing collaboration-first semantics, generic view-builder complexity, unrelated configuration capabilities, or features that do not belong to Trail.
 
 ### 1.2 Text is authoritative; images are visual anchors
 
@@ -57,7 +59,7 @@ Useful current Linear visual anchors include:
 - Due dates: <https://linear.app/docs/due-dates>
 - Issue selection: <https://linear.app/docs/select-issues>
 
-For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root, current Linear Project collection arrangement, density, grouping, Timeline presentation, and primary Project-create affordance remain useful visual references. Initiative Focus is the same Project collection scoped to one Initiative: it reuses Project summaries/actions/filtering, stays List-only, and does not become a multi-Project Issue workspace. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model. Trail filters use one simplified Trail-specific interaction model; Linear filter visuals may inform polish, but Linear's advanced filter/view-builder semantics are not the product target.
+For Project Workspace specifically, the useful Linear reference is the **compact project-details + Issue collection interaction**, not Linear's complete Project feature set. For Projects Root, current Linear Project collection arrangement, density, grouping, Timeline presentation, and primary Project-create affordance remain useful visual references. Initiative Focus is the same Project collection scoped to one Initiative: it reuses Project summaries/actions/filtering, stays List-only, and does not become a multi-Project Issue workspace. Trail intentionally does not copy collaboration, documents/resources management, Project updates, or a heavyweight Overview/Issues dual-workspace model. Trail filters use one simplified Trail-specific interaction model; Linear filter visuals inform presentation, while Linear's advanced filter/view-builder semantics are not the product target.
 
 For Creation, current Linear composer structure is the primary reference: lightweight creation context, title/body as the content center, compact property controls, a restrained footer, context-prefilled values, and capability-aware availability. Trail localizes that grammar to its own Domain: Quick Capture is a title-first Obsidian-wide entry into standard Triage creation; Workflow Issues must name one explicit legal Project and always begin in Backlog; Projects use their configured Unstarted default; Trail Initiatives have no Status; and V1 does not copy Linear Drafts or Create-more behavior.
 
@@ -67,31 +69,51 @@ For Cycles, current Linear Cycles provide the primary collection, Board/List, ti
 
 ## 2. Visual System and Calibration
 
-### 2.1 Full-shell calibration
+### 2.1 Application-wide full-shell calibration
 
-Trail components are not calibrated in isolation. The calibration target is the complete Obsidian window while Trail is active:
+Trail components are not calibrated in isolation. The calibration target is the **complete Obsidian application while the Trail plugin is enabled/loaded**, regardless of which leaf currently has focus:
 
 ```text
-Obsidian Host
+Obsidian application
 ├─ native window / tab chrome
 ├─ Ribbon
-├─ Left Split
-│  └─ Trail Navigation
-├─ Main Split
-│  └─ Trail workspace shell
-└─ Right Split
-   └─ contextual Trail Inspector when shown
+├─ Left / Right sidebars
+│  ├─ Trail views
+│  └─ native views such as File Explorer / Search / Backlinks / Properties
+├─ Main leaves
+│  ├─ Trail workspace
+│  └─ ordinary Markdown / editor / document views
+├─ menus / prompts / popovers / modals
+├─ native controls / focus / selection presentation
+└─ status surfaces
 ```
 
-Trail-owned tokens and any limited host skinning must be tuned together so the result feels like one coherent application rather than a dark web application embedded inside unrelated Obsidian chrome.
+Obsidian continues to own those surfaces' mechanics and workspace state. Trail owns their presentation mapping while its plugin stylesheet is loaded. Native Obsidian surfaces and Trail-owned surfaces therefore consume the same resolved visual system rather than looking like two applications placed beside each other.
 
-The V1 reference environment is **Obsidian Default Dark + Trail Linear-inspired Dark**. Community themes are compatibility environments, not the visual calibration authority.
+The V1 calibration environment is **Obsidian Default Dark mechanics + Trail's Linear-faithful Dark reconstruction**. Community themes remain compatibility environments rather than visual authority. Disabling/unloading Trail should remove Trail's application-wide visual ownership and reveal the user's ordinary Obsidian theme again.
 
-Exact pixel dimensions, color values, opacity, spacing, and breakpoints should be frozen only after the relevant shell exists in real Obsidian and can be compared side by side with current Linear references.
+Exact pixel dimensions, color values, opacity, spacing, and responsive thresholds should be frozen only after the relevant shell/host consumer exists in real Obsidian and can be compared against current Linear evidence. Calibration changes modify the owning token or component contract; they must not accumulate as unrelated source-order overrides.
 
-### 2.2 Transferable Linear token family
+### 2.2 Design-token authority and Linear reference inputs
 
-A useful starting token family from maintained Linear references is:
+Linear reference values are **inputs to one Trail visual authority**, not literals for each component to copy independently.
+
+The V1 visual flow is:
+
+```text
+Current Linear evidence + real-Obsidian calibration
+→ Trail reference anchors
+→ Trail semantic design tokens
+→ shared component visual contracts
+   ├─ Obsidian semantic-variable mapping + targeted native consumers
+   └─ Trail primitives / patterns / semantic components
+```
+
+Reusable visual facts belong to the token/contract layer once. Consumers call semantic names instead of restating raw colors, font sizes, spacing, radius, control heights, icon sizes, state colors, elevation, or other shared values. Component-specific geometry that is shared by every instance of that component may live in a component contract such as the common Menu contract. A truly local implementation offset does not need to become a global token merely because it is numeric.
+
+Whether a token is ever exposed through user-facing Trail Settings is a separate product decision. The internal design-token authority exists regardless; user-facing configurability must not be required for code to stop duplicating visual constants.
+
+A useful Linear-derived reference family includes:
 
 ```text
 primary           #5e6ad2
@@ -117,22 +139,34 @@ hairline-tertiary #3e3e44
 
 Useful radius anchors are `4 / 6 / 8 / 12 / 16 / 24 / pill`; useful spacing anchors are `4 / 8 / 12 / 16 / 24 / 32 / 48 / 96`.
 
-These are calibration inputs rather than an obligation to reproduce every source value unchanged inside Obsidian.
+These anchors seed/calibrate Trail's semantic tokens; production consumers should not treat the reference block itself as a second styling API.
 
-### 2.3 Reuse before new visual primitives
+### 2.3 Reuse mature mechanics before creating new primitives
 
-Trail should not create new glyphs or interaction primitives when an existing mature equivalent is suitable.
+Trail copies Linear's **presentation and interaction result**, but it should not recreate generic mechanics that already have a mature owner.
 
-Preferred order for icons and primitive mechanics:
+Preferred order for interaction mechanics is:
 
 ```text
-Obsidian-native capability / icon
-→ existing Lucide or other already-adopted mature primitive
-→ semantic equivalent matching current Linear usage
-→ custom Trail primitive only when no existing option fits
+Obsidian-native mechanic / API
+→ browser semantic capability
+→ already-adopted focused headless primitive when it materially reduces interaction/accessibility risk
+→ custom Trail mechanic only when the existing options do not fit
 ```
 
-When Linear uses a recognizable visual concept and an equivalent existing Obsidian/Lucide glyph is available, Trail should use the existing glyph and tune size, stroke, opacity, state, and placement to match the target presentation rather than drawing a new icon set.
+For icons/glyphs, prefer:
+
+```text
+Obsidian-native icon
+→ existing Lucide / already-adopted mature equivalent
+→ custom Trail icon only when no suitable semantic equivalent exists
+```
+
+The chosen mechanic/icon is then calibrated to the Linear target through shared tokens and component contracts: size, stroke, opacity, density, state, placement, surface, and rhythm are presentation responsibilities rather than reasons to rebuild the underlying behavior.
+
+Context Menu is the canonical example. Trail and native Obsidian context menus should consume one Linear-faithful visual contract; where possible Trail uses Obsidian's `Menu` mechanics/API and restyles its presentation globally rather than building a second menu engine. A Foundation Lab menu is only a calibration specimen and must not become a parallel production primitive.
+
+Production reusable components expose a small set of semantic variants such as size/density/variant where stable variation is real, while structural differences are expressed through composition. Raw pixel/color style props and giant boolean-configurable universal components are not the normal reuse model.
 
 ### 2.4 Stable visual identity for Domain concepts
 
@@ -796,9 +830,7 @@ List, Board, Triage, and other supported collection surfaces consume the same se
 
 The exact keyboard bindings used to toggle/range/select-all/clear are not frozen as product semantics. Trail owns a shared shortcut-dispatch mechanism and may choose bindings that fit the Obsidian host rather than copying Linear's literal keymap.
 
-#### 5.8.2 One action authority, multiple entry points
-
-Trail uses one shared **Action Registry** as the UI authority for actions available in the current context. An action has stable identity plus the context/capability information needed to determine whether it is available, which legal targets it may expose, and which existing Application intent it invokes.
+#### 5.8.2 One action authority, multiple entry pointsTrail uses one shared **Action Registry** as the UI authority for actions available in the current context. An action has stable identity plus the context/capability information needed to determine whether it is available, which legal targets it may expose, and which existing Application intent it invokes.
 
 Context Menu, Command Menu, `···`/overflow affordances, Bulk surfaces, and keyboard shortcuts consume that same authority. They do not need identical visible menus: Context Menu favors the small set of actions most relevant to the clicked/current object or selection, while Command Menu may expose a broader searchable set. Different presentation subsets do not create different action semantics.
 
@@ -1445,9 +1477,7 @@ Description
 Progress     read-only/derived where shown
 ```
 
-Owning Project is not normally reparented.
-
-Deleting a Milestone preserves its Issues. Confirmation should explain that linked Issues remain and lose/replace the Milestone relation; it must not imply cascade deletion of Issues.
+Owning Project is not normally reparented.Deleting a Milestone preserves its Issues. Confirmation should explain that linked Issues remain and lose/replace the Milestone relation; it must not imply cascade deletion of Issues.
 
 In Completed/Canceled Projects the Milestone section remains readable summary context; create/edit/delete/assignment affordances are not normally shown.
 

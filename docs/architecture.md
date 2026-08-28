@@ -367,36 +367,41 @@ The projection is page/entity-specific enough to remain meaningful. Do not build
 
 ### 3.9 Shared UI capabilities
 
-Generic interaction/rendering mechanisms should be shared when multiple behaviors need them, for example:
+Trail UI uses a layered component system rather than page-local styling or one universal configurable component:
 
-- Button/IconButton;
-- Input/lightweight editor;
-- Tooltip/Popover;
-- Context Menu/Dropdown;
-- Dialog/Modal;
-- Property Picker;
-- Peek;
-- Command Menu;
-- IssueCard/IssueRow;
-- ProjectRow;
-- LabelChip;
-- BoardColumn/Swimlane;
-- optional long-list virtualization.
+```text
+Design tokens
+→ Core primitives
+→ Shared patterns
+→ Trail semantic components
+→ Page / shell composition
+```
 
-Shared primitives provide interaction/accessibility mechanics. Product-specific candidates and rules remain in Query/Application/Domain rather than becoming a giant generic component API.
+Representative capabilities include:
+
+- **Core primitives** — Button/IconButton, Input/Textarea, Checkbox, segmented control, Tooltip/Popover, Menu, Select/Combobox, Dialog, Separator, Kbd, Progress, and other generic interaction surfaces;
+- **Shared patterns** — Surface, CollectionRow/Card foundations, Toolbar/View controls, PropertyControl shell, overlay/composer carriers, list/board foundations, and reusable focus/selection presentation;
+- **Trail semantic components** — Status, Priority, Estimate, Due, Label, Project/Initiative identity, Milestone, IssueRow/IssueCard, ProjectRow, and semantic progress;
+- **Cross-surface interactions** — Creation state, Filter state, Selection/Action Registry, Peek/Inspector targeting, Command/Context/Bulk orchestration, and keyboard dispatch;
+- **Optional scale mechanisms** — long-list virtualization only when representative evidence requires it.
+
+Core primitives own generic interaction/accessibility mechanics and expose small typed semantic variants such as `size`, `density`, or `variant`; they do not expose arbitrary low-level style knobs as their normal API. Patterns compose primitives around a stable UI responsibility. Semantic components bind Trail meaning to those lower layers. Pages choose composition and capability, not pixel geometry.
+
+Reuse means moving stable mechanisms downward while leaving real semantic differences in the layer that owns them. Do not replace duplication with a giant component whose API is a matrix of booleans, arbitrary style props, or context-specific branches. Product-specific candidates and legality remain in Query/Application/Domain rather than leaking into generic primitives.
 
 ### 3.10 UI shell, host reuse, and surface ownership
 
 Trail's UI shell follows a host-first placement rule:
 
 ```text
-Obsidian/browser native capability
-→ existing Obsidian host surface/container
+Obsidian native mechanics / host surface
+→ browser semantic capability
+→ already-adopted mature focused primitive when needed
 → shared Trail primitive/pattern
 → page-local composition only when the responsibility is genuinely local
 ```
 
-Trail does not build a parallel window, tab, sidebar, split, resize, or collapse system inside its main view when Obsidian already owns that mechanism. The top native window/tab chrome and Ribbon remain host-level UI. Trail contributes context-specific views into Obsidian's existing layout containers:
+Trail does not build a parallel window, tab, sidebar, split, resize, collapse, focus, menu, or drag mechanic when Obsidian, the browser, or an already-adopted focused primitive already owns that generic responsibility well. The top native window/tab chrome and Ribbon remain host-level UI. Trail contributes context-specific views into Obsidian's existing layout containers:
 
 ```text
 Obsidian Host
@@ -407,14 +412,19 @@ Obsidian Host
 └─ Right Split            TrailInspectorView when persistent Details are shown
 ```
 
-Entering Trail context should select/reveal Trail's left-sidebar navigation view rather than destroy, replace, or mutate the canonical state of File Explorer/Search/Bookmark/plugin views. Sidebar width, resize, and collapse remain Obsidian-owned. Trail-specific styling may hide or quiet redundant host controls while Trail is active, but presentation must not require destructive workspace-state rewrites to recover the user's normal Obsidian layout.
+Entering Trail context should select/reveal Trail's left-sidebar navigation view rather than destroy, replace, or mutate the canonical state of File Explorer/Search/Bookmark/plugin views. Sidebar width, resize, and collapse remain Obsidian-owned. Presentation must not require destructive workspace-state rewrites to recover the user's normal Obsidian layout.
 
-Trail-owned visual tokens are the canonical visual source for the Linear-inspired Dark presentation. Obsidian host skinning and Trail components map from the same token ownership rather than depending on each other's implementation variables:
+Trail's plugin lifecycle is the application-wide visual-state boundary. While the plugin is enabled/loaded, Trail may restyle Obsidian chrome, native views, menus, properties, editor/document surfaces, and Trail-owned UI so they consume one coherent presentation system even when the foreground leaf is not Trail. Disabling or unloading Trail removes that stylesheet ownership and returns presentation to the user's Obsidian theme; host mechanics and workspace state remain Obsidian-owned throughout.
+
+Trail-owned visual tokens are the canonical visual source for the V1 Linear-derived Dark reconstruction. Current Linear evidence and host calibration feed one resolved token system; Obsidian host skinning and Trail components map from it rather than depending on each other's implementation variables:
 
 ```text
-             Trail design tokens
-              /               \
-Obsidian semantic-variable map  Trail primitives/patterns
+Current Linear reference + host calibration evidence
+→ Trail reference anchors
+→ Trail semantic design tokens
+→ shared component visual contracts
+   ├─ Obsidian semantic-variable map + targeted native consumers
+   └─ Trail primitives / patterns / semantic components
 ```
 
 V1 implements the Dark presentation only. Token/component structure should remain theme-extensible without requiring a second light implementation or light-specific parallel component tree now.
@@ -456,6 +466,92 @@ shared entity/property/content/action capabilities
 Shared capabilities include reusable property rows/pickers, title/description presentation, labels, status, priority, due, estimate, project/milestone relationships, and entity actions where semantically applicable. Surfaces select the subset and depth they need rather than cloning property behavior per page. Avoid a giant `UniversalEntityDetails` component with many booleans; reuse stable parts and let each surface own its composition.
 
 Peek is a transient non-modal overlay that leaves the current workspace layout in place. Inspector is the persistent contextual side surface, with Obsidian's right split as the preferred host when appropriate. Full Item View is main-workspace content for deeper work and should remain host-agnostic enough that future tab/split hosting can reuse the same content. Focus/highlight, multi-selection, Peek target, Inspector target, and navigation location remain distinct interaction concepts.
+
+### 3.11 Frontend implementation architecture
+
+Trail's V1 frontend is React + TypeScript inside the Obsidian host, with CSS custom properties as the resolved visual-token interface, Zustand for genuinely shared transient UI state, Radix only where its focused headless mechanics materially reduce interaction/accessibility risk, and Pragmatic Drag and Drop for drag mechanics where the accepted product interaction requires it. Existing packages are capabilities to justify per use case, not a requirement to wrap every primitive in a library abstraction.
+
+#### Visual authority and CSS ownership
+
+Obsidian publishes one plugin `styles.css`, so V1 keeps one physical stylesheet entry point while enforcing explicit logical ownership inside it:
+
+```text
+1. design-token authority
+2. Obsidian semantic-variable mapping
+3. targeted native Obsidian consumers
+4. Trail shell carriers
+5. Foundation Lab-only calibration specimens
+```
+
+A reusable visual fact belongs to the token/contract layer once. Consumers use semantic variables rather than copying raw colors, typography scales, radii, control sizes, state colors, or elevation values. Component-specific geometry may remain local when it has no reusable semantic meaning. Calibration edits the owning token/consumer rule; it does not append a later override whose correctness depends on cascade history.
+
+The stylesheet may use normal CSS specificity/state rules where the browser/Obsidian DOM requires them, but specificity and source order are not architectural ownership mechanisms. A later rule must not exist merely to repair an earlier competing answer for the same responsibility.
+
+#### Component and dependency direction
+
+Within `ui/`, dependencies should normally flow downward:
+
+```text
+design-system
+    ↓
+primitives
+    ↓
+patterns
+    ↓
+entities
+    ↓
+pages
+    ↓
+shell composition
+
+interactions
+→ headless/shared UI state and action mechanics consumed across patterns/entities/pages
+
+foundation
+→ development/calibration consumer only; production layers never depend on it
+```
+
+`primitives` do not know Trail Domain entities or page contexts. `patterns` know reusable interface responsibilities but not business legality. `entities` may bind effective Query/presentation meaning to lower UI layers. `pages` compose product scenarios. `shell` owns cross-location composition and host-facing Trail surfaces. `interactions` owns shared transient mechanics/state without becoming a second Domain/Runtime model.
+
+#### Variants and composition
+
+Stable presentation choices are expressed as small typed semantic variants such as `size="sm"`, `density="compact"`, or `variant="ghost"`. Those variants resolve to owned tokens/contracts. Production components should not normally accept arbitrary pixel/color/style props that let callers bypass the design system.
+
+Structural variation uses React composition instead of widening one component with many unrelated booleans. For example, a CollectionRow owns row geometry/focus/selection mechanics, IssueRow owns Issue information hierarchy, and a Project/Cycle page decides which Issue metadata is useful in that context. This keeps reuse multi-level without creating a universal Card/Details component.
+
+#### State locality
+
+State lives at the smallest owner that needs its lifetime:
+
+```text
+Domain / authoritative facts          → Domain / Runtime / Query owners
+cross-root or location-session UI     → focused shared Zustand owner
+component draft / open state          → local React state or focused headless primitive
+hover / focus-visible / pressed state → CSS / browser state
+```
+
+A shared store is not the default merely because Zustand is available. Purely visual state must not enter canonical Runtime, and component-local interaction state must not become a global UI store without a real cross-consumer lifetime requirement.
+
+#### Responsive behavior
+
+Responsive presentation is based on the actual Obsidian pane/container capacity. CSS layout, `minmax`, overflow ownership, and container queries are preferred when the change is visual only. React/host state participates only when available space changes product behavior that CSS cannot express, such as the resolved location-entry Inspector reveal decision. Window-width media queries are not the primary Trail workspace model because Obsidian splits can make a wide window contain a narrow Trail pane.
+
+#### Accessibility and generic mechanics
+
+Use semantic HTML and existing mechanics from Obsidian/browser/mature focused libraries before custom interaction code. Buttons remain buttons; navigation remains navigation; menus/dialogs/popovers must have coherent focus, keyboard, dismissal, disabled, and accessibility behavior. Trail reconstructs Linear presentation and interaction rhythm, not proprietary source/DOM structure.
+
+#### Verification and guards
+
+Frontend verification follows ownership:
+
+- token/stylesheet guards protect single visual authority and Lab-only isolation where useful;
+- primitive tests cover semantic variants, accessibility states, and generic interaction contracts;
+- pattern/interaction tests cover shared focus, selection, menu/composer/filter/action behavior;
+- semantic component tests cover Trail presentation contracts against Query/capability inputs;
+- page tests cover composition and user workflows without re-proving lower-layer mechanics;
+- representative real Obsidian validation covers host selectors, portal/focus behavior, pane/container response, drag/pointer behavior, and whole-application visual integration that jsdom cannot establish.
+
+Architecture guards should make known invalid dependencies and migration-only identities difficult to reintroduce, while avoiding a speculative custom frontend framework.
 
 ## 4. Dependencies
 
@@ -833,17 +929,17 @@ Performance changes are evidence-driven and must not create a second source of t
 
 ### 6.5 UI quality and accessibility
 
-Trail uses a shared design-system ownership:
+Trail uses the frontend ownership defined in Section 3.11:
 
 ```text
-Tokens
-→ Primitives
-→ Entity Components
-→ Composite Patterns
-→ Page Composition
+Design tokens
+→ Core primitives
+→ Shared patterns / interactions
+→ Trail semantic components
+→ Page / shell composition
 ```
 
-Trail UI and any Obsidian shell-theme integration should share the same token ownership. Exact visual values remain replaceable implementation decisions unless they become product contracts.
+Trail UI and Obsidian host-theme integration share the same resolved token ownership. Exact visual values remain replaceable implementation decisions unless they become product contracts. Typed semantic variants and composition are preferred over arbitrary style props or universal components.
 
 Interactive primitives must support accessible focus-visible behavior, keyboard use where appropriate, clear disabled/selected/pending/error states, and restrained motion.
 
