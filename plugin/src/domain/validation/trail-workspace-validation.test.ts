@@ -45,6 +45,26 @@ describe("Trail workspace validation", () => {
     })).toEqual([]);
   });
 
+  it("requires the canonical Default Project reference to resolve", () => {
+    const domain = emptyDomain();
+    domain.projectsById.set("project-a", {
+      id: "project-a",
+      labelIds: [],
+      statusDefinitionId: "project-unstarted",
+      title: "Project A",
+    });
+
+    expect(validateTrailWorkspaceGraph({
+      configuration: createTrailTestConfiguration(),
+      domain,
+      workspaceState: createTrailTestWorkspaceState("project-missing"),
+    })).toContainEqual(expect.objectContaining({
+      code: "reference.workspace.default-project-missing",
+      field: "defaultProjectId",
+      stage: "reference",
+    }));
+  });
+
   it("enforces status-conditioned lifecycle and completed-project invariants", () => {
     const configuration = createTrailTestConfiguration();
     const domain = emptyDomain();
@@ -128,7 +148,7 @@ describe("Trail workspace validation", () => {
     const codes = validateTrailWorkspaceGraph({
       configuration: createTrailTestConfiguration(),
       domain,
-      workspaceState: createTrailTestWorkspaceState(),
+      workspaceState: createTrailTestWorkspaceState("shared-id"),
     }).map(({ code }) => code);
     expect(codes).toContain("workspace.entity-id.duplicate");
     expect(codes).toContain("reference.project.initiative-missing");

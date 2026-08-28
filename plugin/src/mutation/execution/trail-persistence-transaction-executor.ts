@@ -11,7 +11,10 @@ import type {
   TrailPluginDataReadResult,
   TrailPluginDataRepository,
 } from "../../persistence/plugin-data/trail-plugin-data-repository";
-import type { TrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
+import {
+  isTrailPluginDataSnapshot,
+  type TrailPluginDataSnapshot,
+} from "../../persistence/plugin-data/trail-plugin-data-codec";
 import type {
   TrailIntegrityBatchStage,
   TrailPersistenceOperation,
@@ -106,6 +109,7 @@ function assertPluginDataBefore(
 ): void {
   if (
     read.kind !== "valid"
+    || !isTrailPluginDataSnapshot(read.snapshot)
     || !sameTrailConfiguration(read.snapshot.configuration, expected.configuration)
     || !sameTrailWorkspaceState(read.snapshot.workspaceState, expected.workspaceState)
   ) {

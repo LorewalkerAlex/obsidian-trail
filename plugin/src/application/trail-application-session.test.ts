@@ -82,7 +82,7 @@ function createHarness(options: HarnessOptions = {}) {
   const committed = buildTrailCommittedRuntimeCandidate({
     pluginData: {
       configuration,
-      workspaceState: createTrailTestWorkspaceState(),
+      workspaceState: createTrailTestWorkspaceState(projectB.id),
     },
     sources: [
       {
@@ -333,6 +333,31 @@ describe("Trail Application session", () => {
       "replace-entity",
       "delete-entity",
     ]);
+  });
+
+  it("changes Default Project through the Workspace Application boundary", async () => {
+    const harness = createHarness();
+    const result = harness.session.workspace.setDefaultProject(harness.project.id);
+    expect(result.kind).toBe("submitted");
+    if (result.kind !== "submitted") return;
+    await result.receipt.completion;
+
+    expect(harness.submitted).toHaveLength(1);
+    expect(harness.submitted[0]).toMatchObject({
+      intent: "workspace.default-project.set",
+      effects: [{
+        after: { defaultProjectId: harness.project.id },
+        before: { defaultProjectId: harness.projectB.id },
+        kind: "replace-workspace-state",
+      }],
+    });
+  });
+
+  it("does not submit an unchanged Default Project", () => {
+    const harness = createHarness();
+    expect(harness.session.workspace.setDefaultProject(harness.projectB.id))
+      .toEqual({ kind: "unchanged" });
+    expect(harness.submitted).toEqual([]);
   });
 
   it("creates and deletes Initiatives and Milestones through their canonical planners", async () => {

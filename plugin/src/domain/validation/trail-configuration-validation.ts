@@ -168,17 +168,10 @@ export function validateTrailConfiguration(
   return issues;
 }
 
-export function validateTrailWorkspaceState(
-  workspaceState: TrailWorkspaceState,
+export function validateTrailWorkspaceStateContents(
+  workspaceState: Pick<TrailWorkspaceState, "customViews" | "favorites" | "home">,
 ): readonly TrailDomainValidationIssue[] {
   const issues: TrailDomainValidationIssue[] = [];
-  if (workspaceState.defaultProjectId !== undefined && !isTrailId(workspaceState.defaultProjectId)) {
-    issues.push(issue(
-      "default-project.invalid",
-      "defaultProjectId must be a non-empty Project ID when present",
-      "defaultProjectId",
-    ));
-  }
   const viewIds = new Set<string>();
   for (const view of workspaceState.customViews) {
     if (!isTrailId(view.id)) issues.push(issue("custom-view.id.invalid", "Custom View id must be non-empty", "customViews"));
@@ -195,6 +188,20 @@ export function validateTrailWorkspaceState(
   }
   if (!isTrailPlainObject(workspaceState.home)) {
     issues.push(issue("home.invalid", "Home composition must be an object", "home"));
+  }
+  return issues;
+}
+
+export function validateTrailWorkspaceState(
+  workspaceState: TrailWorkspaceState,
+): readonly TrailDomainValidationIssue[] {
+  const issues = [...validateTrailWorkspaceStateContents(workspaceState)];
+  if (!isTrailId(workspaceState.defaultProjectId)) {
+    issues.push(issue(
+      "default-project.invalid",
+      "defaultProjectId must be a non-empty Project ID",
+      "defaultProjectId",
+    ));
   }
   return issues;
 }

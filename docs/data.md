@@ -282,11 +282,11 @@ Canonical ready Workspace State contains one stable Project reference:
 defaultProjectId: ProjectId
 ```
 
-The referenced record is an ordinary Project and must resolve to an existing Project in normal ready state. `defaultProjectId` is not Project identity, is not derived from title, and does not require a Project subtype or `systemRole` field.
+The referenced record is an ordinary Project and must resolve to an existing Project in normal ready state. `defaultProjectId` is not Project identity, is not derived from title, and does not require a Project subtype or `systemRole` field. Persisted/pre-ready Plugin Data may physically omit this field only as the narrow startup-recovery input; the canonical ready Workspace State type does not.
 
-A fresh Workspace seeds a normal Project titled `Standalone` at the reserved initial path `Projects/0000 Standalone.md` and stores its stable ID here. If persisted Workspace State lacks `defaultProjectId` at startup, Source Sync performs the narrow bootstrap-recovery path before publishing normal ready Runtime: inspect `Projects/0000 Standalone.md`; if it is a valid ordinary Trail Project, store that Project's stable ID, otherwise recreate a standard bootstrap Project at that path and store the new stable ID.
+A fresh Workspace seeds a normal Project titled `Standalone` at the reserved initial path `Projects/0000 Standalone.md` and stores its stable ID here. If persisted Workspace State lacks `defaultProjectId` at startup, Source Sync performs narrow initialization recovery before publishing normal ready Runtime: inspect the reserved Project sequence `0000`; if one valid ordinary Project carrier occupies that sequence, store its stable Project ID regardless of the current readable suffix/title; if no `0000` Project carrier exists, create the standard `Projects/0000 Standalone.md` Project and store its new stable ID. An existing but invalid or otherwise untrusted `0000` carrier is a Data Issue and is not overwritten.
 
-Sequence `0000` remains only a bootstrap/recovery physical convention for that source; it does not define Default identity and is not reassigned when another Project later becomes Default. Renaming a referenced Project leaves the stable reference intact. Replacing the Default Project changes only this Workspace reference. Deleting the current Default Project requires a replacement `ProjectId` so the final authoritative Workspace State still has a valid `defaultProjectId`; normal product behavior does not persist a cleared Default state.
+Sequence `0000` remains only a bootstrap/recovery physical convention for that source; it does not define Default identity and is not reassigned when another Project later becomes Default. Renaming a referenced Project leaves the stable reference intact. Replacing the Default Project changes only this Workspace reference. The current Default Project is not a legal Project Delete target: another existing Project must first be committed as Default through a separate Workspace State mutation, after which the former Default may be deleted normally. Project Delete never persists a cleared or replacement Default as one of its effects.
 
 ```text
 FavoritesState {
@@ -354,7 +354,7 @@ Native Obsidian links are navigational/document relationships and do not become 
 
 The Workspace Default Project is represented by canonical ready `WorkspaceState.defaultProjectId`. It points to the same stable ID used by an ordinary Project record; the reference itself adds no second Project identity, path, kind, title convention, or lifecycle field.
 
-Fresh bootstrap separately reserves physical Project sequence `0000` for the initial `Standalone` seed. Startup recovery may consult the exact `Projects/0000 Standalone.md` bootstrap path only when the persisted Default reference is missing. That physical convention remains recovery input rather than identity: changing the Default Project does not move another Project into `0000`, and the current Default may have any legal Project title, Initiative membership, or lifecycle Status.
+Fresh bootstrap separately reserves physical Project sequence `0000` for the initial `Standalone` seed. Startup recovery may inspect the Project carrier occupying reserved sequence `0000` only when the persisted Default reference is physically missing; recovery does not require that carrier to retain the readable title `Standalone`. That physical convention remains recovery input rather than identity: changing the Default Project does not move another Project into `0000`, and the current Default may have any legal Project title, Initiative membership, or lifecycle Status.
 
 ## 3. Authority & Derivation
 
@@ -376,7 +376,7 @@ Project configuration cannot introduce a Project StatusDefinition in Backlog; Is
 
 Default Project, Custom Views, Favorites, and Home composition are authoritative user organization/navigation state, not Core Domain history.
 
-Deleting a View does not delete referenced Entities. Deleting the Project referenced by `defaultProjectId` requires another existing Project as the replacement Default in the same legal user intent, so the resulting Workspace State still contains one valid required reference.
+Deleting a View does not delete referenced Entities. A Project referenced by `defaultProjectId` is not deletable while that reference is current. The user first changes Default Project through an independent Workspace State mutation; only after that commits may the former Default be deleted through the ordinary Project Delete flow.
 
 ### 3.4 Derived and runtime state
 
@@ -777,9 +777,9 @@ How much of the product remains writable under a known Data Issue is an Architec
 
 Configuration/Workspace State load or update must reject states that would leave missing/invalid Status, Label, Custom View, or Favorite references. This includes rejecting Project Status configuration that introduces or references Backlog and rejecting an Estimate weight configuration that omits a fixed T-Shirt level or provides a non-positive/non-finite weight.
 
-Normal ready Workspace validation also requires `defaultProjectId` to resolve to an existing ordinary Project. The one intentional pre-ready exception is a missing persisted `defaultProjectId`: startup Source Sync handles that narrow bootstrap/recovery case before publishing ready Runtime. Explicit Trail Project deletion never clears the Default; deleting the current Default requires a replacement Default Project in the same committed mutation.
+Normal ready Workspace validation also requires `defaultProjectId` to resolve to an existing ordinary Project. The one intentional pre-ready exception is a physically missing persisted `defaultProjectId`: startup initialization handles that narrow bootstrap/recovery case before publishing ready Runtime. Project Delete never clears or replaces the Default; planning rejects deletion when the target Project is the current Default. A separate Default-Project Workspace mutation must commit first.
 
-A dangling non-empty Default Project ID caused by external persistence damage is a Data Issue, not permission to guess another Project by title.
+A dangling non-empty Default Project ID caused by external persistence damage is a Data Issue, not permission to guess another Project by title. A later external refresh that removes the field is also a Data Issue; missing-field recovery is initialization-only rather than a normal refresh fallback.
 
 Old last-known-good runtime data may be useful to Architecture for viewing/recovery, but is not authority for further writes after hard persistence invariants become invalid.
 
@@ -791,9 +791,9 @@ Parser may accept valid metadata with non-canonical property order or set array 
 
 ### 5.6 Initialization and missing data
 
-Fresh installation with no `Trail/` root is not corruption; explicit bootstrap creates the required current containers plus an ordinary seed Project titled `Standalone` at `Trail/Projects/0000 Standalone.md`, and persists that Project ID as the initial `workspaceState.defaultProjectId`. The seed uses the normal Project record/carrier and normal Project creation defaults; sequence `0000` is only its stable fresh-bootstrap physical slot. Its title, lifecycle, Initiative membership, properties, and later deletion remain ordinary Project behavior, and rename preserves `0000` while updating the readable suffix.
+Fresh installation with no `Trail/` root is not corruption; explicit bootstrap creates the required current containers plus an ordinary seed Project titled `Standalone` at `Trail/Projects/0000 Standalone.md`, and persists that Project ID as the initial `workspaceState.defaultProjectId`. The seed uses the normal Project record/carrier and normal Project creation defaults; sequence `0000` is only its stable fresh-bootstrap physical slot. Its title, lifecycle, Initiative membership, and properties remain ordinary Project behavior. Rename preserves `0000` while updating the readable suffix; deletion is ordinary once another Project has first become the Workspace Default.
 
-If an existing Workspace's persisted `defaultProjectId` is missing, startup performs the narrow Default recovery described above before ready state. Disappearance of a required singleton such as Triage or Cycles, or a dangling non-empty Default Project reference caused by external damage, remains a Data Issue rather than a reason to silently create unrelated replacement state.
+If an existing Workspace's persisted `defaultProjectId` is missing, startup performs the narrow sequence-`0000` recovery described above before ready state. Disappearance of a required singleton such as Triage or Cycles, an invalid/untrusted reserved `0000` carrier, a dangling non-empty Default Project reference, or a missing Default field observed after initialization remains a Data Issue rather than a reason to silently create or guess unrelated replacement state.
 
 Weekly Update is lazy-created utility state and is not a required Domain bootstrap container.
 

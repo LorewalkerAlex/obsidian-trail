@@ -22,9 +22,24 @@ function readyHarness(options: { readonly failMutate?: boolean } = {}) {
     configuration: createTrailTestConfiguration(),
     workspaceState: createTrailTestWorkspaceState(),
   };
+  const defaultProject = {
+    id: "project-a",
+    labelIds: [],
+    statusDefinitionId: "project-unstarted",
+    title: "Project A",
+  };
   const committed = buildTrailCommittedRuntimeCandidate({
     pluginData: pluginDataSnapshot,
-    sources: [{ issues: [], kind: "triage", sourcePath: "Trail/Collections/Triage.md" }],
+    sources: [
+      { issues: [], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
+      {
+        issues: [],
+        kind: "project",
+        milestones: [],
+        project: defaultProject,
+        sourcePath: "Trail/Projects/0001 Project A.md",
+      },
+    ],
   });
   publishTrailCommittedRuntime(runtimeStore, committed, { sourceIssuesByPath: {} });
   setTrailRuntimeControl(runtimeStore, { kind: "ready" });

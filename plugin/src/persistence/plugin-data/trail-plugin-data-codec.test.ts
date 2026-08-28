@@ -4,6 +4,7 @@ import {
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
 import {
+  isTrailPluginDataSnapshot,
   parseTrailPluginData,
   serializeTrailPluginData,
 } from "./trail-plugin-data-codec";
@@ -33,6 +34,7 @@ describe("Trail plugin-data codec", () => {
     ]);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) throw new Error("expected valid plugin data");
+    expect(isTrailPluginDataSnapshot(parsed.value)).toBe(true);
     expect(parsed.value).toEqual(snapshot);
   });
 
@@ -60,28 +62,21 @@ describe("Trail plugin-data codec", () => {
     ))).toBe(true);
   });
 
-  it("round-trips an optional Default Project reference without inventing one", () => {
-    const withDefault = {
+  it("accepts the one persisted pre-ready shape with a physically missing Default Project", () => {
+    const snapshot = {
       configuration: createTrailTestConfiguration(),
-      workspaceState: {
-        ...createTrailTestWorkspaceState(),
-        defaultProjectId: "project-a",
-      },
+      workspaceState: createTrailTestWorkspaceState("project-a"),
     };
-    const physical = serializeTrailPluginData(withDefault) as {
-      workspaceState: { defaultProjectId?: string };
+    const physical = serializeTrailPluginData(snapshot) as {
+      workspaceState: Record<string, unknown>;
     };
-    expect(physical.workspaceState.defaultProjectId).toBe("project-a");
-    expect(parseTrailPluginData(physical)).toEqual({ ok: true, value: withDefault });
+    delete physical.workspaceState.defaultProjectId;
 
-    const withoutDefault = {
-      configuration: createTrailTestConfiguration(),
-      workspaceState: createTrailTestWorkspaceState(),
-    };
-    const withoutPhysical = serializeTrailPluginData(withoutDefault) as {
-      workspaceState: { defaultProjectId?: string };
-    };
-    expect(withoutPhysical.workspaceState).not.toHaveProperty("defaultProjectId");
+    const parsed = parseTrailPluginData(physical);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) throw new Error("expected recoverable pre-ready plugin data");
+    expect(parsed.value.workspaceState).not.toHaveProperty("defaultProjectId");
+    expect(isTrailPluginDataSnapshot(parsed.value)).toBe(false);
   });
 
   it("preserves Status order and default within one fixed Category", () => {

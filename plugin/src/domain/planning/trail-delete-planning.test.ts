@@ -116,7 +116,7 @@ function state(): TrailPlanningState & {
     milestoneB,
     projectA,
     projectB,
-    workspaceState: createTrailTestWorkspaceState(),
+    workspaceState: createTrailTestWorkspaceState(projectB.id),
   };
 }
 
@@ -257,27 +257,15 @@ describe("Core delete planning", () => {
     });
   });
 
-  it("clears Workspace Default Project only when the deleted Project is the Default", () => {
+  it("protects the current Default Project from deletion", () => {
     const planning = state();
-    const defaultPlanning = {
-      ...planning,
-      workspaceState: {
-        ...planning.workspaceState,
-        defaultProjectId: planning.projectA.id,
-      },
-    };
-    const result = planDeleteTrailProject(defaultPlanning, {
+    expect(planDeleteTrailProject(planning, {
       commandId: "delete-default-project",
-      expectedProject: planning.projectA,
-      replacementProjectId: planning.projectB.id,
+      expectedProject: planning.projectB,
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "default-project-delete-forbidden" },
     });
-    expect(result.kind).toBe("ready");
-    if (result.kind !== "ready") return;
-
-    const workspaceEffects = effectsOfKind(result.plan, "replace-workspace-state");
-    expect(workspaceEffects).toHaveLength(1);
-    expect(workspaceEffects[0]?.before.defaultProjectId).toBe(planning.projectA.id);
-    expect(workspaceEffects[0]?.after.defaultProjectId).toBeUndefined();
   });
 
   it("deletes a Workflow Issue and removes all open and historical Cycle memberships", () => {

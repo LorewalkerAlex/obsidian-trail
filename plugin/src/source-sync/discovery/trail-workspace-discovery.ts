@@ -16,7 +16,7 @@ import type {
   TrailDomainSourceRepository,
   TrailManagedDomainSourceKind,
 } from "../../persistence/domain-sources/trail-domain-source-repository";
-import type { TrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
+import type { TrailPersistedPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
 import type {
   TrailPluginDataReadResult,
   TrailPluginDataRepository,
@@ -50,7 +50,7 @@ export type TrailWorkspaceDiscovery =
   | {
       readonly blockers: readonly [];
       readonly mode: "existing";
-      readonly pluginData: TrailPluginDataSnapshot;
+      readonly pluginData: TrailPersistedPluginDataSnapshot;
       readonly sources: readonly TrailDiscoveredDomainSource[];
     }
   | {

@@ -1,14 +1,16 @@
 import type { TrailPluginDataIO } from "../ports/trail-plugin-data-io";
 import {
+  isTrailPluginDataSnapshot,
   parseTrailPluginData,
   serializeTrailPluginData,
+  type TrailPersistedPluginDataSnapshot,
   type TrailPluginDataIssue,
   type TrailPluginDataSnapshot,
 } from "./trail-plugin-data-codec";
 
 export type TrailPluginDataReadResult =
   | { readonly kind: "absent" }
-  | { readonly kind: "valid"; readonly snapshot: TrailPluginDataSnapshot }
+  | { readonly kind: "valid"; readonly snapshot: TrailPersistedPluginDataSnapshot }
   | { readonly issues: readonly TrailPluginDataIssue[]; readonly kind: "invalid"; readonly value: unknown };
 
 export interface TrailPluginDataRepository {
@@ -31,7 +33,7 @@ export function createTrailPluginDataRepository(io: TrailPluginDataIO): TrailPlu
       const expectedPhysical = serializeTrailPluginData(snapshot);
       await io.save(expectedPhysical);
       const authoritative = await read();
-      if (authoritative.kind !== "valid") {
+      if (authoritative.kind !== "valid" || !isTrailPluginDataSnapshot(authoritative.snapshot)) {
         throw new Error("Plugin data failed authoritative reread after save");
       }
       const actualPhysical = serializeTrailPluginData(authoritative.snapshot);

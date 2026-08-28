@@ -10,12 +10,23 @@ import {
 } from "../../markdown/schema/trail-paths";
 import { TrailMutationQueue } from "../../mutation/queue/trail-mutation-queue";
 import type { TrailDomainSourceRepository } from "../../persistence/domain-sources/trail-domain-source-repository";
-import type { TrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
+import type {
+  TrailPersistedPluginDataSnapshot,
+  TrailPluginDataSnapshot,
+} from "../../persistence/plugin-data/trail-plugin-data-codec";
 import type { TrailPluginDataRepository } from "../../persistence/plugin-data/trail-plugin-data-repository";
 import type { TrailWorkspaceLayoutIO } from "../../persistence/ports/trail-workspace-layout-io";
 import { createTrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../../test/trail-test-fixtures";
 import { TrailRefreshController } from "./trail-refresh-controller";
+
+const DEFAULT_PROJECT_PATH = "Trail/Projects/0000 Standalone.md";
+const DEFAULT_PROJECT = {
+  id: "project-a",
+  labelIds: [],
+  statusDefinitionId: "project-unstarted",
+  title: "Standalone",
+};
 
 function deferred() {
   let resolve!: () => void;
@@ -27,14 +38,20 @@ function pluginData(timezone: string): TrailPluginDataSnapshot {
   const configuration = createTrailTestConfiguration();
   return {
     configuration: { ...configuration, temporal: { timezone } },
-    workspaceState: createTrailTestWorkspaceState(),
+    workspaceState: createTrailTestWorkspaceState(DEFAULT_PROJECT.id),
   };
+}
+
+function pluginDataWithoutDefault(timezone: string): TrailPersistedPluginDataSnapshot {
+  const canonical = pluginData(timezone);
+  const { defaultProjectId: _defaultProjectId, ...workspaceState } = canonical.workspaceState;
+  return { configuration: canonical.configuration, workspaceState };
 }
 
 function createHarness() {
   const runtimeStore = createTrailRuntimeStore();
   const mutationQueue = new TrailMutationQueue();
-  let currentPluginData = pluginData("Asia/Singapore");
+  let currentPluginData: TrailPersistedPluginDataSnapshot = pluginData("Asia/Singapore");
   let failNextRead = false;
   let sourceIssueNextRead = false;
   let blockNextTriageRead: ReturnType<typeof deferred> | undefined;
@@ -59,6 +76,9 @@ function createHarness() {
         { kind: "directory" as const, name: "Initiatives", path: TRAIL_INITIATIVES_PATH },
         { kind: "directory" as const, name: "Projects", path: TRAIL_PROJECTS_PATH },
         { kind: "directory" as const, name: "Collections", path: TRAIL_COLLECTIONS_PATH },
+      ];
+      if (path === TRAIL_PROJECTS_PATH) return [
+        { kind: "file" as const, name: "0000 Standalone.md", path: DEFAULT_PROJECT_PATH },
       ];
       if (path === TRAIL_COLLECTIONS_PATH) return [
         { kind: "file" as const, name: "Triage.md", path: TRAIL_TRIAGE_PATH },
@@ -88,6 +108,19 @@ function createHarness() {
           }]
         : [];
       if (sourceIssueNextRead && path === TRAIL_TRIAGE_PATH) sourceIssueNextRead = false;
+      if (kind === "project" && path === DEFAULT_PROJECT_PATH) {
+        return {
+          issues: [],
+          kind: "accepted" as const,
+          snapshot: {
+            issues: [],
+            kind: "project" as const,
+            milestones: [],
+            project: DEFAULT_PROJECT,
+            sourcePath: path,
+          },
+        };
+      }
       if (kind === "triage") return { issues, kind: "accepted" as const, snapshot: { issues: [], kind: "triage" as const, sourcePath: path } };
       if (kind === "cycles") return { issues: [], kind: "accepted" as const, snapshot: { cycles: [], kind: "cycles" as const, sourcePath: path } };
       throw new Error(`unexpected source kind: ${kind}`);
@@ -118,10 +151,11 @@ function createHarness() {
     },
     controller,
     failNextRead: () => { failNextRead = true; },
+    getPluginData: () => currentPluginData,
     invalidateNextRead: () => { sourceIssueNextRead = true; },
     mutationQueue,
     runtimeStore,
-    setPluginData: (value: TrailPluginDataSnapshot) => { currentPluginData = value; },
+    setPluginData: (value: TrailPersistedPluginDataSnapshot) => { currentPluginData = value; },
   };
 }
 
@@ -132,6 +166,31 @@ describe("Trail full refresh controller", () => {
     expect(harness.runtimeStore.getState().control).toEqual({ kind: "ready" });
     expect(harness.runtimeStore.getState().committed.authoritative.configuration?.temporal.timezone)
       .toBe("Asia/Singapore");
+  });
+
+  it("recovers only a physically missing Default Project before initial ready publish", async () => {
+    const harness = createHarness();
+    harness.setPluginData(pluginDataWithoutDefault("Asia/Singapore"));
+
+    await expect(harness.controller.initialize()).resolves.toEqual({ bootstrapped: false });
+    expect(harness.getPluginData().workspaceState.defaultProjectId).toBe(DEFAULT_PROJECT.id);
+    expect(harness.runtimeStore.getState().committed.authoritative.workspaceState?.defaultProjectId)
+      .toBe(DEFAULT_PROJECT.id);
+    expect(harness.runtimeStore.getState().control).toEqual({ kind: "ready" });
+  });
+
+  it("does not treat a later missing Default Project as normal refresh recovery", async () => {
+    const harness = createHarness();
+    await harness.controller.initialize();
+    const committedBefore = harness.runtimeStore.getState().committed;
+    harness.setPluginData(pluginDataWithoutDefault("Asia/Singapore"));
+
+    await expect(harness.controller.requestExternalRefresh({
+      kind: "modify",
+      path: TRAIL_TRIAGE_PATH,
+    })).rejects.toThrow("External Trail refresh failed");
+    expect(harness.runtimeStore.getState().committed).toBe(committedBefore);
+    expect(harness.runtimeStore.getState().control.kind).toBe("read-only-error");
   });
 
   it("retains last-known-good committed state when an external full reload fails", async () => {

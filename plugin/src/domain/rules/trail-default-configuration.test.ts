@@ -18,8 +18,9 @@ describe("Trail default Configuration", () => {
     expect(configuration.workflowStatuses.project.completed.defaultId).toBe("status-8");
     expect(configuration.workflowStatuses.project).not.toHaveProperty("backlog");
     expect(configuration.temporal.timezone).toBe("Asia/Singapore");
-    expect(createDefaultTrailWorkspaceState()).toEqual({
+    expect(createDefaultTrailWorkspaceState("project-default")).toEqual({
       customViews: [],
+      defaultProjectId: "project-default",
       favorites: [],
       home: {},
     });

@@ -1,6 +1,7 @@
 import { validateTrailWorkspaceGraph, type TrailWorkspaceValidationIssue } from "../../domain/validation/trail-workspace-validation";
 import type { TrailDomainSourceRepository } from "../../persistence/domain-sources/trail-domain-source-repository";
 import type { TrailSourceProblem } from "../../persistence/domain-sources/trail-source-result";
+import { isTrailPluginDataSnapshot } from "../../persistence/plugin-data/trail-plugin-data-codec";
 import type { TrailPluginDataRepository } from "../../persistence/plugin-data/trail-plugin-data-repository";
 import type { TrailWorkspaceLayoutIO } from "../../persistence/ports/trail-workspace-layout-io";
 import {
@@ -31,6 +32,11 @@ export async function loadTrailAuthoritativeRuntimeCandidate(input: {
     throw new TrailAuthoritativeLoadError(
       `Trail workspace is not loadable: ${discovery.mode}`,
       discovery.mode === "blocked" ? discovery.blockers : [],
+    );
+  }
+  if (!isTrailPluginDataSnapshot(discovery.pluginData)) {
+    throw new TrailAuthoritativeLoadError(
+      "Trail workspace is missing required Default Project reference",
     );
   }
 

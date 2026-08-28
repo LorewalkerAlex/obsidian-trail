@@ -9,6 +9,7 @@ import {
   setTrailRuntimeSourceIssues,
   type TrailRuntimeStore,
 } from "../../runtime/store/trail-runtime-store";
+import { recoverMissingTrailDefaultProject } from "../bootstrap/trail-default-project-recovery";
 import { bootstrapFreshTrailWorkspace } from "../bootstrap/trail-workspace-bootstrap";
 import { discoverTrailWorkspace } from "../discovery/trail-workspace-discovery";
 import {
@@ -70,6 +71,13 @@ export class TrailRefreshController implements TrailRefreshRecovery {
         bootstrapped = true;
       } else if (discovery.mode === "blocked") {
         throw new Error(discovery.blockers.map(({ message }) => message).join("; "));
+      } else if (discovery.pluginData.workspaceState.defaultProjectId === undefined) {
+        await recoverMissingTrailDefaultProject({
+          createId: this.options.createId,
+          domainSources: this.options.domainSources,
+          pluginData: this.options.pluginData,
+          snapshot: discovery.pluginData,
+        });
       }
       await this.reloadAndPublish();
       setTrailRuntimeControl(this.options.runtimeStore, { kind: "ready" });

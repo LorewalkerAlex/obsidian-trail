@@ -182,9 +182,9 @@ A value does not become an Entity merely because many Entities use it.
 
 Custom Views, Favorites, Home composition, and the required Default Project reference are persisted user workspace state. They describe how the user organizes, navigates, and presents Trail; they are not Core Domain Data and do not redefine Project behavior.
 
-During normal ready operation, the Default Project references exactly one existing ordinary Project by stable identity. The reference does not make that Project a subtype and does not constrain its Status or Initiative membership. Changing the Default Project changes only the Workspace reference. Deleting the currently referenced Project is legal only when the same user intent supplies another existing Project as the replacement Default, so the resulting canonical Workspace State still resolves exactly one Default Project.
+During normal ready operation, the Default Project references exactly one existing ordinary Project by stable identity. The reference does not make that Project a subtype and does not constrain its Status or Initiative membership. Changing the Default Project is an independent Workspace mutation that changes only this reference. While a Project is the current Default it is not a legal Project Delete target. To delete it, another existing Project must first become Default in committed canonical state; the former Default may then be deleted through the ordinary Project Delete rule. Project Delete itself does not replace the Workspace Default.
 
-Fresh bootstrap and startup recovery may create or adopt the ordinary Project titled `Standalone` at the reserved bootstrap path when the persisted reference is missing. That recovery belongs to Source Sync/bootstrap; neither the `Standalone` title nor physical sequence `0000` becomes Domain identity.
+Fresh bootstrap creates the ordinary `Standalone` Project in the reserved physical Project sequence `0000`. Startup recovery may adopt a valid ordinary Project already occupying that sequence when the persisted reference is missing, regardless of its current readable title, or create `Standalone` there only when no `0000` carrier exists. That recovery belongs to Source Sync/bootstrap; neither the `Standalone` title nor physical sequence `0000` becomes Domain identity.
 
 ## 3. Relationships
 
@@ -461,11 +461,11 @@ A delete operation resolves affected relationships as one legal domain mutation:
 
 - Delete Initiative: preserve Projects, normally clearing Initiative membership or reassigning as explicitly chosen.
 - Delete Milestone: preserve Issues, clearing or replacing their Milestone relation.
-- Delete Project: if child Workflow Issues exist, require an explicit legal replacement Project, preserve those Issues by moving them to that Project, clear any old Project-scoped Milestone relation, remove the deleted Project's Milestones, then remove the Project. If Workspace State references the deleted Project as Default Project, the same deletion intent must also supply another existing Project as the replacement Default.
+- Delete Project: the current Default Project is not a legal delete target. Once Workspace State already references another Default Project, deleting a Project with child Workflow Issues requires an explicit legal replacement Project for those Issues, preserves them by moving them to that Project, clears any old Project-scoped Milestone relation, removes the deleted Project's Milestones, then removes the Project. The child-Issue replacement is the only Project Delete replacement input and does not change Workspace Default.
 - Delete Issue: remove the Issue and its Cycle memberships; do not delete unrelated entities.
 - Delete Cycle: preserve Issues and their Status/Project relationships; Cycle history context is intentionally removed.
 
-Required references without a genuine automatic default require an explicit legal replacement or cancellation rather than an invented default.
+Required references without a genuine automatic default require an explicit legal replacement or cancellation rather than an invented default. The required Default Project is resolved through a separate prior Workspace mutation rather than a delete-time replacement input.
 
 ## 5. Rules & Invariants
 
@@ -503,7 +503,7 @@ The following must always hold in canonical ready state:
 15. Closed Cycle membership is not changed by normal planning actions.
 16. Label selection obeys registration and Single/Multiple semantics.
 17. Configuration defaults/reference targets match the intended entity type/category and do not leave dangling references.
-18. Default Project is present and resolves to an existing ordinary Project; it adds no Project-specific invariant.
+18. Default Project is present and resolves to an existing ordinary Project. The designation adds no Project subtype or lifecycle invariant, but while designated that Project is not a legal Project Delete target.
 
 Persisted pre-ready Workspace State may temporarily omit `defaultProjectId` only so bootstrap/recovery can repair it before canonical ready state is published.
 

@@ -106,6 +106,7 @@ const workspaceState = {
       presentation: {},
     },
   ],
+  defaultProjectId: project.id,
   favorites: [{ targetType: "project", targetId: project.id }],
   home: {},
 } satisfies TrailWorkspaceState;
@@ -154,6 +155,7 @@ describe("rebuild Domain contracts", () => {
   it("keeps Configuration and Workspace State as separate authoritative contracts", () => {
     expect(configuration.cycle.defaultEndRule).toBe("end-of-next-week");
     expect(configuration.workflowStatuses.project).not.toHaveProperty("backlog");
+    expect(workspaceState.defaultProjectId).toBe(project.id);
     expect(workspaceState.customViews[0]?.selection.entityType).toBe("issue");
     expect(workspaceState.favorites[0]).toEqual({
       targetType: "project",

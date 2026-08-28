@@ -204,7 +204,7 @@ Cycles
 
 The row is not a special Standalone location and does not identify a Project by title. Normal ready Workspace State always resolves one stable `defaultProjectId`; the row renders that ordinary Project's current title and opens the same normal `Project(projectId)` location used everywhere else. Renaming the Project therefore renames the shortcut automatically. Assigning it to an Initiative, changing lifecycle Status, or editing any other Project property does not change the navigation mechanism.
 
-Changing the Workspace Default immediately changes this shortcut to the newly referenced Project. Deleting the current Default Project requires another Project to be chosen as the replacement Default before deletion completes, so the normal ready navigation does not intentionally lose this row. Fresh/bootstrap recovery of a missing persisted reference is owned below the UI and completes before Trail presents normal ready navigation.
+Changing the Workspace Default immediately changes this shortcut to the newly referenced Project. The current Default Project is not deletable. To delete it, the user first changes Default Project through the independent Settings interaction in Section 16; after that mutation commits, the former Default is an ordinary non-Default Project and its normal Delete action may be used. Delete itself never asks for or applies a replacement Default, so the navigation row changes only when the separate setter succeeds. Fresh/bootstrap recovery of a missing persisted reference is owned below the UI and completes before Trail presents normal ready navigation.
 
 The same Project continues to appear normally in Projects Root, grouped under its actual Initiative or `No Initiative`. The shortcut is only a high-frequency placement of a normal Project target, not a duplicate Project, collection, or workspace.
 
@@ -870,7 +870,7 @@ With the default Project Status configuration, Project Workspace has four UI rol
 | Completed | Completed | settled review | List |
 | Canceled | Canceled | cleanup/review | List |
 
-The Default Project has no special workspace role. It uses the same lifecycle-dependent Project Workspace behavior, layouts, capabilities, Milestones, and Inspector as any other Project.
+The Default Project has no special lifecycle workspace role. It uses the same lifecycle-dependent Project Workspace behavior, layouts, Milestones, and Inspector as any other Project. The Workspace designation adds only the separate Delete guard defined in Sections 9.8 and 16; it does not alter Project lifecycle or child-work capability.
 
 ### 6.3 Board Status projection
 
@@ -1005,7 +1005,7 @@ If a Planned Project contains an Issue already in an execution Status because th
 
 A target Project picker also consumes effective capability. If the current Issue cannot legally move to a target Project without changing Status, that target is unavailable. Normal Move never silently rewrites Status.
 
-The Default Project uses this same capability matrix as any other Project. Being the Workspace default never bypasses target legality or changes Issue Status implicitly.
+The Default Project uses this same lifecycle/child-work capability matrix as any other Project. Being the Workspace default never bypasses target legality or changes Issue Status implicitly; independently, the current Default is not a legal Delete Project target until another Project has become Default.
 
 ## 7. Issue Row and Board Card
 
@@ -1455,7 +1455,9 @@ In Completed/Canceled Projects the Milestone section remains readable summary co
 
 Delete is not Project Status and does not belong inside the Status picker.
 
-It lives in low-frequency Project overflow/destructive actions and requires confirmation because its relation effects are material. If the Project owns Workflow Issues, deletion requires an explicit legal replacement Project for those Issues. If the Project is also the current Default Project, deletion additionally requires an explicit replacement Default Project before it can complete.
+It lives in low-frequency Project overflow/destructive actions and requires confirmation because its relation effects are material. If the Project owns Workflow Issues, deletion requires an explicit legal replacement Project for those Issues. The current Default Project is different only in one respect: Delete is unavailable because the Project is not a legal delete target while it remains Default. The affordance should explain `Change Default Project first` and route to or identify the Settings action from Section 16 rather than opening a compound delete flow.
+
+Once another Project has independently become Default, the former Default uses the ordinary Project Delete interaction:
 
 ```text
 Delete Project
@@ -1463,15 +1465,12 @@ Delete Project
 ├─ move them to the selected legal replacement Project when children exist
 ├─ clear their old Project-scoped Milestone relation
 ├─ remove Project-scoped Milestones
-├─ if it was the Default Project, set the selected replacement Default Project
 └─ remove Project
 ```
 
-The Issue-destination Project and replacement Default Project are separate semantic choices even when the same ordinary Project is selected for both. Delete never silently changes Issue Status merely to make an Issue destination acceptable. If the Project has no child Workflow Issues, no Issue-destination Project is required; deleting the current Default still requires a replacement Default.
+The Issue-destination Project is solely a child-work relationship choice. Delete never changes Workspace Default and never silently changes Issue Status merely to make an Issue destination acceptable. If the Project has no child Workflow Issues, no Issue-destination Project is required.
 
-The replacement-Default selection follows the same ordinary Project Picker semantics as Section 16. The resulting ready Workspace always retains one valid `defaultProjectId`, and the sidebar shortcut switches to the selected replacement rather than disappearing.
-
-The confirmation should state useful concrete consequences/counts and selected destinations rather than generic dramatic wording. Recovery/undo claims must match actual implementation capability.
+The confirmation should state useful concrete consequences/counts and the selected child-Issue destination when applicable rather than generic dramatic wording. Recovery/undo claims must match actual implementation capability.
 
 ## 10. Triage
 
@@ -2229,13 +2228,13 @@ Normal setter success follows Section 15 and is silent/optimistic. Failure resto
 
 ### 16.3 Deleting the current Default
 
-Deleting the current Default Project requires another existing Project to be selected as the replacement Default before deletion can complete. The resulting Workspace State therefore continues to resolve one Default Project, and the Navigation shortcut switches to that replacement rather than disappearing.
+The current Default Project cannot be deleted. Project Delete does not contain a replacement-Default picker or combine the two mutations.
 
-The same shared Project Picker can supply this required input. V1 does not add a special Default-Project subtype or separate Standalone management flow.
+The user first uses the setter above to choose another existing Project and lets that Workspace mutation succeed. The Navigation shortcut then switches to the new Default. The former Default is now an ordinary non-Default Project and may be deleted through the normal Project Delete interaction, including a separate child-Issue destination only when its Workflow Issues require one. V1 does not add a special Default-Project subtype or separate Standalone management flow.
 
 ### 16.4 Startup recovery is not a settings workflow
 
-If persisted Workspace State lacks `defaultProjectId`, Source Sync performs the canonical `Projects/0000 Standalone.md` bootstrap/recovery before normal ready UI appears. Settings does not present an empty Default state or ask the user to repair routine bootstrap absence manually.
+If persisted Workspace State physically lacks `defaultProjectId` during initialization, Source Sync performs the canonical reserved-sequence-`0000` recovery before normal ready UI appears, adopting a valid ordinary `0000` Project regardless of its readable title or creating `Projects/0000 Standalone.md` only when that reserved carrier is absent. Invalid/untrusted reserved data and later refresh failures remain Data Issues below the UI. Settings does not present an empty Default state or ask the user to repair routine bootstrap absence manually.
 
 V1 does not add secondary `Set as default` actions to every Project context menu/Inspector. Such convenience can be added later only if real use shows that changing Default Project is frequent enough to justify another entry point.
 

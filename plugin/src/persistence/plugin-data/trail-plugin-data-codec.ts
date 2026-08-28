@@ -10,6 +10,7 @@ import {
   TRAIL_LABEL_ENTITY_TYPES,
   TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
   type TrailLabelEntityType,
+  type TrailProjectId,
   type TrailStatusCategory,
   type TrailStatusEntityType,
 } from "../../domain/model/trail-values";
@@ -22,6 +23,7 @@ import type {
 import {
   validateTrailConfiguration,
   validateTrailWorkspaceState,
+  validateTrailWorkspaceStateContents,
 } from "../../domain/validation/trail-configuration-validation";
 import {
   isTrailId,
@@ -29,6 +31,15 @@ import {
   isTrailLabelSelectionMode,
   isTrailPlainObject,
 } from "../../domain/validation/trail-value-validation";
+
+export type TrailPersistedWorkspaceState = Omit<TrailWorkspaceState, "defaultProjectId"> & {
+  readonly defaultProjectId?: TrailProjectId;
+};
+
+export interface TrailPersistedPluginDataSnapshot {
+  readonly configuration: TrailConfiguration;
+  readonly workspaceState: TrailPersistedWorkspaceState;
+}
 
 export interface TrailPluginDataSnapshot {
   readonly configuration: TrailConfiguration;
@@ -45,8 +56,14 @@ export interface TrailPluginDataIssue {
 }
 
 export type TrailPluginDataCodecResult =
-  | { readonly ok: true; readonly value: TrailPluginDataSnapshot }
+  | { readonly ok: true; readonly value: TrailPersistedPluginDataSnapshot }
   | { readonly issues: readonly TrailPluginDataIssue[]; readonly ok: false };
+
+export function isTrailPluginDataSnapshot(
+  snapshot: TrailPersistedPluginDataSnapshot,
+): snapshot is TrailPluginDataSnapshot {
+  return snapshot.workspaceState.defaultProjectId !== undefined;
+}
 
 function scopeForPath(path: string): TrailPluginDataIssue["scope"] {
   if (path.startsWith("$.configuration")) return "configuration";
@@ -415,7 +432,7 @@ function parseWorkspaceState(
   value: unknown,
   path: string,
   issues: TrailPluginDataIssue[],
-): TrailWorkspaceState | undefined {
+): TrailPersistedWorkspaceState | undefined {
   const object = objectAt(value, path, issues);
   if (object === undefined) return undefined;
   exactKeys(object, ["customViews", "favorites", "home"], ["defaultProjectId"], path, issues);
@@ -470,13 +487,13 @@ function parseWorkspaceState(
     ));
   }
   if (customViewsPhysical === undefined || favoritesPhysical === undefined || home === undefined) return undefined;
-  const workspaceState: TrailWorkspaceState = {
+  const workspaceState: TrailPersistedWorkspaceState = {
     customViews,
     ...(defaultProjectId === undefined ? {} : { defaultProjectId }),
     favorites,
     home,
   };
-  for (const domainIssue of validateTrailWorkspaceState(workspaceState)) {
+  for (const domainIssue of validateTrailWorkspaceStateContents(workspaceState)) {
     issues.push(codecIssue(
       `plugin-data.workspace.${domainIssue.code}`,
       path,
@@ -539,7 +556,7 @@ function serializeSelection(selection: TrailSavedViewSelectionSpec): Record<stri
   return result;
 }
 
-/** Converts normalized logical state to the current physical data.json shape. */
+/** Converts canonical ready logical state to the current physical data.json shape. */
 export function serializeTrailPluginData(snapshot: TrailPluginDataSnapshot): unknown {
   const configurationIssues = validateTrailConfiguration(snapshot.configuration);
   const workspaceIssues = validateTrailWorkspaceState(snapshot.workspaceState);
@@ -603,9 +620,7 @@ export function serializeTrailPluginData(snapshot: TrailPluginDataSnapshot): unk
           selection: serializeSelection(view.selection),
           presentation: view.presentation,
         })),
-      ...(snapshot.workspaceState.defaultProjectId === undefined
-        ? {}
-        : { defaultProjectId: snapshot.workspaceState.defaultProjectId }),
+      defaultProjectId: snapshot.workspaceState.defaultProjectId,
       favorites: snapshot.workspaceState.favorites.map((favorite) => ({
         targetType: favorite.targetType,
         targetId: favorite.targetId,

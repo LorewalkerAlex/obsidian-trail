@@ -80,7 +80,9 @@ export function createTrailTestConfiguration(): TrailConfiguration {
   };
 }
 
-export function createTrailTestWorkspaceState(): TrailWorkspaceState {
+export function createTrailTestWorkspaceState(
+  defaultProjectId = "project-a",
+): TrailWorkspaceState {
   return {
     customViews: [
       {
@@ -90,6 +92,7 @@ export function createTrailTestWorkspaceState(): TrailWorkspaceState {
         selection: { entityType: "issue", filters: { status: "active" } },
       },
     ],
+    defaultProjectId,
     favorites: [
       { targetId: "project-a", targetType: "project" },
       { targetId: "view-active", targetType: "custom-view" },

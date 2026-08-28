@@ -334,7 +334,7 @@ The projection may be represented as explicit capability fields/queries in imple
 Important rules:
 
 - every Workflow Issue is evaluated inside one real owning Project; no Projectless capability branch exists;
-- the Workspace Default Project is ordinary Project state plus a workspace reference, so its capabilities are exactly the same as any other Project in the same lifecycle;
+- the Workspace Default Project is ordinary Project state plus a workspace reference, so its lifecycle, relationship, and child-work capabilities are the same as any other Project in the same lifecycle; the Workspace designation independently makes `Delete Project` unavailable while that reference is current;
 - Unstarted Project enables Backlog planning but blocks execution advancement;
 - Started Project enables normal planning + execution;
 - Completed/Canceled Projects block normal new child work; Canceled unresolved work exposes cleanup actions such as Cancel/Move Out;
@@ -593,7 +593,7 @@ One authoritative carrier changes, for example:
 - Triage edit/defer/delete;
 - ordinary Project/Initiative edits;
 - Cycle record update;
-- configuration/workspace-state replacement.
+- configuration/workspace-state replacement, including `workspace.setDefaultProject`.
 
 #### Source Transition
 
@@ -624,7 +624,7 @@ Low-frequency multi-source/reference repair for operations such as:
 
 - deleting/replacing a Label or StatusDefinition;
 - deleting Initiative while preserving Projects;
-- deleting Project while preserving Issues by moving them to an explicit legal replacement Project, clearing old Milestone relations, and replacing `workspaceState.defaultProjectId` when the deleted Project is the current Default;
+- deleting a non-Default Project while preserving child Issues by moving them to an explicit legal replacement Project and clearing old Milestone relations;
 - deleting Issue while removing Cycle membership;
 - deleting Cycle while preserving Issues;
 - other operations that must update related authoritative references together.
@@ -641,9 +641,9 @@ prepare
 - `destructive` removes authoritative Domain carriers only after preparation has succeeded;
 - `commit` is the final plugin-data cutover and occurs at most once.
 
-When an Integrity Batch mixes Plugin Data with Domain repairs, materialization projects the ordered Domain effects before any I/O and proves each pre-commit Domain prefix remains legal under the currently committed hard Domain/Configuration invariants; it then validates the final Plugin Data cutover. Required `workspaceState.defaultProjectId` is part of the intended final Workspace graph: deleting the current Default Project therefore requires another existing Project as the explicit replacement Default, and the logical plan contains that Workspace State replacement rather than a clear-to-absent effect. Physical multi-source execution still uses the existing data-loss-averse Integrity Batch/recovery model rather than pretending filesystem operations are globally atomic; a failed partial execution is reconciled through Source Sync/LKG/Data-Issue handling instead of inventing a second Default-Project transaction system. A mixed Configuration/Domain repair is otherwise allowed only when the Entity repairs can first produce a state legal under both the old and new hard configuration, after which plugin data may commit last. If no safe staged bridge exists, the mutation is rejected before persistence rather than relying on write order or rollback to make an illegal prefix acceptable.
+When an Integrity Batch mixes Plugin Data with Domain repairs, materialization projects the ordered Domain effects before any I/O and proves each pre-commit Domain prefix remains legal under the currently committed hard Domain/Configuration invariants; it then validates the final Plugin Data cutover. Required `workspaceState.defaultProjectId` is not part of Project Delete materialization: Domain planning rejects deleting the current Default Project before any physical plan exists. Changing the Default is the independent `workspace.setDefaultProject(B)` intent, persisted as an ordinary Workspace State Single Transaction. Only after that change commits may the former Default enter the normal Project Delete flow. Child Workflow Issue replacement remains an independent Project Delete concern and does not imply a Default change. No compound delete-plus-default cutover or new transaction topology is introduced. A mixed Configuration/Domain repair is otherwise allowed only when the Entity repairs can first produce a state legal under both the old and new hard configuration, after which plugin data may commit last. If no safe staged bridge exists, the mutation is rejected before persistence rather than relying on write order or rollback to make an illegal prefix acceptable.
 
-The executor validates this topology independently of the materializer, stops at the first failed operation, and reports the durable operation prefix that completed before the error. Existing Source Sync recovery then clears invalid optimism and rereads authoritative state. Integrity Batch does not add general rollback, recursive compensation, a transaction graph, or an all-or-nothing filesystem guarantee. For destination-first destructive flows such as Project deletion, a detectable duplicate/error prefix remains preferable to silent source loss when a later destructive step fails.
+The executor validates this topology independently of the materializer, stops at the first failed operation, and reports the durable operation prefix that completed before the error. Existing Source Sync recovery then clears invalid optimism and rereads authoritative state. Integrity Batch does not add general rollback, recursive compensation, a transaction graph, or an all-or-nothing filesystem guarantee. For destination-first destructive flows such as non-Default Project deletion with preserved child work, a detectable duplicate/error prefix remains preferable to silent source loss when a later destructive step fails.
 
 ### 5.8 Placement resolution
 
@@ -679,7 +679,7 @@ load plugin data
 
 Fresh installation explicitly bootstraps required managed structure and one ordinary Project seed titled `Standalone` at reserved path `Projects/0000 Standalone.md`, then stores that Project's stable ID as `workspaceState.defaultProjectId`. The seed uses the ordinary Project carrier, default Project-creation lifecycle semantics, and normal relationship/mutation rules; there is no Standalone source kind or lifecycle branch, and `0000` is not Default identity.
 
-A missing persisted Default reference has one deliberately narrow startup recovery path before normal ready Runtime is published: inspect `Projects/0000 Standalone.md`; when it is a valid ordinary Trail Project, persist that Project's stable ID as the Default, otherwise bootstrap recovery recreates the standard `0000 Standalone.md` Project and persists its new stable ID. Query does not perform this recovery and does not manufacture an in-memory fallback after Trail is ready. Missing unrelated required containers or other invalid managed data continue to use the normal validation/Data-Issue path rather than turning bootstrap into a general silent-repair system.
+A physically missing persisted Default reference has one deliberately narrow initialization recovery path before normal ready Runtime is published. Source Sync inspects the Project carrier occupying reserved sequence `0000`: a valid ordinary Project carrier is adopted by stable ID regardless of its current readable title; when no `0000` carrier exists, recovery creates the standard `Projects/0000 Standalone.md` Project and persists its new stable ID; an existing invalid or otherwise untrusted `0000` carrier fails closed through the normal Data-Issue path rather than being overwritten. Query does not perform this recovery and does not manufacture an in-memory fallback after Trail is ready. The recovery is initialization-only: an external refresh that later observes a missing field, a dangling non-empty reference, or other invalid managed data uses normal validation/LKG/read-only handling rather than recovery.
 
 ### 5.10 External managed-persistence change
 

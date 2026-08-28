@@ -6,7 +6,6 @@ import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../
 import { materializeTrailPersistenceTransactionPlan } from "./trail-transaction-materializer";
 
 const configuration = createTrailTestConfiguration();
-const workspaceState = createTrailTestWorkspaceState();
 const projectPath = "Trail/Projects/0001 Project A.md";
 const replacementPath = "Trail/Projects/0002 Project B.md";
 
@@ -22,6 +21,7 @@ const replacementProject = {
   statusDefinitionId: "project-unstarted",
   title: "Project B",
 };
+const workspaceState = createTrailTestWorkspaceState(replacementProject.id);
 const milestone = {
   id: "milestone-a",
   projectId: project.id,
@@ -43,15 +43,20 @@ const movedIssue = {
   projectId: replacementProject.id,
 };
 
-function committedProjectWithChildren(defaultProject = false) {
+function replacementSource() {
+  return {
+    issues: [],
+    kind: "project" as const,
+    milestones: [],
+    project: replacementProject,
+    sourcePath: replacementPath,
+  };
+}
+
+function committedProjectWithChildren() {
   return {
     ...buildTrailCommittedRuntimeCandidate({
-      pluginData: {
-        configuration,
-        workspaceState: defaultProject
-          ? { ...workspaceState, defaultProjectId: project.id }
-          : workspaceState,
-      },
+      pluginData: { configuration, workspaceState },
       sources: [
         {
           issues: [issue],
@@ -60,13 +65,7 @@ function committedProjectWithChildren(defaultProject = false) {
           project,
           sourcePath: projectPath,
         },
-        {
-          issues: [],
-          kind: "project" as const,
-          milestones: [],
-          project: replacementProject,
-          sourcePath: replacementPath,
-        },
+        replacementSource(),
       ],
     }),
     revision: 1,
@@ -77,13 +76,16 @@ function committedEmptyProject() {
   return {
     ...buildTrailCommittedRuntimeCandidate({
       pluginData: { configuration, workspaceState },
-      sources: [{
-        issues: [],
-        kind: "project" as const,
-        milestones: [],
-        project,
-        sourcePath: projectPath,
-      }],
+      sources: [
+        {
+          issues: [],
+          kind: "project" as const,
+          milestones: [],
+          project,
+          sourcePath: projectPath,
+        },
+        replacementSource(),
+      ],
     }),
     revision: 1,
   };
@@ -141,51 +143,7 @@ describe("Trail Project delete materialization", () => {
     });
   });
 
-  it("commits Default Project clearing only after the Project carrier is deleted", async () => {
-    const beforeWorkspace = { ...workspaceState, defaultProjectId: project.id };
-    const afterWorkspace = {
-      customViews: beforeWorkspace.customViews,
-      favorites: beforeWorkspace.favorites,
-      home: beforeWorkspace.home,
-    };
-    const plan = createTrailMutationPlan({
-      commandId: "delete-default-project",
-      effects: [
-        ...deleteProjectEffects(),
-        {
-          after: afterWorkspace,
-          before: beforeWorkspace,
-          kind: "replace-workspace-state",
-        },
-      ],
-      intent: "workflow.project.delete",
-      preconditions: [{
-        entity: { kind: "project", value: replacementProject },
-        kind: "entity-equals",
-      }],
-    });
-
-    const transaction = await materializeTrailPersistenceTransactionPlan(
-      plan,
-      committedProjectWithChildren(true),
-      { list: async () => [] },
-    );
-
-    expect(transaction.kind).toBe("integrity-batch");
-    if (transaction.kind !== "integrity-batch") return;
-    expect(transaction.stages.map(({ name }) => name)).toEqual([
-      "prepare",
-      "destructive",
-      "commit",
-    ]);
-    expect(transaction.stages[2]?.operations).toEqual([{
-      after: { configuration, workspaceState: afterWorkspace },
-      before: { configuration, workspaceState: beforeWorkspace },
-      kind: "save-plugin-data",
-    }]);
-  });
-
-  it("deletes an empty Project carrier as one Single Transaction", async () => {
+  it("deletes an empty non-Default Project carrier as one Single Transaction", async () => {
     const plan = createTrailMutationPlan({
       commandId: "delete-empty-project",
       effects: [{ before: { kind: "project", value: project }, kind: "delete-entity" }],
@@ -226,7 +184,10 @@ describe("Trail Project delete materialization", () => {
     const committed = {
       ...buildTrailCommittedRuntimeCandidate({
         pluginData: { configuration, workspaceState },
-        sources: [{ initiative, kind: "initiative" as const, sourcePath: path }],
+        sources: [
+          { initiative, kind: "initiative" as const, sourcePath: path },
+          replacementSource(),
+        ],
       }),
       revision: 1,
     };
@@ -269,6 +230,7 @@ describe("Trail Project delete materialization", () => {
             project: referencedProject,
             sourcePath: projectPath,
           },
+          replacementSource(),
         ],
       }),
       revision: 1,

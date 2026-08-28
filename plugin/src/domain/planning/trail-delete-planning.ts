@@ -232,6 +232,12 @@ export function planDeleteTrailProject(
   )) {
     return rejectTrailPlan("project-changed", `Project changed before action: ${current.id}`);
   }
+  if (state.workspaceState.defaultProjectId === current.id) {
+    return rejectTrailPlan(
+      "default-project-delete-forbidden",
+      "Current Default Project must be replaced before it can be deleted",
+    );
+  }
 
   const childIssues = projectChildIssues(state, current.id);
   let replacement: TrailProject | undefined;
@@ -270,16 +276,6 @@ export function planDeleteTrailProject(
     effects.push({ before: { kind: "milestone", value: milestone }, kind: "delete-entity" });
   }
   effects.push({ before: { kind: "project", value: current }, kind: "delete-entity" });
-
-  if (state.workspaceState.defaultProjectId === current.id) {
-    const workspaceAfter = { ...state.workspaceState };
-    delete workspaceAfter.defaultProjectId;
-    effects.push({
-      after: workspaceAfter,
-      before: state.workspaceState,
-      kind: "replace-workspace-state",
-    });
-  }
 
   return readyTrailPlan({
     plan: createTrailMutationPlan({

@@ -5,7 +5,7 @@ import { createTrailUiTestHarness } from "../../test/trail-ui-test-harness";
 import { TrailNavigation } from "./trail-navigation";
 import { createTrailNavigationStore } from "./trail-navigation-state";
 
-function renderNavigation(defaultProjectId?: string | null) {
+function renderNavigation(defaultProjectId?: string) {
   const harness = createTrailUiTestHarness({ defaultProjectId });
   const navigationStore = createTrailNavigationStore();
   render(
@@ -37,8 +37,9 @@ describe("TrailNavigation", () => {
       .not.toHaveAttribute("aria-current");
   });
 
-  it("omits the Default Project shortcut when Workspace State has no Default", () => {
-    const { harness } = renderNavigation(null);
+  it("renders the Project referenced as Default instead of assuming list order", () => {
+    const { harness } = renderNavigation("project-b");
+    expect(screen.getByRole("button", { name: harness.projectB.title })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: harness.project.title })).not.toBeInTheDocument();
   });
 

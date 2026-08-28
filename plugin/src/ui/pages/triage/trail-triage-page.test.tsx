@@ -26,8 +26,8 @@ describe("TrailTriagePage", () => {
     expect(harness.actions.triage.accept).toHaveBeenCalledWith(harness.triage, harness.project.id);
   });
 
-  it("requires an explicit legal Project when no Default Project is configured", () => {
-    const harness = createTrailUiTestHarness({ defaultProjectId: null });
+  it("allows choosing another legal Project instead of the Default", () => {
+    const harness = createTrailUiTestHarness();
     render(
       <TrailTriagePage
         actions={harness.actions.triage}
@@ -39,9 +39,7 @@ describe("TrailTriagePage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Accept" }));
     const project = screen.getByRole("combobox", { name: "Accept into Workflow" });
-    expect(project).toHaveValue("");
-    expect(screen.getByRole("option", { name: "Select Project" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Accept" })).toBeDisabled();
+    expect(project).toHaveValue(harness.project.id);
 
     fireEvent.change(project, { target: { value: harness.projectB.id } });
     fireEvent.click(screen.getByRole("button", { name: "Accept" }));

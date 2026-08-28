@@ -15,6 +15,7 @@ import {
   validateTrailConfiguration,
   validateTrailWorkspaceState,
 } from "./trail-configuration-validation";
+import { isTrailId } from "./trail-value-validation";
 
 export interface TrailDomainGraph {
   readonly cyclesById: ReadonlyMap<string, TrailCycle>;
@@ -192,6 +193,17 @@ export function validateTrailWorkspaceGraph(input: {
   }
 
   validateGlobalIdentity(input.domain, issues);
+
+  if (
+    isTrailId(input.workspaceState.defaultProjectId)
+    && !input.domain.projectsById.has(input.workspaceState.defaultProjectId)
+  ) {
+    issues.push(issue(
+      "reference.workspace.default-project-missing",
+      `Workspace Default Project does not exist: ${input.workspaceState.defaultProjectId}`,
+      { field: "defaultProjectId", stage: "reference" },
+    ));
+  }
 
   for (const initiative of input.domain.initiativesById.values()) {
     validateLabels(

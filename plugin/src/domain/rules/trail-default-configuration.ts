@@ -105,11 +105,11 @@ export function createDefaultTrailConfiguration(input: {
 }
 
 export function createDefaultTrailWorkspaceState(
-  defaultProjectId?: TrailProjectId,
+  defaultProjectId: TrailProjectId,
 ): TrailWorkspaceState {
   const workspaceState: TrailWorkspaceState = {
     customViews: [],
-    ...(defaultProjectId === undefined ? {} : { defaultProjectId }),
+    defaultProjectId,
     favorites: [],
     home: {},
   };

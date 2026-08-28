@@ -21,7 +21,7 @@ import {
 } from "./trail-test-fixtures";
 
 export function createTrailUiTestHarness(input: {
-  readonly defaultProjectId?: string | null;
+  readonly defaultProjectId?: string;
   readonly projectStatusDefinitionId?: string;
   readonly workflowStatusDefinitionId?: string;
 } = {}) {
@@ -75,13 +75,7 @@ export function createTrailUiTestHarness(input: {
     ...(workflowIsTerminal ? { terminalAt: Date.UTC(2026, 7, 15, 2) } : {}),
   };
   const runtimeStore = createTrailRuntimeStore();
-  const baseWorkspaceState = createTrailTestWorkspaceState();
-  const defaultProjectId = input.defaultProjectId === undefined
-    ? project.id
-    : input.defaultProjectId;
-  const workspaceState = defaultProjectId === null
-    ? baseWorkspaceState
-    : { ...baseWorkspaceState, defaultProjectId };
+  const workspaceState = createTrailTestWorkspaceState(input.defaultProjectId ?? project.id);
   publishTrailCommittedRuntime(runtimeStore, buildTrailCommittedRuntimeCandidate({
     pluginData: {
       configuration: createTrailTestConfiguration(),

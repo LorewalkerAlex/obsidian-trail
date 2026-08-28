@@ -35,12 +35,7 @@ function readyStore(input: {
     statusDefinitionId: input.projectBStatus ?? "project-completed",
     title: "Alpha",
   };
-  const workspaceState = {
-    ...createTrailTestWorkspaceState(),
-    ...(input.defaultProjectId === undefined
-      ? {}
-      : { defaultProjectId: input.defaultProjectId }),
-  };
+  const workspaceState = createTrailTestWorkspaceState(input.defaultProjectId ?? projectA.id);
   const store = createTrailRuntimeStore();
   publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
     pluginData: {
@@ -82,7 +77,7 @@ describe("Project target Query", () => {
     expect(selectTrailDefaultTriageAcceptProjectId(store.getState())).toBe(projectA.id);
   });
 
-  it("does not preselect a terminal, absent, or dangling Default Project", () => {
+  it("does not preselect a terminal Default Project for an action it cannot accept", () => {
     const terminal = readyStore({
       defaultProjectId: "project-b",
       projectAStatus: "project-unstarted",
@@ -90,13 +85,5 @@ describe("Project target Query", () => {
     });
     expect(selectTrailReadableDefaultProject(terminal.store.getState())).toBe(terminal.projectB);
     expect(selectTrailDefaultTriageAcceptProjectId(terminal.store.getState())).toBeUndefined();
-
-    const absent = readyStore();
-    expect(selectTrailReadableDefaultProject(absent.store.getState())).toBeUndefined();
-    expect(selectTrailDefaultTriageAcceptProjectId(absent.store.getState())).toBeUndefined();
-
-    const dangling = readyStore({ defaultProjectId: "project-missing" });
-    expect(selectTrailReadableDefaultProject(dangling.store.getState())).toBeUndefined();
-    expect(selectTrailDefaultTriageAcceptProjectId(dangling.store.getState())).toBeUndefined();
   });
 });
