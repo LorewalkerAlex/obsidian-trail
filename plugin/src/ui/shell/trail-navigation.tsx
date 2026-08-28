@@ -6,6 +6,10 @@ import type {
   TrailNavigationStore,
 } from "./trail-navigation-state";
 
+function NavigationIcon({ kind }: { readonly kind: "plus" | "search" }) {
+  return <span aria-hidden="true" className={`trail-navigation-foundation__action-icon trail-navigation-foundation__action-icon--${kind}`} />;
+}
+
 export function TrailNavigation({
   runtimeStore,
 }: {
@@ -17,10 +21,31 @@ export function TrailNavigation({
 
   return (
     <nav aria-label="Trail navigation" className="trail-navigation-foundation">
-      <div className="trail-navigation-foundation__content">
-        <strong className="trail-navigation-foundation__product">Trail</strong>
-        <span className="trail-navigation-foundation__label">Interface foundation</span>
-        <span className="trail-navigation-foundation__runtime">{controlKind}</span>
+      <div className="trail-navigation-foundation__header">
+        <div className="trail-navigation-foundation__identity">
+          <span aria-hidden="true" className="trail-navigation-foundation__mark" />
+          <strong>Trail</strong>
+        </div>
+        <div className="trail-navigation-foundation__actions">
+          <button aria-label="Search calibration specimen" type="button">
+            <NavigationIcon kind="search" />
+          </button>
+          <button aria-label="Create calibration specimen" type="button">
+            <NavigationIcon kind="plus" />
+          </button>
+        </div>
+      </div>
+
+      <div className="trail-navigation-foundation__section-label">Calibration</div>
+      <div aria-current="page" className="trail-navigation-foundation__row">
+        <span aria-hidden="true" className="trail-navigation-foundation__row-icon" />
+        <span>Foundation lab</span>
+      </div>
+      <div className="trail-navigation-foundation__reference">Linear dark · 2026 refresh</div>
+
+      <div className="trail-navigation-foundation__runtime">
+        <span className="trail-navigation-foundation__runtime-dot" />
+        Runtime {controlKind}
       </div>
     </nav>
   );

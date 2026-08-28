@@ -6,8 +6,8 @@ import { createTrailNavigationStore } from "./trail-navigation-state";
 import type { TrailUiActions } from "./trail-ui-actions";
 import { TrailApp } from "./trail-app";
 
-describe("TrailApp foundation scaffold", () => {
-  it("renders only the neutral foundation surface", () => {
+describe("TrailApp foundation lab", () => {
+  it("mounts the visual calibration surface on the reset shell", () => {
     render(
       <TrailApp
         actions={{} as TrailUiActions}
@@ -16,8 +16,8 @@ describe("TrailApp foundation scaffold", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Interface foundation" })).toBeInTheDocument();
-    expect(screen.getByText("Runtime: loading")).toBeInTheDocument();
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Foundation lab" })).toBeInTheDocument();
+    expect(screen.getByText("Loading")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Controls" })).toBeInTheDocument();
   });
 });

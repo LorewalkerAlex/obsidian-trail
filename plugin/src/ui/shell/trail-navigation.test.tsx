@@ -5,8 +5,8 @@ import { createTrailRuntimeStore } from "../../runtime/store/trail-runtime-store
 import { createTrailNavigationStore } from "./trail-navigation-state";
 import { TrailNavigation } from "./trail-navigation";
 
-describe("TrailNavigation foundation scaffold", () => {
-  it("keeps the host navigation carrier without legacy navigation controls", () => {
+describe("TrailNavigation foundation lab", () => {
+  it("uses the host navigation carrier as a Linear-style calibration context", () => {
     render(
       <TrailNavigation
         navigationStore={createTrailNavigationStore()}
@@ -16,7 +16,9 @@ describe("TrailNavigation foundation scaffold", () => {
     );
 
     expect(screen.getByRole("navigation", { name: "Trail navigation" })).toBeInTheDocument();
-    expect(screen.getByText("Interface foundation")).toBeInTheDocument();
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getByText("Foundation lab")).toBeInTheDocument();
+    expect(screen.getByText("Linear dark · 2026 refresh")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search calibration specimen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create calibration specimen" })).toBeInTheDocument();
   });
 });
