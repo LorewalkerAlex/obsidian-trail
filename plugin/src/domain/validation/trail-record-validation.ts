@@ -112,7 +112,11 @@ export function validateTrailIssue(issueValue: TrailIssue): readonly TrailDomain
     issues.push(issue("priority.invalid", "priority is invalid", "priority"));
   }
   if (issueValue.estimate !== undefined && !isTrailEstimate(issueValue.estimate)) {
-    issues.push(issue("estimate.invalid", "estimate must be a non-negative integer", "estimate"));
+    issues.push(issue(
+      "estimate.invalid",
+      "estimate must be small, medium, large, or xlarge",
+      "estimate",
+    ));
   }
 
   if (issueValue.context === "triage") {

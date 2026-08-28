@@ -90,6 +90,31 @@ export function selectTrailMilestoneProgress(
   };
 }
 
+/**
+ * Cycle Effort is a live projection over current member Estimate levels and the
+ * current Workspace weight policy. Missing Estimate contributes nothing.
+ */
+export function selectTrailCycleEffort(
+  state: TrailRuntimeState,
+  cycleId: string,
+): number | undefined {
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  const configuration = readable.authoritative.configuration;
+  if (configuration === null) return undefined;
+  const cycle = readable.authoritative.domain.cyclesById.get(cycleId);
+  if (cycle === undefined) return undefined;
+
+  let effort = 0;
+  for (const issueId of cycle.issueIds) {
+    const issue = readable.authoritative.domain.issuesById.get(issueId);
+    if (issue?.context !== "workflow") return undefined;
+    if (issue.estimate !== undefined) {
+      effort += configuration.estimateWeights[issue.estimate];
+    }
+  }
+  return effort;
+}
+
 /** Current-scope activity start is the earliest first-start fact of its current Issues. */
 export function selectTrailProjectActualStart(
   state: TrailRuntimeState,

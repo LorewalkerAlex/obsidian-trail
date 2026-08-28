@@ -38,7 +38,7 @@ describe("TrailWorkflowIssuePeek", () => {
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Updated Issue" } });
     fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Planning notes" } });
     fireEvent.change(screen.getByLabelText("Priority"), { target: { value: "high" } });
-    fireEvent.change(screen.getByLabelText("Estimate"), { target: { value: "5" } });
+    fireEvent.change(screen.getByLabelText("Estimate"), { target: { value: "large" } });
     fireEvent.change(screen.getByLabelText("Due (Asia/Singapore)"), {
       target: { value: "2026-08-21T09:30" },
     });
@@ -50,7 +50,7 @@ describe("TrailWorkflowIssuePeek", () => {
       {
         description: "Planning notes",
         due: parseTrailLocalDateTime("2026-08-21T09:30", "Asia/Singapore"),
-        estimate: 5,
+        estimate: "large",
         labelIds: ["label-personal"],
         priority: "high",
         title: "Updated Issue",

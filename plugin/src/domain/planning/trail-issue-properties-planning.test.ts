@@ -51,7 +51,7 @@ describe("Workflow Issue planning properties", () => {
       commandId: "command-properties",
       description: "Planning notes",
       due: 500,
-      estimate: 3,
+      estimate: "medium",
       expectedIssue: state.issue,
       labelIds: ["label-work"],
       priority: "high",
@@ -64,7 +64,7 @@ describe("Workflow Issue planning properties", () => {
       ...state.issue,
       description: "Planning notes",
       due: 500,
-      estimate: 3,
+      estimate: "medium",
       labelIds: ["label-work"],
       priority: "high",
       title: "Updated Issue",
@@ -81,7 +81,7 @@ describe("Workflow Issue planning properties", () => {
     const state = planningState();
     const completed: TrailWorkflowIssue = {
       ...state.issue,
-      estimate: 5,
+      estimate: "large",
       statusDefinitionId: "issue-completed",
       terminalAt: 30,
     };

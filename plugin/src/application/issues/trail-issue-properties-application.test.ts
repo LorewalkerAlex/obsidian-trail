@@ -71,7 +71,7 @@ describe("TrailIssueApplication planning properties", () => {
     const result = test.application.editProperties(test.issue, {
       description: "\r\n  Planning notes  \r\n",
       due: 500,
-      estimate: 3,
+      estimate: "medium",
       labelIds: [" label-work "],
       priority: "high",
       title: "  Updated Issue  ",
@@ -89,7 +89,7 @@ describe("TrailIssueApplication planning properties", () => {
           value: {
             description: "  Planning notes  ",
             due: 500,
-            estimate: 3,
+            estimate: "medium",
             id: test.issue.id,
             labelIds: ["label-work"],
             priority: "high",

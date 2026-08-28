@@ -16,13 +16,14 @@ import {
 } from "../../test/trail-test-fixtures";
 import {
   selectIsTrailInitiativeCompleted,
+  selectTrailCycleEffort,
   selectTrailInitiativeActualStart,
   selectTrailMilestoneActualStart,
   selectTrailMilestoneProgress,
   selectTrailProjectActualStart,
 } from "./trail-derived-query";
 
-function readyStore() {
+function readyStore(configuration = createTrailTestConfiguration()) {
   const initiativeA = {
     id: "initiative-a",
     labelIds: [],
@@ -60,7 +61,7 @@ function readyStore() {
   const issueA = {
     context: "workflow" as const,
     createdAt: 1,
-    estimate: 1,
+    estimate: "medium" as const,
     firstStartedAt: 80,
     id: "issue-a",
     labelIds: [],
@@ -73,6 +74,7 @@ function readyStore() {
   const issueB = {
     context: "workflow" as const,
     createdAt: 2,
+    estimate: "small" as const,
     firstStartedAt: 50,
     id: "issue-b",
     labelIds: [],
@@ -84,7 +86,7 @@ function readyStore() {
   const issueC = {
     context: "workflow" as const,
     createdAt: 3,
-    estimate: 1,
+    estimate: "large" as const,
     firstStartedAt: 30,
     id: "issue-c",
     labelIds: [],
@@ -93,11 +95,17 @@ function readyStore() {
     terminalAt: 60,
     title: "Issue C",
   };
+  const cycleA = {
+    id: "cycle-a",
+    issueIds: [issueA.id, issueB.id, issueC.id],
+    plannedEnd: 200,
+    startedAt: 10,
+  };
 
   const store = createTrailRuntimeStore();
   publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
     pluginData: {
-      configuration: createTrailTestConfiguration(),
+      configuration,
       workspaceState: createTrailTestWorkspaceState(),
     },
     sources: [
@@ -125,11 +133,16 @@ function readyStore() {
         project: projectB,
         sourcePath: "Trail/Projects/0002 Project B.md",
       },
+      {
+        cycles: [cycleA],
+        kind: "cycles",
+        sourcePath: "Trail/Collections/Cycles.md",
+      },
     ],
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
 
-  return { issueA, issueC, projectB, store };
+  return { cycleA, issueA, issueC, projectB, store };
 }
 
 describe("Trail canonical derived Query", () => {
@@ -194,6 +207,24 @@ describe("Trail canonical derived Query", () => {
       terminalIssueCount: 1,
       totalIssueCount: 1,
     });
+  });
+
+  it("derives Cycle Effort from current T-Shirt Estimates and configured weights", () => {
+    const { cycleA, store } = readyStore();
+
+    expect(selectTrailCycleEffort(store.getState(), cycleA.id)).toBe(8);
+    expect(selectTrailCycleEffort(store.getState(), "cycle-missing")).toBeUndefined();
+
+    const configured = createTrailTestConfiguration();
+    const custom = readyStore({
+      ...configured,
+      estimateWeights: {
+        ...configured.estimateWeights,
+        large: 8,
+        medium: 3,
+      },
+    });
+    expect(selectTrailCycleEffort(custom.store.getState(), custom.cycleA.id)).toBe(12);
   });
 
   it("derives current-scope actual start from earliest Issue firstStartedAt", () => {

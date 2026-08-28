@@ -1,4 +1,5 @@
 import type { TrailWorkflowIssue } from "../model/trail-entities";
+import type { TrailEstimate } from "../model/trail-values";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
 import { findTrailLabelSelectionViolations } from "../rules/trail-label-rules";
 import { canTrailProjectAcceptWorkflowIssue } from "../rules/trail-project-rules";
@@ -29,7 +30,7 @@ export interface EditTrailWorkflowIssuePropertiesCommand {
   readonly commandId: string;
   readonly description?: string;
   readonly due?: number;
-  readonly estimate?: number;
+  readonly estimate?: TrailEstimate;
   readonly expectedIssue: TrailWorkflowIssue;
   readonly labelIds: readonly string[];
   readonly priority?: TrailWorkflowIssue["priority"];
@@ -39,7 +40,7 @@ export interface EditTrailWorkflowIssuePropertiesCommand {
 export interface ChangeTrailWorkflowIssueStatusCommand {
   readonly commandId: string;
   readonly effectiveAt: number;
-  readonly estimate?: number;
+  readonly estimate?: TrailEstimate;
   readonly expectedIssue: TrailWorkflowIssue;
   readonly targetStatusDefinitionId: string;
 }

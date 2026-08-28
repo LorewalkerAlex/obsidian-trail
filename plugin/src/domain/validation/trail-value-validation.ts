@@ -1,4 +1,5 @@
 import {
+  TRAIL_ESTIMATES,
   TRAIL_LABEL_ENTITY_TYPES,
   TRAIL_LABEL_SELECTION_MODES,
   TRAIL_PRIORITIES,
@@ -22,7 +23,11 @@ export function isTrailTimestamp(value: unknown): value is TrailTimestamp {
 }
 
 export function isTrailEstimate(value: unknown): value is TrailEstimate {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+  return typeof value === "string" && (TRAIL_ESTIMATES as readonly string[]).includes(value);
+}
+
+export function isTrailEstimateWeight(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
 export function isTrailPriority(value: unknown): value is TrailPriority {

@@ -2,6 +2,7 @@ import { useState, type ReactNode, type SyntheticEvent } from "react";
 import { useStore } from "zustand";
 
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
+import type { TrailEstimate } from "../../domain/model/trail-values";
 import { selectIsTrailEntityPending } from "../../query/shared/trail-effective-query";
 import { selectTrailEntitySourceIssues } from "../../query/shared/trail-source-health-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
@@ -10,6 +11,7 @@ import {
   TrailDialogActions,
   TrailDialogClose,
 } from "../primitives/trail-dialog";
+import { TrailEstimatePicker } from "../patterns/trail-estimate-picker";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
 import { runTrailMutationAction } from "./trail-action";
 
@@ -39,7 +41,7 @@ export function useTrailWorkflowIssueStatusMutation(input: {
 } {
   const [completionBaseline, setCompletionBaseline] = useState<TrailWorkflowIssue>();
   const [completionTargetId, setCompletionTargetId] = useState<string>();
-  const [estimateDraft, setEstimateDraft] = useState("");
+  const [estimateDraft, setEstimateDraft] = useState<TrailEstimate>();
   const completionGateOpen = completionBaseline !== undefined && completionTargetId !== undefined;
   const completionActionsDisabled = useStore(input.runtimeStore, (state) => (
     completionBaseline === undefined
@@ -51,7 +53,7 @@ export function useTrailWorkflowIssueStatusMutation(input: {
   const clearCompletionGate = (): void => {
     setCompletionBaseline(undefined);
     setCompletionTargetId(undefined);
-    setEstimateDraft("");
+    setEstimateDraft(undefined);
   };
 
   const requestStatus = (
@@ -74,7 +76,7 @@ export function useTrailWorkflowIssueStatusMutation(input: {
           }
           setCompletionBaseline(issue);
           setCompletionTargetId(targetStatusDefinitionId);
-          setEstimateDraft(issue.estimate?.toString() ?? "");
+          setEstimateDraft(issue.estimate);
         },
       },
     );
@@ -85,13 +87,12 @@ export function useTrailWorkflowIssueStatusMutation(input: {
     if (
       completionBaseline === undefined
       || completionTargetId === undefined
-      || estimateDraft.trim() === ""
+      || estimateDraft === undefined
       || issueActionsDisabled(input.runtimeStore, completionBaseline.id, input.writable)
     ) return;
 
-    const estimate = Number(estimateDraft);
     runTrailMutationAction(
-      () => input.actions.changeStatus(completionBaseline, completionTargetId, estimate),
+      () => input.actions.changeStatus(completionBaseline, completionTargetId, estimateDraft),
       {
         onError: input.onError,
         onNeedsInput: (request) => input.onError(request.message),
@@ -114,12 +115,11 @@ export function useTrailWorkflowIssueStatusMutation(input: {
       <form className="trail-dialog-form" onSubmit={submitEstimate}>
         <label className="trail-dialog__field">
           <span>Estimate</span>
-          <input
+          <TrailEstimatePicker
+            ariaLabel="Estimate"
             disabled={completionActionsDisabled}
-            min="0"
-            onChange={(event) => setEstimateDraft(event.target.value)}
-            step="1"
-            type="number"
+            emptyLabel="Choose estimate"
+            onChange={setEstimateDraft}
             value={estimateDraft}
           />
         </label>
@@ -129,7 +129,7 @@ export function useTrailWorkflowIssueStatusMutation(input: {
           </TrailDialogClose>
           <button
             className="mod-cta"
-            disabled={completionActionsDisabled || estimateDraft.trim() === ""}
+            disabled={completionActionsDisabled || estimateDraft === undefined}
             type="submit"
           >
             Complete

@@ -1,5 +1,6 @@
 import type {
   TrailConfiguration,
+  TrailEstimateWeightConfiguration,
   TrailLabel,
   TrailLabelGroup,
   TrailStatusCategoryConfiguration,
@@ -7,6 +8,7 @@ import type {
   TrailWorkflowStatusConfiguration,
 } from "../../domain/model/trail-configuration";
 import {
+  TRAIL_ESTIMATES,
   TRAIL_LABEL_ENTITY_TYPES,
   TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
   type TrailLabelEntityType,
@@ -26,6 +28,7 @@ import {
   validateTrailWorkspaceStateContents,
 } from "../../domain/validation/trail-configuration-validation";
 import {
+  isTrailEstimateWeight,
   isTrailId,
   isTrailLabelEntityType,
   isTrailLabelSelectionMode,
@@ -167,6 +170,23 @@ function nonEmptyTextAt(
   return value;
 }
 
+function estimateWeightAt(
+  value: unknown,
+  path: string,
+  issues: TrailPluginDataIssue[],
+): number | undefined {
+  if (!isTrailEstimateWeight(value)) {
+    issues.push(codecIssue(
+      "plugin-data.estimate-weight.invalid",
+      path,
+      "Estimate weight must be a positive finite number",
+      { stage: "field" },
+    ));
+    return undefined;
+  }
+  return value;
+}
+
 function idAt(value: unknown, path: string, issues: TrailPluginDataIssue[]): string | undefined {
   if (!isTrailId(value)) {
     issues.push(codecIssue(
@@ -245,7 +265,13 @@ function parseConfiguration(
 ): TrailConfiguration | undefined {
   const object = objectAt(value, path, issues);
   if (object === undefined) return undefined;
-  exactKeys(object, ["statuses", "labels", "cycle", "temporal"], [], path, issues);
+  exactKeys(
+    object,
+    ["statuses", "labels", "estimateWeights", "cycle", "temporal"],
+    [],
+    path,
+    issues,
+  );
 
   const statuses = objectAt(object.statuses, `${path}.statuses`, issues);
   const definitions: TrailStatusDefinition[] = [];
@@ -338,6 +364,29 @@ function parseConfiguration(
     });
   }
 
+  const estimateWeightsObject = objectAt(
+    object.estimateWeights,
+    `${path}.estimateWeights`,
+    issues,
+  );
+  let estimateWeights: TrailEstimateWeightConfiguration | undefined;
+  if (estimateWeightsObject !== undefined) {
+    exactKeys(
+      estimateWeightsObject,
+      TRAIL_ESTIMATES,
+      [],
+      `${path}.estimateWeights`,
+      issues,
+    );
+    const small = estimateWeightAt(estimateWeightsObject.small, `${path}.estimateWeights.small`, issues);
+    const medium = estimateWeightAt(estimateWeightsObject.medium, `${path}.estimateWeights.medium`, issues);
+    const large = estimateWeightAt(estimateWeightsObject.large, `${path}.estimateWeights.large`, issues);
+    const xlarge = estimateWeightAt(estimateWeightsObject.xlarge, `${path}.estimateWeights.xlarge`, issues);
+    if (small !== undefined && medium !== undefined && large !== undefined && xlarge !== undefined) {
+      estimateWeights = { large, medium, small, xlarge };
+    }
+  }
+
   const cycleObject = objectAt(object.cycle, `${path}.cycle`, issues);
   let defaultEndRule: "end-of-next-week" | undefined;
   if (cycleObject !== undefined) {
@@ -372,12 +421,14 @@ function parseConfiguration(
     issueStatuses === undefined
     || projectStatuses === undefined
     || labelsObject === undefined
+    || estimateWeights === undefined
     || defaultEndRule === undefined
     || timezone === undefined
   ) return undefined;
 
   const configuration: TrailConfiguration = {
     cycle: { defaultEndRule },
+    estimateWeights,
     labelGroups,
     labels,
     statusDefinitions: definitions,
@@ -597,6 +648,12 @@ export function serializeTrailPluginData(snapshot: TrailPluginDataSnapshot): unk
           .sort((left, right) => left.id.localeCompare(right.id))
           .map((label) => ({ id: label.id, name: label.name, groupId: label.groupId })),
       },
+      estimateWeights: Object.fromEntries(
+        TRAIL_ESTIMATES.map((estimate) => [
+          estimate,
+          snapshot.configuration.estimateWeights[estimate],
+        ]),
+      ),
       cycle: { defaultEndRule: snapshot.configuration.cycle.defaultEndRule },
       temporal: {
         timezone: snapshot.configuration.temporal.timezone,

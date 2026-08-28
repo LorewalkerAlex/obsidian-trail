@@ -132,6 +132,12 @@
                 }
             ]
         },
+        "estimateWeights": {
+            "small": 1,
+            "medium": 2,
+            "large": 5,
+            "xlarge": 10
+        },
         "cycle": {
             "defaultEndRule": "end-of-next-week"
         },

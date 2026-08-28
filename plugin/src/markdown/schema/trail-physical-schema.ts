@@ -22,10 +22,10 @@ export type TrailPhysicalFieldType =
   | "id"
   | "text"
   | "priority"
+  | "estimate"
   | "issue-context"
   | "status-definition-id"
   | "timestamp"
-  | "integer"
   | "id-set";
 
 export type TrailPhysicalMissingBehavior = "error" | "undefined" | "empty-set" | "derived";
@@ -108,7 +108,7 @@ export const TRAIL_PHYSICAL_RECORD_SCHEMAS = {
       projectId: optional("metadata", "id"),
       milestoneId: optional("metadata", "id"),
       priority: optional("metadata", "priority"),
-      estimate: optional("metadata", "integer"),
+      estimate: optional("metadata", "estimate"),
       due: optional("metadata", "timestamp"),
       labelIds: optional("metadata", "id-set", "empty-set"),
       createdAt: optional("metadata", "timestamp"),

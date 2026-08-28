@@ -57,6 +57,12 @@ export function createTrailTestConfiguration(): TrailConfiguration {
   ) as Readonly<Record<TrailProjectStatusCategory, ReturnType<typeof category>>>;
   return {
     cycle: { defaultEndRule: "end-of-next-week" },
+    estimateWeights: {
+      small: 1,
+      medium: 2,
+      large: 5,
+      xlarge: 10,
+    },
     labelGroups: [
       {
         id: "group-area",

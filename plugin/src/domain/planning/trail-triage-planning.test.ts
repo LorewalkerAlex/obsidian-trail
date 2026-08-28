@@ -15,7 +15,7 @@ function state() {
     context: "triage" as const,
     description: "Keep this",
     due: 100,
-    estimate: 5,
+    estimate: "large" as const,
     id: "triage-a",
     labelIds: ["label-work"],
     priority: "high" as const,

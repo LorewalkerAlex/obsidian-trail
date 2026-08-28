@@ -67,11 +67,39 @@ describe("Trail domain validation", () => {
     expect(codes.filter((code) => code === "status.category.unsupported")).toHaveLength(2);
   });
 
+  it("requires a positive finite aggregation weight for every fixed Estimate level", () => {
+    const valid = createTrailTestConfiguration();
+    const invalid = {
+      ...valid,
+      estimateWeights: {
+        ...valid.estimateWeights,
+        medium: 0,
+        xlarge: Number.POSITIVE_INFINITY,
+      },
+    };
+
+    const codes = validateTrailConfiguration(invalid).map((item) => item.code);
+    expect(codes.filter((code) => code === "estimate-weight.invalid")).toHaveLength(2);
+  });
+
+  it("rejects a missing Estimate weight mapping at the validation boundary", () => {
+    const invalid = {
+      ...createTrailTestConfiguration(),
+    } as unknown as Record<string, unknown>;
+    delete invalid.estimateWeights;
+
+    const codes = validateTrailConfiguration(
+      invalid as unknown as TrailConfiguration,
+    ).map((item) => item.code);
+    expect(codes).toContain("estimate-weight.invalid");
+  });
+
   it("keeps context-conditioned Issue invariants in Domain validation", () => {
     // Deliberately cross the typed boundary to verify malformed persisted/runtime input.
     const invalidWorkflow = {
       context: "workflow",
       createdAt: -1,
+      estimate: 3,
       id: "issue-workflow",
       labelIds: [],
       milestoneId: "milestone-a",
@@ -80,6 +108,7 @@ describe("Trail domain validation", () => {
     } as unknown as TrailIssue;
     const workflowCodes = validateTrailIssue(invalidWorkflow).map((item) => item.code);
 
+    expect(workflowCodes).toContain("estimate.invalid");
     expect(workflowCodes).toContain("workflow.created-at.invalid");
     expect(workflowCodes).toContain("workflow.project.required");
     expect(workflowCodes).toContain("milestone.requires-project");

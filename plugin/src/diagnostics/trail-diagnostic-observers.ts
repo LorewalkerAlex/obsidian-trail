@@ -217,7 +217,7 @@ export function createDiagnosticTrailUiActions(
       changeStatus(
         expectedIssue: TrailWorkflowIssue,
         targetStatusDefinitionId: string,
-        estimate?: number,
+        estimate?: TrailWorkflowIssue["estimate"],
       ): TrailMutationActionResult {
         const data = {
           estimateProvided: estimate !== undefined,

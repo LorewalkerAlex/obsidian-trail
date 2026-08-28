@@ -11,8 +11,14 @@ export type TrailCustomViewId = string;
 /** Persisted Trail timestamps are Unix epoch milliseconds. */
 export type TrailTimestamp = number;
 
-/** Estimate is an ordinal work-size carrier; the allowed scale remains configurable/deferred. */
-export type TrailEstimate = number;
+/** Stable persisted T-Shirt work-size vocabulary, ordered from smallest to largest. */
+export const TRAIL_ESTIMATES = [
+  "small",
+  "medium",
+  "large",
+  "xlarge",
+] as const;
+export type TrailEstimate = (typeof TRAIL_ESTIMATES)[number];
 
 export const TRAIL_PRIORITIES = [
   "urgent",

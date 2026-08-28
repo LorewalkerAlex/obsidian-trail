@@ -233,15 +233,15 @@ describe("TrailProjectsPage", () => {
     expect(dialog).toHaveAccessibleDescription(
       "Add an Estimate before moving Issue A to Completed.",
     );
-    const estimate = screen.getByRole("spinbutton");
+    const estimate = screen.getByLabelText("Estimate");
     await waitFor(() => expect(estimate).toHaveFocus());
 
-    fireEvent.change(estimate, { target: { value: "3" } });
+    fireEvent.change(estimate, { target: { value: "medium" } });
     fireEvent.click(screen.getByRole("button", { name: "Complete" }));
     expect(changeStatus).toHaveBeenLastCalledWith(
       harness.workflow,
       "issue-completed",
-      3,
+      "medium",
     );
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });

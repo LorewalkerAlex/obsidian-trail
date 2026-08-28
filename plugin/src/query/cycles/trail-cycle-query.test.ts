@@ -47,7 +47,7 @@ function readyStore() {
   const completed = {
     context: "workflow" as const,
     createdAt: 3,
-    estimate: 1,
+    estimate: "small" as const,
     id: "issue-completed",
     labelIds: [],
     projectId: project.id,

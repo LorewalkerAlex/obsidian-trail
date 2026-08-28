@@ -260,7 +260,7 @@ describe("Trail diagnostic observers", () => {
     const input = {
       description: "Private planning notes",
       due: 123,
-      estimate: 3,
+      estimate: "medium" as const,
       labelIds: ["label-a"],
       priority: "high" as const,
       title: "Updated Issue",
@@ -276,7 +276,7 @@ describe("Trail diagnostic observers", () => {
           descriptionProvided: true,
           due: 123,
           entityId: issue.id,
-          estimate: 3,
+          estimate: "medium",
           issueId: issue.id,
           labelCount: 1,
           priority: "high",

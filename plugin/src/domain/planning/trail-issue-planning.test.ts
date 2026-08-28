@@ -143,7 +143,7 @@ describe("Workflow Issue planning", () => {
 
     planning.domain.issuesById.set("issue-a", {
       ...started.plan.issue,
-      estimate: 3,
+      estimate: "medium",
       statusDefinitionId: "issue-completed",
       terminalAt: 300,
     });
@@ -165,7 +165,7 @@ describe("Workflow Issue planning", () => {
     const planning = state();
     const completedIssue: TrailWorkflowIssue = {
       ...planning.issue,
-      estimate: 3,
+      estimate: "medium",
       statusDefinitionId: "issue-completed",
       terminalAt: 300,
     };
@@ -210,7 +210,7 @@ describe("Workflow Issue planning", () => {
     const planning = state();
     const completed: TrailWorkflowIssue = {
       ...planning.issue,
-      estimate: 3,
+      estimate: "medium",
       statusDefinitionId: "issue-completed",
       terminalAt: 300,
     };
@@ -224,7 +224,7 @@ describe("Workflow Issue planning", () => {
     });
     expect(canceled.kind).toBe("ready");
     if (canceled.kind !== "ready") return;
-    expect(canceled.plan.issue.estimate).toBe(3);
+    expect(canceled.plan.issue.estimate).toBe("medium");
     expect(canceled.plan.issue.terminalAt).toBe(400);
 
     planning.domain.issuesById.set(canceled.plan.issue.id, canceled.plan.issue);
@@ -305,7 +305,7 @@ describe("Workflow Issue planning", () => {
     const planning = state();
     const completedIssue: TrailWorkflowIssue = {
       ...planning.issue,
-      estimate: 3,
+      estimate: "medium",
       statusDefinitionId: "issue-completed",
       terminalAt: 20,
     };

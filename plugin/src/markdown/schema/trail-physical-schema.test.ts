@@ -20,6 +20,7 @@ describe("Trail physical schema registry", () => {
       "firstStartedAt",
       "terminalAt",
     ]);
+    expect(TRAIL_PHYSICAL_RECORD_SCHEMAS.issue.fields.estimate.type).toBe("estimate");
   });
 
   it("distinguishes optional omission, empty sets, and derived fields", () => {

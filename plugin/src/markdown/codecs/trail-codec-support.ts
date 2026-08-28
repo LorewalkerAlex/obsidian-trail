@@ -1,4 +1,5 @@
 import type { TrailTriageIssue, TrailWorkflowIssue } from "../../domain/model/trail-entities";
+import type { TrailEstimate } from "../../domain/model/trail-values";
 import {
   isTrailEstimate,
   isTrailId,
@@ -198,11 +199,11 @@ export function parseOptionalEstimate(
   metadata: Record<string, unknown>,
   key: string,
   issues: string[],
-): number | undefined {
+): TrailEstimate | undefined {
   const value = metadata[key];
   if (value === undefined) return undefined;
   if (!isTrailEstimate(value)) {
-    issues.push(`${key} must be a non-negative integer when present`);
+    issues.push(`${key} must be small, medium, large, or xlarge when present`);
     return undefined;
   }
   return value;

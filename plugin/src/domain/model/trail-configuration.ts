@@ -1,4 +1,5 @@
 import type {
+  TrailEstimate,
   TrailLabelEntityType,
   TrailLabelGroupId,
   TrailLabelId,
@@ -53,6 +54,9 @@ export interface TrailLabel {
   readonly groupId: TrailLabelGroupId;
 }
 
+/** Numeric aggregation policy for the fixed T-Shirt Estimate vocabulary. */
+export type TrailEstimateWeightConfiguration = Readonly<Record<TrailEstimate, number>>;
+
 export interface TrailCycleConfiguration {
   readonly defaultEndRule: "end-of-next-week";
 }
@@ -71,6 +75,7 @@ export interface TrailConfiguration {
   readonly workflowStatuses: TrailWorkflowStatusConfiguration;
   readonly labelGroups: readonly TrailLabelGroup[];
   readonly labels: readonly TrailLabel[];
+  readonly estimateWeights: TrailEstimateWeightConfiguration;
   readonly cycle: TrailCycleConfiguration;
   readonly temporal: TrailTemporalConfiguration;
 }

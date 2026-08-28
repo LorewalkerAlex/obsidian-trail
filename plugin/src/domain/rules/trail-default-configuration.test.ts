@@ -13,6 +13,12 @@ describe("Trail default Configuration", () => {
       timezone: "Asia/Singapore",
     });
 
+    expect(configuration.estimateWeights).toEqual({
+      small: 1,
+      medium: 2,
+      large: 5,
+      xlarge: 10,
+    });
     expect(configuration.statusDefinitions).toHaveLength(9);
     expect(configuration.workflowStatuses.issue.unstarted.defaultId).toBe("status-2");
     expect(configuration.workflowStatuses.project.completed.defaultId).toBe("status-8");

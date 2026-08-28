@@ -9,7 +9,11 @@ import { useShallow } from "zustand/react/shallow";
 
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
-import { TRAIL_PRIORITIES, type TrailPriority } from "../../domain/model/trail-values";
+import {
+  TRAIL_PRIORITIES,
+  type TrailEstimate,
+  type TrailPriority,
+} from "../../domain/model/trail-values";
 import {
   selectIsTrailEntityPending,
   selectTrailReadableMilestoneById,
@@ -30,6 +34,7 @@ import {
   TrailDialogClose,
 } from "../primitives/trail-dialog";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
+import { TrailEstimatePicker } from "./trail-estimate-picker";
 import { TrailLabelEditor } from "./trail-label-editor";
 
 const PRIORITY_LABELS: Readonly<Record<TrailPriority, string>> = {
@@ -38,15 +43,6 @@ const PRIORITY_LABELS: Readonly<Record<TrailPriority, string>> = {
   medium: "Medium",
   urgent: "Urgent",
 };
-
-function parseOptionalEstimate(value: string): number | undefined {
-  if (value.trim() === "") return undefined;
-  const estimate = Number(value);
-  if (!Number.isSafeInteger(estimate) || estimate < 0) {
-    throw new Error("Estimate must be a non-negative integer");
-  }
-  return estimate;
-}
 
 /**
  * Current Peek carrier for lightweight Workflow Issue inspection/editing.
@@ -84,7 +80,7 @@ export function TrailWorkflowIssuePeek(props: {
   const [titleDraft, setTitleDraft] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [priorityDraft, setPriorityDraft] = useState("");
-  const [estimateDraft, setEstimateDraft] = useState("");
+  const [estimateDraft, setEstimateDraft] = useState<TrailEstimate>();
   const [dueDraft, setDueDraft] = useState("");
   const [labelIdsDraft, setLabelIdsDraft] = useState<readonly string[]>([]);
   const [localError, setLocalError] = useState<string>();
@@ -100,7 +96,7 @@ export function TrailWorkflowIssuePeek(props: {
     setTitleDraft(current.title);
     setDescriptionDraft(current.description ?? "");
     setPriorityDraft(current.priority ?? "");
-    setEstimateDraft(current.estimate?.toString() ?? "");
+    setEstimateDraft(current.estimate);
     setDueDraft(current.due === undefined
       ? ""
       : formatTrailLocalDateTime(current.due, props.configuration.temporal.timezone));
@@ -135,11 +131,10 @@ export function TrailWorkflowIssuePeek(props: {
     baseline.statusDefinitionId,
   );
   const completed = status?.category === "completed";
-  const estimateValid = estimateDraft.trim() === ""
-    ? !completed
-    : Number.isSafeInteger(Number(estimateDraft)) && Number(estimateDraft) >= 0;
   const actionsDisabled = !props.writable || pending || sourceIssues.length > 0;
-  const saveDisabled = actionsDisabled || titleDraft.trim() === "" || !estimateValid;
+  const saveDisabled = actionsDisabled
+    || titleDraft.trim() === ""
+    || (completed && estimateDraft === undefined);
 
   const reportError = (message: string | undefined): void => {
     setLocalError(message);
@@ -155,7 +150,7 @@ export function TrailWorkflowIssuePeek(props: {
         due: dueDraft === ""
           ? undefined
           : parseTrailLocalDateTime(dueDraft, props.configuration.temporal.timezone),
-        estimate: parseOptionalEstimate(estimateDraft),
+        estimate: estimateDraft,
         labelIds: labelIdsDraft,
         priority: priorityDraft === "" ? undefined : priorityDraft as TrailPriority,
         title: titleDraft,
@@ -216,12 +211,10 @@ export function TrailWorkflowIssuePeek(props: {
         </label>
         <label>
           <span>Estimate</span>
-          <input
+          <TrailEstimatePicker
+            ariaLabel="Estimate"
             disabled={actionsDisabled}
-            min="0"
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setEstimateDraft(event.target.value)}
-            step="1"
-            type="number"
+            onChange={setEstimateDraft}
             value={estimateDraft}
           />
         </label>
@@ -246,7 +239,7 @@ export function TrailWorkflowIssuePeek(props: {
         {localError === undefined ? null : (
           <p className="trail-inline-error" role="alert">{localError}</p>
         )}
-        {completed && estimateDraft.trim() === "" ? (
+        {completed && estimateDraft === undefined ? (
           <p className="trail-inline-error">Completed issues must retain an estimate.</p>
         ) : null}
 

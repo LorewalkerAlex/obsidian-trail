@@ -18,6 +18,7 @@ describe("Trail plugin-data codec", () => {
     const physical = serializeTrailPluginData(snapshot);
     const physicalRoot = physical as {
       configuration: {
+        estimateWeights: Record<string, unknown>;
         statusDefinitions?: unknown;
         statuses: { project: Record<string, unknown> };
       };
@@ -25,6 +26,12 @@ describe("Trail plugin-data codec", () => {
     const parsed = parseTrailPluginData(physical);
 
     expect(physicalRoot.configuration.statusDefinitions).toBeUndefined();
+    expect(physicalRoot.configuration.estimateWeights).toEqual({
+      small: 1,
+      medium: 2,
+      large: 5,
+      xlarge: 10,
+    });
     expect(physicalRoot.configuration.statuses.project).not.toHaveProperty("backlog");
     expect(Object.keys(physicalRoot.configuration.statuses.project)).toEqual([
       "unstarted",
@@ -59,6 +66,36 @@ describe("Trail plugin-data codec", () => {
       issue.code === "plugin-data.key.unknown"
       && issue.path === "$.configuration.statuses.project"
       && issue.message === "Unknown key: backlog"
+    ))).toBe(true);
+  });
+
+  it("rejects incomplete or non-positive Estimate weights in the current schema", () => {
+    const missing = serializeTrailPluginData({
+      configuration: createTrailTestConfiguration(),
+      workspaceState: createTrailTestWorkspaceState(),
+    }) as { configuration: { estimateWeights: Record<string, unknown> } };
+    delete missing.configuration.estimateWeights.xlarge;
+
+    const missingParsed = parseTrailPluginData(missing);
+    expect(missingParsed.ok).toBe(false);
+    if (missingParsed.ok) throw new Error("expected missing Estimate weight failure");
+    expect(missingParsed.issues.some((issue) => (
+      issue.code === "plugin-data.key.missing"
+      && issue.path === "$.configuration.estimateWeights"
+    ))).toBe(true);
+
+    const nonPositive = serializeTrailPluginData({
+      configuration: createTrailTestConfiguration(),
+      workspaceState: createTrailTestWorkspaceState(),
+    }) as { configuration: { estimateWeights: Record<string, unknown> } };
+    nonPositive.configuration.estimateWeights.medium = 0;
+
+    const nonPositiveParsed = parseTrailPluginData(nonPositive);
+    expect(nonPositiveParsed.ok).toBe(false);
+    if (nonPositiveParsed.ok) throw new Error("expected invalid Estimate weight failure");
+    expect(nonPositiveParsed.issues.some((issue) => (
+      issue.code === "plugin-data.estimate-weight.invalid"
+      && issue.path === "$.configuration.estimateWeights.medium"
     ))).toBe(true);
   });
 

@@ -3,12 +3,14 @@ import type {
   TrailStatusCategoryConfiguration,
 } from "../model/trail-configuration";
 import {
+  TRAIL_ESTIMATES,
   TRAIL_STATUS_CATEGORIES_BY_ENTITY_TYPE,
   isTrailStatusCategoryForEntityType,
   type TrailStatusCategory,
 } from "../model/trail-values";
 import type { TrailWorkspaceState } from "../model/trail-workspace-state";
 import {
+  isTrailEstimateWeight,
   isTrailId,
   isTrailLabelEntityType,
   isTrailLabelSelectionMode,
@@ -150,6 +152,34 @@ export function validateTrailConfiguration(
     }
     if (labelIds.has(label.id)) issues.push(issue("label.id.duplicate", `Duplicate Label ID: ${label.id}`, "labels"));
     labelIds.add(label.id);
+  }
+
+  if (!isTrailPlainObject(configuration.estimateWeights)) {
+    issues.push(issue(
+      "estimate-weight.invalid",
+      "estimateWeights must define every fixed Estimate level",
+      "estimateWeights",
+    ));
+  } else {
+    const configuredKeys = Object.keys(configuration.estimateWeights);
+    for (const key of configuredKeys) {
+      if (!(TRAIL_ESTIMATES as readonly string[]).includes(key)) {
+        issues.push(issue(
+          "estimate-weight.unsupported",
+          `Unsupported Estimate weight key: ${key}`,
+          "estimateWeights",
+        ));
+      }
+    }
+    for (const estimate of TRAIL_ESTIMATES) {
+      if (!isTrailEstimateWeight(configuration.estimateWeights[estimate])) {
+        issues.push(issue(
+          "estimate-weight.invalid",
+          `Estimate weight for ${estimate} must be a positive finite number`,
+          "estimateWeights",
+        ));
+      }
+    }
   }
 
   if (configuration.cycle.defaultEndRule !== "end-of-next-week") {

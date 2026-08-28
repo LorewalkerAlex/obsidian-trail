@@ -71,7 +71,7 @@ export function createTrailUiTestHarness(input: {
     ...(workflowStatusDefinitionId === "issue-started"
       ? { firstStartedAt: Date.UTC(2026, 7, 15, 1) }
       : {}),
-    ...(workflowStatusDefinitionId === "issue-completed" ? { estimate: 1 } : {}),
+    ...(workflowStatusDefinitionId === "issue-completed" ? { estimate: "small" } : {}),
     ...(workflowIsTerminal ? { terminalAt: Date.UTC(2026, 7, 15, 2) } : {}),
   };
   const runtimeStore = createTrailRuntimeStore();

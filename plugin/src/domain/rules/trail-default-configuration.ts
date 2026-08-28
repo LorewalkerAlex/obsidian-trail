@@ -1,5 +1,6 @@
 import type {
   TrailConfiguration,
+  TrailEstimateWeightConfiguration,
   TrailStatusCategoryConfiguration,
   TrailStatusDefinition,
   TrailWorkflowStatusConfiguration,
@@ -16,6 +17,13 @@ import {
   validateTrailWorkspaceState,
 } from "../validation/trail-configuration-validation";
 import { isTrailId } from "../validation/trail-value-validation";
+
+export const DEFAULT_TRAIL_ESTIMATE_WEIGHTS: TrailEstimateWeightConfiguration = {
+  small: 1,
+  medium: 2,
+  large: 5,
+  xlarge: 10,
+};
 
 const ISSUE_DEFAULT_NAMES: Readonly<Record<TrailStatusCategory, string>> = {
   backlog: "Backlog",
@@ -91,6 +99,7 @@ export function createDefaultTrailConfiguration(input: {
   };
   const configuration: TrailConfiguration = {
     cycle: { defaultEndRule: "end-of-next-week" },
+    estimateWeights: { ...DEFAULT_TRAIL_ESTIMATE_WEIGHTS },
     labelGroups: [],
     labels: [],
     statusDefinitions: definitions,

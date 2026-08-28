@@ -1,4 +1,7 @@
-import type { TrailPriority } from "../domain/model/trail-values";
+import type {
+  TrailEstimate,
+  TrailPriority,
+} from "../domain/model/trail-values";
 import {
   isTrailEstimate,
   isTrailPriority,
@@ -80,10 +83,12 @@ export function normalizeTrailCommandTimestamp(value: number, label: string): nu
 }
 
 export function normalizeTrailCommandEstimate(
-  value: number | undefined,
-): number | undefined {
+  value: TrailEstimate | undefined,
+): TrailEstimate | undefined {
   if (value !== undefined && !isTrailEstimate(value)) {
-    throw new TrailCommandValidationError("Estimate must be a non-negative integer");
+    throw new TrailCommandValidationError(
+      "Estimate must be small, medium, large, or xlarge",
+    );
   }
   return value;
 }

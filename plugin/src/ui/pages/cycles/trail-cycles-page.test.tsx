@@ -49,7 +49,7 @@ function openCycleHarness() {
   const completed = {
     context: "workflow" as const,
     createdAt: 2,
-    estimate: 1,
+    estimate: "small" as const,
     id: "issue-completed",
     labelIds: [],
     projectId: project.id,

@@ -22,7 +22,7 @@ function issues(): ReadonlyMap<string, TrailIssue> {
     ["issue-completed", {
       context: "workflow",
       createdAt: 1,
-      estimate: 2,
+      estimate: "medium",
       id: "issue-completed",
       labelIds: [],
       projectId: "project-a",

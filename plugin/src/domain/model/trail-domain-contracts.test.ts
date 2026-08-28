@@ -9,6 +9,7 @@ import type {
   TrailWorkflowIssue,
 } from "./trail-entities";
 import {
+  TRAIL_ESTIMATES,
   TRAIL_ISSUE_CONTEXTS,
   TRAIL_LABEL_ENTITY_TYPES,
   TRAIL_LABEL_SELECTION_MODES,
@@ -93,6 +94,7 @@ const configuration = {
   },
   labelGroups: [],
   labels: [],
+  estimateWeights: { large: 5, medium: 2, small: 1, xlarge: 10 },
   cycle: { defaultEndRule: "end-of-next-week" },
   temporal: { timezone: "Asia/Singapore" },
 } satisfies TrailConfiguration;
@@ -114,6 +116,7 @@ const workspaceState = {
 describe("rebuild Domain contracts", () => {
   it("freezes the system value axes without inventing No Priority", () => {
     expect(TRAIL_PRIORITIES).toEqual(["urgent", "high", "medium", "low"]);
+    expect(TRAIL_ESTIMATES).toEqual(["small", "medium", "large", "xlarge"]);
     expect(TRAIL_STATUS_CATEGORIES).toEqual([
       "backlog",
       "unstarted",

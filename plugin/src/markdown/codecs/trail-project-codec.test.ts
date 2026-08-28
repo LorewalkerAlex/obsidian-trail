@@ -29,6 +29,7 @@ function projectFixture(): {
   const issue: TrailWorkflowIssue = {
     context: "workflow",
     createdAt: 1_700_000_000_000,
+    estimate: "large",
     id: "issue-a",
     labelIds: [],
     milestoneId: milestone.id,
@@ -53,11 +54,31 @@ describe("Project Markdown codec", () => {
       sourcePath: "Trail/Projects/0001 Trail Rebuild.md",
     });
 
+    expect(markdown).toContain('"estimate":"large"');
     expect(parsed.issues).toEqual([]);
     expect(parsed.document?.project).toEqual(fixture.project);
     expect(parsed.document?.milestones).toEqual([fixture.milestone]);
     expect(parsed.document?.issues).toEqual([fixture.issue]);
     expect(parsed.document?.locationsByIssueId[fixture.issue.id]).toBeDefined();
+  });
+
+  it("rejects legacy numeric Estimate instead of retaining dual current-schema parsing", () => {
+    const fixture = projectFixture();
+    const markdown = serializeProjectMarkdown({
+      issues: [fixture.issue],
+      milestones: [fixture.milestone],
+      project: fixture.project,
+    }).replace('"estimate":"large"', '"estimate":5');
+    const parsed = parseProjectMarkdown({
+      markdown,
+      parseYaml: parseTrailTestYaml,
+      sourcePath: "Trail/Projects/0001 Trail Rebuild.md",
+    });
+
+    expect(parsed.document?.issues).toEqual([]);
+    expect(parsed.issues.some((item) => item.message.includes(
+      "estimate must be small, medium, large, or xlarge when present",
+    ))).toBe(true);
   });
 
   it("reports placement mismatch without rewriting the canonical relation", () => {

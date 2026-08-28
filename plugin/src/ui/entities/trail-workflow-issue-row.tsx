@@ -16,6 +16,7 @@ import { selectTrailStatusDefinition } from "../../query/shared/trail-status-que
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { runTrailMutationAction } from "../interactions/trail-action";
 import { useTrailWorkflowIssueStatusMutation } from "../interactions/trail-workflow-issue-status";
+import { trailEstimateShortLabel } from "../patterns/trail-estimate-picker";
 import { TrailStatusPicker } from "../patterns/trail-status-picker";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
 
@@ -108,7 +109,9 @@ export function TrailWorkflowIssueRow({
         </strong>
         <span>
           {status?.name ?? "Invalid status"}
-          {issue.estimate !== undefined ? ` · Estimate ${issue.estimate}` : ""}
+          {issue.estimate !== undefined
+            ? ` · Estimate ${trailEstimateShortLabel(issue.estimate)}`
+            : ""}
           {sourceIssues.length > 0 ? " · data issue" : ""}
         </span>
       </div>

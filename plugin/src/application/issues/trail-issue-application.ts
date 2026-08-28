@@ -1,5 +1,8 @@
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
-import type { TrailPriority } from "../../domain/model/trail-values";
+import type {
+  TrailEstimate,
+  TrailPriority,
+} from "../../domain/model/trail-values";
 import { planDeleteTrailWorkflowIssue } from "../../domain/planning/trail-delete-planning";
 import {
   planChangeTrailWorkflowIssueMilestone,
@@ -33,7 +36,7 @@ import {
 export interface TrailWorkflowIssuePropertiesInput {
   readonly description?: string;
   readonly due?: number;
-  readonly estimate?: number;
+  readonly estimate?: TrailEstimate;
   readonly labelIds: readonly string[];
   readonly priority?: TrailPriority;
   readonly title: string;
@@ -107,7 +110,7 @@ export class TrailIssueApplication {
   public changeStatus(
     expectedIssue: TrailWorkflowIssue,
     targetStatusDefinitionId: string,
-    estimate?: number,
+    estimate?: TrailEstimate,
   ): TrailMutationActionResult {
     const result = planChangeTrailWorkflowIssueStatus(readTrailPlanningState(this.runtimeStore), {
       commandId: normalizeTrailCommandId(this.environment.createId(), "Command ID"),

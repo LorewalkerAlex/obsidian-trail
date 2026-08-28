@@ -12,6 +12,7 @@ describe("Triage Markdown codec", () => {
       context: "triage",
       description: "Review later.",
       due: 1_800_000_000_000,
+      estimate: "medium",
       id: "issue-a",
       labelIds: ["label-z", "label-a"],
       title: "Capture",
@@ -23,6 +24,7 @@ describe("Triage Markdown codec", () => {
       sourcePath: "Trail/Collections/Triage.md",
     });
 
+    expect(markdown).toContain('"estimate":"medium"');
     expect(parsed.issues).toEqual([]);
     expect(parsed.document?.issues).toEqual([{ ...issue, labelIds: ["label-a", "label-z"] }]);
     expect(parsed.document?.locationsByIssueId["issue-a"]).toBeDefined();

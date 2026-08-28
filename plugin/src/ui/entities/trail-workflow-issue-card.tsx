@@ -16,6 +16,7 @@ import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store"
 import {
   createTrailWorkflowIssueDragData,
 } from "../interactions/trail-workflow-board-dnd";
+import { trailEstimateShortLabel } from "../patterns/trail-estimate-picker";
 import { TrailStatusPicker } from "../patterns/trail-status-picker";
 
 export function TrailWorkflowIssueCard(props: {
@@ -111,7 +112,9 @@ export function TrailWorkflowIssueCard(props: {
       <div className="trail-workflow-issue-card__meta">
         {props.showProject ? <span>{project?.title ?? "No Project"}</span> : null}
         {milestone !== undefined ? <span>{milestone.title}</span> : null}
-        {issue.estimate !== undefined ? <span>Estimate {issue.estimate}</span> : null}
+        {issue.estimate !== undefined
+          ? <span>Estimate {trailEstimateShortLabel(issue.estimate)}</span>
+          : null}
         {sourceIssues.length > 0 ? <span>Data issue</span> : null}
       </div>
       <TrailStatusPicker
