@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { setTrailRuntimeControl } from "../../runtime/store/trail-runtime-store";
-import { createTrailUiTestHarness } from "../../test/trail-ui-test-harness";
+import { createTrailTestRuntimeStore } from "../../test/trail-runtime-test-harness";
 import { TrailApplicationUnavailableError } from "../trail-application-support";
 import {
   TrailWeeklyNoteApplication,
@@ -31,10 +31,10 @@ function createGateway() {
 
 describe("Trail Weekly Note Application", () => {
   it("archives using the configured Trail timezone and the loaded Current precondition", async () => {
-    const harness = createTrailUiTestHarness();
+    const runtimeStore = createTrailTestRuntimeStore();
     const { archiveCurrent, gateway } = createGateway();
     const application = new TrailWeeklyNoteApplication(
-      harness.runtimeStore,
+      runtimeStore,
       gateway,
       {
         createId: () => "unused",
@@ -51,10 +51,10 @@ describe("Trail Weekly Note Application", () => {
   });
 
   it("passes the loaded Current precondition through replaceCurrent", async () => {
-    const harness = createTrailUiTestHarness();
+    const runtimeStore = createTrailTestRuntimeStore();
     const { gateway, replaceCurrent } = createGateway();
     const application = new TrailWeeklyNoteApplication(
-      harness.runtimeStore,
+      runtimeStore,
       gateway,
       { createId: () => "unused", now: () => 1_800_000_000_000 },
     );
@@ -64,14 +64,14 @@ describe("Trail Weekly Note Application", () => {
   });
 
   it("allows reads but blocks utility writes while Runtime is not writable", async () => {
-    const harness = createTrailUiTestHarness();
+    const runtimeStore = createTrailTestRuntimeStore();
     const { gateway } = createGateway();
     const application = new TrailWeeklyNoteApplication(
-      harness.runtimeStore,
+      runtimeStore,
       gateway,
       { createId: () => "unused", now: () => 1_800_000_000_000 },
     );
-    setTrailRuntimeControl(harness.runtimeStore, { kind: "refreshing" });
+    setTrailRuntimeControl(runtimeStore, { kind: "refreshing" });
 
     await expect(application.load()).resolves.toEqual({ archives: [], current: "" });
     expect(() => application.replaceCurrent("Loaded", "Blocked"))
