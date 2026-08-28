@@ -59,3 +59,40 @@ export function selectTrailDefaultTriageAcceptProjectId(
     ? defaultProject.id
     : undefined;
 }
+
+/**
+ * Workflow Issue Move exposes only explicit Project destinations that can accept
+ * the Issue's current Status. The current Project remains visible as the selected
+ * relationship even when moving into that lifecycle state would not be legal.
+ */
+export function selectTrailWorkflowIssueMoveProjectIds(
+  state: TrailRuntimeState,
+  issueId: string,
+): readonly string[] {
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  const configuration = readable.authoritative.configuration;
+  if (configuration === null) return [];
+
+  const issue = readable.authoritative.domain.issuesById.get(issueId);
+  if (issue?.context !== "workflow") return [];
+  const issueStatus = resolveTrailStatusDefinition(
+    configuration,
+    "issue",
+    issue.statusDefinitionId,
+  );
+
+  return [...readable.authoritative.domain.projectsById.values()]
+    .filter((project) => {
+      if (project.id === issue.projectId) return true;
+      if (issueStatus === undefined) return false;
+      const projectStatus = resolveTrailStatusDefinition(
+        configuration,
+        "project",
+        project.statusDefinitionId,
+      );
+      return projectStatus !== undefined
+        && canTrailProjectAcceptWorkflowIssue(projectStatus, issueStatus);
+    })
+    .sort(compareProjects)
+    .map((project) => project.id);
+}

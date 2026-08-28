@@ -95,16 +95,6 @@ describe("Workflow Issue planning", () => {
       });
     }
 
-    expect(planCreateTrailWorkflowIssue(planning, {
-      commandId: "command-create-missing-project",
-      effectiveAt: 101,
-      issueId: "issue-missing-project",
-      title: "Missing Project",
-    })).toMatchObject({
-      kind: "rejected",
-      reason: { code: "project-required" },
-    });
-
     planning.domain.projectsById.set(planning.project.id, {
       ...planning.project,
       statusDefinitionId: "project-canceled",
@@ -263,14 +253,6 @@ describe("Workflow Issue planning", () => {
     expect(moved.plan.plan.preconditions).toContainEqual({
       entity: { kind: "project", value: planning.projectB },
       kind: "entity-equals",
-    });
-
-    expect(planMoveTrailWorkflowIssueProject(planning, {
-      commandId: "command-no-target",
-      expectedIssue: planning.issue,
-    })).toMatchObject({
-      kind: "rejected",
-      reason: { code: "project-required" },
     });
 
     const unchanged = planMoveTrailWorkflowIssueProject(planning, {

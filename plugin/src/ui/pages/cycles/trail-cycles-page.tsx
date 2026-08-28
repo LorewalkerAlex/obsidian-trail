@@ -402,7 +402,7 @@ function TrailCycleIssueSelectionRow(props: {
   );
   const project = useStore(
     props.runtimeStore,
-    (state) => issue?.projectId === undefined
+    (state) => issue === undefined
       ? undefined
       : selectTrailReadableProjectById(state, issue.projectId),
   );
@@ -422,7 +422,7 @@ function TrailCycleIssueSelectionRow(props: {
       <div className="trail-workflow-issue-row__main">
         <strong>{issue.title}</strong>
         <span>
-          {project?.title ?? "No Project"}
+          {project?.title ?? "Project unavailable"}
           {" · "}
           {status?.name ?? "Invalid status"}
           {sourceIssues.length > 0 ? " · data issue" : ""}

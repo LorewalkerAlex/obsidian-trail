@@ -38,7 +38,7 @@ export interface AcceptTrailTriageIssueCommand {
   readonly commandId: string;
   readonly effectiveAt: number;
   readonly expectedIssue: TrailTriageIssue;
-  readonly projectId?: string;
+  readonly projectId: string;
   readonly targetIssueId: string;
 }
 
@@ -214,9 +214,6 @@ export function planAcceptTrailTriageIssue(
   }
   if (trailPlanningEntityExists(state.domain, command.targetIssueId)) {
     return rejectTrailPlan("entity-id-conflict", `Trail entity ID already exists: ${command.targetIssueId}`);
-  }
-  if (command.projectId === undefined) {
-    return rejectTrailPlan("project-required", "Triage Accept requires a target Project");
   }
 
   const backlog = resolveTrailDefaultStatusDefinition(state.configuration, "issue", "backlog");

@@ -111,7 +111,7 @@ export function TrailWorkflowIssuePeek(props: {
 
   const project = useStore(
     props.runtimeStore,
-    (state) => baseline?.projectId === undefined
+    (state) => baseline === undefined
       ? undefined
       : selectTrailReadableProjectById(state, baseline.projectId),
   );

@@ -43,7 +43,7 @@ export function TrailWorkflowIssueCard(props: {
   );
   const project = useStore(
     props.runtimeStore,
-    (state) => issue?.projectId === undefined
+    (state) => issue === undefined
       ? undefined
       : selectTrailReadableProjectById(state, issue.projectId),
   );
@@ -110,7 +110,7 @@ export function TrailWorkflowIssueCard(props: {
         </span>
       </div>
       <div className="trail-workflow-issue-card__meta">
-        {props.showProject ? <span>{project?.title ?? "No Project"}</span> : null}
+        {props.showProject ? <span>{project?.title ?? "Project unavailable"}</span> : null}
         {milestone !== undefined ? <span>{milestone.title}</span> : null}
         {issue.estimate !== undefined
           ? <span>Estimate {trailEstimateShortLabel(issue.estimate)}</span>

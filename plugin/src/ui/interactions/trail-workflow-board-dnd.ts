@@ -2,14 +2,14 @@ export type TrailWorkflowIssueDragData = Record<string | symbol, unknown> & {
   readonly type: "trail-workflow-issue";
   readonly instanceId: symbol;
   readonly issueId: string;
-  readonly projectId?: string;
+  readonly projectId: string;
   readonly sourceStatusDefinitionId: string;
 };
 
 export type TrailWorkflowStatusDropData = Record<string | symbol, unknown> & {
   readonly type: "trail-workflow-status";
   readonly instanceId: symbol;
-  readonly projectId?: string;
+  readonly projectId: string;
   readonly targetStatusDefinitionId: string;
 };
 
@@ -18,15 +18,11 @@ export interface TrailWorkflowStatusDropIntent {
   readonly targetStatusDefinitionId: string;
 }
 
-function optionalString(value: unknown): value is string | undefined {
-  return value === undefined || typeof value === "string";
-}
-
 /** Builds typed drag data without exposing presentation state as Domain data. */
 export function createTrailWorkflowIssueDragData(input: {
   readonly instanceId: symbol;
   readonly issueId: string;
-  readonly projectId?: string;
+  readonly projectId: string;
   readonly sourceStatusDefinitionId: string;
 }): TrailWorkflowIssueDragData {
   return { ...input, type: "trail-workflow-issue" };
@@ -35,7 +31,7 @@ export function createTrailWorkflowIssueDragData(input: {
 /** Builds one Status-cell target inside a specific Board instance and Project lane. */
 export function createTrailWorkflowStatusDropData(input: {
   readonly instanceId: symbol;
-  readonly projectId?: string;
+  readonly projectId: string;
   readonly targetStatusDefinitionId: string;
 }): TrailWorkflowStatusDropData {
   return { ...input, type: "trail-workflow-status" };
@@ -47,7 +43,7 @@ export function isTrailWorkflowIssueDragData(value: unknown): value is TrailWork
   return candidate.type === "trail-workflow-issue"
     && typeof candidate.instanceId === "symbol"
     && typeof candidate.issueId === "string"
-    && optionalString(candidate.projectId)
+    && typeof candidate.projectId === "string"
     && typeof candidate.sourceStatusDefinitionId === "string";
 }
 
@@ -56,7 +52,7 @@ export function isTrailWorkflowStatusDropData(value: unknown): value is TrailWor
   const candidate = value as Partial<TrailWorkflowStatusDropData>;
   return candidate.type === "trail-workflow-status"
     && typeof candidate.instanceId === "symbol"
-    && optionalString(candidate.projectId)
+    && typeof candidate.projectId === "string"
     && typeof candidate.targetStatusDefinitionId === "string";
 }
 

@@ -66,7 +66,7 @@ function buildTrailWorkflowLanes(
     }];
   }
 
-  const groups = new Map<string | undefined, string[]>();
+  const groups = new Map<string, string[]>();
   for (const issue of readableIssues) {
     const existing = groups.get(issue.projectId) ?? [];
     existing.push(issue.id);
@@ -75,15 +75,11 @@ function buildTrailWorkflowLanes(
   return [...groups.entries()]
     .map(([projectId, issueIds]) => ({
       issueIds,
-      key: projectId ?? "projectless",
-      label: projectId === undefined
-        ? "No Project"
-        : projects.get(projectId)?.title ?? projectId,
+      key: projectId,
+      label: projects.get(projectId)?.title ?? "Project unavailable",
       projectId,
     }))
     .sort((left, right) => {
-      if (left.projectId === undefined) return 1;
-      if (right.projectId === undefined) return -1;
       const labelOrder = left.label.localeCompare(right.label);
       return labelOrder !== 0 ? labelOrder : left.key.localeCompare(right.key);
     });
@@ -313,11 +309,13 @@ function TrailWorkflowStatusCell(props: {
   const [element, setElement] = useState<HTMLElement | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const targetData = useMemo(
-    () => createTrailWorkflowStatusDropData({
-      instanceId: props.instanceId,
-      projectId: props.projectId,
-      targetStatusDefinitionId: props.status.id,
-    }),
+    () => props.projectId === undefined
+      ? undefined
+      : createTrailWorkflowStatusDropData({
+          instanceId: props.instanceId,
+          projectId: props.projectId,
+          targetStatusDefinitionId: props.status.id,
+        }),
     [props.instanceId, props.projectId, props.status.id],
   );
   const statusIssueIds = props.issueIds.filter((issueId) => (
@@ -329,7 +327,7 @@ function TrailWorkflowStatusCell(props: {
 
   const onDropStatus = props.onDropStatus;
   useEffect(() => {
-    if (element === null) return undefined;
+    if (element === null || targetData === undefined) return undefined;
     return dropTargetForElements({
       canDrop: ({ source }) => (
         resolveTrailWorkflowStatusDrop(source.data, targetData) !== undefined

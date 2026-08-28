@@ -21,6 +21,7 @@ describe("TrailWorkflowPresentation", () => {
     );
 
     expect(screen.getByLabelText("Project for Issue A")).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "No Project" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Board" }));
 
     for (const status of ["backlog", "unstarted", "started", "completed", "canceled"]) {

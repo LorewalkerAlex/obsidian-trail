@@ -13,25 +13,25 @@ docs: freeze v1 ui design
 
 This is the pre-change authority baseline for the documentation cleanup recorded here, not a claim that `2d34d29...` must remain the repository HEAD after this documentation checkpoint is published.
 
-The latest published repository checkpoint before this Canonical Estimate slice is:
+The latest published repository checkpoint before this Workflow Issue Project-control alignment slice is:
+
+```text
+40a9b21434b7b3b5a8ad11d14bad5a83d0103937
+feat: enforce canonical estimate model
+```
+
+Its immediate parent is:
 
 ```text
 e0ad3fa488369794b12fff9e4408e983e77f573b
 feat: enforce required default project
 ```
 
-Its immediate parent is:
-
-```text
-bf8b50707406b7309b5f830f4680ce068d2a6d5a
-docs: normalize terminology and alignment gaps
-```
-
-The implementation baseline already contains the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search, Home Routing and the Weekly Update utility, Weekly Update integrity hardening, Integrity Batch failure-safety hardening, Required Workflow Project & Default Project, and Project Status Four-State Configuration Closure slices.
+The implementation baseline already contains the completed Project Lifecycle, Initiative/Project organization, Project Milestone, Cycle Planning, shared Project/Cycle Workflow presentation, Workflow Issue Peek & Planning Properties, Project Details Editing, Initiative Details Editing, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Global Search, Home Routing and the Weekly Update utility, Weekly Update integrity hardening, Integrity Batch failure-safety hardening, Required Workflow Project & Default Project, Project Status Four-State Configuration Closure, Required Default Project ready-state alignment, and Canonical Estimate Alignment slices.
 
 Historical checkpoint names such as **Cycle Planning & Rollover**, **Global Search & Project-less Workflow**, and **Home Routing & Weekly Note** are retained below as historical evidence. Their names describe the repository state at those checkpoints; they do not redefine current Product/Domain/UI vocabulary or target behavior.
 
-Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. Gate 8 now has the full V1 target interaction frozen across Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action semantics, Home, Workspace Grid/responsive composition, global Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter. The Canonical Estimate alignment is now implemented across Domain, current-schema persistence, derived Cycle Effort, checked-in development data, and the existing Issue property/status surfaces: Issues store only fixed T-Shirt levels `S/M/L/XL`, while Workspace Configuration owns the live numeric aggregation weights. The frozen Default Project lower-layer target is also implemented. Remaining concrete implementation gaps are recorded in Section 4.4.
+Gate 1 - Domain / Validation Completion, Gate 2 - Semantic Planning Completion, Gate 3 - Data / Persistence / Mutation Operational Completion, Gate 4 - Runtime / Index Foundation Completion, Gate 5 - Query / Derived Foundation Completion, Gate 6 - Application Foundation Completion, and Gate 7 - Shared UI Capability Completion remain established foundations. Gate 8 now has the full V1 target interaction frozen across Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action semantics, Home, Workspace Grid/responsive composition, global Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter. Canonical Estimate alignment is implemented across Domain, current-schema persistence, derived Cycle Effort, checked-in development data, and the existing Issue property/status surfaces: Issues store only fixed T-Shirt levels `S/M/L/XL`, while Workspace Configuration owns the live numeric aggregation weights. Workflow Issue Project-control is now also aligned across Planning/Application command contracts, legal target Query, List/Card/Cycle presentation, and Board DnD ownership so normal interaction no longer represents Projectless Workflow state. The frozen Default Project lower-layer target is implemented as well. Remaining concrete implementation gaps are recorded in Section 4.4.
 
 ### 1.1 Historical implementation checkpoints
 
@@ -215,7 +215,7 @@ The existing Project carrier already owns Project, Milestone, and Workflow Issue
 - The left Workspace section renders the referenced Default Project using its current Project title and routes to the normal Project Workspace.
 - The same Project remains visible normally in Projects Root under its actual Initiative/`No Initiative` grouping.
 
-The current POC still exposes a selectable `No Project` option in the Workflow Issue Project control. That is a current implementation gap, not authority; it is tracked explicitly in Section 4.4.
+The current alignment closes the remaining Project-control drift in this historical slice. Workflow create/move and the current Triage-Accept-to-Workflow path require an explicit Project through Planning and Application typed contracts; shared Query exposes only legal explicit move destinations while retaining the Issue's current Project as its selected relationship; the Workflow Issue row has no empty Project destination; and Card/Cycle/Board presentation uses `Project unavailable` only as fail-closed abnormal-data feedback rather than a normal Projectless state. Board Project swimlanes no longer construct a `projectless` group, and Board drag/drop metadata requires a concrete Project on both source and target.
 
 #### Project delete
 
@@ -299,16 +299,15 @@ Default user-facing names are a separate presentation/configuration concern: Iss
 
 With V1 `ui.md` frozen and the earlier implementation checkpoints preserved as evidence, the remaining verified gaps are:
 
-Canonical Estimate alignment is no longer a verified gap. The current implementation uses fixed T-Shirt Estimate levels `S/M/L/XL` (`small/medium/large/xlarge`), required Workspace Configuration weights with V1 defaults `1/2/5/10`, current-schema enum persistence, live weighted Cycle Effort, and shared fixed-level Issue property/status controls. The remaining gaps are:
+Canonical Estimate alignment and Workflow Issue Project-control alignment are no longer verified gaps. The current implementation uses fixed T-Shirt Estimate levels `S/M/L/XL` (`small/medium/large/xlarge`), required Workspace Configuration weights with V1 defaults `1/2/5/10`, current-schema enum persistence, live weighted Cycle Effort, and shared fixed-level Issue property/status controls. Workflow Issue create/move and the current Triage-Accept-to-Workflow path now require an explicit Project through typed Planning/Application contracts; legal move targets come from shared capability-aware Query; normal Project controls expose no empty destination; and Card/Cycle/Board fallbacks treat an unavailable required Project as abnormal data rather than as a normal Projectless state. The remaining gaps are:
 
 - **Default Project Settings/UI alignment gap** — the lower-layer required-Default contract is now aligned: canonical ready Workspace State requires `defaultProjectId`, persisted omission is restricted to initialization recovery, missing-only startup recovery uses the reserved sequence-`0000` Project carrier, external missing/dangling state fails closed, Project Delete rejects the current Default, and Workspace Application exposes the independent setter. Remaining V1 work is wiring the searchable Trail Settings control with no empty choice plus the current-Default Delete affordance/guidance to these contracts; UI must not reintroduce a delete-time replacement Default;
-- **Workflow Issue Project-control alignment gap** — the canonical Workflow Issue model already requires exactly one Project, but the current POC still exposes Projectless UI remnants: the Workflow Issue row offers a selectable `No Project` option, and card/Cycle/shared-presentation fallbacks can render or group missing Project as `No Project`/`projectless`. Formal implementation must remove the legal empty destination from normal interaction and must not present a missing required Project as an ordinary state. Missing/invalid Project data is handled through Data Issue/recovery semantics;
 - **Cycle interaction/vocabulary alignment gap** — current POC/query code still contains older user-action wording such as `Open cycle` and rollover-oriented candidate plumbing/names. `Open Cycle` remains a valid Domain lifecycle state, but the user action is `Start Cycle`; current authority is explicit `Start Cycle`, `Close Cycle`, and `Start next Cycle`. Next-Cycle candidates are only a convenience derived from current Issue facts, and there is no automatic rollover. Historical checkpoint names remain evidence, while active user-facing interaction and active code naming that implies an automatic rollover product concept must be aligned during implementation;
 - **Milestone Progress semantic alignment gap** — the canonical Milestone Progress rule is the same as Project/Cycle Progress within Milestone scope: `Completed / non-Canceled`. The current derived projection exposes terminal/total counting semantics, which can incorrectly let Canceled Issues influence the progress ratio. Formal implementation must repair the derived Query calculation and its tests/consumers rather than treating this as a wording-only rename;
 - **formal UI implementation gap** — current POC shell/pages must be aligned with the frozen `ui.md`, including Location/View Bars, shared Creation Composer, simplified Filter/session state, Selection/Action system, Project/Initiative/Triage/Cycle/Home/Search composition, Workspace Grid, Inspector/Peek ownership, Linear-like Runtime feedback, Default Project settings interaction, density, responsive behavior, and visual calibration;
 - **explicitly deferred conveniences** — Custom Views, Favorites, and the future Workspace Issues collection do not block the V1 implementation plan.
 
-These are the remaining implementation gaps after the Canonical Estimate alignment slice. The Estimate correction is completed implementation evidence below; the remaining items should still be corrected at their canonical owners rather than through page-local compatibility behavior.
+These are the remaining implementation gaps after the Workflow Issue Project-control alignment slice. Canonical Estimate and Project-control corrections are completed implementation evidence below; the remaining items should still be corrected at their canonical owners rather than through page-local compatibility behavior.
 
 Creation Surface design is resolved but **not claimed implemented**. Target UI uses one shared Linear-inspired Composer infrastructure for Triage, Workflow Issue, Project, and Initiative creation. Quick Capture is a title-first Obsidian-wide entry that opens the full Triage Composer before any mutation. Home has one `+` menu over Triage/Issue/Project/Initiative; Projects Root keeps a Linear-style primary New Project action and secondary Initiative creation. Issue Project is an explicit required relation that may be context-prefilled but remains editable; normal-width Issue creation directly exposes Priority/Labels/Milestone/Estimate/Due. Workflow Status and Cycle are absent from Issue creation, Project Status is absent from Project creation, and Initiative has no Status. V1 has no saved Draft/Create-more. Illegal creation and relation targets are capability-gated before normal completion where possible, while Domain/Application remain the final submit-time authority.
 
@@ -334,17 +333,16 @@ Runtime feedback target interaction is resolved. Normal local optimistic success
 
 Default Project target interaction is resolved. Normal ready Workspace State requires one Default Project reference. The lower layer now implements missing-only initialization recovery through the reserved sequence-`0000` Project carrier, fails closed for invalid/dangling/later-missing state, exposes the independent Workspace setter, and rejects Project Delete while the target is current Default. Trail Settings still needs to wire one searchable Project replacement control with no empty option, and Project UI still needs to present the delete guard/guidance. These rules do not create a Standalone subtype, delete-time replacement argument, or lifecycle bypass.
 
-Required Workflow Project & Default Project, the current Required Default Project ready-state lower-layer alignment, Project Status Four-State Configuration Closure, Canonical Estimate Alignment, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing/Weekly Update persistence, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
+Required Workflow Project & Default Project, the current Required Default Project ready-state lower-layer alignment, Project Status Four-State Configuration Closure, Canonical Estimate Alignment, Workflow Issue Project-control Alignment, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing/Weekly Update persistence, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
 
 ### 4.5 Next: formal V1 implementation alignment
 
 The bounded V1 design pass is complete. `ui.md` is frozen at the target-interaction level, so the next work is implementation rather than another page-design round.
 
-The Canonical Estimate dependency is now closed. The remaining implementation sequence should preserve owner boundaries:
+The Canonical Estimate and Workflow Issue Project-control dependencies are now closed. The remaining implementation sequence should preserve owner boundaries:
 
 ```text
-1. repair concrete frozen-design mismatches already exposed in current code:
-   - remove normal Workflow Issue `No Project` selection
+1. repair the remaining concrete frozen-design mismatches already exposed in current code:
    - align Cycle Start/Close/Start-next interaction and remove active rollover semantics/naming
    - align Milestone Progress to Completed / non-Canceled
 2. align shared shell, interactions, pages, and Runtime feedback to frozen ui.md, including Default Project Settings and current-Default Delete guidance over the completed lower-layer contracts
@@ -389,8 +387,8 @@ Product responsibilities
    |- Project Status Four-State Configuration Closure   COMPLETED
    |- Required Default Project ready-state alignment    LOWER-LAYER COMPLETED
    |- Default Project Settings / delete affordance      REQUIRED UI GAP
-   |- Canonical Estimate alignment                     COMPLETED
-   |- Workflow Project-control alignment                REQUIRED TARGET GAP
+   |- Canonical Estimate alignment                      COMPLETED
+   |- Workflow Project-control alignment                COMPLETED
    |- Cycle Start/Close/Start-next alignment            REQUIRED TARGET GAP
    |- Milestone Progress semantic alignment             REQUIRED TARGET GAP
    |- Project Workspace / Projects Root design          RESOLVED DESIGN
@@ -428,9 +426,10 @@ Completed Gate 8 implementation slices at the current documented baseline includ
 - Home Routing & Weekly Note **(historical checkpoint name; current user-facing module is Weekly Meeting Notes and the backing utility is Weekly Update)**;
 - Required Workflow Project & Default Project **(historical slice; current required-Default ready-state target is stricter)**;
 - Project Status Four-State Configuration Closure;
-- Canonical Estimate Alignment **(current checkpoint)**.
+- Canonical Estimate Alignment;
+- Workflow Issue Project-control Alignment **(current checkpoint)**.
 
-Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action, Initiative Focus, Home, Workspace Grid, Search, Runtime feedback, and the Default Project Settings/delete-affordance UI are not completed implementation slices merely because their target semantics are frozen. Their consumers still require formal implementation alignment. Workflow Project-control correction, Cycle Start/Close/Start-next correction, and Milestone Progress correction remain target authority rather than completed implementation checkpoints. The Required Default Project ready-state lower layer and Canonical Estimate alignment are completed foundations and should be consumed rather than re-modeled by those UI slices.
+Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action, Initiative Focus, Home, Workspace Grid, Search, Runtime feedback, and the Default Project Settings/delete-affordance UI are not completed implementation slices merely because their target semantics are frozen. Their consumers still require formal implementation alignment. Cycle Start/Close/Start-next correction and Milestone Progress correction remain target authority rather than completed implementation checkpoints. The Required Default Project ready-state lower layer, Canonical Estimate alignment, and Workflow Issue Project-control alignment are completed foundations and should be consumed rather than re-modeled by those UI slices.
 
 A previously completed lower-layer owner may be edited during a later slice when an upstream canonical model changes. That does not create a second implementation track or erase earlier evidence.
 
@@ -483,7 +482,7 @@ No production legacy-data migration was introduced for that pre-V1 corrective sl
 
 ### 6.3 Canonical Estimate alignment evidence
 
-The current Canonical Estimate alignment verifies:
+The Canonical Estimate alignment verifies:
 
 - `TrailEstimate` is exactly the fixed canonical level set `small | medium | large | xlarge`, presented as `S / M / L / XL`;
 - canonical Workspace Configuration requires one numeric weight for every fixed level, with V1 defaults `1 / 2 / 5 / 10`;
@@ -499,13 +498,31 @@ The current Canonical Estimate alignment verifies:
 
 No production legacy-data migration or normal-runtime compatibility parser was introduced for the pre-V1 numeric Estimate shape. If a released legacy schema later requires retention, Migration owns that explicit one-way transition. The frozen shared Filter design still remains formal UI implementation work; this slice does not create a temporary page-local Filter or a one-off Estimate-weight Settings subsystem.
 
-### 6.4 Historical Cycle implementation evidence
+### 6.4 Workflow Issue Project-control alignment evidence
+
+The current Workflow Issue Project-control alignment verifies:
+
+- Workflow Issue create and Project-move command contracts require concrete `projectId` / `targetProjectId` values, so normal typed Planning intent no longer represents a missing Project and the planners retain final existence/status/capability validation;
+- Issue Application `create()` and `moveToProject()` require explicit Project IDs and normalize those IDs before planning rather than accepting `undefined` as a normal intent;
+- the current Triage Accept-to-Workflow path likewise requires an explicit Project through both Triage Application and Planning; the later shared Creation Composer may change the UI composition, but it must still submit one explicit legal Project for the Issue branch;
+- diagnostics-observed Application wrappers expose the same required signatures instead of reintroducing optional Project values above Application;
+- shared `selectTrailWorkflowIssueMoveProjectIds()` derives explicit move destinations from current readable Project/Issue Status capability, while preserving the Issue's current Project as the selected relationship even when that Project would not currently accept a moved-in Issue in the same state;
+- the Workflow Issue row removes the empty `No Project` option and submits only IDs from the legal target Query; an unavailable required current Project is represented as disabled `Project unavailable` abnormal-data feedback rather than as a legal empty relation;
+- Workflow Issue Card, Peek-related presentation, Cycle planning rows, and shared Board swimlanes no longer render/group missing Project as ordinary `No Project`/`projectless` state; unreadable required Project references fail closed as `Project unavailable`;
+- Project swimlanes group only by concrete Workflow Issue `projectId`; the obsolete `projectless` lane is gone;
+- Board drag/drop source and target metadata require concrete Project IDs, and runtime type guards reject Project-missing drag/drop records before Status-drop resolution; same-Board/same-Project Status semantics remain unchanged;
+- focused tests cover legal Workflow move targets, current-Project retention, absence of the `No Project` option, and rejection of Project-missing DnD data; obsolete tests whose sole purpose was submitting a missing Project through typed Planning commands were removed rather than preserving an invalid contract;
+- local full verification is green across ESLint, 107 Vitest files / 367 tests, TypeScript `tsc --noEmit`, production esbuild, and `git diff --check`.
+
+This alignment does not weaken malformed-source handling or introduce a hidden fallback Project. Persistence/validation still owns invalid or dangling Project references as Data Issues, and formal Creation/Filter/Selection UI work must consume this required-Project contract rather than recreate optional Project semantics.
+
+### 6.5 Historical Cycle implementation evidence
 
 The Cycle Planning & Rollover checkpoint at `826424ff673499d3aaef1669875db2719b1d9e5a` and Project / Cycle Board & List Interaction Foundation at `c87723486e95c2915ff02388540e2fd189010b63` remain useful evidence for established Cycle storage, planning/membership operations, current-Cycle lookup, Issue/Cycle runtime relationships, and shared Board/List mechanics.
 
 They are **not** authority for the resolved Cycle product/UI composition. The current target intentionally requires explicit membership changes, `Start Cycle`, `Close Cycle`, optional explicit `Start next Cycle`, no future Cycle objects, no automatic Status coupling, no automatic rollover, no analytics snapshot history, Current Cycle default Board with Project swimlanes, and flat List-only Historical Cycle presentation. Formal implementation must preserve reusable mechanisms while replacing current active behavior/naming that still implies the superseded rollover product concept.
 
-### 6.5 Historical evidence policy
+### 6.6 Historical evidence policy
 
 Do not delete tests merely because their old Product scenario used Projectless or older Cycle composition if they still protect an independent mechanism such as:
 
@@ -519,7 +536,7 @@ Do not delete tests merely because their old Product scenario used Projectless o
 
 Rewrite or relocate scenario-specific assertions so the independent mechanism remains covered under the current Product/Domain model. Remove only tests whose sole purpose is validating an obsolete semantic contract.
 
-### 6.6 General verification discipline
+### 6.7 General verification discipline
 
 For each active Gate 8 slice:
 
@@ -536,7 +553,7 @@ For each active Gate 8 slice:
 
 ## 7. Final State
 
-V1 implementation is ready for final product hardening only after the frozen Product/Domain/Data/UI answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions. In particular, Workflow Project-control legality, Cycle Start/Close/Start-next semantics, Milestone Progress semantics, Default Project Settings/delete-affordance UI wiring, and broader formal UI alignment must still be closed before final hardening. The Required Default Project ready-state lower layer and Canonical Estimate alignment are already closed.
+V1 implementation is ready for final product hardening only after the frozen Product/Domain/Data/UI answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions. In particular, Cycle Start/Close/Start-next semantics, Milestone Progress semantics, Default Project Settings/delete-affordance UI wiring, and broader formal UI alignment must still be closed before final hardening. The Required Default Project ready-state lower layer, Canonical Estimate alignment, and Workflow Issue Project-control legality are already closed.
 
 The model must continue to contain no normal-runtime Projectless Workflow state; the Default Project remains an ordinary Project selected by required Workspace State, with only the independent current-Default Delete guard added by that designation; Status Configuration preserves the global semantic vocabulary while enforcing entity-specific applicability; normal UI presents concrete StatusDefinitions rather than exposing StatusCategory as a second interaction hierarchy; Filter state remains session-only UI state; Creation/Triage/Cycle composition reuses shared interaction/query/UI mechanisms without new authority models; deferred Custom Views/Favorites do not leak speculative implementation into V1; dependency gates are coherent; and automated plus representative real-host verification is green for the integrated product.
 

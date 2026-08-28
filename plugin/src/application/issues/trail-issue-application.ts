@@ -49,14 +49,12 @@ export class TrailIssueApplication {
     private readonly environment: TrailCommandEnvironment,
   ) {}
 
-  public create(projectId: string | undefined, title: string): TrailEntityMutationReceipt {
+  public create(projectId: string, title: string): TrailEntityMutationReceipt {
     const result = planCreateTrailWorkflowIssue(readTrailPlanningState(this.runtimeStore), {
       commandId: normalizeTrailCommandId(this.environment.createId(), "Command ID"),
       effectiveAt: normalizeTrailCommandTime(this.environment),
       issueId: normalizeTrailCommandId(this.environment.createId(), "Workflow Issue ID"),
-      projectId: projectId === undefined
-        ? undefined
-        : normalizeTrailCommandId(projectId, "Project ID"),
+      projectId: normalizeTrailCommandId(projectId, "Project ID"),
       title: normalizeTrailCommandTitle(title, "Workflow Issue"),
     });
     const planned = resolveTrailApplicationPlan(result);
@@ -144,16 +142,14 @@ export class TrailIssueApplication {
 
   public moveToProject(
     expectedIssue: TrailWorkflowIssue,
-    targetProjectId?: string,
+    targetProjectId: string,
   ): TrailMutationActionResult {
     const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
     normalizeTrailCommandTime(this.environment);
     const result = planMoveTrailWorkflowIssueProject(readTrailPlanningState(this.runtimeStore), {
       commandId,
       expectedIssue,
-      targetProjectId: targetProjectId === undefined
-        ? undefined
-        : normalizeTrailCommandId(targetProjectId, "Project ID"),
+      targetProjectId: normalizeTrailCommandId(targetProjectId, "Project ID"),
     });
     const planned = resolveTrailApplicationPlan(result);
     if (planned.kind === "needs-input") {

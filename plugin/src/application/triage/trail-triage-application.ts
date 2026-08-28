@@ -108,14 +108,12 @@ export class TrailTriageApplication {
     return submitTrailApplicationPlan(this.sourceSync, planned.value.plan, planned.value.issueId);
   }
 
-  public accept(expectedIssue: TrailTriageIssue, projectId?: string): TrailEntityMutationReceipt {
+  public accept(expectedIssue: TrailTriageIssue, projectId: string): TrailEntityMutationReceipt {
     const result = planAcceptTrailTriageIssue(readTrailPlanningState(this.runtimeStore), {
       commandId: normalizeTrailCommandId(this.environment.createId(), "Command ID"),
       effectiveAt: normalizeTrailCommandTime(this.environment),
       expectedIssue,
-      projectId: projectId === undefined
-        ? undefined
-        : normalizeTrailCommandId(projectId, "Project ID"),
+      projectId: normalizeTrailCommandId(projectId, "Project ID"),
       targetIssueId: normalizeTrailCommandId(this.environment.createId(), "Workflow Issue ID"),
     });
     const planned = resolveTrailApplicationPlan(result);

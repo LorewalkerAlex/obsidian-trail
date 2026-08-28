@@ -4,6 +4,8 @@ import {
   canTrailWorkflowIssueDropInStatus,
   createTrailWorkflowIssueDragData,
   createTrailWorkflowStatusDropData,
+  isTrailWorkflowIssueDragData,
+  isTrailWorkflowStatusDropData,
   resolveTrailWorkflowStatusDrop,
 } from "./trail-workflow-board-dnd";
 
@@ -55,14 +57,31 @@ describe("Workflow Board drag semantics", () => {
     const source = createTrailWorkflowIssueDragData({
       instanceId,
       issueId: "issue-a",
+      projectId: "project-a",
       sourceStatusDefinitionId: "issue-started",
     });
     const target = createTrailWorkflowStatusDropData({
       instanceId,
+      projectId: "project-a",
       targetStatusDefinitionId: "issue-started",
     });
 
     expect(canTrailWorkflowIssueDropInStatus(source, target)).toBe(true);
     expect(resolveTrailWorkflowStatusDrop(source, target)).toBeUndefined();
+  });
+
+  it("rejects untrusted drag/drop data that omits required Project ownership", () => {
+    const instanceId = Symbol("board");
+    expect(isTrailWorkflowIssueDragData({
+      instanceId,
+      issueId: "issue-a",
+      sourceStatusDefinitionId: "issue-started",
+      type: "trail-workflow-issue",
+    })).toBe(false);
+    expect(isTrailWorkflowStatusDropData({
+      instanceId,
+      targetStatusDefinitionId: "issue-started",
+      type: "trail-workflow-status",
+    })).toBe(false);
   });
 });

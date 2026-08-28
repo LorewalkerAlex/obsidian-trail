@@ -119,16 +119,6 @@ describe("Triage planning", () => {
       entity: { kind: "project", value: planning.project },
       kind: "entity-equals",
     });
-
-    expect(planAcceptTrailTriageIssue(planning, {
-      commandId: "command-accept-missing-project",
-      effectiveAt: 201,
-      expectedIssue: planning.triage,
-      targetIssueId: "workflow-missing-project",
-    })).toMatchObject({
-      kind: "rejected",
-      reason: { code: "project-required" },
-    });
   });
 
   it("converts Triage to a new Project and carries only Project-applicable content", () => {

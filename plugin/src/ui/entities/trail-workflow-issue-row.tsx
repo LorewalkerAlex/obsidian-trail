@@ -8,9 +8,11 @@ import {
   selectTrailReadableMilestoneById,
   selectTrailReadableMilestoneIdsByProject,
   selectTrailReadableProjectById,
-  selectTrailReadableProjectIds,
   selectTrailReadableWorkflowIssueById,
 } from "../../query/shared/trail-effective-query";
+import {
+  selectTrailWorkflowIssueMoveProjectIds,
+} from "../../query/shared/trail-project-target-query";
 import { selectTrailEntitySourceIssues } from "../../query/shared/trail-source-health-query";
 import { selectTrailStatusDefinition } from "../../query/shared/trail-status-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
@@ -53,11 +55,13 @@ export function TrailWorkflowIssueRow({
   );
   const projectIds = useStore(
     runtimeStore,
-    useShallow(selectTrailReadableProjectIds),
+    useShallow((state) => issue === undefined
+      ? []
+      : selectTrailWorkflowIssueMoveProjectIds(state, issue.id)),
   );
   const milestoneIds = useStore(
     runtimeStore,
-    useShallow((state) => issue?.projectId === undefined
+    useShallow((state) => issue === undefined
       ? []
       : selectTrailReadableMilestoneIdsByProject(state, issue.projectId)),
   );
@@ -76,9 +80,8 @@ export function TrailWorkflowIssueRow({
   );
   const actionsDisabled = !writable || pending || sourceIssues.length > 0;
 
-  const requestProject = (targetValue: string): void => {
-    if (actionsDisabled) return;
-    const targetProjectId = targetValue === "" ? undefined : targetValue;
+  const requestProject = (targetProjectId: string): void => {
+    if (actionsDisabled || !projectIds.includes(targetProjectId)) return;
     if (targetProjectId === issue.projectId) return;
     runTrailMutationAction(
       () => actions.moveToProject(issue, targetProjectId),
@@ -120,9 +123,11 @@ export function TrailWorkflowIssueRow({
         <select
           disabled={actionsDisabled}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => requestProject(event.target.value)}
-          value={issue.projectId ?? ""}
+          value={issue.projectId}
         >
-          <option value="">No Project</option>
+          {projectIds.includes(issue.projectId) ? null : (
+            <option disabled value={issue.projectId}>Project unavailable</option>
+          )}
           {projectIds.map((projectId) => (
             <TrailWorkflowIssueProjectOption
               key={projectId}

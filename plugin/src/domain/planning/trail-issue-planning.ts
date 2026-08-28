@@ -22,7 +22,7 @@ export interface CreateTrailWorkflowIssueCommand {
   readonly commandId: string;
   readonly effectiveAt: number;
   readonly issueId: string;
-  readonly projectId?: string;
+  readonly projectId: string;
   readonly title: string;
 }
 
@@ -48,7 +48,7 @@ export interface ChangeTrailWorkflowIssueStatusCommand {
 export interface MoveTrailWorkflowIssueProjectCommand {
   readonly commandId: string;
   readonly expectedIssue: TrailWorkflowIssue;
-  readonly targetProjectId?: string;
+  readonly targetProjectId: string;
 }
 
 export interface ChangeTrailWorkflowIssueMilestoneCommand {
@@ -69,10 +69,6 @@ export function planCreateTrailWorkflowIssue(
   if (trailPlanningEntityExists(state.domain, command.issueId)) {
     return rejectTrailPlan("entity-id-conflict", `Trail entity ID already exists: ${command.issueId}`);
   }
-  if (command.projectId === undefined) {
-    return rejectTrailPlan("project-required", "Workflow Issue creation requires a Project");
-  }
-
   const status = resolveTrailDefaultStatusDefinition(state.configuration, "issue", "backlog");
   const project = state.domain.projectsById.get(command.projectId);
   if (project === undefined) {
@@ -265,10 +261,10 @@ export function planChangeTrailWorkflowIssueStatus(
 
   const reopensNonTerminalWork = isTrailTerminalStatusDefinition(currentStatus)
     && !isTrailTerminalStatusDefinition(targetStatus);
-  const reopeningProject = reopensNonTerminalWork && current.projectId !== undefined
+  const reopeningProject = reopensNonTerminalWork
     ? state.domain.projectsById.get(current.projectId)
     : undefined;
-  if (reopensNonTerminalWork && current.projectId !== undefined && reopeningProject === undefined) {
+  if (reopensNonTerminalWork && reopeningProject === undefined) {
     return rejectTrailPlan("project-missing", `Project does not exist: ${current.projectId}`);
   }
   if (reopeningProject !== undefined) {
@@ -354,10 +350,6 @@ export function planMoveTrailWorkflowIssueProject(
       `Workflow Issue changed before action: ${command.expectedIssue.id}`,
     );
   }
-  if (command.targetProjectId === undefined) {
-    return rejectTrailPlan("project-required", "Moving a Workflow Issue requires a target Project");
-  }
-
   const targetProject = state.domain.projectsById.get(command.targetProjectId);
   if (targetProject === undefined) {
     return rejectTrailPlan("project-missing", `Project does not exist: ${command.targetProjectId}`);
@@ -443,12 +435,6 @@ export function planChangeTrailWorkflowIssueMilestone(
     );
   }
   if (targetMilestone !== undefined) {
-    if (current.projectId === undefined) {
-      return rejectTrailPlan(
-        "milestone-project-required",
-        "Workflow Issue must belong to a Project before assigning a Milestone",
-      );
-    }
     if (targetMilestone.projectId !== current.projectId) {
       return rejectTrailPlan(
         "milestone-project-mismatch",

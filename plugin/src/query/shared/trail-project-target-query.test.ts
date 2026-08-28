@@ -16,12 +16,14 @@ import {
   selectTrailDefaultTriageAcceptProjectId,
   selectTrailReadableDefaultProject,
   selectTrailTriageAcceptProjectIds,
+  selectTrailWorkflowIssueMoveProjectIds,
 } from "./trail-project-target-query";
 
 function readyStore(input: {
   readonly defaultProjectId?: string;
   readonly projectAStatus?: string;
   readonly projectBStatus?: string;
+  readonly workflowStatus?: string;
 } = {}) {
   const projectA = {
     id: "project-a",
@@ -35,6 +37,18 @@ function readyStore(input: {
     statusDefinitionId: input.projectBStatus ?? "project-completed",
     title: "Alpha",
   };
+  const workflow = {
+    context: "workflow" as const,
+    createdAt: 1,
+    id: "issue-a",
+    labelIds: [] as string[],
+    projectId: projectA.id,
+    statusDefinitionId: input.workflowStatus ?? "issue-unstarted",
+    title: "Issue A",
+    ...(input.workflowStatus === "issue-completed"
+      ? { estimate: "small" as const, terminalAt: 2 }
+      : {}),
+  };
   const workspaceState = createTrailTestWorkspaceState(input.defaultProjectId ?? projectA.id);
   const store = createTrailRuntimeStore();
   publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
@@ -44,7 +58,7 @@ function readyStore(input: {
     },
     sources: [
       {
-        issues: [],
+        issues: [workflow],
         kind: "project",
         milestones: [],
         project: projectA,
@@ -62,7 +76,7 @@ function readyStore(input: {
     ],
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
-  return { projectA, projectB, store };
+  return { projectA, projectB, store, workflow };
 }
 
 describe("Project target Query", () => {
@@ -85,5 +99,37 @@ describe("Project target Query", () => {
     });
     expect(selectTrailReadableDefaultProject(terminal.store.getState())).toBe(terminal.projectB);
     expect(selectTrailDefaultTriageAcceptProjectId(terminal.store.getState())).toBeUndefined();
+  });
+
+  it("offers only legal explicit Project destinations for a Workflow Issue move", () => {
+    const nonTerminal = readyStore({
+      projectAStatus: "project-unstarted",
+      projectBStatus: "project-completed",
+    });
+    expect(selectTrailWorkflowIssueMoveProjectIds(
+      nonTerminal.store.getState(),
+      nonTerminal.workflow.id,
+    )).toEqual([nonTerminal.projectA.id]);
+
+    const startedTarget = readyStore({
+      projectAStatus: "project-unstarted",
+      projectBStatus: "project-started",
+    });
+    expect(selectTrailWorkflowIssueMoveProjectIds(
+      startedTarget.store.getState(),
+      startedTarget.workflow.id,
+    )).toEqual([startedTarget.projectB.id, startedTarget.projectA.id]);
+  });
+
+  it("allows terminal Workflow Issue history to move into terminal Projects", () => {
+    const terminal = readyStore({
+      projectAStatus: "project-completed",
+      projectBStatus: "project-canceled",
+      workflowStatus: "issue-completed",
+    });
+    expect(selectTrailWorkflowIssueMoveProjectIds(
+      terminal.store.getState(),
+      terminal.workflow.id,
+    )).toEqual([terminal.projectB.id, terminal.projectA.id]);
   });
 });

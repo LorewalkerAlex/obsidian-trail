@@ -235,8 +235,8 @@ export function createDiagnosticTrailUiActions(
           return recordThrown(diagnostics, "ui.workflow.issue-status", error, data);
         }
       },
-      create(projectId: string | undefined, title: string): TrailEntityMutationReceipt {
-        const data = { projectId: projectId ?? null, titleLength: title.length };
+      create(projectId: string, title: string): TrailEntityMutationReceipt {
+        const data = { projectId, titleLength: title.length };
         try {
           return observeReceipt(
             diagnostics,
@@ -272,8 +272,8 @@ export function createDiagnosticTrailUiActions(
       moveToProject(expectedIssue, targetProjectId): TrailMutationActionResult {
         const data = {
           issueId: expectedIssue.id,
-          sourceProjectId: expectedIssue.projectId ?? null,
-          targetProjectId: targetProjectId ?? null,
+          sourceProjectId: expectedIssue.projectId,
+          targetProjectId,
         };
         try {
           return observeActionResult(
@@ -412,7 +412,7 @@ export function createDiagnosticTrailUiActions(
     },
     triage: {
       accept(expectedIssue, projectId): TrailEntityMutationReceipt {
-        const data = { projectId: projectId ?? null, sourceIssueId: expectedIssue.id };
+        const data = { projectId, sourceIssueId: expectedIssue.id };
         try {
           return observeReceipt(
             diagnostics,
