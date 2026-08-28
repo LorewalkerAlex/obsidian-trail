@@ -7,8 +7,8 @@ import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store"
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
 
 export interface TrailMilestoneProgress {
-  readonly terminalIssueCount: number;
-  readonly totalIssueCount: number;
+  readonly completedIssueCount: number;
+  readonly effectiveIssueCount: number;
 }
 
 function earliestIssueFirstStartedAt(
@@ -71,7 +71,8 @@ export function selectTrailMilestoneProgress(
   if (!readable.authoritative.domain.milestonesById.has(milestoneId)) return undefined;
 
   const issueIds = readable.indexes.issuesByMilestoneId.get(milestoneId) ?? [];
-  let terminalIssueCount = 0;
+  let completedIssueCount = 0;
+  let effectiveIssueCount = 0;
   for (const issueId of issueIds) {
     const issue = readable.authoritative.domain.issuesById.get(issueId);
     if (issue?.context !== "workflow") return undefined;
@@ -81,13 +82,13 @@ export function selectTrailMilestoneProgress(
       issue.statusDefinitionId,
     );
     if (status === undefined) return undefined;
-    if (isTrailTerminalStatusDefinition(status)) terminalIssueCount += 1;
+    if (status.category === "canceled") continue;
+    effectiveIssueCount += 1;
+    if (status.category === "completed") completedIssueCount += 1;
   }
 
-  return {
-    terminalIssueCount,
-    totalIssueCount: issueIds.length,
-  };
+  if (effectiveIssueCount === 0) return undefined;
+  return { completedIssueCount, effectiveIssueCount };
 }
 
 /**

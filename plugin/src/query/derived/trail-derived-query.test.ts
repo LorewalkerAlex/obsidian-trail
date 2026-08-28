@@ -95,6 +95,17 @@ function readyStore(configuration = createTrailTestConfiguration()) {
     terminalAt: 60,
     title: "Issue C",
   };
+  const issueD = {
+    context: "workflow" as const,
+    createdAt: 4,
+    id: "issue-d",
+    labelIds: [],
+    milestoneId: milestoneA.id,
+    projectId: projectA.id,
+    statusDefinitionId: "issue-canceled",
+    terminalAt: 110,
+    title: "Issue D",
+  };
   const cycleA = {
     id: "cycle-a",
     issueIds: [issueA.id, issueB.id, issueC.id],
@@ -120,7 +131,7 @@ function readyStore(configuration = createTrailTestConfiguration()) {
         sourcePath: "Trail/Initiatives/0002 Initiative Empty.md",
       },
       {
-        issues: [issueA, issueB],
+        issues: [issueA, issueB, issueD],
         kind: "project",
         milestones: [milestoneA, milestoneEmpty],
         project: projectA,
@@ -169,17 +180,14 @@ describe("Trail canonical derived Query", () => {
     expect(selectIsTrailInitiativeCompleted(store.getState(), "initiative-a")).toBe(true);
   });
 
-  it("derives Milestone progress as terminal/current Issue counts without lifecycle state", () => {
+  it("derives Milestone progress from Completed non-Canceled current Issues", () => {
     const { issueA, store } = readyStore();
 
     expect(selectTrailMilestoneProgress(store.getState(), "milestone-a")).toEqual({
-      terminalIssueCount: 1,
-      totalIssueCount: 1,
+      completedIssueCount: 1,
+      effectiveIssueCount: 1,
     });
-    expect(selectTrailMilestoneProgress(store.getState(), "milestone-empty")).toEqual({
-      terminalIssueCount: 0,
-      totalIssueCount: 0,
-    });
+    expect(selectTrailMilestoneProgress(store.getState(), "milestone-empty")).toBeUndefined();
     expect(selectTrailMilestoneProgress(store.getState(), "milestone-missing")).toBeUndefined();
 
     const reopenedIssue = {
@@ -198,14 +206,14 @@ describe("Trail canonical derived Query", () => {
     }));
 
     expect(selectTrailMilestoneProgress(store.getState(), "milestone-a")).toEqual({
-      terminalIssueCount: 0,
-      totalIssueCount: 1,
+      completedIssueCount: 0,
+      effectiveIssueCount: 1,
     });
 
     setTrailRuntimeControl(store, { kind: "refreshing" });
     expect(selectTrailMilestoneProgress(store.getState(), "milestone-a")).toEqual({
-      terminalIssueCount: 1,
-      totalIssueCount: 1,
+      completedIssueCount: 1,
+      effectiveIssueCount: 1,
     });
   });
 

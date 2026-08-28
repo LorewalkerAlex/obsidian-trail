@@ -118,7 +118,7 @@ describe("TrailProjectsPage", () => {
     renderProjects(harness);
     openProjectA();
 
-    expect(screen.getByText(/1 of 1 Issues terminal/)).toBeInTheDocument();
+    expect(screen.getByText(/1 of 1 Issues completed/)).toBeInTheDocument();
   });
 
   it("deletes a Milestone through the shared confirmation while preserving Issue semantics", () => {

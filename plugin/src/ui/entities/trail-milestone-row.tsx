@@ -47,9 +47,7 @@ export function TrailMilestoneRow(props: {
   const actionsDisabled = !props.writable || pending || !props.sourceIsHealthy;
   const progressLabel = progress === undefined
     ? "Progress unavailable"
-    : progress.totalIssueCount === 0
-      ? "No assigned Issues"
-      : `${progress.terminalIssueCount} of ${progress.totalIssueCount} Issues terminal`;
+    : `${progress.completedIssueCount} of ${progress.effectiveIssueCount} Issues completed`;
   const dueLabel = milestone.due === undefined
     ? undefined
     : formatTrailLocalDateTime(milestone.due, props.timezone).replace("T", " ");
