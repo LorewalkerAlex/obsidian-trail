@@ -394,9 +394,9 @@ describe("Trail Application session", () => {
     ]);
   });
 
-  it("opens a Cycle from normalized inputs when no Current Cycle exists", async () => {
+  it("starts a Cycle from normalized inputs when no Current Cycle exists", async () => {
     const harness = createHarness({ includeOpenCycle: false });
-    const receipt = harness.session.cycles.open({
+    const receipt = harness.session.cycles.start({
       issueIds: [harness.workflow.id],
       plannedEnd: harness.now + 1_000,
     });

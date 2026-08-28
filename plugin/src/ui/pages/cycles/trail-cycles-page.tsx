@@ -12,7 +12,7 @@ import { resolveTrailCycleDefaultEndDate } from "../../../domain/rules/trail-tem
 import {
   selectTrailCycleHistoryIds,
   selectTrailCyclePlanningIssueIds,
-  selectTrailCycleRolloverIssueIds,
+  selectTrailNextCycleCandidateIssueIds,
   selectTrailReadableCycleById,
 } from "../../../query/cycles/trail-cycle-query";
 import {
@@ -100,16 +100,16 @@ export function TrailCyclesPage(props: {
     (state) => currentCycleId !== undefined
       && selectIsTrailEntityPending(state, currentCycleId),
   );
-  const [openIssueIds, setOpenIssueIds] = useState<ReadonlySet<string>>(new Set());
+  const [startIssueIds, setStartIssueIds] = useState<ReadonlySet<string>>(new Set());
   const [plannedEndDraft, setPlannedEndDraft] = useState(() => (
     suggestedCycleEndDraft(props.configuration, Date.now())
   ));
-  const [rolloverFromCycleId, setRolloverFromCycleId] = useState<string>();
+  const [nextCycleSourceId, setNextCycleSourceId] = useState<string>();
   const [workflowError, setWorkflowError] = useState<string>();
   const actionsDisabled = !props.writable || sourceIssues.length > 0 || pending;
 
-  const toggleOpenCandidate = (issueId: string, selected: boolean): void => {
-    setOpenIssueIds((current) => {
+  const toggleStartCandidate = (issueId: string, selected: boolean): void => {
+    setStartIssueIds((current) => {
       const next = new Set(current);
       if (selected) next.add(issueId);
       else next.delete(issueId);
@@ -117,7 +117,7 @@ export function TrailCyclesPage(props: {
     });
   };
 
-  const submitOpenCycle = (event: SyntheticEvent<HTMLFormElement>): void => {
+  const submitStartCycle = (event: SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (actionsDisabled || plannedEndDraft === "") return;
     let plannedEnd: number;
@@ -130,13 +130,13 @@ export function TrailCyclesPage(props: {
       setWorkflowError(error instanceof Error ? error.message : "Invalid Cycle planned end");
       return;
     }
-    const issueIds = planningIssueIds.filter((issueId) => openIssueIds.has(issueId));
+    const issueIds = planningIssueIds.filter((issueId) => startIssueIds.has(issueId));
     runTrailReceipt(
-      () => props.actions.open({ issueIds, plannedEnd }),
+      () => props.actions.start({ issueIds, plannedEnd }),
       setWorkflowError,
       () => {
-        setOpenIssueIds(new Set());
-        setRolloverFromCycleId(undefined);
+        setStartIssueIds(new Set());
+        setNextCycleSourceId(undefined);
         setPlannedEndDraft(suggestedCycleEndDraft(props.configuration, Date.now()));
       },
     );
@@ -155,24 +155,24 @@ export function TrailCyclesPage(props: {
 
   const closeCurrentCycle = (cycle: TrailCycle): boolean => {
     if (actionsDisabled) return false;
-    const rolloverIssueIds = selectTrailCycleRolloverIssueIds(
-      props.runtimeStore.getState(),
-      cycle.id,
-    );
     return runTrailReceipt(
       () => props.actions.close(cycle),
       setWorkflowError,
       () => {
-        setOpenIssueIds(new Set(rolloverIssueIds));
-        setRolloverFromCycleId(cycle.id);
+        const candidateIssueIds = selectTrailNextCycleCandidateIssueIds(
+          props.runtimeStore.getState(),
+          cycle.id,
+        );
+        setStartIssueIds(new Set(candidateIssueIds));
+        setNextCycleSourceId(cycle.id);
         setPlannedEndDraft(suggestedCycleEndDraft(props.configuration, Date.now()));
       },
     ) !== undefined;
   };
 
-  const cancelRollover = (): void => {
-    setRolloverFromCycleId(undefined);
-    setOpenIssueIds(new Set());
+  const cancelNextCycleStart = (): void => {
+    setNextCycleSourceId(undefined);
+    setStartIssueIds(new Set());
     setPlannedEndDraft(suggestedCycleEndDraft(props.configuration, Date.now()));
   };
 
@@ -193,24 +193,24 @@ export function TrailCyclesPage(props: {
       )}
 
       {currentCycle === undefined ? (
-        <section className="trail-project-workspace" aria-labelledby="trail-cycle-open-title">
+        <section className="trail-project-workspace" aria-labelledby="trail-cycle-start-title">
           <div className="trail-section-heading">
             <div>
-              <h2 id="trail-cycle-open-title">
-                {rolloverFromCycleId === undefined ? "Open Cycle" : "Open next Cycle"}
+              <h2 id="trail-cycle-start-title">
+                {nextCycleSourceId === undefined ? "Start Cycle" : "Start next Cycle"}
               </h2>
               <p>
-                {rolloverFromCycleId === undefined
+                {nextCycleSourceId === undefined
                   ? "Choose the Workflow Issues you intend to focus on during this planning period."
-                  : "Unfinished work from the closed Cycle is selected by default; remove anything you do not want to carry forward."}
+                  : "Members of the previous Cycle that are still unfinished are preselected from their current Status; adjust the selection before starting the next Cycle."}
               </p>
             </div>
-            <span className="trail-count" aria-label={`${openIssueIds.size} selected issues`}>
-              {openIssueIds.size}
+            <span className="trail-count" aria-label={`${startIssueIds.size} selected issues`}>
+              {startIssueIds.size}
             </span>
           </div>
 
-          <form className="trail-issue-editor" onSubmit={submitOpenCycle}>
+          <form className="trail-issue-editor" onSubmit={submitStartCycle}>
             <label className="trail-issue-editor__field">
               <span>Planned end ({props.configuration.temporal.timezone})</span>
               <input
@@ -227,10 +227,10 @@ export function TrailCyclesPage(props: {
                 disabled={actionsDisabled || plannedEndDraft === ""}
                 type="submit"
               >
-                {rolloverFromCycleId === undefined ? "Open Cycle" : "Open next Cycle"}
+                {nextCycleSourceId === undefined ? "Start Cycle" : "Start next Cycle"}
               </button>
-              {rolloverFromCycleId === undefined ? null : (
-                <button disabled={actionsDisabled} onClick={cancelRollover} type="button">
+              {nextCycleSourceId === undefined ? null : (
+                <button disabled={actionsDisabled} onClick={cancelNextCycleStart} type="button">
                   Cancel next Cycle
                 </button>
               )}
@@ -241,9 +241,9 @@ export function TrailCyclesPage(props: {
             configuration={props.configuration}
             disabled={actionsDisabled}
             issueIds={planningIssueIds}
-            onToggle={toggleOpenCandidate}
+            onToggle={toggleStartCandidate}
             runtimeStore={props.runtimeStore}
-            selectedIssueIds={openIssueIds}
+            selectedIssueIds={startIssueIds}
           />
         </section>
       ) : (
@@ -285,7 +285,7 @@ export function TrailCyclesPage(props: {
             />
 
             <TrailAlertDialog
-              description="Closing freezes this Cycle's final membership. Unfinished members become preselected candidates for an optional next Cycle."
+              description="Closing freezes this Cycle's final membership. If you start another Cycle next, Trail can preselect members that are still unfinished."
               title="Close current Cycle?"
               trigger={(
                 <button disabled={actionsDisabled} type="button">
@@ -367,7 +367,7 @@ function TrailCycleIssueSelectionList(props: {
     return (
       <div className="trail-empty-state trail-empty-state--compact">
         <p>No eligible Workflow Issues.</p>
-        <span>You can still open an empty Cycle and add work later.</span>
+        <span>You can still start an empty Cycle and add work later.</span>
       </div>
     );
   }

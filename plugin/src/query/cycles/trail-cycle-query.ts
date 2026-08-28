@@ -88,14 +88,14 @@ export function selectTrailCyclePlanningIssueIds(
     .map((issue) => issue.id);
 }
 
-/** Next Cycle rollover carries only unfinished members of the closed source Cycle. */
-export function selectTrailCycleRolloverIssueIds(
+/** Start-next candidates are current non-terminal members of the source Cycle. */
+export function selectTrailNextCycleCandidateIssueIds(
   state: TrailRuntimeState,
   cycleId: string,
 ): readonly string[] {
   const readable = selectTrailReadableRuntimeSnapshot(state);
   const cycle = readable.authoritative.domain.cyclesById.get(cycleId);
-  if (cycle === undefined) return [];
+  if (cycle === undefined || cycle.endedAt === undefined) return [];
   return cycle.issueIds
     .map((issueId) => readable.authoritative.domain.issuesById.get(issueId))
     .filter((issue): issue is TrailWorkflowIssue => issue?.context === "workflow")

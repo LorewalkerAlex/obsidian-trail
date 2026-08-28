@@ -33,7 +33,7 @@ export class TrailCycleApplication {
     private readonly environment: TrailCommandEnvironment,
   ) {}
 
-  public open(input: {
+  public start(input: {
     readonly issueIds?: readonly string[];
     readonly plannedEnd: number;
   }): TrailEntityMutationReceipt {
@@ -48,7 +48,7 @@ export class TrailCycleApplication {
       startedAt,
     });
     const planned = resolveTrailApplicationPlan(result);
-    if (planned.kind === "needs-input") throw new Error("Cycle open unexpectedly requires input");
+    if (planned.kind === "needs-input") throw new Error("Cycle start unexpectedly requires input");
     return submitTrailApplicationPlan(this.sourceSync, planned.value.plan, planned.value.cycle.id);
   }
 

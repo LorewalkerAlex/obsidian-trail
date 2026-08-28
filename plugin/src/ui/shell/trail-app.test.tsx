@@ -127,9 +127,9 @@ describe("TrailApp", () => {
     fireEvent.change(screen.getByLabelText("Cycle planned end"), {
       target: { value: "2026-08-30T23:59" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Open Cycle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start Cycle" }));
 
-    expect(harness.actions.cycles.open).toHaveBeenCalledWith({
+    expect(harness.actions.cycles.start).toHaveBeenCalledWith({
       issueIds: [harness.workflow.id],
       plannedEnd: parseTrailLocalDateTime("2026-08-30T23:59", "Asia/Singapore"),
     });

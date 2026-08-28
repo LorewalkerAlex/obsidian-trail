@@ -294,27 +294,27 @@ describe("Trail diagnostic observers", () => {
       plannedEnd: 200,
       startedAt: 100,
     };
-    const open = vi.fn(() => pendingReceipt("cycle-new"));
+    const start = vi.fn(() => pendingReceipt("cycle-new"));
     const changeMembership = vi.fn(() => ({
       entityId: cycle.id,
       kind: "unchanged" as const,
     }));
     const close = vi.fn(() => pendingReceipt(cycle.id));
     const session = {
-      cycles: { changeMembership, close, open },
+      cycles: { changeMembership, close, start },
     } as unknown as TrailApplicationSession;
     const actions = createDiagnosticTrailUiActions(session, diagnostics);
 
-    actions.cycles.open({ issueIds: ["issue-a", "issue-b"], plannedEnd: 300 });
+    actions.cycles.start({ issueIds: ["issue-a", "issue-b"], plannedEnd: 300 });
     actions.cycles.changeMembership(cycle, ["issue-b"]);
     actions.cycles.close(cycle);
 
-    expect(open).toHaveBeenCalledWith({ issueIds: ["issue-a", "issue-b"], plannedEnd: 300 });
+    expect(start).toHaveBeenCalledWith({ issueIds: ["issue-a", "issue-b"], plannedEnd: 300 });
     expect(changeMembership).toHaveBeenCalledWith(cycle, ["issue-b"]);
     expect(close).toHaveBeenCalledWith(cycle);
     expect(events).toEqual([
       {
-        name: "ui.cycle.open.submitted",
+        name: "ui.cycle.start.submitted",
         options: {
           correlationId: "command-cycle-new",
           data: {

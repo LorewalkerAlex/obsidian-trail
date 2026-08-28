@@ -15,7 +15,7 @@ import {
 import {
   selectTrailCycleHistoryIds,
   selectTrailCyclePlanningIssueIds,
-  selectTrailCycleRolloverIssueIds,
+  selectTrailNextCycleCandidateIssueIds,
   selectTrailReadableCycleById,
 } from "./trail-cycle-query";
 
@@ -117,11 +117,12 @@ describe("Trail Cycle page Query", () => {
     ]);
   });
 
-  it("rolls only unfinished members into a next Cycle", () => {
-    const { active, completed, newerClosed, store } = readyStore();
+  it("selects current non-terminal members as next-Cycle candidates", () => {
+    const { active, completed, newerClosed, openCycle, store } = readyStore();
 
+    expect(selectTrailNextCycleCandidateIssueIds(store.getState(), openCycle.id)).toEqual([]);
     expect(newerClosed.issueIds).toContain(completed.id);
-    expect(selectTrailCycleRolloverIssueIds(store.getState(), newerClosed.id)).toEqual([
+    expect(selectTrailNextCycleCandidateIssueIds(store.getState(), newerClosed.id)).toEqual([
       active.id,
     ]);
   });

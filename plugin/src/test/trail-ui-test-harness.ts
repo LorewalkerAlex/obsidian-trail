@@ -116,7 +116,7 @@ export function createTrailUiTestHarness(input: {
     cycles: {
       changeMembership: vi.fn(() => ({ kind: "unchanged" as const, entityId: "cycle-a" })),
       close: vi.fn(() => receipt("cycle-a")),
-      open: vi.fn(() => receipt("new-cycle")),
+      start: vi.fn(() => receipt("new-cycle")),
     },
     initiatives: {
       create: vi.fn(() => receipt("new-initiative")),

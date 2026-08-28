@@ -102,8 +102,8 @@ function openCycleHarness() {
     }));
     return receipt(expectedCycle.id);
   });
-  const open = vi.fn(() => receipt("cycle-next"));
-  const actions: TrailUiActions["cycles"] = { changeMembership, close, open };
+  const start = vi.fn(() => receipt("cycle-next"));
+  const actions: TrailUiActions["cycles"] = { changeMembership, close, start };
   const issueActions: TrailUiActions["issues"] = {
     changeMilestone: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
     changeStatus: vi.fn(() => ({ entityId: active.id, kind: "unchanged" as const })),
@@ -115,7 +115,7 @@ function openCycleHarness() {
 }
 
 describe("TrailCyclesPage", () => {
-  it("opens a Cycle with explicit membership and a concrete planned end", () => {
+  it("starts a Cycle with explicit membership and a concrete planned end", () => {
     const harness = createTrailUiTestHarness();
     const configuration = createTrailTestConfiguration();
     render(
@@ -132,15 +132,15 @@ describe("TrailCyclesPage", () => {
     fireEvent.change(screen.getByLabelText("Cycle planned end"), {
       target: { value: "2026-08-30T23:59" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Open Cycle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start Cycle" }));
 
-    expect(harness.actions.cycles.open).toHaveBeenCalledWith({
+    expect(harness.actions.cycles.start).toHaveBeenCalledWith({
       issueIds: [harness.workflow.id],
       plannedEnd: parseTrailLocalDateTime("2026-08-30T23:59", "Asia/Singapore"),
     });
   });
 
-  it("changes membership explicitly, closes the Cycle, and preselects unfinished rollover", () => {
+  it("closes explicitly and offers current unfinished members as next-Cycle candidates", () => {
     const harness = openCycleHarness();
     render(
       <TrailCyclesPage
@@ -165,13 +165,14 @@ describe("TrailCyclesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirm close" }));
 
     expect(harness.actions.close).toHaveBeenCalledWith(harness.cycle);
-    expect(screen.getByRole("heading", { level: 2, name: "Open next Cycle" }))
+    expect(harness.actions.start).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { level: 2, name: "Start next Cycle" }))
       .toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Include Active" })).toBeChecked();
     expect(screen.queryByRole("checkbox", { name: "Include Completed" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel next Cycle" }));
-    expect(screen.getByRole("heading", { level: 2, name: "Open Cycle" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Start Cycle" })).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Include Active" })).not.toBeChecked();
   });
 
