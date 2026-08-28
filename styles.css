@@ -32,6 +32,23 @@ body,
   --trail-linear-control-compact: 28px;
   --trail-linear-control: 30px;
   --trail-linear-font: Inter, var(--font-interface), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Current Linear contextual-menu grammar shared by host and Trail surfaces. */
+  --trail-menu-surface: var(--trail-linear-surface-menu);
+  --trail-menu-border: var(--trail-linear-border-strong);
+  --trail-menu-shadow: 0 12px 32px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.025);
+  --trail-menu-radius: 8px;
+  --trail-menu-padding: 4px;
+  --trail-menu-min-width: 220px;
+  --trail-menu-item-height: 28px;
+  --trail-menu-item-radius: 5px;
+  --trail-menu-item-padding-x: 8px;
+  --trail-menu-item-gap: 8px;
+  --trail-menu-font-size: 11px;
+  --trail-menu-icon-size: 14px;
+  --trail-menu-shortcut-size: 9.5px;
+  --trail-menu-hover: rgba(255, 255, 255, 0.055);
+  --trail-menu-separator: rgba(255, 255, 255, 0.055);
 }
 
 .trail-view,
@@ -1185,44 +1202,46 @@ body ::-webkit-scrollbar-thumb:hover {
 }
 
 .trail-lab-menu {
-  padding: 4px;
-  border: 1px solid var(--trail-linear-border-strong);
-  border-radius: var(--trail-linear-radius-md);
-  background: var(--trail-linear-surface-menu);
-  box-shadow: var(--trail-linear-shadow);
+  min-width: var(--trail-menu-min-width);
+  padding: var(--trail-menu-padding);
+  border: 1px solid var(--trail-menu-border);
+  border-radius: var(--trail-menu-radius);
+  background: var(--trail-menu-surface);
+  box-shadow: var(--trail-menu-shadow);
 }
 
 .trail-lab-menu__item {
   display: flex;
-  min-height: 27px;
+  min-height: var(--trail-menu-item-height);
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0 7px;
-  border-radius: 5px;
+  gap: var(--trail-menu-item-gap);
+  padding: 0 var(--trail-menu-item-padding-x);
+  border-radius: var(--trail-menu-item-radius);
   color: var(--trail-linear-text-secondary);
-  font-size: 10.5px;
+  font-size: var(--trail-menu-font-size);
 }
 
 .trail-lab-menu__item.is-active {
-  background: rgba(255, 255, 255, 0.055);
+  background: var(--trail-menu-hover);
   color: var(--trail-linear-text-primary);
 }
 
 .trail-lab-menu__item--danger {
-  color: #ee8a94;
+  color: var(--trail-linear-danger);
 }
 
 .trail-lab-menu__item kbd {
   color: var(--trail-linear-text-faint);
   font-family: var(--trail-linear-font);
-  font-size: 9px;
+  font-size: var(--trail-menu-shortcut-size);
+  font-weight: 450;
 }
 
 .trail-lab-menu__separator {
   height: 1px;
-  margin: 4px 3px;
-  background: var(--trail-linear-border);
+  margin: 4px 6px;
+  background: var(--trail-menu-separator);
 }
 
 .trail-lab-composer {
@@ -2122,13 +2141,14 @@ body .markdown-reading-view ::selection {
 /* --------------------------------------------------------------------------
  * Native overlays and document/editor typography
  *
- * Menus keep the same compact application geometry as Trail overlays. The
- * Markdown surface follows Linear's restrained document hierarchy rather than
- * inheriting the larger default Obsidian heading scale.
+ * Obsidian DOM menus and Trail context menus consume one Linear-derived menu
+ * contract; Obsidian remains the interaction/mechanics owner. The Markdown
+ * surface follows Linear's restrained document hierarchy rather than inheriting
+ * the larger default Obsidian heading scale.
  * -------------------------------------------------------------------------- */
 
 body {
-  --menu-padding: 4px;
+  --menu-padding: var(--trail-menu-padding);
   --inline-title-size: 24px;
   --inline-title-weight: 650;
   --inline-title-line-height: 1.22;
@@ -2155,32 +2175,64 @@ body {
 }
 
 body .menu {
-  padding: var(--menu-padding);
-  border-color: var(--trail-linear-border);
-  border-radius: 7px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.018);
+  min-width: var(--trail-menu-min-width);
+  padding: var(--trail-menu-padding);
+  border: 1px solid var(--trail-menu-border);
+  border-radius: var(--trail-menu-radius);
+  background: var(--trail-menu-surface);
+  color: var(--trail-linear-text-secondary);
+  box-shadow: var(--trail-menu-shadow);
+  font-family: var(--trail-linear-font);
 }
 
 body .menu-item {
-  min-height: 26px;
-  padding: 0 8px;
-  gap: 7px;
-  border-radius: 4px;
-  font-size: 11px;
-  line-height: 26px;
+  display: flex;
+  min-height: var(--trail-menu-item-height);
+  align-items: center;
+  gap: var(--trail-menu-item-gap);
+  padding: 0 var(--trail-menu-item-padding-x);
+  border-radius: var(--trail-menu-item-radius);
+  color: var(--trail-linear-text-secondary);
+  font-size: var(--trail-menu-font-size);
+  line-height: var(--trail-menu-item-height);
+}
+
+body .menu-item:hover:not(.is-disabled):not(.is-label),
+body .menu-item.selected:not(.is-disabled):not(.is-label) {
+  background: var(--trail-menu-hover);
+  color: var(--trail-linear-text-primary);
+}
+
+body .menu-item.is-disabled {
+  color: var(--trail-linear-text-faint);
+}
+
+body .menu-item.is-warning {
+  color: var(--trail-linear-danger);
+}
+
+body .menu-item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 body .menu-item-icon {
-  width: 14px;
-  min-width: 14px;
-  height: 14px;
+  width: var(--trail-menu-icon-size);
+  min-width: var(--trail-menu-icon-size);
+  height: var(--trail-menu-icon-size);
   color: var(--trail-linear-text-muted);
 }
 
 body .menu-item-icon svg {
-  width: 14px;
-  height: 14px;
+  width: var(--trail-menu-icon-size);
+  height: var(--trail-menu-icon-size);
   stroke-width: 1.65;
+}
+
+body .menu-item-icon .mod-submenu {
+  color: var(--trail-linear-text-faint);
 }
 
 body .menu-item:hover .menu-item-icon,
@@ -2188,9 +2240,15 @@ body .menu-item.selected .menu-item-icon {
   color: var(--trail-linear-text-secondary);
 }
 
+body .menu-item.is-warning .menu-item-icon,
+body .menu-item.is-warning:hover .menu-item-icon,
+body .menu-item.is-warning.selected .menu-item-icon {
+  color: var(--trail-linear-danger);
+}
+
 body .menu-separator {
-  margin: 3px 6px;
-  border-bottom-color: rgba(255, 255, 255, 0.055);
+  margin: 4px 6px;
+  border-bottom-color: var(--trail-menu-separator);
 }
 
 body .nav-file-title.is-active,
@@ -2201,11 +2259,24 @@ body .tree-item-self.is-active {
   box-shadow: none;
 }
 
+/*
+ * Obsidian owns File Explorer focus through the parent .has-focus state, not
+ * the active title alone. Mouse/context-menu focus stays quiet like Linear;
+ * keyboard focus keeps the smaller Trail focus-visible treatment below.
+ */
+body .workspace-leaf.mod-active .nav-folder.has-focus > .nav-folder-title,
+body .workspace-leaf.mod-active .nav-file.has-focus > .nav-file-title,
+body .workspace-leaf.mod-active .nav-folder.has-focus > .nav-folder-title:focus-within,
+body .workspace-leaf.mod-active .nav-file.has-focus > .nav-file-title:focus-within {
+  outline: 0;
+  box-shadow: none;
+}
+
 body .nav-file-title:focus-visible,
 body .nav-folder-title:focus-visible,
 body .tree-item-self:focus-visible {
   outline: 0;
-  box-shadow: inset 0 0 0 1px rgba(94, 106, 210, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(94, 106, 210, 0.28);
 }
 
 body .inline-title,
