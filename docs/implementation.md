@@ -167,7 +167,7 @@ The Home **Weekly Meeting Notes** module reuses the existing Trail-managed `Coll
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action design, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are resolved at the target-design level, so Gate 8 may treat the V1 UI authority as frozen. The exposed lower-layer semantic corrections through Milestone Progress are closed. The UI Reset is implemented: legacy POC presentation and CSS left the active tree, the Obsidian host bridge remains buildable, and the replacement stack starts from one clean scaffold. Foundation Lab bootstrap and the first frontend architecture consolidation are also locally green: the Lab is calibration-only, reusable visual facts have one token/contract authority, current native Obsidian reconstruction no longer depends on an append-only override stack for the calibrated consumers, and representative real-host validation is green. The next active implementation boundary is Visual Foundation acceptance before production primitives and product-page composition. The remaining UI gaps are recorded in Section 4.4.
+Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action design, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are resolved at the target-design level, so Gate 8 may treat the V1 UI authority as frozen. The exposed lower-layer semantic corrections through Milestone Progress are closed. The UI Reset, Foundation Lab bootstrap, frontend architecture consolidation, and Visual Foundation acceptance are now locally green against the real Obsidian host. Reusable visual facts have one token/contract authority, representative native Obsidian consumers and Trail calibration surfaces share the accepted Linear-faithful application presentation, and values that still require a real production consumer remain explicitly replaceable rather than prematurely frozen. The next active implementation boundary is the Core Primitive Kit before shared patterns, semantic components, and product-page composition. The remaining UI gaps are recorded in Section 4.4.
 
 ### 4.2 Required Workflow Project & Default Project slice
 
@@ -310,7 +310,7 @@ With V1 `ui.md` frozen and the earlier implementation checkpoints preserved as e
 Canonical Estimate alignment, Workflow Issue Project-control alignment, Cycle interaction/vocabulary alignment, and Milestone Progress semantic alignment are no longer verified gaps. Those lower-layer contracts remain active and unchanged by the UI Reset. Their pre-reset UI consumers are now historical evidence only: before removal they proved fixed T-Shirt Estimate presentation, explicit Project selection with no normal Projectless destination, explicit Cycle Start/Close/Start-next interaction, and completed/effective Milestone Progress. The remaining gaps are:
 
 - **Default Project Settings/UI alignment gap** — the lower-layer required-Default contract is now aligned: canonical ready Workspace State requires `defaultProjectId`, persisted omission is restricted to initialization recovery, missing-only startup recovery uses the reserved sequence-`0000` Project carrier, external missing/dangling state fails closed, Project Delete rejects the current Default, and Workspace Application exposes the independent setter. Remaining V1 work is wiring the searchable Trail Settings control with no empty choice plus the current-Default Delete affordance/guidance to these contracts; UI must not reintroduce a delete-time replacement Default;
-- **formal UI implementation gap** — the clean active-tree scaffold, Foundation Lab, and first frontend architecture/foundation consolidation now exist. Remaining work is to visually accept the Foundation, build the production primitive/pattern/semantic stack, then implement Location/View Bars, shared Creation Composer, simplified Filter/session state, Selection/Action system, Project/Initiative/Triage/Cycle/Home/Search composition, Workspace Grid, Inspector/Peek ownership, Linear-like Runtime feedback, Default Project settings interaction, density, and responsive behavior on that single architecture;
+- **formal UI implementation gap** — the clean active-tree scaffold, Foundation Lab, frontend architecture/foundation consolidation, and Visual Foundation acceptance now exist. Remaining work starts with the Core Primitive Kit, then the shared pattern/interaction and semantic component stack, followed by Location/View Bars, shared Creation Composer, simplified Filter/session state, Selection/Action system, Project/Initiative/Triage/Cycle/Home/Search composition, Workspace Grid, Inspector/Peek ownership, Linear-like Runtime feedback, Default Project settings interaction, and later consumer-specific responsive calibration on that single architecture;
 - **explicitly deferred conveniences** — Custom Views, Favorites, and the future Workspace Issues collection do not block the V1 implementation plan.
 
 These are the remaining implementation gaps after the verified UI Reset slice. Canonical Estimate, Project-control, Cycle interaction, Milestone Progress, and UI Reset are completed implementation evidence below; the remaining active work should continue through the frozen UI owners and accepted foundation rather than by introducing page-local compatibility behavior.
@@ -341,9 +341,17 @@ Default Project target interaction is resolved. Normal ready Workspace State req
 
 Required Workflow Project & Default Project, the current Required Default Project ready-state lower-layer alignment, Project Status Four-State Configuration Closure, Canonical Estimate Alignment, Workflow Issue Project-control Alignment, Cycle Interaction/Vocabulary Alignment, Milestone Progress Semantic Alignment, UI Reset / clean active-tree scaffold, Label Configuration & Management, Status Configuration & Management, Milestone Details Editing, Search mechanics, Home Routing/Weekly Update persistence, and Integrity Batch failure-safety are completed implementation evidence. The Projectless portion of the historical Search checkpoint remains superseded and no longer exists in normal runtime.
 
-### 4.5 Frontend architecture established; next: Visual Foundation acceptance
+### 4.5 Frontend architecture and Visual Foundation accepted; next: Core Primitive Kit
 
-The bounded V1 interaction design remains frozen in `ui.md`. The deliberate UI Reset is complete, and the first Foundation implementation has now been reorganized into a frontend architecture that can carry the remaining V1 work without treating CSS cascade history or Lab specimens as production contracts.
+The bounded V1 interaction design remains frozen in `ui.md`. The deliberate UI Reset, Foundation implementation, frontend architecture consolidation, and Visual Foundation acceptance are complete enough for production primitives to consume the shared visual contracts without treating CSS cascade history or Lab specimens as production APIs.
+
+Visual calibration uses three outcomes rather than changing values merely to produce a diff:
+
+- **Accept** — existing presentation is stable enough for downstream consumers to depend on the owning token/contract;
+- **Calibrate** — current Linear evidence or real Obsidian host behavior shows a material deviation, so the owning token or correct native/Trail consumer is adjusted instead of appending a repair override;
+- **Keep replaceable** — the decision needs a real production consumer or host constraint that does not yet exist, so the current value remains implementation-owned and explicitly non-global.
+
+The accepted Foundation covers whole-shell surface hierarchy and density, semantic typography/color/state language, spacing/radius/hairline/elevation direction, icon sizing/stroke rhythm, representative native controls and menus, keyboard focus, hover/pressed/selected/disabled/destructive/text-selection distinctions, Markdown Live Preview/Reading/Properties presentation, and container-based visual responsiveness. Exact future glyph choices, Label palette assignment, component/page geometry, Inspector thresholds, production overlay motion, and Foundation Lab's current `620px` / `860px` calibration thresholds remain replaceable until their real consumers justify a contract.
 
 The active frontend rules are:
 
@@ -369,10 +377,10 @@ The executable V1 UI master checklist is:
   - established app-wide plugin-enabled Obsidian presentation mapping while preserving Obsidian mechanics;
   - switched Lab visual-only responsiveness to actual container capacity;
   - passed complete local automated verification and representative real-host validation after the rewrite.
-- [ ] **3. Visual Foundation acceptance**
-  - calibrate and explicitly accept canvas/surface hierarchy, typography, accent/semantic colors, spacing, radius, hairlines/elevation, icon sizing, focus/hover/pressed/disabled states, restrained motion, and document/editor presentation;
-  - compare the full enabled Obsidian application against current Linear references, not only isolated Trail DOM;
-  - freeze only the values/contracts that are stable enough for production primitives to consume.
+- [x] **3. Visual Foundation acceptance**
+  - accepted canvas/surface hierarchy, typography, accent/semantic colors, spacing/density direction, radius, hairlines/elevation, icon sizing/stroke rhythm, focus/hover/pressed/selected/disabled/destructive/text-selection states, restrained motion principle, and document/editor presentation;
+  - validated the full enabled Obsidian application through representative Trail Lab/navigation, tabs/chrome, File Explorer, Settings controls, native Menu, Markdown Live Preview/Reading, Properties focus, and a narrow Trail split inside a still-wide window;
+  - froze only shared values/contracts stable enough for production primitives, while consumer-specific glyphs, palettes, geometry, motion details, and responsive thresholds remain replaceable until their real consumers exist.
 - [ ] **4. Core Primitive Kit**
   - Button/IconButton, Input/Textarea, Checkbox, segmented control, Badge/Tag where justified, Tooltip, Popover, Menu, Select/Combobox, Dialog, Separator, Kbd, Progress, and common loading/disabled/destructive states;
   - prefer Obsidian/browser/mature focused mechanics where suitable and expose small typed semantic variants over Trail tokens rather than arbitrary style props.
@@ -440,8 +448,8 @@ Product responsibilities
    |- Legacy POC presentation archive boundary          2049ed14
    |- UI Reset / clean active-tree scaffold             CLOSED
    |- Frontend architecture + Foundation consolidation CLOSED
-   |- Visual Foundation acceptance                      NEXT
-   |- Core Primitive Kit                                QUEUED
+   |- Visual Foundation acceptance                      CLOSED
+   |- Core Primitive Kit                                NEXT
    |- Shared Pattern + Interaction Kit                  QUEUED
    |- Trail Semantic Component Kit                      QUEUED
    |- Shell / navigation / collection framework         QUEUED
@@ -483,7 +491,8 @@ Completed Gate 8 implementation slices at the current documented baseline includ
 - Cycle Interaction/Vocabulary Alignment;
 - Milestone Progress Semantic Alignment;
 - UI Reset / clean active-tree scaffold;
-- Foundation Lab bootstrap + frontend architecture/foundation consolidation **(current verified candidate)**.
+- Foundation Lab bootstrap + frontend architecture/foundation consolidation;
+- Visual Foundation acceptance **(whole-shell hierarchy/density, interaction-state, document/container calibration)**.
 
 Triage, broader Cycle page composition, Creation Surface, simplified shared Filter, shared Selection/Action, Initiative Focus, Home, Workspace Grid, Search, Runtime feedback, and the Default Project Settings/delete-affordance UI are not completed implementation slices merely because their target semantics are frozen. Their consumers still require formal implementation alignment. The bounded Cycle Start/Close/Start-next and Milestone Progress semantic corrections are completed. The Required Default Project ready-state lower layer, Canonical Estimate alignment, Workflow Issue Project-control alignment, Cycle interaction/vocabulary alignment, and Milestone Progress derived Query contract are completed foundations and should be consumed rather than re-modeled by those UI slices.
 
@@ -650,9 +659,24 @@ The current Foundation architecture candidate on top of public checkpoint `70a68
 - final local verification is green across ESLint, 93 Vitest files / 316 tests, TypeScript `tsc --noEmit`, production esbuild, and `git diff --check`;
 - representative real-Obsidian validation after the rewrite shows the complete Foundation Lab, Trail Navigation, native File Explorer/menu, ordinary Markdown/editor surface, and whole-window host presentation rendering without a material regression from the accepted calibration direction.
 
-This evidence establishes the frontend architecture/Foundation implementation baseline. It does **not** claim that every Lab specimen, native Obsidian surface, document typography value, or future production primitive has final visual polish. Visual Foundation acceptance remains the next Gate 8 boundary, and production components must be created through the primitive/pattern/semantic ownership above rather than by promoting Lab markup directly.
+This evidence establishes the frontend architecture/Foundation implementation baseline. It does **not** promote Lab markup into production APIs; the later Visual Foundation acceptance evidence below records which shared visual contracts are now stable enough for production primitives and which values deliberately remain replaceable.
 
-### 6.10 General verification discipline
+### 6.10 Visual Foundation acceptance evidence
+
+The Visual Foundation acceptance on top of public checkpoint `eb76b750ed4a25106e47897a38b2bcdc51055995` verifies:
+
+- whole-shell hierarchy/density is accepted across Trail Navigation/Foundation Lab and representative Obsidian tabs/header/Ribbon/status/File Explorer surfaces, with work content remaining visually primary and navigation/chrome remaining quiet;
+- typography is one semantic authority for Lab consumers, and the calibrated main-work hierarchy no longer loses visual priority to sidebar/supporting chrome;
+- generic host-control styling preserves native mechanics: the Settings Language dropdown regression caused by resetting the native background image was repaired at the generic-control consumer, while desktop tabs were compacted through Obsidian's tab geometry variables rather than by replacing tab behavior;
+- interaction states keep separate semantics for quiet hover, pressed, collection selection, keyboard focus, disabled, destructive, and text selection; text selection has its own owner rather than borrowing collection-selection state;
+- representative keyboard validation distinguishes current/active File Explorer rows from keyboard-focused rows, restores visible native button `:focus-visible`, and keeps native composite Settings/Properties focus behavior intact where Obsidian owns the interaction surface;
+- the native Obsidian context Menu remains on Obsidian mechanics while consuming the shared Trail menu visual contract; representative density, separator, icon/text alignment, submenu treatment, and destructive presentation are accepted without an exhaustive overlay rewrite;
+- Markdown Live Preview and Reading View, Properties display/edit focus, and the surrounding whole-shell presentation remain visually coherent under one dark application system;
+- Foundation Lab responds to its actual pane/container when the Trail split is narrow even while the overall Obsidian window remains wide, proving the container-based architecture without promoting the Lab's current `620px` / `860px` thresholds into global Trail breakpoints;
+- palette/surface hierarchy, radius/border/elevation language, icon sizing/stroke rhythm, and restrained motion direction are stable enough for production primitives; exact production glyph choices, Label palette assignment, component/page geometry, Inspector thresholds, overlay motion details, and consumer-specific responsive thresholds remain replaceable until their real consumers exist;
+This closes Visual Foundation acceptance without claiming every future component or page pixel is final. The next Gate 8 boundary is the Core Primitive Kit, which must consume these accepted owners rather than copy Lab classes or reintroduce component-local visual facts.
+
+### 6.11 General verification discipline
 
 For each active Gate 8 slice:
 
@@ -670,7 +694,7 @@ For each active Gate 8 slice:
 
 ## 7. Final State
 
-V1 implementation is ready for final product hardening only after the frozen Product/Domain/Data/UI answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions. The exposed lower-layer semantic corrections through Milestone Progress, the UI Reset, and the frontend architecture/Foundation consolidation are closed. The legacy POC presentation has already left the active implementation; before final hardening, the now-defined token -> primitive -> pattern/interaction -> semantic component -> page/shell stack must reach visual acceptance and carry the remaining product locations plus Default Project Settings/delete guidance. Cycle Start/Close/Start-next interaction/vocabulary, Milestone Progress semantics, the Required Default Project ready-state lower layer, Canonical Estimate alignment, and Workflow Issue Project-control legality are already closed.
+V1 implementation is ready for final product hardening only after the frozen Product/Domain/Data/UI answers are implemented through their canonical owners without temporary models, alternate persistence paths, duplicate mechanisms, or Page-private reconstructions. The exposed lower-layer semantic corrections through Milestone Progress, the UI Reset, frontend architecture/Foundation consolidation, and Visual Foundation acceptance are closed. The legacy POC presentation has already left the active implementation; before final hardening, the accepted token foundation must now carry the Core Primitive Kit -> pattern/interaction -> semantic component -> page/shell stack and the remaining product locations plus Default Project Settings/delete guidance. Cycle Start/Close/Start-next interaction/vocabulary, Milestone Progress semantics, the Required Default Project ready-state lower layer, Canonical Estimate alignment, and Workflow Issue Project-control legality are already closed.
 
 The model must continue to contain no normal-runtime Projectless Workflow state; the Default Project remains an ordinary Project selected by required Workspace State, with only the independent current-Default Delete guard added by that designation; Status Configuration preserves the global semantic vocabulary while enforcing entity-specific applicability; normal UI presents concrete StatusDefinitions rather than exposing StatusCategory as a second interaction hierarchy; Filter state remains session-only UI state; Creation/Triage/Cycle composition reuses shared interaction/query/UI mechanisms without new authority models; the legacy POC presentation survives only in Git history rather than as a parallel active UI tree; deferred Custom Views/Favorites do not leak speculative implementation into V1; dependency gates are coherent; and automated plus representative real-host verification is green for the integrated product.
 
