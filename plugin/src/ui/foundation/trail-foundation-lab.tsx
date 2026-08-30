@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
+import { TrailButton } from "../primitives/trail-button";
+import { TrailIconButton } from "../primitives/trail-icon-button";
+import { TrailInput } from "../primitives/trail-input";
+import { TrailTextarea } from "../primitives/trail-textarea";
 
 interface TrailFoundationLabProps {
   readonly control: TrailRuntimeControl;
@@ -125,18 +129,18 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </div>
 
       <LabSection
-        description="These are calibration specimens, not production primitives. The primitive kit will expose typed semantic variants over the same tokens."
+        description="Accepted production primitives are calibrated here alongside Lab-only static specimens; Lab-only states do not expand the production API."
         title="Controls"
       >
         <div className="trail-lab-control-groups">
           <div className="trail-lab-control-group">
             <span className="trail-lab-control-group__label">Buttons</span>
             <div className="trail-lab-control-row">
-              <button className="trail-lab-button trail-lab-button--primary" type="button">Create issue</button>
+              <TrailButton variant="primary">Create issue</TrailButton>
               <button className="trail-lab-button trail-lab-button--secondary" type="button">Save</button>
               <button className="trail-lab-button trail-lab-button--ghost" type="button">Cancel</button>
               <button className="trail-lab-button trail-lab-button--secondary is-demo-hover" type="button">Hover</button>
-              <button className="trail-lab-button trail-lab-button--secondary" disabled type="button">Disabled</button>
+              <TrailButton disabled>Disabled</TrailButton>
             </div>
           </div>
 
@@ -152,15 +156,17 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
                 Display
               </button>
               <span className="trail-lab-control-divider" />
-              <button aria-label="Search specimen" className="trail-lab-icon-button" type="button">
-                <CalibrationIcon kind="search" />
-              </button>
+              <TrailIconButton
+                icon={<CalibrationIcon kind="search" />}
+                label="Search specimen"
+              />
               <button aria-label="Create specimen" className="trail-lab-icon-button is-demo-hover" type="button">
                 <CalibrationIcon kind="plus" />
               </button>
-              <button aria-label="More specimen" className="trail-lab-icon-button" type="button">
-                <CalibrationIcon kind="dots" />
-              </button>
+              <TrailIconButton
+                icon={<CalibrationIcon kind="dots" />}
+                label="More specimen"
+              />
               <span className="trail-lab-tooltip">Search</span>
             </div>
           </div>
@@ -168,14 +174,15 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
           <div className="trail-lab-control-group">
             <span className="trail-lab-control-group__label">Fields and layout</span>
             <div className="trail-lab-control-row trail-lab-control-row--wide">
-              <label className="trail-lab-field">
-                <span className="trail-lab-field__label">Title</span>
-                <input defaultValue="Polish keyboard navigation" readOnly />
-              </label>
-              <label className="trail-lab-field is-demo-focus">
-                <span className="trail-lab-field__label">Search</span>
-                <input defaultValue="project" readOnly />
-              </label>
+              <TrailInput aria-label="Title" defaultValue="Polish keyboard navigation" readOnly size={24} />
+              <TrailInput aria-label="Search" defaultValue="project" readOnly size={20} type="search" />
+              <TrailTextarea
+                aria-label="Description"
+                cols={30}
+                defaultValue="Keep the default path obvious."
+                readOnly
+                rows={2}
+              />
               <div aria-label="Layout specimen" className="trail-lab-segmented" role="group">
                 <button className="is-selected" type="button">List</button>
                 <button type="button">Board</button>
@@ -306,7 +313,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
             </div>
             <div className="trail-lab-composer__footer">
               <span className="trail-lab-composer__attachment" aria-hidden="true">⌁</span>
-              <button className="trail-lab-button trail-lab-button--primary" type="button">Create issue</button>
+              <TrailButton variant="primary">Create issue</TrailButton>
             </div>
           </div>
         </div>
