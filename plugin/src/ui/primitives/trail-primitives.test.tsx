@@ -7,6 +7,7 @@ import {
 import { describe, expect, it, vi } from "vitest";
 
 import { TrailButton } from "./trail-button";
+import { TrailCheckbox } from "./trail-checkbox";
 import { TrailIconButton } from "./trail-icon-button";
 import { TrailInput } from "./trail-input";
 import { TrailProgress } from "./trail-progress";
@@ -56,6 +57,27 @@ describe("Trail core primitives", () => {
     expect(button).toHaveAttribute("type", "button");
     expect(button).toHaveClass("clickable-icon", "trail-icon-button");
     expect(screen.getByTestId("search-icon")).toBeInTheDocument();
+  });
+
+  it("keeps Checkbox on the native input contract with an explicit accessible label", () => {
+    const onChange = vi.fn();
+    const ref = createRef<HTMLInputElement>();
+    render(
+      <TrailCheckbox
+        label="Select TRAIL-134"
+        onChange={onChange}
+        ref={ref}
+      />,
+    );
+
+    const checkbox = screen.getByRole("checkbox", { name: "Select TRAIL-134" });
+    expect(checkbox).toHaveAttribute("type", "checkbox");
+    expect(checkbox).toHaveClass("trail-checkbox");
+    expect(ref.current).toBe(checkbox);
+
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+    expect(onChange).toHaveBeenCalledOnce();
   });
 
   it("forwards Input value, change, type, and ref through the native control", () => {

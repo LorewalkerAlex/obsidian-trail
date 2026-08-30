@@ -379,7 +379,8 @@ Design tokens
 
 Representative capabilities include:
 
-- **Core primitives** — Button/IconButton, Input/Textarea, Checkbox, segmented control, Tooltip/Popover, Menu, Select/Combobox, Dialog, Separator, Kbd, Progress, and other generic interaction surfaces;
+- **Core primitives** — Button/IconButton, Input/Textarea, Checkbox, Tooltip/Popover, Menu, Select/Combobox, Dialog, Separator, Kbd, Progress, and other generic interaction surfaces whose responsibility is proven independently of a specific pattern;
+- **Layout selection** — belongs to View Bar/shared-pattern composition by default; promote a generic segmented-control primitive only if multiple real consumers prove one stable independent contract;
 - **Shared patterns** — Surface, CollectionRow/Card foundations, Toolbar/View controls, PropertyControl shell, overlay/composer carriers, list/board foundations, and reusable focus/selection presentation;
 - **Trail semantic components** — Status, Priority, Estimate, Due, Label, Project/Initiative identity, Milestone, IssueRow/IssueCard, ProjectRow, and semantic progress;
 - **Cross-surface interactions** — Creation state, Filter state, Selection/Action Registry, Peek/Inspector targeting, Command/Context/Bulk orchestration, and keyboard dispatch;
@@ -479,11 +480,12 @@ Obsidian publishes one plugin `styles.css`, so V1 keeps one physical stylesheet 
 1. design-token authority
 2. Obsidian semantic-variable mapping
 3. targeted native Obsidian consumers
-4. Trail shell carriers
-5. Foundation Lab-only calibration specimens
+4. Trail production component contracts
+5. Trail shell carriers
+6. Foundation Lab-only calibration specimens
 ```
 
-A reusable visual fact belongs to the token/contract layer once. Consumers use semantic variables rather than copying raw colors, typography scales, radii, control sizes, state colors, or elevation values. Component-specific geometry may remain local when it has no reusable semantic meaning. Calibration edits the owning token/consumer rule; it does not append a later override whose correctness depends on cascade history.
+A reusable visual fact belongs to the token/contract layer once. Consumers use semantic variables rather than copying raw colors, typography scales, radii, control sizes, state colors, or elevation values. Reusable component-specific geometry/state belongs to the Trail production component contract section; genuinely local composition geometry stays with its owning pattern/page. Calibration edits the owning token/consumer rule; it does not append a later override whose correctness depends on cascade history.
 
 The stylesheet may use normal CSS specificity/state rules where the browser/Obsidian DOM requires them, but specificity and source order are not architectural ownership mechanisms. A later rule must not exist merely to repair an earlier competing answer for the same responsibility.
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
 import { TrailButton } from "../primitives/trail-button";
+import { TrailCheckbox } from "../primitives/trail-checkbox";
 import { TrailIconButton } from "../primitives/trail-icon-button";
 import { TrailInput } from "../primitives/trail-input";
 import { TrailProgress } from "../primitives/trail-progress";
@@ -216,14 +217,14 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
               <span className="trail-lab-list-row__meta">M</span>
             </div>
             <div className="trail-lab-list-row is-demo-hover">
-              <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
+              <TrailCheckbox label="Select TRAIL-134" />
               <span className="trail-lab-list-row__id">TRAIL-134</span>
               <span className="trail-lab-list-row__title">Implement command menu surface</span>
               <span className="trail-lab-label-chip trail-lab-label-chip--quiet">UI</span>
               <span className="trail-lab-list-row__meta">L</span>
             </div>
             <div className="trail-lab-list-row is-selected">
-              <span className="trail-lab-status-glyph trail-lab-status-glyph--done" />
+              <TrailCheckbox checked label="Select TRAIL-119" readOnly />
               <span className="trail-lab-list-row__id">TRAIL-119</span>
               <span className="trail-lab-list-row__title">Reset legacy presentation</span>
               <span className="trail-lab-label-chip trail-lab-label-chip--quiet">Core</span>
