@@ -19,6 +19,8 @@ describe("TrailFoundationLab", () => {
     expect(screen.getByRole("button", { name: "Search specimen" })).toHaveClass("trail-icon-button");
     expect(screen.getByRole("searchbox", { name: "Search" })).toHaveClass("trail-input");
     expect(screen.getByRole("textbox", { name: "Description" })).toHaveClass("trail-textarea");
+    expect(screen.getByRole("progressbar", { name: "Progress specimen" })).toHaveClass("trail-progress");
+    expect(screen.getByRole("separator", { hidden: true })).toHaveClass("trail-separator");
     expect(screen.getByRole("button", { name: "Save" })).toHaveClass("trail-lab-button--secondary");
     expect(screen.getByRole("button", { name: "Cancel" })).toHaveClass("trail-lab-button--ghost");
     expect(screen.getByRole("button", { name: "Filter" })).toBeInTheDocument();

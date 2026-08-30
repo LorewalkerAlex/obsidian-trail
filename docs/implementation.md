@@ -167,7 +167,7 @@ The Home **Weekly Meeting Notes** module reuses the existing Trail-managed `Coll
 
 Current work is **Gate 8 - Product Workspace Implementation**.
 
-Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action design, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are resolved at the target-design level, so Gate 8 may treat the V1 UI authority as frozen. The exposed lower-layer semantic corrections through Milestone Progress are closed. The UI Reset, Foundation Lab bootstrap, frontend architecture consolidation, and Visual Foundation acceptance are now locally green against the real Obsidian host. Reusable visual facts have one token/contract authority, representative native Obsidian consumers and Trail calibration surfaces share the accepted Linear-faithful application presentation, and values that still require a real production consumer remain explicitly replaceable rather than prematurely frozen. The current active implementation boundary is the Core Primitive Kit. Its first bounded production slice - Button/IconButton and Input/Textarea - is locally green under full repository validation and representative real-Obsidian Foundation Lab validation; remaining primitives still precede shared patterns, semantic components, and product-page composition. The remaining UI gaps are recorded in Section 4.4.
+Required Workflow Project & Default Project and Project Status Four-State Configuration Closure are published implementation checkpoints. Project Workspace/Projects Root, Initiative Focus, Triage, Cycle, Creation Surface, simplified shared Filter, shared Selection/Action design, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are resolved at the target-design level, so Gate 8 may treat the V1 UI authority as frozen. The exposed lower-layer semantic corrections through Milestone Progress are closed. The UI Reset, Foundation Lab bootstrap, frontend architecture consolidation, and Visual Foundation acceptance are now locally green against the real Obsidian host. Reusable visual facts have one token/contract authority, representative native Obsidian consumers and Trail calibration surfaces share the accepted Linear-faithful application presentation, and values that still require a real production consumer remain explicitly replaceable rather than prematurely frozen. The current active implementation boundary is the Core Primitive Kit. Its first bounded production slice - Button/IconButton and Input/Textarea - and second bounded Progress/Separator slice are locally green under full repository validation and representative real-Obsidian Foundation Lab evidence. A premature generic SegmentedControl abstraction was explicitly withdrawn before publication: the List/Board/Timeline switch must be resolved in its reusable View Bar composition with real consumer, relative-layout, responsive, and Linear-reference evidence rather than promoted from an isolated Lab specimen. Remaining primitives still precede shared patterns, semantic components, and product-page composition. The remaining UI gaps are recorded in Section 4.4.
 
 ### 4.2 Required Workflow Project & Default Project slice
 
@@ -347,6 +347,10 @@ The bounded V1 interaction design remains frozen in `ui.md`. The deliberate UI R
 
 The first bounded Core Primitive Kit slice now provides production `TrailButton`, `TrailIconButton`, `TrailInput`, and `TrailTextarea` owners under `ui/primitives`. `TrailButton` exposes only the ordinary base button plus the real-consumer-backed `primary` variant; `secondary` and `ghost` remain Lab-only calibration specimens. `TrailIconButton` owns accessible icon-button semantics and the Obsidian `clickable-icon` shell while icon rendering/adaptation remains a separate future cross-consumer responsibility. Input/Textarea forward native contracts without public visual escape hatches. Foundation Lab consumes these production primitives only where it exercises their real contract. Full local `npm run check`, `git diff --check`, and representative real-Obsidian Foundation Lab validation are green. This closes only the first primitive slice, not the Core Primitive Kit stage.
 
+The second bounded slice now provides production `TrailProgress` and `TrailSeparator`. `TrailProgress` is a generic determinate native `<progress>` contract with accessible label/value/max inputs; it owns only meter presentation and deliberately does not calculate Project/Milestone/Cycle progress or render percentage copy. Its width follows the available parent measure, so surrounding patterns own placement and responsive composition. `TrailSeparator` is a semantic horizontal `<hr>` with no caller-owned visual escape hatch; consumers own surrounding spacing. These are the first primitives whose geometry requires a Trail-owned production component stylesheet section rather than relying entirely on native Obsidian mappings. Foundation Lab consumes both as real calibration consumers. Full local verification is green across 94 Vitest files / 323 tests, ESLint, TypeScript, production esbuild, and `git diff --check`. Representative real-Obsidian evidence exercised the same Progress and Separator bytes before the unrelated segmented-control structural repair, so removing that rejected abstraction did not require a redundant host rerun.
+
+The attempted generic `TrailSegmentedControl` is intentionally **not** part of the accepted primitive kit. Real-host validation showed that an isolated List/Board specimen encouraged fixed-position visual patching instead of establishing the reusable View Bar layout/control grammar frozen by `ui.md`. Layout switching remains a real product responsibility, but its callable/composable API, relative geometry, narrow-pane behavior, and Linear-faithful grouping must be resolved with the actual Projects/Cycle View Bar consumers at the shared-pattern layer rather than inferred from a standalone primitive specimen.
+
 Visual calibration uses three outcomes rather than changing values merely to produce a diff:
 
 - **Accept** — existing presentation is stable enough for downstream consumers to depend on the owning token/contract;
@@ -360,11 +364,12 @@ The active frontend rules are:
 1. Git history, anchored by `2049ed14aaa00c501090fca64b553379eb2a4e7c`, remains the archive for the removed presentation; do not keep a second inactive UI tree in the repository.
 2. Lower-layer Domain, Data, Mutation, Runtime, Query, and Application owners remain active foundations. UI-neutral host bridges or algorithms survive only after explicit review.
 3. Reusable visual facts have one token/contract authority. Trail and Obsidian consumers read semantic variables instead of copying raw colors, typography scales, radii, control sizes, or state values.
-4. The root `styles.css` remains the physical Obsidian stylesheet entry point, but its logical ownership is explicit: design tokens -> Obsidian semantic mapping/native consumers -> Trail shell -> calibration-only Foundation Lab. A later override is not an ownership mechanism.
+4. The root `styles.css` remains the physical Obsidian stylesheet entry point, but its logical ownership is explicit: design tokens -> Obsidian semantic mapping/native consumers -> Trail production component contracts -> Trail shell -> calibration-only Foundation Lab. A later override is not an ownership mechanism.
 5. Production UI grows through `design-system -> primitives -> patterns/interactions -> semantic components -> pages/shell`. `ui/foundation` is a development/calibration consumer only and production code must not depend on Lab components or `trail-lab-*` classes.
 6. Reusable component variation uses small typed semantic variants and composition. Pages do not pass arbitrary pixel/color/style knobs, and shared components do not become universal boolean matrices.
 7. State stays at the smallest owner matching its lifetime: canonical facts remain below UI; cross-root/session UI state may use focused shared stores; component drafts/open state stay local; hover/focus/pressed remain CSS/browser state.
 8. Responsive presentation follows actual Obsidian pane/container capacity. CSS layout/container queries own visual-only adaptation; React/host state participates only when available space changes product behavior that CSS cannot express.
+9. A production primitive or pattern is accepted only when its contract survives outside Foundation Lab: it has real consumers, a callable/composable API, relative or intrinsic geometry, container-aware adaptation where needed, and visual validation in the real composition. Looking correct at one fixed Lab position is not reusability evidence.
 
 The executable V1 UI master checklist is:
 
@@ -385,7 +390,9 @@ The executable V1 UI master checklist is:
   - froze only shared values/contracts stable enough for production primitives, while consumer-specific glyphs, palettes, geometry, motion details, and responsive thresholds remain replaceable until their real consumers exist.
 - [ ] **4. Core Primitive Kit**
   - [x] first bounded slice: Button/IconButton and Input/Textarea, with full local repository validation and representative real-host Foundation Lab validation;
-  - remaining kit: Checkbox, segmented control, Badge/Tag where justified, Tooltip, Popover, Menu, Select/Combobox, Dialog, Separator, Kbd, Progress, and common loading/disabled/destructive states;
+  - [x] second bounded slice: determinate Progress and horizontal Separator, with full local repository validation and representative real-host evidence;
+  - generic SegmentedControl is not currently accepted as a primitive; the real List/Board/Timeline layout switch remains deferred to reusable View Bar/shared-pattern ownership with consumer-driven responsive composition;
+  - remaining kit: Checkbox, Badge/Tag where justified, Tooltip, Popover, Menu, Select/Combobox, Dialog, Kbd, and common loading/disabled/destructive states;
   - prefer Obsidian/browser/mature focused mechanics where suitable and expose small typed semantic variants over Trail tokens rather than arbitrary style props.
 - [ ] **5. Shared Pattern + Interaction Kit**
   - Surface, CollectionRow/Card foundations, Toolbar/View controls, PropertyControl shell, Overlay/Composer shell, List/Board foundations, and common focus/selection presentation;
@@ -496,7 +503,8 @@ Completed Gate 8 implementation slices at the current documented baseline includ
 - UI Reset / clean active-tree scaffold;
 - Foundation Lab bootstrap + frontend architecture/foundation consolidation;
 - Visual Foundation acceptance **(whole-shell hierarchy/density, interaction-state, document/container calibration)**;
-- Core Primitive Kit first slice **(Button/IconButton and Input/Textarea only; the stage remains open)**.
+- Core Primitive Kit first slice **(Button/IconButton and Input/Textarea only)**;
+- Core Primitive Kit second slice **(Progress and Separator only; the rejected generic SegmentedControl abstraction was removed and the stage remains open)**.
 
 Triage, broader Cycle page composition, Creation Surface, simplified shared Filter, shared Selection/Action, Initiative Focus, Home, Workspace Grid, Search, Runtime feedback, and the Default Project Settings/delete-affordance UI are not completed implementation slices merely because their target semantics are frozen. Their consumers still require formal implementation alignment. The bounded Cycle Start/Close/Start-next and Milestone Progress semantic corrections are completed. The Required Default Project ready-state lower layer, Canonical Estimate alignment, Workflow Issue Project-control alignment, Cycle interaction/vocabulary alignment, and Milestone Progress derived Query contract are completed foundations and should be consumed rather than re-modeled by those UI slices.
 
@@ -693,9 +701,25 @@ The first bounded Core Primitive Kit slice on top of public checkpoint `5c314923
 - local full verification is green across ESLint, 94 Vitest files / 321 tests, TypeScript `tsc --noEmit`, production esbuild, and `git diff --check`;
 - representative real-Obsidian Foundation Lab validation shows the production primitive slice without a material presentation or focus-state regression.
 
-This evidence closes only Button/IconButton and Input/Textarea as the first Core Primitive Kit slice. Checkbox, segmented control, Badge/Tag where justified, Tooltip, Popover, Menu, Select/Combobox, Dialog, Separator, Kbd, Progress, and shared loading/disabled/destructive treatment remain in the open Core Primitive Kit.
+This evidence closes only Button/IconButton and Input/Textarea as the first Core Primitive Kit slice. The Core Primitive Kit remains open.
 
-### 6.12 General verification discipline
+### 6.12 Core Primitive Kit second-slice evidence
+
+The second bounded Core Primitive Kit slice on top of public checkpoint `d9d6771efb6eeb5eca873915b4e27c276f014a4f` verifies:
+
+- production `TrailProgress` and `TrailSeparator` owners now live under `plugin/src/ui/primitives`;
+- `TrailProgress` reuses native determinate `<progress>` semantics and requires only accessible label/value/max inputs. It owns meter rendering, not Project/Milestone/Cycle aggregation, percentage text, or page-local layout;
+- Progress consumes the width offered by its parent rather than carrying a fixed page measure, so reusable patterns remain responsible for relative placement, compact/wide composition, and responsive reduction;
+- `TrailSeparator` is a semantic horizontal `<hr>` whose visual contract is the shared hairline only; callers own surrounding spacing and cannot inject arbitrary style/class escape hatches;
+- `styles.css` now has an explicit production component-contract section between native Obsidian consumers and Trail shell carriers. Progress/Separator geometry lives there once instead of being copied into Foundation Lab or page CSS;
+- Foundation Lab consumes both primitives as calibration instances: Progress is paired with Lab-only percentage copy, while the menu wrapper owns Separator spacing;
+- a proposed generic `TrailSegmentedControl` and its Lab-only List/Board specimen were deliberately removed before publication after real-host validation exposed the abstraction/layout mistake. Layout switching remains a real shared View Bar responsibility, but it must be resolved from actual consumer composition, relative/adaptive layout, and Linear reference behavior rather than from a fixed-position standalone specimen;
+- the final structural repair is green across ESLint, 94 Vitest files / 323 tests, TypeScript `tsc --noEmit`, production esbuild, and `git diff --check`;
+- the representative real-Obsidian pass already exercised the same Progress and Separator implementation bytes and showed no material presentation problem; the later repair removed only the rejected segmented abstraction, so no host-specific Progress/Separator behavior changed.
+
+This closes only Progress and Separator as the second Core Primitive Kit slice. Checkbox, Badge/Tag where justified, Tooltip, Popover, Menu, Select/Combobox, Dialog, Kbd, and shared loading/disabled/destructive treatment remain open. A generic SegmentedControl is not counted as remaining primitive work unless later real consumers prove that ownership; the frozen layout-switch responsibility currently proceeds through the shared View Bar/pattern path.
+
+### 6.13 General verification discipline
 
 For each active Gate 8 slice:
 

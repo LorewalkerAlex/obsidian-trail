@@ -9,6 +9,8 @@ import { describe, expect, it, vi } from "vitest";
 import { TrailButton } from "./trail-button";
 import { TrailIconButton } from "./trail-icon-button";
 import { TrailInput } from "./trail-input";
+import { TrailProgress } from "./trail-progress";
+import { TrailSeparator } from "./trail-separator";
 import { TrailTextarea } from "./trail-textarea";
 
 describe("Trail core primitives", () => {
@@ -92,5 +94,20 @@ describe("Trail core primitives", () => {
     expect(textarea).toHaveClass("trail-textarea");
     expect(textarea).toBeDisabled();
     expect(ref.current).toBe(textarea);
+  });
+
+  it("keeps Progress determinate and semantic without owning domain calculation", () => {
+    render(<TrailProgress label="Project progress" max={12} value={8} />);
+
+    const progress = screen.getByRole("progressbar", { name: "Project progress" });
+    expect(progress).toHaveClass("trail-progress");
+    expect(progress).toHaveAttribute("max", "12");
+    expect(progress).toHaveAttribute("value", "8");
+  });
+
+  it("uses a semantic horizontal Separator without caller-owned styling", () => {
+    render(<TrailSeparator />);
+
+    expect(screen.getByRole("separator")).toHaveClass("trail-separator");
   });
 });

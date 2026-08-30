@@ -3,6 +3,8 @@ import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-co
 import { TrailButton } from "../primitives/trail-button";
 import { TrailIconButton } from "../primitives/trail-icon-button";
 import { TrailInput } from "../primitives/trail-input";
+import { TrailProgress } from "../primitives/trail-progress";
+import { TrailSeparator } from "../primitives/trail-separator";
 import { TrailTextarea } from "../primitives/trail-textarea";
 
 interface TrailFoundationLabProps {
@@ -172,7 +174,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
           </div>
 
           <div className="trail-lab-control-group">
-            <span className="trail-lab-control-group__label">Fields and layout</span>
+            <span className="trail-lab-control-group__label">Fields</span>
             <div className="trail-lab-control-row trail-lab-control-row--wide">
               <TrailInput aria-label="Title" defaultValue="Polish keyboard navigation" readOnly size={24} />
               <TrailInput aria-label="Search" defaultValue="project" readOnly size={20} type="search" />
@@ -183,10 +185,14 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
                 readOnly
                 rows={2}
               />
-              <div aria-label="Layout specimen" className="trail-lab-segmented" role="group">
-                <button className="is-selected" type="button">List</button>
-                <button type="button">Board</button>
-              </div>
+            </div>
+          </div>
+
+          <div className="trail-lab-control-group">
+            <span className="trail-lab-control-group__label">Progress</span>
+            <div className="trail-lab-progress-specimen">
+              <TrailProgress label="Progress specimen" max={12} value={8} />
+              <span>67%</span>
             </div>
           </div>
         </div>
@@ -272,7 +278,9 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
             <div className="trail-lab-menu__item">
               <span>Move to project</span><kbd>M</kbd>
             </div>
-            <div className="trail-lab-menu__separator" />
+            <div className="trail-lab-menu__separator">
+              <TrailSeparator aria-hidden="true" />
+            </div>
             <div className="trail-lab-menu__item trail-lab-menu__item--danger">
               <span>Delete</span><kbd>⌫</kbd>
             </div>

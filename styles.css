@@ -7,8 +7,9 @@
  *   1. design-token authority
  *   2. Obsidian semantic-variable mapping
  *   3. native Obsidian consumers
- *   4. Trail shell carriers
- *   5. Foundation Lab-only calibration specimens
+ *   4. Trail production component contracts
+ *   5. Trail shell carriers
+ *   6. Foundation Lab-only calibration specimens
  *
  * A visual fact belongs to one owner. Calibration replaces the owning value;
  * it does not append a later override of the same responsibility.
@@ -1017,7 +1018,51 @@ body .markdown-rendered li {
 }
 
 /* --------------------------------------------------------------------------
- * 4. Trail shell carriers
+ * 4. Trail production component contracts
+ *
+ * Reusable Trail-owned primitives resolve their geometry and state presentation
+ * here. They consume the design-token authority above and never depend on
+ * Foundation Lab selectors or page-local styling.
+ * -------------------------------------------------------------------------- */
+
+.trail-progress {
+  appearance: none;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-surface-quiet);
+}
+
+.trail-progress::-webkit-progress-bar {
+  border-radius: inherit;
+  background: var(--trail-surface-quiet);
+}
+
+.trail-progress::-webkit-progress-value {
+  border-radius: inherit;
+  background: var(--trail-accent);
+}
+
+.trail-progress::-moz-progress-bar {
+  border-radius: inherit;
+  background: var(--trail-accent);
+}
+
+.trail-separator {
+  box-sizing: border-box;
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: var(--trail-border-subtle);
+}
+
+/* --------------------------------------------------------------------------
+ * 5. Trail shell carriers
  * -------------------------------------------------------------------------- */
 
 .trail-view,
@@ -1069,7 +1114,7 @@ body .markdown-rendered li {
 }
 
 /* --------------------------------------------------------------------------
- * 5. Foundation Lab-only calibration specimens
+ * 6. Foundation Lab-only calibration specimens
  *
  * Every class in this section is scaffold-only. Production primitives must be
  * introduced under ui/primitives with typed semantic variants instead of
@@ -1375,7 +1420,6 @@ body .markdown-rendered li {
 .trail-lab-button,
 .trail-lab-icon-button,
 .trail-lab-view-control,
-.trail-lab-segmented button,
 .trail-lab-property-control,
 .trail-navigation-foundation__actions button {
   appearance: none;
@@ -1455,7 +1499,6 @@ body .markdown-rendered li {
 .trail-lab-button:focus-visible,
 .trail-lab-icon-button:focus-visible,
 .trail-lab-view-control:focus-visible,
-.trail-lab-segmented button:focus-visible,
 .trail-lab-property-control:focus-visible,
 .trail-navigation-foundation__actions button:focus-visible {
   box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
@@ -1492,6 +1535,17 @@ body .markdown-rendered li {
   height: var(--trail-space-12);
   margin: 0 var(--trail-space-1);
   background: var(--trail-border-subtle);
+}
+
+.trail-lab-progress-specimen {
+  display: grid;
+  width: min(100%, 180px);
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--trail-space-6);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
 }
 
 .trail-lab-icon-button {
@@ -1673,32 +1727,6 @@ body .markdown-rendered li {
 .trail-lab-field.is-demo-focus input {
   border-color: var(--trail-focus-border);
   box-shadow: 0 0 0 1px var(--trail-focus-ring);
-}
-
-.trail-lab-segmented {
-  display: inline-flex;
-  height: var(--trail-control-height-lg);
-  align-items: center;
-  gap: 1px;
-  padding: var(--trail-space-1);
-  border: 1px solid var(--trail-border-subtle);
-  border-radius: var(--trail-radius-sm);
-  background: var(--trail-surface-sidebar);
-}
-
-.trail-lab-segmented button {
-  height: var(--trail-control-height-sm);
-  padding: 0 var(--trail-space-6);
-  border-radius: var(--trail-radius-xs);
-  background: transparent;
-  color: var(--trail-text-muted);
-  font-size: var(--trail-font-size-supporting);
-}
-
-.trail-lab-segmented button.is-selected {
-  background: var(--trail-surface-elevated);
-  color: var(--trail-text-primary);
-  box-shadow: inset 0 0 0 1px var(--trail-border-subtle);
 }
 
 .trail-lab-list__header {
@@ -1934,9 +1962,7 @@ body .markdown-rendered li {
 }
 
 .trail-lab-menu__separator {
-  height: 1px;
   margin: var(--trail-space-2) var(--trail-space-4);
-  background: var(--trail-menu-separator);
 }
 
 .trail-lab-composer {
