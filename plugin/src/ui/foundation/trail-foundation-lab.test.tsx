@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { TrailFoundationLab } from "./trail-foundation-lab";
@@ -10,6 +10,7 @@ describe("TrailFoundationLab", () => {
     expect(screen.getByRole("heading", { name: "Foundation lab" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Visual token roles" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Overlays and composer" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "View bar pattern" })).toBeInTheDocument();
     expect(screen.getByText("Canvas")).toBeInTheDocument();
     expect(screen.getByText("Accent")).toBeInTheDocument();
     expect(screen.getByText("Ready")).toBeInTheDocument();
@@ -25,8 +26,21 @@ describe("TrailFoundationLab", () => {
     expect(screen.getByRole("separator", { hidden: true })).toHaveClass("trail-separator");
     expect(screen.getByRole("button", { name: "Save" })).toHaveClass("trail-lab-button--secondary");
     expect(screen.getByRole("button", { name: "Cancel" })).toHaveClass("trail-lab-button--ghost");
-    expect(screen.getByRole("button", { name: "Filter" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Display" })).toBeInTheDocument();
+    const viewBar = screen.getByRole("group", {
+      name: "Project workspace view controls",
+    });
+    const viewControls = within(viewBar);
+    const listLayout = viewControls.getByRole("button", { name: "List layout" });
+    const boardLayout = viewControls.getByRole("button", { name: "Board layout" });
+
+    expect(viewControls.getByRole("button", { name: "Filter" })).toHaveClass("trail-view-bar__action");
+    expect(viewControls.getByRole("button", { name: "Display" })).toHaveClass("trail-view-bar__action");
+    expect(listLayout).toHaveAttribute("aria-pressed", "true");
+    expect(boardLayout).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(boardLayout);
+    expect(listLayout).toHaveAttribute("aria-pressed", "false");
+    expect(boardLayout).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Reset legacy presentation")).toBeInTheDocument();
     expect(screen.queryByText(/^#[0-9A-Fa-f]{6}$/)).not.toBeInTheDocument();
   });

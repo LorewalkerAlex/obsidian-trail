@@ -1020,8 +1020,8 @@ body .markdown-rendered li {
 /* --------------------------------------------------------------------------
  * 4. Trail production component contracts
  *
- * Reusable Trail-owned primitives resolve their geometry and state presentation
- * here. They consume the design-token authority above and never depend on
+ * Reusable Trail-owned primitives and patterns resolve their geometry and state
+ * presentation here. They consume the design-token authority above and never depend on
  * Foundation Lab selectors or page-local styling.
  * -------------------------------------------------------------------------- */
 
@@ -1059,6 +1059,143 @@ body .markdown-rendered li {
   margin: 0;
   border: 0;
   background: var(--trail-border-subtle);
+}
+
+.trail-view-bar {
+  box-sizing: border-box;
+  display: flex;
+  min-width: 0;
+  min-height: var(--trail-control-height-lg);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-3) var(--trail-space-8);
+  padding: var(--trail-space-2) var(--trail-space-6);
+  border-bottom: 1px solid var(--trail-border-subtle);
+}
+
+.trail-view-bar__leading {
+  display: flex;
+  min-width: min(12rem, 100%);
+  flex: 1 1 12rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-3);
+}
+
+.trail-view-bar__trailing {
+  display: inline-flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--trail-space-2);
+  margin-left: auto;
+}
+
+.trail-view-bar__action {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  height: var(--trail-control-height-sm);
+  min-height: 0;
+  align-items: center;
+  gap: var(--trail-space-3);
+  margin: 0;
+  padding: 0 var(--trail-space-3);
+  border: 0;
+  border-radius: var(--trail-radius-xs);
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--trail-text-muted);
+  font: inherit;
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
+}
+
+.trail-view-bar__action:hover:not(:disabled) {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-secondary);
+}
+
+.trail-view-bar__action:active:not(:disabled) {
+  background: var(--trail-state-pressed);
+  color: var(--trail-text-primary);
+}
+
+.trail-view-bar__action:focus-visible {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
+}
+
+.trail-view-bar__action:disabled {
+  color: var(--trail-text-faint);
+  cursor: default;
+}
+
+.trail-view-bar__action-icon,
+.trail-view-layout-switch__icon {
+  display: inline-grid;
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.trail-view-bar__action-icon > svg,
+.trail-view-layout-switch__icon > svg {
+  width: 100%;
+  height: 100%;
+}
+
+.trail-view-layout-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--trail-space-1);
+  margin-right: var(--trail-space-2);
+}
+
+.trail-view-layout-switch .trail-icon-button {
+  box-sizing: border-box;
+  display: inline-grid;
+  width: var(--trail-control-height-sm);
+  min-width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--trail-radius-xs);
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--trail-text-faint);
+  place-items: center;
+  transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
+}
+
+.trail-view-layout-switch .trail-icon-button:hover {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-secondary);
+}
+
+.trail-view-layout-switch .trail-icon-button[aria-pressed="true"] {
+  background: var(--trail-state-selected);
+  color: var(--trail-text-secondary);
+}
+
+.trail-view-layout-switch .trail-icon-button[aria-pressed="true"]:hover {
+  background: var(--trail-state-pressed);
+  color: var(--trail-text-primary);
+}
+
+.trail-view-layout-switch .trail-icon-button:focus-visible {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
 }
 
 /* --------------------------------------------------------------------------
@@ -1419,7 +1556,6 @@ body .markdown-rendered li {
 
 .trail-lab-button,
 .trail-lab-icon-button,
-.trail-lab-view-control,
 .trail-lab-property-control,
 .trail-navigation-foundation__actions button {
   appearance: none;
@@ -1498,7 +1634,6 @@ body .markdown-rendered li {
 
 .trail-lab-button:focus-visible,
 .trail-lab-icon-button:focus-visible,
-.trail-lab-view-control:focus-visible,
 .trail-lab-property-control:focus-visible,
 .trail-navigation-foundation__actions button:focus-visible {
   box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
@@ -1511,32 +1646,6 @@ body .markdown-rendered li {
   cursor: default;
 }
 
-.trail-lab-view-control {
-  display: inline-flex;
-  height: var(--trail-control-height-md);
-  align-items: center;
-  gap: var(--trail-space-5);
-  padding: 0 var(--trail-space-3);
-  border-radius: var(--trail-radius-sm);
-  background-color: transparent;
-  color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-control);
-  font-weight: var(--trail-weight-medium);
-}
-
-.trail-lab-view-control:hover,
-.trail-lab-view-control:focus-visible {
-  background-color: var(--trail-state-hover);
-  color: var(--trail-text-primary);
-}
-
-.trail-lab-control-divider {
-  width: 1px;
-  height: var(--trail-space-12);
-  margin: 0 var(--trail-space-1);
-  background: var(--trail-border-subtle);
-}
-
 .trail-lab-progress-specimen {
   display: grid;
   width: min(100%, 180px);
@@ -1546,6 +1655,21 @@ body .markdown-rendered li {
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-caption);
   font-variant-numeric: tabular-nums;
+}
+
+.trail-lab-view-bar-specimen {
+  width: 100%;
+  min-width: 0;
+}
+
+.trail-lab-svg-icon {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
 
 .trail-lab-icon-button {

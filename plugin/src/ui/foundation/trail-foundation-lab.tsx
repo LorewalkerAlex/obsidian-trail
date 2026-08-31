@@ -1,5 +1,10 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
+import {
+  TrailViewBar,
+  TrailViewBarAction,
+  TrailViewLayoutSwitch,
+} from "../patterns/trail-view-bar";
 import { TrailButton } from "../primitives/trail-button";
 import { TrailCheckbox } from "../primitives/trail-checkbox";
 import { TrailIconButton } from "../primitives/trail-icon-button";
@@ -49,13 +54,41 @@ function LabSection({
   );
 }
 
-type CalibrationIconKind = "dots" | "filter" | "plus" | "search" | "sliders";
+type CalibrationIconKind = "board" | "dots" | "filter" | "list" | "plus" | "search" | "sliders";
 
 function CalibrationIcon({ kind }: { readonly kind: CalibrationIconKind }) {
+  if (kind === "list") {
+    return (
+      <svg
+        aria-hidden="true"
+        className="trail-lab-svg-icon"
+        viewBox="0 0 24 24"
+      >
+        <path d="M5 7h14M5 12h14M5 17h14" />
+      </svg>
+    );
+  }
+
+  if (kind === "board") {
+    return (
+      <svg
+        aria-hidden="true"
+        className="trail-lab-svg-icon"
+        viewBox="0 0 24 24"
+      >
+        <rect height="14" rx="1.5" width="4" x="4" y="5" />
+        <rect height="14" rx="1.5" width="4" x="10" y="5" />
+        <rect height="14" rx="1.5" width="4" x="16" y="5" />
+      </svg>
+    );
+  }
+
   return <span aria-hidden="true" className={`trail-lab-icon trail-lab-icon--${kind}`} />;
 }
 
 export function TrailFoundationLab({ control, revision }: TrailFoundationLabProps) {
+  const [layout, setLayout] = useState<"board" | "list">("list");
+
   return (
     <div className="trail-foundation-lab" data-runtime-control={control.kind}>
       <header className="trail-lab-hero">
@@ -148,17 +181,8 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
           </div>
 
           <div className="trail-lab-control-group">
-            <span className="trail-lab-control-group__label">View controls</span>
+            <span className="trail-lab-control-group__label">Icon actions</span>
             <div className="trail-lab-control-row">
-              <button className="trail-lab-view-control" type="button">
-                <CalibrationIcon kind="filter" />
-                Filter
-              </button>
-              <button className="trail-lab-view-control" type="button">
-                <CalibrationIcon kind="sliders" />
-                Display
-              </button>
-              <span className="trail-lab-control-divider" />
               <TrailIconButton
                 icon={<CalibrationIcon kind="search" />}
                 label="Search specimen"
@@ -196,6 +220,42 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
               <span>67%</span>
             </div>
           </div>
+        </div>
+      </LabSection>
+
+      <LabSection
+        description="The production View Bar owns one responsive collection-control plane. Layout state stays inside the trailing cluster and reflows from pane capacity rather than fixed page coordinates."
+        title="View bar pattern"
+      >
+        <div className="trail-lab-view-bar-specimen">
+          <TrailViewBar
+            display={(
+              <TrailViewBarAction icon={<CalibrationIcon kind="sliders" />} label="Display" />
+            )}
+            filter={(
+              <TrailViewBarAction icon={<CalibrationIcon kind="filter" />} label="Filter" />
+            )}
+            label="Project workspace view controls"
+            layout={(
+              <TrailViewLayoutSwitch
+                label="Project layout"
+                onValueChange={setLayout}
+                options={[
+                  {
+                    icon: <CalibrationIcon kind="list" />,
+                    label: "List layout",
+                    value: "list",
+                  },
+                  {
+                    icon: <CalibrationIcon kind="board" />,
+                    label: "Board layout",
+                    value: "board",
+                  },
+                ]}
+                value={layout}
+              />
+            )}
+          />
         </div>
       </LabSection>
 
