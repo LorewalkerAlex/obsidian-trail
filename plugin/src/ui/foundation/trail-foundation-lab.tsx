@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
+import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import {
   TrailViewBar,
   TrailViewBarAction,
@@ -87,6 +88,7 @@ function CalibrationIcon({ kind }: { readonly kind: CalibrationIconKind }) {
 }
 
 export function TrailFoundationLab({ control, revision }: TrailFoundationLabProps) {
+  const [collectionRowSelected, setCollectionRowSelected] = useState(false);
   const [layout, setLayout] = useState<"board" | "list">("list");
 
   return (
@@ -261,7 +263,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
 
       <div className="trail-lab-grid trail-lab-grid--two">
         <LabSection
-          description="Rows stay dense and nearly flat; hover and selection are state surfaces, not cards."
+          description="Rows stay dense and nearly flat; selection uses a quiet left gutter while semantic leading content stays stable."
           title="Collection density"
         >
           <div className="trail-lab-list">
@@ -269,27 +271,50 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
               <span>Backlog</span>
               <span>8</span>
             </div>
-            <div className="trail-lab-list-row">
-              <span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />
-              <span className="trail-lab-list-row__id">TRAIL-128</span>
-              <span className="trail-lab-list-row__title">Refine empty state hierarchy</span>
-              <span className="trail-lab-label-chip">Design</span>
-              <span className="trail-lab-list-row__meta">M</span>
-            </div>
-            <div className="trail-lab-list-row is-demo-hover">
-              <TrailCheckbox label="Select TRAIL-134" />
-              <span className="trail-lab-list-row__id">TRAIL-134</span>
-              <span className="trail-lab-list-row__title">Implement command menu surface</span>
-              <span className="trail-lab-label-chip trail-lab-label-chip--quiet">UI</span>
-              <span className="trail-lab-list-row__meta">L</span>
-            </div>
-            <div className="trail-lab-list-row is-selected">
-              <TrailCheckbox checked label="Select TRAIL-119" readOnly />
-              <span className="trail-lab-list-row__id">TRAIL-119</span>
-              <span className="trail-lab-list-row__title">Reset legacy presentation</span>
-              <span className="trail-lab-label-chip trail-lab-label-chip--quiet">Core</span>
-              <span className="trail-lab-list-row__meta">S</span>
-            </div>
+            <TrailCollectionRow
+              leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />}
+              selected={collectionRowSelected}
+              selectionControl={(
+                <TrailCheckbox
+                  checked={collectionRowSelected}
+                  label="Select TRAIL-128"
+                  onChange={(event) => setCollectionRowSelected(event.currentTarget.checked)}
+                />
+              )}
+            >
+              <div className="trail-lab-list-row__content">
+                <span className="trail-lab-list-row__id">TRAIL-128</span>
+                <span className="trail-lab-list-row__title">Refine empty state hierarchy</span>
+                <span className="trail-lab-label-chip">Design</span>
+                <span className="trail-lab-list-row__meta">M</span>
+              </div>
+            </TrailCollectionRow>
+            <TrailCollectionRow
+              highlighted
+              leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />}
+              selectionControl={<TrailCheckbox checked={false} label="Select TRAIL-134" readOnly />}
+            >
+              <div className="trail-lab-list-row__content">
+                <span className="trail-lab-list-row__id">TRAIL-134</span>
+                <span className="trail-lab-list-row__title">Implement command menu surface</span>
+                <span className="trail-lab-label-chip trail-lab-label-chip--quiet">UI</span>
+                <span className="trail-lab-list-row__meta">L</span>
+              </div>
+            </TrailCollectionRow>
+            <TrailCollectionRow
+              leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--done" />}
+              selected
+              selectionControl={(
+                <TrailCheckbox checked label="Select TRAIL-119" readOnly />
+              )}
+            >
+              <div className="trail-lab-list-row__content">
+                <span className="trail-lab-list-row__id">TRAIL-119</span>
+                <span className="trail-lab-list-row__title">Reset legacy presentation</span>
+                <span className="trail-lab-label-chip trail-lab-label-chip--quiet">Core</span>
+                <span className="trail-lab-list-row__meta">S</span>
+              </div>
+            </TrailCollectionRow>
           </div>
         </LabSection>
 
