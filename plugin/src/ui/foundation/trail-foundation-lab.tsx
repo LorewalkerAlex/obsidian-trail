@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
+import { TrailPropertyControl } from "../patterns/trail-property-control";
 import {
   TrailViewBar,
   TrailViewBarAction,
@@ -167,7 +168,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </div>
 
       <LabSection
-        description="Accepted production primitives are calibrated here alongside Lab-only static specimens; Lab-only states do not expand the production API."
+        description="Production primitives and bounded pattern contracts are calibrated here alongside Lab-only specimens; Lab-only states do not expand production APIs."
         title="Controls"
       >
         <div className="trail-lab-control-groups">
@@ -325,21 +326,21 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
           <div className="trail-lab-property-panel">
             <div className="trail-lab-property-row">
               <span>Status</span>
-              <button className="trail-lab-property-control" type="button">
+              <TrailPropertyControl>
                 <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
                 In progress
-              </button>
+              </TrailPropertyControl>
             </div>
             <div className="trail-lab-property-row">
               <span>Priority</span>
-              <button className="trail-lab-property-control" type="button">
+              <TrailPropertyControl>
                 <span aria-hidden="true" className="trail-lab-priority-glyph"><span /><span /><span /></span>
                 High
-              </button>
+              </TrailPropertyControl>
             </div>
             <div className="trail-lab-property-row">
               <span>Estimate</span>
-              <button className="trail-lab-property-control trail-lab-property-control--compact" type="button">M</button>
+              <TrailPropertyControl density="compact">M</TrailPropertyControl>
             </div>
             <div className="trail-lab-property-row">
               <span>Labels</span>
@@ -374,9 +375,9 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
 
           <div className="trail-lab-composer" role="presentation">
             <div className="trail-lab-composer__context">
-              <button className="trail-lab-property-control" type="button">Trail</button>
+              <TrailPropertyControl>Trail</TrailPropertyControl>
               <span className="trail-lab-composer__chevron">›</span>
-              <button className="trail-lab-property-control" type="button">Template</button>
+              <TrailPropertyControl>Template</TrailPropertyControl>
               <button aria-label="More composer options specimen" className="trail-lab-icon-button trail-lab-icon-button--quiet" type="button">
                 <CalibrationIcon kind="dots" />
               </button>
@@ -392,17 +393,17 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
                 <span className="trail-lab-label-chip trail-lab-label-chip--quiet">Core</span>
               </div>
               <div className="trail-lab-composer__properties">
-                <span className="trail-lab-property-control trail-lab-property-control--static">
+                <TrailPropertyControl>
                   <span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />
                   Backlog
-                </span>
-                <span className="trail-lab-property-control trail-lab-property-control--static">
+                </TrailPropertyControl>
+                <TrailPropertyControl>
                   <span aria-hidden="true" className="trail-lab-priority-glyph"><span /><span /><span /></span>
                   High
-                </span>
-                <span className="trail-lab-property-control trail-lab-property-control--static">Project Trail</span>
-                <span className="trail-lab-property-control trail-lab-property-control--static">M</span>
-                <span className="trail-lab-property-control trail-lab-property-control--static">…</span>
+                </TrailPropertyControl>
+                <TrailPropertyControl>Project Trail</TrailPropertyControl>
+                <TrailPropertyControl>M</TrailPropertyControl>
+                <TrailPropertyControl aria-label="More properties specimen">…</TrailPropertyControl>
               </div>
             </div>
             <div className="trail-lab-composer__footer">

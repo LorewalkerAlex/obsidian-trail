@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { TrailFoundationLab } from "./trail-foundation-lab";
 
 describe("TrailFoundationLab", () => {
-  it("calibrates accepted production primitives without promoting Lab-only specimens", () => {
+  it("calibrates production contracts without promoting Lab-only specimens", () => {
     render(<TrailFoundationLab control={{ kind: "ready" }} revision={7} />);
 
     expect(screen.getByRole("heading", { name: "Foundation lab" })).toBeInTheDocument();
@@ -26,6 +26,8 @@ describe("TrailFoundationLab", () => {
     expect(screen.getByRole("separator", { hidden: true })).toHaveClass("trail-separator");
     expect(screen.getByRole("button", { name: "Save" })).toHaveClass("trail-lab-button--secondary");
     expect(screen.getByRole("button", { name: "Cancel" })).toHaveClass("trail-lab-button--ghost");
+    expect(screen.getByRole("button", { name: "In progress" })).toHaveClass("trail-property-control");
+    expect(screen.getByRole("button", { name: "More properties specimen" })).toHaveClass("trail-property-control");
     const viewBar = screen.getByRole("group", {
       name: "Project workspace view controls",
     });
