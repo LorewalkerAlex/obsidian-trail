@@ -1,0 +1,43 @@
+/* --------------------------------------------------------------------------
+ * 4. Trail production component contracts
+ *
+ * Reusable Trail-owned primitives and patterns resolve their geometry and state
+ * presentation here. They consume the design-token authority above and never depend on
+ * Foundation Lab selectors or page-local styling.
+ * -------------------------------------------------------------------------- */
+
+.trail-progress {
+  appearance: none;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-surface-quiet);
+}
+
+.trail-progress::-webkit-progress-bar {
+  border-radius: inherit;
+  background: var(--trail-surface-quiet);
+}
+
+.trail-progress::-webkit-progress-value {
+  border-radius: inherit;
+  background: var(--trail-accent);
+}
+
+.trail-progress::-moz-progress-bar {
+  border-radius: inherit;
+  background: var(--trail-accent);
+}
+
+.trail-separator {
+  box-sizing: border-box;
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: var(--trail-border-subtle);
+}

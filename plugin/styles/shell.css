@@ -1,0 +1,51 @@
+/* --------------------------------------------------------------------------
+ * 5. Trail shell carriers
+ * -------------------------------------------------------------------------- */
+
+.trail-view,
+.trail-navigation-view {
+  height: 100%;
+  padding: 0;
+  color: var(--trail-text-primary);
+  font-family: var(--trail-font-ui);
+}
+
+.trail-view {
+  background: var(--trail-surface-canvas);
+}
+
+.trail-navigation-view {
+  background: var(--trail-surface-sidebar);
+}
+
+.trail-view__root,
+.trail-navigation-view__root {
+  height: 100%;
+  min-height: 100%;
+}
+
+.trail-foundation {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 100%;
+  overflow: auto;
+  container-type: inline-size;
+  scrollbar-color: var(--trail-scrollbar-thumb-lab) transparent;
+  scrollbar-width: thin;
+  background: var(--trail-surface-canvas);
+  color: var(--trail-text-primary);
+}
+
+.trail-foundation::-webkit-scrollbar {
+  width: 7px;
+}
+
+.trail-foundation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.trail-foundation::-webkit-scrollbar-thumb {
+  border: 2px solid var(--trail-surface-canvas);
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-scrollbar-thumb-lab);
+}

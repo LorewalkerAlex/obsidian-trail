@@ -58,7 +58,8 @@ obsidian-trail/
 │        └─ ...          generated plugin output and diagnostics; ignored by Git
 ├─ docs/                 Trail project documentation
 ├─ plugin/
-│  └─ src/               active formal implementation
+│  ├─ src/               active TypeScript/React implementation
+│  └─ styles/            canonical modular stylesheet sources
 ├─ Trail/                version-controlled host-test observation data
 ├─ ENGINEERING.md
 ├─ README.md
@@ -103,12 +104,12 @@ npm run build:diagnostics
 npm run check
 ```
 
-- `npm run dev` watches the active plugin source and writes the generated Obsidian bundle.
+- `npm run dev` watches the active TypeScript/React source and canonical stylesheet modules, writing generated Obsidian plugin artifacts.
 - `npm run lint` includes architectural dependency restrictions.
 - `npm run test:run` runs the formal automated test suite once.
 - `npm run typecheck` checks the TypeScript implementation.
-- `npm run build` creates the production bundle with development diagnostics disabled.
-- `npm run build:diagnostics` creates a diagnostics-enabled development bundle.
+- `npm run build` creates the production JavaScript bundle and deterministically composes the canonical stylesheet modules into one generated Obsidian `styles.css`, with development diagnostics disabled.
+- `npm run build:diagnostics` creates a diagnostics-enabled development JavaScript bundle and the same generated Obsidian stylesheet.
 - `npm run check` runs lint, tests, typecheck, and the production build.
 
 During implementation, use focused owner-level validation while iterating. Run the full `npm run check` at a coherent checkpoint rather than after every small internal change.

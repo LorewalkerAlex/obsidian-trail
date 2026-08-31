@@ -1,0 +1,665 @@
+/* --------------------------------------------------------------------------
+ * 3. Native Obsidian consumers
+ *
+ * Obsidian owns mechanics. Trail changes presentation through semantic host
+ * variables first and stable targeted selectors only where variables are not
+ * sufficient. A host consumer is styled once in this section.
+ * -------------------------------------------------------------------------- */
+
+body .app-container,
+body .horizontal-main-container,
+body .workspace {
+  background: var(--trail-surface-canvas);
+}
+
+body .titlebar,
+body .titlebar-button-container,
+body .workspace-tab-header-container,
+body .workspace-ribbon,
+body .workspace-sidedock-vault-profile,
+body .status-bar {
+  background: var(--trail-surface-sidebar);
+}
+
+body .workspace-tab-header-container {
+  min-height: var(--header-height);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  box-shadow: none;
+}
+
+body .workspace-tab-header-container-inner {
+  gap: var(--trail-space-1);
+  padding: 4px 5px 3px;
+}
+
+body .workspace-tab-header {
+  height: var(--trail-control-height-md);
+  min-height: var(--trail-control-height-md);
+  margin: 0 1px;
+  border: 0;
+  border-radius: var(--tab-radius);
+  background: transparent;
+  color: var(--trail-text-faint);
+  box-shadow: none;
+}
+
+body .workspace-tab-header:hover {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-muted);
+}
+
+body .workspace-tab-header.is-active {
+  background: var(--tab-background-active);
+  color: var(--trail-text-primary);
+  box-shadow: inset 0 0 0 1px var(--trail-border-subtle);
+}
+
+body .workspace-tab-header-inner {
+  gap: var(--trail-space-3);
+  padding: 0 var(--trail-space-5);
+}
+
+body .workspace-tab-header-inner-title {
+  color: inherit;
+  font-size: var(--tab-font-size);
+  font-weight: var(--tab-font-weight);
+  letter-spacing: -0.005em;
+}
+
+body .workspace-tab-header-inner-icon,
+body .workspace-tab-header-inner-close-button {
+  color: inherit;
+  opacity: 0.82;
+}
+
+body .workspace-tab-header-tab-list,
+body .workspace-tab-header-new-tab {
+  color: var(--trail-text-faint);
+}
+
+body .workspace-tab-header-inner-icon svg,
+body .workspace-tab-header-inner-close-button svg,
+body .workspace-tab-header-new-tab svg,
+body .workspace-tab-header-tab-list svg {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  stroke-width: 1.7;
+}
+
+body .view-header {
+  min-height: 36px;
+  border-bottom: 1px solid var(--trail-border-subtle);
+  background: var(--trail-surface-canvas);
+  box-shadow: none;
+}
+
+body .view-header-title-container {
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+body .view-header-breadcrumb,
+body .view-header-title-parent,
+body .view-header-title {
+  color: var(--trail-text-muted);
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-medium);
+}
+
+body .view-header-title {
+  color: var(--trail-text-secondary);
+}
+
+body .view-header .clickable-icon,
+body .workspace-ribbon .clickable-icon,
+body .workspace-sidedock-vault-profile .clickable-icon,
+body .workspace-tab-header-container .clickable-icon {
+  width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
+  padding: var(--trail-space-2);
+  border-radius: 5px;
+  color: var(--trail-text-muted);
+  opacity: 0.82;
+}
+
+body .view-header .clickable-icon:hover,
+body .workspace-ribbon .clickable-icon:hover,
+body .workspace-sidedock-vault-profile .clickable-icon:hover,
+body .workspace-tab-header-container .clickable-icon:hover {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+  opacity: 1;
+}
+
+body .view-header .clickable-icon svg,
+body .workspace-ribbon .clickable-icon svg,
+body .workspace-sidedock-vault-profile .clickable-icon svg,
+body .workspace-tab-header-container .clickable-icon svg {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  stroke-width: 1.65;
+}
+
+body .workspace-ribbon {
+  border-right: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-muted);
+}
+
+body .workspace-ribbon .side-dock-ribbon-action {
+  width: 26px;
+  height: 26px;
+  margin: 1px auto;
+  padding: var(--trail-space-3);
+  border-radius: 5px;
+  color: var(--trail-text-muted);
+}
+
+body .workspace-ribbon .side-dock-ribbon-action:hover,
+body .workspace-ribbon .side-dock-ribbon-action.is-active {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+}
+
+body .workspace-ribbon .side-dock-ribbon-action svg {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  stroke-width: 1.65;
+}
+
+body .workspace-leaf-content[data-type="file-explorer"],
+body .workspace-leaf-content[data-type="search"],
+body .nav-files-container {
+  background: var(--trail-surface-sidebar);
+  color: var(--nav-item-color);
+  font-family: var(--trail-font-ui);
+}
+
+body .nav-header {
+  padding: 6px 7px 4px;
+}
+
+body .nav-buttons-container {
+  gap: 1px;
+}
+
+body .nav-action-button,
+body .nav-header .clickable-icon {
+  width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
+  padding: var(--trail-space-2);
+  border-radius: 5px;
+  color: var(--trail-text-muted);
+}
+
+body .nav-action-button:hover,
+body .nav-header .clickable-icon:hover {
+  background: var(--nav-item-background-hover);
+  color: var(--trail-text-primary);
+}
+
+body .nav-action-button svg,
+body .nav-header .clickable-icon svg {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  stroke-width: 1.65;
+}
+
+body .nav-files-container {
+  padding: 3px 6px 10px;
+}
+
+body .nav-files-container .tree-item-self,
+body .nav-files-container .nav-file-title,
+body .nav-files-container .nav-folder-title {
+  height: var(--trail-control-height-sm);
+  min-height: var(--trail-control-height-sm);
+  padding-top: 0;
+  padding-bottom: 0;
+  border-radius: 5px;
+  font-size: var(--nav-item-size);
+  line-height: var(--trail-control-height-sm);
+}
+
+body .nav-files-container .nav-file-title-content,
+body .nav-files-container .nav-folder-title-content {
+  line-height: var(--trail-control-height-sm);
+}
+
+body .nav-files-container .nav-folder-title-content {
+  font-weight: var(--trail-weight-medium);
+}
+
+body .nav-files-container .tree-item-icon,
+body .nav-files-container .nav-folder-collapse-indicator {
+  color: var(--nav-collapse-icon-color);
+  opacity: 0.72;
+}
+
+body .nav-files-container .tree-item-icon svg,
+body .nav-files-container .nav-folder-collapse-indicator svg {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+  stroke-width: 1.6;
+}
+
+body .nav-file-title.is-active,
+body .nav-folder-title.is-active,
+body .tree-item-self.is-active {
+  border: 0;
+  outline: 0;
+  background: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+  box-shadow: none;
+  font-weight: var(--nav-item-weight-active);
+}
+
+/* Obsidian places File Explorer focus ownership on the parent .has-focus. */
+body .workspace-leaf.mod-active .nav-folder.has-focus > .nav-folder-title,
+body .workspace-leaf.mod-active .nav-file.has-focus > .nav-file-title,
+body .workspace-leaf.mod-active .nav-folder.has-focus > .nav-folder-title:focus-within,
+body .workspace-leaf.mod-active .nav-file.has-focus > .nav-file-title:focus-within {
+  outline: 0;
+  box-shadow: none;
+}
+
+body .nav-file-title:focus-visible,
+body .nav-folder-title:focus-visible,
+body .tree-item-self:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px var(--trail-focus-ring-quiet);
+}
+
+body .nav-file-tag,
+body .nav-file-title-content::after {
+  color: var(--trail-text-faint);
+  font-size: 8px;
+  font-weight: var(--trail-weight-emphasis);
+  letter-spacing: 0.04em;
+}
+
+body .workspace-sidedock-vault-profile {
+  min-height: 38px;
+  border-top: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-secondary);
+}
+
+body .workspace-sidedock-vault-profile-title {
+  color: var(--trail-text-secondary);
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-medium);
+}
+
+body .status-bar {
+  min-height: 19px;
+  padding: 0 var(--trail-space-6);
+  border-top: 1px solid var(--trail-border-subtle);
+  color: var(--status-bar-text-color);
+  box-shadow: none;
+  font-family: var(--trail-font-ui);
+  font-size: var(--status-bar-font-size);
+}
+
+body .workspace-leaf-resize-handle {
+  border-color: var(--trail-border-subtle);
+  background: transparent;
+}
+
+body .suggestion-container,
+body .popover,
+body .modal,
+body .prompt {
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-md);
+  background: var(--trail-surface-overlay);
+  color: var(--trail-text-secondary);
+  box-shadow: var(--trail-shadow-overlay);
+}
+
+body .suggestion-item {
+  min-height: 27px;
+  border-radius: 5px;
+  color: var(--trail-text-secondary);
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-control);
+}
+
+body .suggestion-item:hover,
+body .suggestion-item.is-selected {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+}
+
+body .tooltip {
+  border: 1px solid var(--trail-border-subtle);
+  border-radius: 5px;
+  background: var(--trail-surface-overlay);
+  color: var(--trail-text-primary);
+  box-shadow: var(--trail-shadow-tooltip);
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-caption);
+}
+
+body .modal-bg {
+  background: var(--trail-overlay-scrim);
+  backdrop-filter: none;
+}
+
+body input[type="text"],
+body input[type="search"],
+body input[type="email"],
+body input[type="url"],
+body input[type="password"],
+body input[type="number"],
+body textarea,
+body select,
+body .dropdown {
+  min-height: var(--input-height);
+  border: var(--input-border-width) solid var(--trail-border-default);
+  border-radius: var(--input-radius);
+  background-color: var(--trail-surface-canvas);
+  color: var(--trail-text-primary);
+  box-shadow: none;
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-body);
+}
+
+body input:focus,
+body textarea:focus,
+body select:focus,
+body .dropdown:focus {
+  border-color: var(--trail-focus-border);
+  box-shadow: 0 0 0 1px var(--trail-focus-ring);
+}
+
+body button:not(.clickable-icon) {
+  min-height: var(--trail-control-height-md);
+  border-radius: var(--button-radius);
+  box-shadow: none;
+  font-family: var(--trail-font-ui);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-medium);
+}
+
+body button:not(.clickable-icon):focus-visible {
+  border-color: var(--trail-focus-border);
+  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
+}
+
+body button.mod-cta {
+  border-color: var(--trail-accent-border);
+  background: var(--trail-accent);
+  color: var(--trail-text-on-accent);
+}
+
+body button.mod-cta:hover,
+body button.mod-cta:focus-visible {
+  background: var(--trail-accent-hover);
+}
+
+body .metadata-container {
+  margin-block-end: var(--trail-space-15);
+  color: var(--trail-text-secondary);
+  font-family: var(--trail-font-ui);
+  --input-height: var(--metadata-input-height);
+}
+
+body .metadata-properties-heading {
+  margin-bottom: var(--trail-space-3);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-emphasis);
+}
+
+body .metadata-property {
+  min-height: var(--trail-control-height-md);
+  border-radius: var(--metadata-property-radius);
+  background: var(--metadata-property-background);
+}
+
+body .metadata-property:hover {
+  background: var(--metadata-property-background-hover);
+}
+
+body .metadata-property .metadata-property-key,
+body .metadata-property .metadata-property-value {
+  min-height: var(--metadata-input-height);
+}
+
+body .metadata-property .metadata-property-key {
+  color: var(--metadata-label-text-color);
+}
+
+body .metadata-property .metadata-property-value {
+  color: var(--metadata-input-text-color);
+}
+
+body .metadata-property input.metadata-property-key-input,
+body .metadata-property .metadata-property-value input,
+body .metadata-property .metadata-property-value textarea,
+body .metadata-property .metadata-input-longtext,
+body .metadata-property .metadata-property-value .multi-select-container {
+  min-height: var(--metadata-input-height);
+  border: 1px solid transparent;
+  border-radius: var(--metadata-property-radius);
+  background: var(--metadata-input-background);
+  color: inherit;
+  box-shadow: none;
+  font-family: var(--trail-font-ui);
+  font-size: var(--metadata-input-font-size);
+  font-weight: var(--trail-weight-regular);
+}
+
+body .metadata-property input.metadata-property-key-input:hover,
+body .metadata-property .metadata-property-value input:hover,
+body .metadata-property .metadata-property-value textarea:hover,
+body .metadata-property .metadata-input-longtext:hover,
+body .metadata-property .metadata-property-value .multi-select-container:hover {
+  border-color: var(--trail-border-subtle);
+  background: var(--metadata-input-background-hover);
+}
+
+body .metadata-property input.metadata-property-key-input:focus,
+body .metadata-property .metadata-property-value input:focus,
+body .metadata-property .metadata-property-value textarea:focus,
+body .metadata-property .metadata-input-longtext:focus,
+body .metadata-property .metadata-property-value .multi-select-container.is-active {
+  border-color: var(--trail-metadata-focus-border);
+  background: var(--metadata-input-background-active);
+  box-shadow: 0 0 0 1px var(--trail-metadata-focus-ring);
+}
+
+body .metadata-add-button {
+  min-height: 26px;
+  padding: 0 var(--trail-space-3);
+  border-radius: 5px;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-control);
+}
+
+body .metadata-add-button:hover {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-secondary);
+}
+
+body .metadata-property-icon,
+body .metadata-property-warning-icon {
+  color: var(--trail-text-faint);
+  opacity: 0.7;
+}
+
+body .metadata-property-icon svg,
+body .metadata-property-warning-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 1.6;
+}
+
+body ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+body ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body ::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+body ::-webkit-scrollbar-thumb:hover {
+  background: var(--trail-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+/* Native context menu. Obsidian owns behavior; Trail owns the visual contract. */
+body .menu {
+  min-width: var(--trail-menu-min-width);
+  padding: var(--trail-menu-padding);
+  border: 1px solid var(--trail-menu-border);
+  border-radius: var(--trail-menu-radius);
+  background: var(--trail-menu-surface);
+  color: var(--trail-text-secondary);
+  box-shadow: var(--trail-menu-shadow);
+  font-family: var(--trail-font-ui);
+}
+
+body .menu-item {
+  display: flex;
+  min-height: var(--trail-menu-item-height);
+  align-items: center;
+  gap: var(--trail-menu-item-gap);
+  padding: 0 var(--trail-menu-item-padding-x);
+  border-radius: var(--trail-menu-item-radius);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-menu-font-size);
+  line-height: var(--trail-menu-item-height);
+}
+
+body .menu-item:hover:not(.is-disabled):not(.is-label),
+body .menu-item.selected:not(.is-disabled):not(.is-label) {
+  background: var(--trail-menu-hover);
+  color: var(--trail-text-primary);
+}
+
+body .menu-item.is-disabled {
+  color: var(--trail-text-faint);
+}
+
+body .menu-item.is-warning {
+  color: var(--trail-danger);
+}
+
+body .menu-item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .menu-item-icon {
+  width: var(--trail-menu-icon-size);
+  min-width: var(--trail-menu-icon-size);
+  height: var(--trail-menu-icon-size);
+  color: var(--trail-text-muted);
+}
+
+body .menu-item-icon svg {
+  width: var(--trail-menu-icon-size);
+  height: var(--trail-menu-icon-size);
+  stroke-width: 1.65;
+}
+
+body .menu-item-icon .mod-submenu {
+  color: var(--trail-text-faint);
+}
+
+body .menu-item:hover .menu-item-icon,
+body .menu-item.selected .menu-item-icon {
+  color: var(--trail-text-secondary);
+}
+
+body .menu-item.is-warning .menu-item-icon,
+body .menu-item.is-warning:hover .menu-item-icon,
+body .menu-item.is-warning.selected .menu-item-icon {
+  color: var(--trail-danger);
+}
+
+body .menu-separator {
+  margin: var(--trail-space-2) var(--trail-space-4);
+  border-bottom-color: var(--trail-menu-separator);
+}
+
+/* Markdown/editor remains a separate host consumer with one typography owner. */
+body .workspace-leaf-content[data-type="markdown"] .view-content,
+body .markdown-source-view,
+body .markdown-reading-view,
+body .markdown-source-view.mod-cm6 .cm-editor,
+body .markdown-source-view.mod-cm6 .cm-scroller {
+  background: var(--trail-surface-canvas);
+}
+
+body .markdown-source-view,
+body .markdown-reading-view {
+  color: var(--trail-text-primary);
+}
+
+body .markdown-source-view.mod-cm6 .cm-cursor,
+body .markdown-source-view.mod-cm6 .cm-dropCursor {
+  border-left-color: var(--trail-accent);
+}
+
+body .markdown-source-view.mod-cm6 .cm-selectionBackground,
+body .markdown-source-view.mod-cm6 .cm-content ::selection,
+body .markdown-reading-view ::selection {
+  background: var(--trail-selection-fill);
+}
+
+body .inline-title,
+body .markdown-rendered h1,
+body .markdown-rendered h2,
+body .markdown-rendered h3,
+body .markdown-rendered h4,
+body .markdown-rendered h5,
+body .markdown-rendered h6,
+body .markdown-source-view.mod-cm6 .HyperMD-header {
+  color: var(--trail-text-primary);
+  font-family: var(--trail-font-ui);
+  letter-spacing: -0.012em;
+}
+
+body .inline-title {
+  margin-bottom: var(--trail-space-12);
+}
+
+body .markdown-rendered h1,
+body .markdown-source-view.mod-cm6 .HyperMD-header-1 {
+  letter-spacing: -0.015em;
+}
+
+body .markdown-rendered h2,
+body .markdown-source-view.mod-cm6 .HyperMD-header-2 {
+  letter-spacing: -0.012em;
+}
+
+body .markdown-rendered h3,
+body .markdown-source-view.mod-cm6 .HyperMD-header-3,
+body .markdown-rendered h4,
+body .markdown-source-view.mod-cm6 .HyperMD-header-4,
+body .markdown-rendered h5,
+body .markdown-source-view.mod-cm6 .HyperMD-header-5,
+body .markdown-rendered h6,
+body .markdown-source-view.mod-cm6 .HyperMD-header-6 {
+  letter-spacing: -0.008em;
+}
+
+body .markdown-source-view.mod-cm6 .cm-line,
+body .markdown-rendered p,
+body .markdown-rendered li {
+  color: var(--trail-text-secondary);
+}

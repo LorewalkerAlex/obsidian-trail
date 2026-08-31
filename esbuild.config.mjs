@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
-import { builtinModules } from "node:module";
 import { watch } from "node:fs";
-import { copyFile, mkdir } from "node:fs/promises";
+import { builtinModules } from "node:module";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import process from "node:process";
 
 const mode = process.argv[2] ?? "development";
@@ -10,7 +10,16 @@ const diagnosticsBuild = mode === "diagnostics";
 const oneShot = production || diagnosticsBuild;
 const diagnosticsEnabled = !production;
 const outputDirectory = ".obsidian/plugins/trail";
-const staticFiles = ["manifest.json", "styles.css"];
+const staticFiles = ["manifest.json"];
+const stylesheetSources = [
+  "plugin/styles/tokens.css",
+  "plugin/styles/obsidian-variables.css",
+  "plugin/styles/obsidian-native.css",
+  "plugin/styles/primitives.css",
+  "plugin/styles/patterns.css",
+  "plugin/styles/shell.css",
+  "plugin/styles/foundation.css",
+];
 
 async function copyStaticFiles() {
   await mkdir(outputDirectory, { recursive: true });
@@ -22,7 +31,17 @@ async function copyStaticFiles() {
   );
 }
 
-await copyStaticFiles();
+async function buildStylesheet() {
+  await mkdir(outputDirectory, { recursive: true });
+
+  const sources = await Promise.all(
+    stylesheetSources.map((file) => readFile(file, "utf8")),
+  );
+
+  await writeFile(`${outputDirectory}/styles.css`, sources.join("\n"), "utf8");
+}
+
+await Promise.all([copyStaticFiles(), buildStylesheet()]);
 
 const context = await esbuild.context({
   banner: {
@@ -78,11 +97,31 @@ const staticWatchers = staticFiles.map((file) =>
   }),
 );
 
+let stylesheetBuildQueue = Promise.resolve();
+
+function queueStylesheetBuild(file) {
+  stylesheetBuildQueue = stylesheetBuildQueue.then(async () => {
+    try {
+      await buildStylesheet();
+      console.log(`[trail] Updated ${file}`);
+    } catch (error) {
+      console.error(`[trail] Failed to update ${file}`, error);
+    }
+  });
+}
+
+const stylesheetWatchers = stylesheetSources.map((file) =>
+  watch(file, () => {
+    queueStylesheetBuild(file);
+  }),
+);
+
 async function shutdown() {
-  for (const watcher of staticWatchers) {
+  for (const watcher of [...staticWatchers, ...stylesheetWatchers]) {
     watcher.close();
   }
 
+  await stylesheetBuildQueue;
   await context.dispose();
   process.exit(0);
 }

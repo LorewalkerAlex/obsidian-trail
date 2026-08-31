@@ -149,7 +149,7 @@ Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain 
 | Product pages/workspaces | UI Design + Query + Application | `ui/pages` |
 | Trail navigation + Default Project shortcut | UI Design + Workspace State/query + stable Project route | `ui/shell` |
 | Foundation Lab / visual calibration harness | resolved design tokens + representative states; no product-location semantics | `ui/foundation` as development/calibration-only consumer |
-| Design-token authority / host presentation mapping | current Linear reference + real-Obsidian calibration | root `styles.css` token authority + Obsidian semantic/native-consumer sections; future `ui/design-system` helpers only when TS ownership is actually needed |
+| Design-token authority / host presentation mapping | current Linear reference + real-Obsidian calibration | canonical `plugin/styles/tokens.css`, `plugin/styles/obsidian-variables.css`, and `plugin/styles/obsidian-native.css`; generated plugin `styles.css` is delivery output only; future `ui/design-system` helpers only when TS ownership is actually needed |
 | Workspace Frame / responsive page composition / location-entry Inspector reveal | UI Design + current Obsidian pane capacity + location capabilities | `ui/shell`, `ui/pages`, `adapters/obsidian`; CSS container queries/layout for visual-only response |
 | Global Search surface and activation | UI Design + Search Query + normal navigation/Peek/Triage Review targets | `query/search`, `ui/pages/search`, shared `ui/patterns` / `ui/interactions`, `ui/shell` |
 | Runtime loading/pending/failure/Data-Issue/read-only feedback | UI Design + Runtime control/pending/health + LKG Query + performance calibration | shared `ui/patterns` / `ui/interactions`, `ui/shell`, `query`, `performance`, Obsidian adapter where host actions are needed |
@@ -208,14 +208,15 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Product composition | `plugin/src/ui/pages/` | Domain/Application |
 | Navigation and stable Project shortcut routing | `plugin/src/ui/shell/` | Project entity model or persistence filenames |
 | Foundation Lab calibration presentation | `plugin/src/ui/foundation/` | production primitives/pages; production code must not depend on Lab classes/components |
-| Resolved visual tokens and Obsidian host mapping | root `styles.css` design-token / host-mapping ownership; `plugin/src/ui/design-system/` only for TS-side contracts/helpers when required | repeated raw design values, late repair overrides, page-local theme systems |
+| Resolved visual tokens and Obsidian host mapping | `plugin/styles/tokens.css`, `plugin/styles/obsidian-variables.css`, `plugin/styles/obsidian-native.css`; `plugin/src/ui/design-system/` only for TS-side contracts/helpers when required | repeated raw design values, late repair overrides, page-local theme systems |
 | Entity components | `plugin/src/ui/entities/` | page-specific copies |
 | Shared Creation Composer and create-state orchestration | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/` | page-local inline/modal create stacks |
 | Shared collection Filter grammar and session state | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/`, `plugin/src/query/` | page-private filter engines, hidden quick-filter state, or `runtime/store` canonical entity state |
 | Shared property controls and pickers | `plugin/src/ui/primitives/`, `plugin/src/ui/patterns/` | per-page property widgets |
 | Shared Selection / Action Registry / Bulk target intersection / shortcut dispatch | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/` with host binding in `plugin/src/adapters/obsidian/` | page-local command menus, page-local selection state machines, duplicate action catalogs, or shortcut-specific business logic |
-| Core primitive visual/interaction contracts | `plugin/src/ui/primitives/` + root design tokens | page-local low-level controls or arbitrary caller-owned pixel/color props |
-| Shared visual/composition patterns | `plugin/src/ui/patterns/` | page-local copies or giant universal components |
+| Core primitive visual/interaction contracts | `plugin/src/ui/primitives/` + `plugin/styles/tokens.css` / `plugin/styles/primitives.css` | page-local low-level controls or arbitrary caller-owned pixel/color props |
+| Shared visual/composition patterns | `plugin/src/ui/patterns/` + `plugin/styles/patterns.css` | page-local copies or giant universal components |
+| Stylesheet source ordering / generated Obsidian delivery | canonical `plugin/styles/` modules + the explicit stylesheet manifest in `esbuild.config.mjs` | root source `styles.css`, `@import`/glob-order ownership, or a second build/watch source list |
 | Shared transient interaction mechanics/state | `plugin/src/ui/interactions/` | canonical Runtime, page-local duplicate selection/filter/action systems |
 | Trail semantic presentation | `plugin/src/ui/entities/` | generic primitives or page-private entity copies |
 | Obsidian integration | `plugin/src/adapters/obsidian/` | Domain/Application/Runtime |
@@ -228,92 +229,102 @@ Code ownership is target ownership, not an implementation-progress indicator. If
 ## 4. Target Code Tree
 
 ```text
-plugin/src/
-├─ domain/
-│  ├─ model/
-│  ├─ validation/
-│  ├─ planning/
-│  └─ rules/
+plugin/
+├─ styles/
+│  ├─ tokens.css
+│  ├─ obsidian-variables.css
+│  ├─ obsidian-native.css
+│  ├─ primitives.css
+│  ├─ patterns.css
+│  ├─ shell.css
+│  └─ foundation.css
 │
-├─ application/
-│  ├─ triage/
-│  ├─ projects/
-│  ├─ issues/
-│  ├─ initiatives/
-│  ├─ milestones/
-│  ├─ cycles/
-│  ├─ configuration/
-│  ├─ workspace/
-│  └─ similarity/
-│
-├─ markdown/
-│  ├─ core/
-│  ├─ schema/
-│  │  ├─ trail-paths.ts
-│  │  └─ trail-physical-schema.ts
-│  └─ codecs/
-│     ├─ trail-initiative-codec.ts
-│     ├─ trail-project-codec.ts
-│     ├─ trail-triage-codec.ts
-│     └─ trail-cycles-codec.ts
-│
-├─ persistence/
-│  ├─ domain-sources/
-│  ├─ plugin-data/
-│  ├─ utility-sources/
-│  └─ ports/
-│
-├─ mutation/
-│  ├─ plans/
-│  ├─ coordinator/
-│  ├─ queue/
-│  ├─ physical/
-│  └─ execution/
-│
-├─ runtime/
-│  ├─ store/
-│  ├─ projection/
-│  ├─ reconcile/
-│  ├─ ownership/
-│  ├─ indexes/
-│  └─ control/
-│
-├─ source-sync/
-│  ├─ bootstrap/
-│  ├─ discovery/
-│  └─ refresh/
-│
-├─ query/
-│  ├─ derived/
-│  ├─ cycles/
-│  ├─ shared/
-│  └─ page-specific selectors
-│
-├─ ui/
-│  ├─ design-system/        TS-side design contracts/helpers only when required
-│  ├─ primitives/           generic semantic controls; no Trail Domain knowledge
-│  ├─ interactions/         shared headless transient UI mechanics/state
-│  ├─ patterns/             reusable interface composition over primitives/interactions
-│  ├─ entities/             Trail semantic presentation over Query/capabilities
-│  ├─ pages/
-│  │  ├─ home/
-│  │  ├─ projects/
-│  │  ├─ triage/
-│  │  └─ cycles/
-│  ├─ shell/                navigation/location/workspace composition
-│  └─ foundation/           development/calibration consumer only
-│
-├─ adapters/
-│  └─ obsidian/
-│
-├─ diagnostics/
-├─ migration/
-├─ performance/
-└─ main.ts
+└─ src/
+   ├─ domain/
+   │  ├─ model/
+   │  ├─ validation/
+   │  ├─ planning/
+   │  └─ rules/
+   │
+   ├─ application/
+   │  ├─ triage/
+   │  ├─ projects/
+   │  ├─ issues/
+   │  ├─ initiatives/
+   │  ├─ milestones/
+   │  ├─ cycles/
+   │  ├─ configuration/
+   │  ├─ workspace/
+   │  └─ similarity/
+   │
+   ├─ markdown/
+   │  ├─ core/
+   │  ├─ schema/
+   │  │  ├─ trail-paths.ts
+   │  │  └─ trail-physical-schema.ts
+   │  └─ codecs/
+   │     ├─ trail-initiative-codec.ts
+   │     ├─ trail-project-codec.ts
+   │     ├─ trail-triage-codec.ts
+   │     └─ trail-cycles-codec.ts
+   │
+   ├─ persistence/
+   │  ├─ domain-sources/
+   │  ├─ plugin-data/
+   │  ├─ utility-sources/
+   │  └─ ports/
+   │
+   ├─ mutation/
+   │  ├─ plans/
+   │  ├─ coordinator/
+   │  ├─ queue/
+   │  ├─ physical/
+   │  └─ execution/
+   │
+   ├─ runtime/
+   │  ├─ store/
+   │  ├─ projection/
+   │  ├─ reconcile/
+   │  ├─ ownership/
+   │  ├─ indexes/
+   │  └─ control/
+   │
+   ├─ source-sync/
+   │  ├─ bootstrap/
+   │  ├─ discovery/
+   │  └─ refresh/
+   │
+   ├─ query/
+   │  ├─ derived/
+   │  ├─ cycles/
+   │  ├─ shared/
+   │  └─ page-specific selectors
+   │
+   ├─ ui/
+   │  ├─ design-system/        TS-side design contracts/helpers only when required
+   │  ├─ primitives/           generic semantic controls; no Trail Domain knowledge
+   │  ├─ interactions/         shared headless transient UI mechanics/state
+   │  ├─ patterns/             reusable interface composition over primitives/interactions
+   │  ├─ entities/             Trail semantic presentation over Query/capabilities
+   │  ├─ pages/
+   │  │  ├─ home/
+   │  │  ├─ projects/
+   │  │  ├─ triage/
+   │  │  └─ cycles/
+   │  ├─ shell/                navigation/location/workspace composition
+   │  └─ foundation/           development/calibration consumer only
+   │
+   ├─ adapters/
+   │  └─ obsidian/
+   │
+   ├─ diagnostics/
+   ├─ migration/
+   ├─ performance/
+   └─ main.ts
 ```
 
 A future Workspace Issues page belongs under `ui/pages` only when that deferred product surface is designed. Normal runtime does not retain `trail-projectless-issues-codec.ts` or another Projectless compatibility branch; any legacy reader needed for a one-way upgrade is scoped to `migration`.
 
 The tree defines where established responsibilities belong. It is not a promise to create empty directories, placeholder services, compatibility facades, or speculative code before a capability is required by the dependency-ordered implementation plan.
 
-The physical Obsidian plugin stylesheet remains root `styles.css` in V1 because it is the published host stylesheet entry point. Its internal ownership follows Architecture Section 3.11 rather than the UI directory tree. `ui/foundation` may consume tokens/contracts to make them reviewable, but no production shell/page/entity/pattern/primitive may depend on Foundation Lab components or `trail-lab-*` styling.
+Canonical stylesheet source lives under `plugin/styles/` and follows Architecture Section 3.11 ownership rather than mechanically mirroring the UI TypeScript tree. `esbuild.config.mjs` composes those modules through one explicit ordered manifest into the generated `.obsidian/plugins/trail/styles.css` host delivery artifact; that generated file is not a second source authority. `ui/foundation` may consume tokens/contracts to make them reviewable, but no production shell/page/entity/pattern/primitive may depend on Foundation Lab components or `trail-lab-*` styling.

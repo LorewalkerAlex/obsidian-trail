@@ -1,0 +1,175 @@
+/* --------------------------------------------------------------------------
+ * 2. Obsidian semantic-variable mapping
+ *
+ * Trail's plugin stylesheet is loaded only while the plugin is enabled. The
+ * plugin lifecycle therefore owns the application-wide visual state; unloading
+ * the plugin removes these mappings and returns control to the user's theme.
+ * -------------------------------------------------------------------------- */
+
+body {
+  color-scheme: dark;
+
+  --background-primary: var(--trail-surface-canvas);
+  --background-primary-alt: var(--trail-surface-canvas);
+  --background-secondary: var(--trail-surface-sidebar);
+  --background-secondary-alt: var(--trail-surface-sidebar);
+  --background-modifier-hover: var(--trail-state-hover);
+  --background-modifier-active-hover: var(--trail-state-pressed);
+  --background-modifier-border: var(--trail-border-subtle);
+  --background-modifier-border-hover: var(--trail-border-default);
+  --background-modifier-border-focus: var(--trail-host-focus-border);
+  --background-modifier-form-field: var(--trail-surface-canvas);
+  --background-modifier-form-field-highlighted: var(--trail-surface-hover);
+  --interactive-normal: var(--trail-surface-elevated);
+  --interactive-hover: var(--trail-surface-hover);
+  --interactive-accent: var(--trail-accent);
+  --interactive-accent-hover: var(--trail-accent-hover);
+  --text-normal: var(--trail-text-primary);
+  --text-muted: var(--trail-text-muted);
+  --text-faint: var(--trail-text-faint);
+  --text-on-accent: var(--trail-text-on-accent);
+  --text-accent: var(--trail-text-accent);
+  --text-selection: var(--trail-selection-fill);
+  --divider-color: var(--trail-border-subtle);
+  --divider-color-hover: var(--trail-border-default);
+  --scrollbar-bg: transparent;
+  --scrollbar-thumb-bg: var(--trail-scrollbar-thumb);
+  --scrollbar-active-thumb-bg: var(--trail-scrollbar-thumb-hover);
+  --titlebar-background: var(--trail-surface-sidebar);
+  --titlebar-background-focused: var(--trail-surface-sidebar);
+  --tab-container-background: var(--trail-surface-sidebar);
+  --ribbon-background: var(--trail-surface-sidebar);
+  --status-bar-background: var(--trail-surface-sidebar);
+  --modal-background: var(--trail-surface-overlay);
+  --prompt-background: var(--trail-surface-overlay);
+
+  /* Window and tab geometry. */
+  --header-height: 36px;
+  --titlebar-border-width: 0px;
+  --titlebar-border-color: transparent;
+  --titlebar-text-color: var(--trail-text-muted);
+  --titlebar-text-color-focused: var(--trail-text-secondary);
+  --titlebar-text-weight: var(--trail-weight-medium);
+  --tab-background-active: var(--trail-surface-canvas);
+  --tab-text-color: var(--trail-text-faint);
+  --tab-text-color-active: var(--trail-text-secondary);
+  --tab-text-color-focused: var(--trail-text-muted);
+  --tab-text-color-focused-active: var(--trail-text-primary);
+  --tab-text-color-focused-active-current: var(--trail-text-primary);
+  --tab-font-size: 12px;
+  --tab-font-weight: var(--trail-weight-medium);
+  --tab-divider-color: transparent;
+  --tab-outline-color: transparent;
+  --tab-outline-width: 0px;
+  --tab-curve: 0px;
+  --tab-radius: var(--trail-radius-sm);
+  --tab-radius-active: var(--trail-radius-sm);
+  --tab-width: 160px;
+  --tab-max-width: 220px;
+
+  /* Navigation tree. */
+  --nav-item-size: 12px;
+  --nav-item-color: var(--trail-text-muted);
+  --nav-item-color-hover: var(--trail-text-secondary);
+  --nav-item-color-active: var(--trail-text-primary);
+  --nav-item-color-selected: var(--trail-text-primary);
+  --nav-item-background-hover: var(--trail-state-hover);
+  --nav-item-background-active: var(--trail-surface-hover);
+  --nav-item-background-selected: var(--trail-state-selected);
+  --nav-item-padding: 2px 7px;
+  --nav-item-parent-padding: 2px 7px;
+  --nav-item-children-padding-start: 12px;
+  --nav-item-children-margin-start: 7px;
+  --nav-item-weight: 430;
+  --nav-item-weight-hover: 430;
+  --nav-item-weight-active: 540;
+  --nav-indentation-guide-width: 1px;
+  --nav-indentation-guide-color: var(--trail-surface-quiet);
+  --nav-collapse-icon-color: var(--trail-text-faint);
+  --nav-collapse-icon-color-collapsed: var(--trail-text-faint);
+
+  /* Properties. */
+  --metadata-background: transparent;
+  --metadata-padding: 0;
+  --metadata-border-color: transparent;
+  --metadata-border-radius: 0px;
+  --metadata-border-width: 0px;
+  --metadata-gap: 0px;
+  --metadata-divider-color: transparent;
+  --metadata-divider-color-hover: transparent;
+  --metadata-divider-color-focus: transparent;
+  --metadata-divider-width: 0px;
+  --metadata-property-padding: 0 2px;
+  --metadata-property-radius: 5px;
+  --metadata-property-radius-hover: 5px;
+  --metadata-property-radius-focus: 5px;
+  --metadata-property-background: transparent;
+  --metadata-property-background-hover: var(--trail-surface-disabled);
+  --metadata-property-background-active: var(--trail-state-hover);
+  --metadata-label-background-hover: transparent;
+  --metadata-label-background-active: transparent;
+  --metadata-label-font-size: var(--trail-font-size-body);
+  --metadata-label-font-weight: var(--trail-weight-regular);
+  --metadata-label-text-color: var(--trail-text-muted);
+  --metadata-label-text-color-hover: var(--trail-text-secondary);
+  --metadata-label-width: 8.25em;
+  --metadata-input-height: 26px;
+  --metadata-input-text-color: var(--trail-text-secondary);
+  --metadata-input-font-size: var(--trail-font-size-body);
+  --metadata-input-background: transparent;
+  --metadata-input-background-hover: var(--trail-state-hover);
+  --metadata-input-background-active: var(--trail-surface-hover);
+
+  /* Generic controls. */
+  --input-height: var(--trail-control-height-md);
+  --input-radius: var(--trail-radius-sm);
+  --input-font-weight: var(--trail-weight-regular);
+  --input-border-width: 1px;
+  --button-radius: var(--trail-radius-sm);
+  --pill-color: var(--trail-text-secondary);
+  --pill-color-hover: var(--trail-text-primary);
+  --pill-background: var(--trail-surface-quiet);
+  --pill-background-hover: var(--trail-state-hover);
+  --pill-border-color: var(--trail-border-subtle);
+  --pill-border-color-hover: var(--trail-border-default);
+  --pill-border-width: 1px;
+  --pill-padding-x: var(--trail-space-4);
+  --pill-padding-y: 1px;
+  --pill-radius: var(--trail-radius-pill);
+  --pill-weight: var(--trail-weight-medium);
+
+  /* Status/divider. */
+  --divider-width: 1px;
+  --divider-width-hover: 1px;
+  --status-bar-border-color: var(--trail-border-subtle);
+  --status-bar-border-width: 1px 0 0 0;
+  --status-bar-font-size: var(--trail-font-size-meta);
+  --status-bar-text-color: var(--trail-text-faint);
+  --status-bar-radius: 0px;
+
+  /* Native menu and document variables. */
+  --menu-padding: var(--trail-menu-padding);
+  --inline-title-size: var(--trail-document-inline-title-size);
+  --inline-title-weight: var(--trail-document-inline-title-weight);
+  --inline-title-line-height: var(--trail-document-inline-title-line-height);
+  --h1-size: var(--trail-document-h1-size);
+  --h2-size: var(--trail-document-h2-size);
+  --h3-size: var(--trail-document-h3-size);
+  --h4-size: var(--trail-document-h4-size);
+  --h5-size: var(--trail-document-h5-size);
+  --h6-size: var(--trail-document-h6-size);
+  --h1-weight: var(--trail-document-h1-weight);
+  --h2-weight: var(--trail-document-h2-weight);
+  --h3-weight: var(--trail-document-h3-weight);
+  --h4-weight: var(--trail-document-h4-weight);
+  --h5-weight: var(--trail-document-h5-weight);
+  --h6-weight: var(--trail-document-h6-weight);
+  --h1-line-height: var(--trail-document-h1-line-height);
+  --h2-line-height: var(--trail-document-h2-line-height);
+  --h3-line-height: var(--trail-document-h3-line-height);
+  --h4-line-height: var(--trail-document-h4-line-height);
+  --h5-line-height: var(--trail-document-h5-line-height);
+  --h6-line-height: var(--trail-document-h6-line-height);
+  --heading-spacing: 1.35em;
+  --p-spacing: 0.8rem;
+}

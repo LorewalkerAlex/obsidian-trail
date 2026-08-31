@@ -1,0 +1,190 @@
+.trail-collection-row {
+  box-sizing: border-box;
+  display: flex;
+  min-width: 0;
+  min-height: var(--trail-space-16);
+  align-items: center;
+  gap: var(--trail-space-5);
+  padding: 0 var(--trail-space-7);
+  border-bottom: 1px solid var(--trail-row-divider);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+  transition: background-color var(--trail-motion-fast);
+}
+
+.trail-collection-row:hover,
+.trail-collection-row[data-highlighted="true"],
+.trail-collection-row:focus-visible,
+.trail-collection-row:focus-within {
+  background: var(--trail-state-hover);
+}
+
+.trail-collection-row[data-selected="true"] {
+  background: var(--trail-state-accent-soft);
+}
+
+.trail-collection-row__selection,
+.trail-collection-row__leading {
+  display: inline-grid;
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.trail-collection-row__selection {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--trail-motion-fast);
+}
+
+.trail-collection-row[data-selectable="true"]:hover .trail-collection-row__selection,
+.trail-collection-row[data-selectable="true"][data-highlighted="true"] .trail-collection-row__selection,
+.trail-collection-row[data-selectable="true"][data-selected="true"] .trail-collection-row__selection,
+.trail-collection-row[data-selectable="true"]:focus-visible .trail-collection-row__selection,
+.trail-collection-row[data-selectable="true"]:focus-within .trail-collection-row__selection {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.trail-collection-row__content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.trail-view-bar {
+  box-sizing: border-box;
+  display: flex;
+  min-width: 0;
+  min-height: var(--trail-control-height-lg);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-3) var(--trail-space-8);
+  padding: var(--trail-space-2) var(--trail-space-6);
+  border-bottom: 1px solid var(--trail-border-subtle);
+}
+
+.trail-view-bar__leading {
+  display: flex;
+  min-width: min(12rem, 100%);
+  flex: 1 1 12rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-3);
+}
+
+.trail-view-bar__trailing {
+  display: inline-flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--trail-space-2);
+  margin-left: auto;
+}
+
+.trail-view-bar__action {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  height: var(--trail-control-height-sm);
+  min-height: 0;
+  align-items: center;
+  gap: var(--trail-space-3);
+  margin: 0;
+  padding: 0 var(--trail-space-3);
+  border: 0;
+  border-radius: var(--trail-radius-xs);
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--trail-text-muted);
+  font: inherit;
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
+}
+
+.trail-view-bar__action:hover:not(:disabled) {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-secondary);
+}
+
+.trail-view-bar__action:active:not(:disabled) {
+  background: var(--trail-state-pressed);
+  color: var(--trail-text-primary);
+}
+
+.trail-view-bar__action:focus-visible {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
+}
+
+.trail-view-bar__action:disabled {
+  color: var(--trail-text-faint);
+  cursor: default;
+}
+
+.trail-view-bar__action-icon,
+.trail-view-layout-switch__icon {
+  display: inline-grid;
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.trail-view-bar__action-icon > svg,
+.trail-view-layout-switch__icon > svg {
+  width: 100%;
+  height: 100%;
+}
+
+.trail-view-layout-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--trail-space-1);
+  margin-right: var(--trail-space-2);
+}
+
+.trail-view-layout-switch .trail-icon-button {
+  box-sizing: border-box;
+  display: inline-grid;
+  width: var(--trail-control-height-sm);
+  min-width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--trail-radius-xs);
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--trail-text-faint);
+  place-items: center;
+  transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
+}
+
+.trail-view-layout-switch .trail-icon-button:hover {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-secondary);
+}
+
+.trail-view-layout-switch .trail-icon-button[aria-pressed="true"] {
+  background: var(--trail-state-selected);
+  color: var(--trail-text-secondary);
+}
+
+.trail-view-layout-switch .trail-icon-button[aria-pressed="true"]:hover {
+  background: var(--trail-state-pressed);
+  color: var(--trail-text-primary);
+}
+
+.trail-view-layout-switch .trail-icon-button:focus-visible {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
+}

@@ -1,0 +1,176 @@
+/*
+ * Trail stylesheet entry point.
+ *
+ * Obsidian ships one plugin styles.css, so Trail keeps the physical stylesheet
+ * centralized while enforcing logical ownership inside it:
+ *
+ *   1. design-token authority
+ *   2. Obsidian semantic-variable mapping
+ *   3. native Obsidian consumers
+ *   4. Trail production component contracts
+ *   5. Trail shell carriers
+ *   6. Foundation Lab-only calibration specimens
+ *
+ * A visual fact belongs to one owner. Calibration replaces the owning value;
+ * it does not append a later override of the same responsibility.
+ */
+
+/* --------------------------------------------------------------------------
+ * 1. Design-token authority
+ * -------------------------------------------------------------------------- */
+
+body {
+  /* Linear March 2026 dark reference anchors. */
+  --trail-reference-canvas: #0e1012;
+  --trail-reference-sidebar: #060708;
+  --trail-reference-hover: #141517;
+  --trail-reference-accent: #5e6ad2;
+  --trail-reference-elevated: lch(7.66% 2.41 265.732);
+  --trail-reference-overlay: lch(9.66% 2.41 265.732);
+
+  /* Semantic surfaces. */
+  --trail-surface-canvas: var(--trail-reference-canvas);
+  --trail-surface-sidebar: var(--trail-reference-sidebar);
+  --trail-surface-hover: var(--trail-reference-hover);
+  --trail-surface-elevated: var(--trail-reference-elevated);
+  --trail-surface-overlay: var(--trail-reference-overlay);
+
+  /* Semantic text. */
+  --trail-text-primary: rgba(255, 255, 255, 0.9);
+  --trail-text-secondary: rgba(255, 255, 255, 0.68);
+  --trail-text-muted: rgba(255, 255, 255, 0.43);
+  --trail-text-faint: rgba(255, 255, 255, 0.27);
+  --trail-text-on-accent: #ffffff;
+  --trail-text-accent: #aeb5ef;
+
+  /* Semantic lines and states. */
+  --trail-border-subtle: rgba(255, 255, 255, 0.052);
+  --trail-border-default: rgba(255, 255, 255, 0.09);
+  --trail-state-hover: rgba(255, 255, 255, 0.045);
+  --trail-state-hover-strong: rgba(255, 255, 255, 0.055);
+  --trail-state-pressed: rgba(255, 255, 255, 0.075);
+  --trail-state-selected: rgba(255, 255, 255, 0.065);
+  --trail-state-accent-soft: rgba(94, 106, 210, 0.15);
+  --trail-focus-border: rgba(130, 143, 255, 0.45);
+  --trail-focus-ring: rgba(94, 106, 210, 0.35);
+  --trail-focus-ring-quiet: rgba(94, 106, 210, 0.28);
+  --trail-host-focus-border: rgba(94, 106, 210, 0.5);
+  --trail-metadata-focus-border: rgba(94, 106, 210, 0.42);
+  --trail-metadata-focus-ring: rgba(94, 106, 210, 0.22);
+  --trail-selection-fill: rgba(94, 106, 210, 0.24);
+  --trail-accent-border: rgba(130, 143, 255, 0.24);
+  --trail-accent-border-hover: rgba(145, 157, 255, 0.28);
+  --trail-surface-quiet: rgba(255, 255, 255, 0.035);
+  --trail-surface-very-quiet: rgba(255, 255, 255, 0.025);
+  --trail-surface-disabled: rgba(255, 255, 255, 0.018);
+  --trail-row-divider: rgba(255, 255, 255, 0.032);
+  --trail-scrollbar-thumb: rgba(255, 255, 255, 0.085);
+  --trail-scrollbar-thumb-hover: rgba(255, 255, 255, 0.145);
+  --trail-scrollbar-thumb-lab: rgba(255, 255, 255, 0.11);
+  --trail-overlay-scrim: rgba(0, 0, 0, 0.52);
+  --trail-swatch-inset: rgba(0, 0, 0, 0.18);
+  --trail-label-border: rgba(94, 106, 210, 0.2);
+  --trail-label-background: rgba(94, 106, 210, 0.11);
+  --trail-checkmark-ink: #07100c;
+  --trail-navigation-mark-fill: rgba(255, 255, 255, 0.075);
+
+  /* Semantic colors. */
+  --trail-accent: var(--trail-reference-accent);
+  --trail-accent-hover: #6975d9;
+  --trail-danger: #e35d6a;
+  --trail-success: #4bb782;
+  --trail-warning: #d9a441;
+  --trail-progress: #d7a64a;
+  --trail-priority-high: #e07a5f;
+  --trail-label-accent: #b7bdf3;
+
+  /* Typography. */
+  --trail-font-ui: Inter, var(--font-interface), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --trail-font-size-meta: 9.5px;
+  --trail-font-size-caption: 10px;
+  --trail-font-size-supporting: 11px;
+  --trail-font-size-control: 11.5px;
+  --trail-font-size-body: 12px;
+  --trail-font-size-section: 13px;
+  --trail-font-size-subtitle: 14px;
+  --trail-font-size-page: 18px;
+  --trail-weight-regular: 450;
+  --trail-weight-medium: 500;
+  --trail-weight-emphasis: 560;
+  --trail-weight-strong: 580;
+  --trail-weight-heading: 650;
+
+  /* Spacing and geometry. */
+  --trail-space-1: 2px;
+  --trail-space-2: 4px;
+  --trail-space-3: 5px;
+  --trail-space-4: 6px;
+  --trail-space-5: 7px;
+  --trail-space-6: 8px;
+  --trail-space-7: 9px;
+  --trail-space-8: 10px;
+  --trail-space-9: 12px;
+  --trail-space-10: 14px;
+  --trail-space-11: 16px;
+  --trail-space-12: 18px;
+  --trail-space-13: 20px;
+  --trail-space-14: 24px;
+  --trail-space-15: 28px;
+  --trail-space-16: 32px;
+  --trail-radius-xs: 4px;
+  --trail-radius-sm: 6px;
+  --trail-radius-md: 8px;
+  --trail-radius-lg: 10px;
+  --trail-radius-pill: 999px;
+  --trail-control-height-sm: 24px;
+  --trail-control-height-md: 28px;
+  --trail-control-height-lg: 30px;
+  --trail-icon-size-sm: 12px;
+  --trail-icon-size-md: 14px;
+  --trail-icon-size-lg: 16px;
+
+  /* Elevation and motion. */
+  --trail-shadow-overlay: 0 14px 38px rgba(0, 0, 0, 0.44), 0 0 0 1px rgba(255, 255, 255, 0.045);
+  --trail-shadow-tooltip: 0 7px 20px rgba(0, 0, 0, 0.28);
+  --trail-motion-fast: 90ms ease;
+
+  /* Shared menu visual contract. */
+  --trail-menu-surface: var(--trail-surface-overlay);
+  --trail-menu-border: var(--trail-border-default);
+  --trail-menu-shadow: 0 12px 32px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.025);
+  --trail-menu-radius: var(--trail-radius-md);
+  --trail-menu-padding: var(--trail-space-2);
+  --trail-menu-min-width: 220px;
+  --trail-menu-item-height: var(--trail-control-height-md);
+  --trail-menu-item-radius: 5px;
+  --trail-menu-item-padding-x: var(--trail-space-6);
+  --trail-menu-item-gap: var(--trail-space-6);
+  --trail-menu-font-size: var(--trail-font-size-control);
+  --trail-menu-icon-size: var(--trail-icon-size-md);
+  --trail-menu-shortcut-size: var(--trail-font-size-caption);
+  --trail-menu-hover: var(--trail-state-hover-strong);
+  --trail-menu-separator: var(--trail-border-subtle);
+
+  /* Document/editor calibration contract. */
+  --trail-document-inline-title-size: 24px;
+  --trail-document-inline-title-weight: var(--trail-weight-heading);
+  --trail-document-inline-title-line-height: 1.22;
+  --trail-document-h1-size: 20px;
+  --trail-document-h2-size: 17px;
+  --trail-document-h3-size: 15px;
+  --trail-document-h4-size: 14px;
+  --trail-document-h5-size: 13px;
+  --trail-document-h6-size: 12px;
+  --trail-document-h1-weight: 650;
+  --trail-document-h2-weight: 630;
+  --trail-document-h3-weight: 610;
+  --trail-document-h4-weight: 590;
+  --trail-document-h5-weight: 570;
+  --trail-document-h6-weight: 550;
+  --trail-document-h1-line-height: 1.24;
+  --trail-document-h2-line-height: 1.28;
+  --trail-document-h3-line-height: 1.32;
+  --trail-document-h4-line-height: 1.34;
+  --trail-document-h5-line-height: 1.36;
+  --trail-document-h6-line-height: 1.38;
+}

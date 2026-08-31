@@ -474,20 +474,23 @@ Trail's V1 frontend is React + TypeScript inside the Obsidian host, with CSS cus
 
 #### Visual authority and CSS ownership
 
-Obsidian publishes one plugin `styles.css`, so V1 keeps one physical stylesheet entry point while enforcing explicit logical ownership inside it:
+Obsidian consumes one plugin `styles.css` at the delivery boundary. Trail keeps that single generated stylesheet entry point while canonical development source is modular under `plugin/styles/` and follows the same explicit ownership order:
 
 ```text
-1. design-token authority
-2. Obsidian semantic-variable mapping
-3. targeted native Obsidian consumers
-4. Trail production component contracts
-5. Trail shell carriers
-6. Foundation Lab-only calibration specimens
+1. plugin/styles/tokens.css              design-token authority
+2. plugin/styles/obsidian-variables.css  Obsidian semantic-variable mapping
+3. plugin/styles/obsidian-native.css     targeted native Obsidian consumers
+4. plugin/styles/primitives.css          Trail primitive visual contracts
+   plugin/styles/patterns.css            Trail pattern visual contracts
+5. plugin/styles/shell.css               Trail shell carriers
+6. plugin/styles/foundation.css          Foundation Lab-only calibration specimens
 ```
 
-A reusable visual fact belongs to the token/contract layer once. Consumers use semantic variables rather than copying raw colors, typography scales, radii, control sizes, state colors, or elevation values. Reusable component-specific geometry/state belongs to the Trail production component contract section; genuinely local composition geometry stays with its owning pattern/page. Calibration edits the owning token/consumer rule; it does not append a later override whose correctness depends on cascade history.
+`esbuild.config.mjs` owns one explicit ordered stylesheet-source manifest used by both one-shot builds and the development watcher. The build plain-concatenates those canonical source modules in that order and writes `.obsidian/plugins/trail/styles.css`; the generated file is a host delivery artifact, not a second stylesheet authority. The source build does not rely on `@import`, glob ordering, preprocessing, minification, or another CSS transform to establish ownership or cascade.
 
-The stylesheet may use normal CSS specificity/state rules where the browser/Obsidian DOM requires them, but specificity and source order are not architectural ownership mechanisms. A later rule must not exist merely to repair an earlier competing answer for the same responsibility.
+A reusable visual fact belongs to the token/contract layer once. Consumers use semantic variables rather than copying raw colors, typography scales, radii, control sizes, state colors, or elevation values. Reusable component-specific geometry/state belongs to the appropriate Trail production primitive/pattern contract source; genuinely local composition geometry stays with its owning pattern/page. Calibration edits the owning token/consumer rule; it does not append a later override whose correctness depends on cascade history.
+
+The stylesheet may use normal CSS specificity/state rules where the browser/Obsidian DOM requires them, but specificity and source order are not architectural ownership mechanisms. The explicit module order preserves the required delivery cascade; it does not permit a later module to exist merely to repair an earlier competing answer for the same responsibility.
 
 #### Component and dependency direction
 
