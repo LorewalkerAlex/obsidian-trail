@@ -1,0 +1,32 @@
+/* Product-page composition. Shared patterns and semantic entities own reusable geometry. */
+
+.trail-triage-page {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  background: var(--trail-surface-canvas);
+  color: var(--trail-text-primary);
+}
+
+.trail-triage-page__summary {
+  display: flex;
+  min-height: var(--trail-control-height-lg);
+  align-items: center;
+  padding: 0 var(--trail-space-7);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-triage-page__queue {
+  min-width: 0;
+}
+
+.trail-triage-page__review-boundary {
+  height: var(--trail-space-3);
+  border-top: 1px solid var(--trail-border-default);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  background: var(--trail-surface-canvas);
+}

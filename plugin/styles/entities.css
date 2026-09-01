@@ -105,6 +105,13 @@
   stroke-width: 1.7;
 }
 
+.trail-due-date {
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .trail-triage-row__priority {
   display: inline-grid;
   width: var(--trail-icon-size-md);
@@ -171,6 +178,4 @@
   justify-content: flex-start;
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-caption);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }

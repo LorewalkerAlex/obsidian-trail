@@ -18,6 +18,7 @@ const stylesheetSources = [
   "plugin/styles/primitives.css",
   "plugin/styles/patterns.css",
   "plugin/styles/entities.css",
+  "plugin/styles/pages.css",
   "plugin/styles/shell.css",
   "plugin/styles/foundation.css",
 ];
