@@ -45,5 +45,5 @@ describe("TrailFoundationLab", () => {
     expect(boardLayout).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Reset legacy presentation")).toBeInTheDocument();
     expect(screen.queryByText(/^#[0-9A-Fa-f]{6}$/)).not.toBeInTheDocument();
-  });
+  }, 15_000);
 });

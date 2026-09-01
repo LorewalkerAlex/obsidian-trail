@@ -29,6 +29,12 @@ const STATUS_CATEGORY_ORDER = new Map<TrailStatusCategory, number>(
   TRAIL_STATUS_CATEGORIES.map((category, index) => [category, index]),
 );
 
+function priorityOrder(priority: TrailPriority | undefined): number {
+  return priority === undefined
+    ? TRAIL_PRIORITIES.length
+    : PRIORITY_ORDER.get(priority) ?? TRAIL_PRIORITIES.length;
+}
+
 /**
  * Read consumers use optimistic authoritative state and indexes only while Trail
  * is writable. Refresh/recovery falls back to one coherent committed snapshot.
@@ -131,13 +137,21 @@ export function selectTrailReadableUnassignedProjectIds(
     .map((project) => project.id);
 }
 
-/** Triage is a due-driven inbox: earliest review point first, then stable identity. */
+/**
+ * Triage ordering is presentation-only: earliest Review Due first, then explicit
+ * Priority, then stable identity. Absence of Priority sorts after Low.
+ */
 export function selectTrailReadableTriageIssueIds(
   state: TrailRuntimeState,
 ): readonly string[] {
   return [...selectTrailReadableRuntimeSnapshot(state).authoritative.domain.issuesById.values()]
     .filter((issue): issue is TrailTriageIssue => issue.context === "triage")
-    .sort((left, right) => left.due - right.due || left.id.localeCompare(right.id))
+    .sort((left, right) => {
+      const dueOrder = left.due - right.due;
+      if (dueOrder !== 0) return dueOrder;
+      const priorityDelta = priorityOrder(left.priority) - priorityOrder(right.priority);
+      return priorityDelta !== 0 ? priorityDelta : left.id.localeCompare(right.id);
+    })
     .map((issue) => issue.id);
 }
 
@@ -233,9 +247,7 @@ function workflowSortKey(
   const categoryIndex = category === undefined
     ? TRAIL_STATUS_CATEGORIES.length
     : STATUS_CATEGORY_ORDER.get(category) ?? TRAIL_STATUS_CATEGORIES.length;
-  const priorityIndex = issue.priority === undefined
-    ? TRAIL_PRIORITIES.length
-    : PRIORITY_ORDER.get(issue.priority) ?? TRAIL_PRIORITIES.length;
+  const priorityIndex = priorityOrder(issue.priority);
   const time = category === "started"
     ? issue.firstStartedAt ?? issue.createdAt
     : issue.createdAt;

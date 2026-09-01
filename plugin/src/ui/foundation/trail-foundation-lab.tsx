@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import type { TrailPriority } from "../../domain/model/trail-values";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
 import { TrailPriorityPropertySelect } from "../entities/trail-priority-property-select";
+import { TrailTriageRow } from "../entities/trail-triage-row";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
 import {
@@ -94,6 +95,8 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
   const [collectionRowSelected, setCollectionRowSelected] = useState(false);
   const [layout, setLayout] = useState<"board" | "list">("list");
   const [priority, setPriority] = useState<TrailPriority | undefined>("high");
+  const [triageLongRowSelected, setTriageLongRowSelected] = useState(false);
+  const [triageRowSelected, setTriageRowSelected] = useState(true);
 
   return (
     <div className="trail-foundation-lab" data-runtime-control={control.kind}>
@@ -355,6 +358,33 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
           </div>
         </LabSection>
       </div>
+
+      <LabSection
+        description="The Lab consumes the production Triage row directly. Local fixture state only exposes selection, Priority, review-date, and truncation states; Triage behavior remains outside the Lab."
+        title="Triage row"
+      >
+        <div className="trail-lab-list">
+          <div className="trail-lab-list__header">
+            <span>Review queue</span>
+            <span>2</span>
+          </div>
+          <TrailTriageRow
+            onSelectedChange={setTriageRowSelected}
+            priority="urgent"
+            reviewDue={<time dateTime="2026-09-03">Sep 3</time>}
+            selected={triageRowSelected}
+            title="Review urgent capture before the next planning pass"
+          />
+          <TrailTriageRow
+            highlighted
+            onSelectedChange={setTriageLongRowSelected}
+            priority={undefined}
+            reviewDue={<time dateTime="2026-09-18">Sep 18</time>}
+            selected={triageLongRowSelected}
+            title="A deliberately long Triage title that should truncate cleanly when the Obsidian pane becomes narrow"
+          />
+        </div>
+      </LabSection>
 
       <LabSection
         description="The menu specimen and native Obsidian menu consume one visual contract; the composer mirrors Linear's current issue-creation structure."

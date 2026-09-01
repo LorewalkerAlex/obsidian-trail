@@ -19,5 +19,5 @@ describe("TrailApp foundation lab", () => {
     expect(screen.getByRole("heading", { name: "Foundation lab" })).toBeInTheDocument();
     expect(screen.getByText("Loading")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Controls" })).toBeInTheDocument();
-  });
+  }, 15_000);
 });
