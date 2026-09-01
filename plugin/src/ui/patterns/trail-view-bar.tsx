@@ -11,7 +11,7 @@ type NativeViewBarActionProps = Omit<
 >;
 
 export type TrailViewBarActionProps = NativeViewBarActionProps & {
-  readonly icon: ReactNode;
+  readonly icon?: ReactNode;
   readonly label: string;
 };
 
@@ -28,9 +28,11 @@ export function TrailViewBarAction({
       className="trail-view-bar__action"
       type={type}
     >
-      <span aria-hidden="true" className="trail-view-bar__action-icon">
-        {icon}
-      </span>
+      {icon === undefined ? null : (
+        <span aria-hidden="true" className="trail-view-bar__action-icon">
+          {icon}
+        </span>
+      )}
       <span className="trail-view-bar__action-label">{label}</span>
     </button>
   );

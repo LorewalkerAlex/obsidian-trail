@@ -30,3 +30,16 @@
   border-bottom: 1px solid var(--trail-border-subtle);
   background: var(--trail-surface-canvas);
 }
+
+.trail-triage-page__filtered-empty {
+  display: flex;
+  min-height: 120px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--trail-space-6);
+  padding: var(--trail-space-14);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  text-align: center;
+}

@@ -18,9 +18,9 @@ fcf9de7f80339a4817432cb8ca88f6b5408152f5
 docs: define triage vertical implementation plan
 ```
 
-Phase A is now the implemented and host-verified construction boundary. This document ships with that implementation checkpoint, so the resulting checkpoint SHA is intentionally taken from Git history rather than self-recorded here.
+Phase B is now the implemented and host-verified construction boundary. This document ships with that implementation checkpoint, so the resulting checkpoint SHA is intentionally taken from Git history rather than self-recorded here.
 
-The active Runtime/Product UI is still incomplete, but it is no longer Foundation-only. `TrailApp` now dispatches the real `triage` location to `TrailTriagePage` through the shared workspace shell, while unimplemented product locations are not fabricated and the canonical initial location remains `home`. The next implementation boundary is Phase B of the same Triage vertical.
+The active Runtime/Product UI is still incomplete, but the formal Triage Queue is now a complete scanning/browsing collection: `TrailTriagePage` composes the shared View Bar, Filter interaction, Label identity, Query-owned filtering/ordering, and the established Review Set/Due presentation over the authoritative queue. Unimplemented product locations are still not fabricated and the canonical initial location remains `home`. The next implementation boundary is Phase C of the same Triage vertical.
 
 ### 1.1 Current published UI and Triage checkpoints
 
@@ -29,7 +29,8 @@ The most relevant prior checkpoints are:
 - `4bc2bb7eb30e3f67039c8d2145c0fe0f6c25ce20` - `feat: add priority semantic selection`;
 - `20f5283693721bd636aebbec57da4885ff80c3c8` - `feat: add triage scanning foundation`;
 - `27afda30ab594fcd24bcfa38ba5b6a9aefef276f` - `refactor: align triage creation semantics`;
-- `fcf9de7f80339a4817432cb8ca88f6b5408152f5` - `docs: define triage vertical implementation plan`.
+- `fcf9de7f80339a4817432cb8ca88f6b5408152f5` - `docs: define triage vertical implementation plan`;
+- `83a57631560f6f876f30d80d81fbcc01e3861f55` - `feat: add production triage queue`.
 
 The Priority checkpoint establishes one production Priority identity plus one production Priority property selector over the existing `TrailPropertyControl` pattern.
 
@@ -62,7 +63,16 @@ Phase A adds the first formal product consumer over those foundations:
 - real wide/narrow Obsidian evidence for row density, Priority identity, title truncation, stable Due placement, and the Review Set boundary;
 - a real non-Foundation consumer for `TrailTriageRow` and the dense-row/content contract of `TrailCollectionRow`, without claiming Selection/Action acceptance.
 
-These Phase A facts do not claim that the complete Triage product page or interaction workflow exists.
+Phase B extends that real Queue without changing its canonical entity model or Review Set semantics:
+
+- one shared `TrailLabelDots` identity resolves configured Label definitions into compact stable-ID-derived color dots without persisting presentation color;
+- shared collection Filter query helpers plus `useTrailCollectionFilterState` / `TrailCollectionFilter` own the reusable cutoff/discrete grammar and transient session state;
+- Triage registers exactly Due, Priority, and Labels, with Label search/group presentation and the required `No labels` / `No priority` pseudo-values;
+- `TrailTriageViewControls` gives `TrailViewBar` a real non-Foundation List-only consumer with Filter, applied clauses, and constrained Display ordering;
+- `selectTrailTriageVisibleIssueIds` owns Filter visibility plus Review-Due/Priority ordering while the global Review Set remains independently derived from the unfiltered canonical queue;
+- the checked-in Triage fixture now exercises no/one/multiple Labels in addition to the Phase A ordering/density cases, with real wide/narrow Obsidian evidence for Filter, Display, Label dots, and View Bar reflow.
+
+These Phase A and Phase B facts do not claim that the complete Triage review/edit/disposition workflow exists.
 
 ### 1.2 Established foundations that remain authoritative
 
@@ -142,17 +152,20 @@ Current production UI owners that Triage should consume include:
 - `TrailCollectionRow`;
 - `TrailPropertyControl`;
 - `TrailPriorityGlyph` and `TrailPriorityPropertySelect`;
+- `TrailLabelDots`;
 - `TrailTriageRow`;
 - shared read-only `TrailDueDate`;
+- `TrailCollectionFilter`, `useTrailCollectionFilterState`, and shared collection-filter Query helpers;
+- `TrailViewPopover`;
 - `TrailWorkspaceShell` and `TrailLocationBar`;
-- formal `TrailTriagePage`;
+- formal `TrailTriagePage` and `TrailTriageViewControls`;
 - shared Trail design tokens, Obsidian semantic-variable mapping, and modular stylesheet ownership;
 - existing shell navigation-state store and normal `TrailLocation` identity;
 - existing Runtime/Query/Application boundaries below UI.
 
 `TrailCollectionRow` now has a formal non-Foundation runtime consumer through `TrailTriagePage -> TrailTriageRow`. Phase A wide/narrow host evidence accepts its dense-row/content composition under frontend Rule 9 only; the selection-gutter interaction remains pending until the shared Selection owner is consumed in Phase E.
 
-`TrailViewBar` and `TrailPropertyControl` remain production candidates whose relevant real-page contracts are not yet accepted by Phase A. `TrailTriageRow`, `TrailDueDate`, and the shared shell carrier now have real product composition evidence.
+`TrailViewBar` now has a formal non-Foundation collection consumer through `TrailTriagePage -> TrailTriageViewControls -> TrailViewBar`. Phase B wide/narrow host evidence accepts its List-only Filter/Display composition and responsive geometry; the shared Filter/popover interaction is likewise proven in a real collection. `TrailPropertyControl` remains a production candidate whose editable-property contract is still waiting for a real product-page consumer. `TrailTriageRow`, `TrailLabelDots`, `TrailDueDate`, and the shared shell carrier all have real product composition evidence.
 
 ### 3.3 Triage ownership map
 
@@ -165,7 +178,7 @@ Current production UI owners that Triage should consume include:
 | active review entry and sequential progression | `ui/pages/triage` session state | own; never persist |
 | dense Triage scanning row | `ui/entities/trail-triage-row` | consume/reuse |
 | Priority identity/edit control | shared semantic UI | consume/reuse |
-| Label identity/edit control | shared semantic UI | introduce when Triage becomes its first real V1 consumer, then reuse elsewhere |
+| Label identity/edit control | shared semantic UI | read-only `TrailLabelDots` identity is established and consumed by the Queue; editing control remains Phase C work over the same Label definitions |
 | Due/date presentation | shared temporal/semantic UI | `TrailDueDate` is established as the shared read-only owner and consumed by the real Queue |
 | Due/date editing control | shared temporal/semantic UI | introduce only when editing requires it; do not replace the shared read-only owner with page-local formatting or a separate Snooze mechanic |
 | collection View Bar | shared pattern | consume/reuse |
@@ -190,19 +203,21 @@ The active implementation focus is now **Triage vertical closure**.
 
 The formal target behavior is already frozen in `docs/ui.md`, and the target ownership is already mapped in `docs/design-to-code-map.md`. The remaining work is implementation, verification, and calibration through the canonical owners.
 
-Current Phase A code facts are:
+Current Phase B code facts are:
 
 - `TrailLocation` includes `triage`, while the canonical initial location remains `home`;
 - `TrailNavigation` exposes the one currently real product entry, Triage, and does not fabricate Home/Projects/Cycles pages or actions that are not implemented;
 - `TrailApp` observes `TrailNavigationStore.location` and dispatches `triage` to the formal page through `TrailWorkspaceShell` / `TrailLocationBar`; non-Triage locations still show the explicitly named Foundation Lab rather than masquerading as product pages;
 - `plugin/src/ui/pages/triage` is the formal Triage page owner;
-- `Trail/Collections/Triage.md` carries a 12-entry real Vault fixture that exercises canonical ordering, Review Set top-up/boundary, Priority variation, future-due browsing, and narrow-title truncation;
-- Query ordering and Review Set are consumed directly by the page; the page does not sort/recompute against Markdown or committed maps itself;
-- `TrailTriageRow` now has a formal page consumer and composes `TrailCollectionRow` without exposing selection or row actions in Phase A;
-- shared `TrailDueDate` owns read-only date presentation and is consumed by the real Triage Queue;
-- Priority identity/selection remains shared, but Phase A consumes only the read-only Priority identity;
+- `Trail/Collections/Triage.md` carries a 12-entry real Vault fixture that now exercises canonical ordering, Review Set top-up/boundary, Priority variation, no/one/multiple Labels, future-due browsing, and narrow-title truncation;
+- Query keeps canonical default ordering and Review Set derivation separate from `selectTrailTriageVisibleIssueIds`, which owns transient Filter visibility plus the supported Review-Due/Priority ordering projections;
+- shared collection-filter Query helpers own discrete OR / cross-property AND matching and timezone-aware Due cutoffs; `useTrailCollectionFilterState` owns location-local session state and no Filter state enters canonical Runtime or persistence;
+- `TrailTriageViewControls` composes production `TrailViewBar` without a layout toggle and registers exactly Due, Priority, and Labels plus constrained Display ordering;
+- `TrailCollectionFilter` / `TrailViewPopover` provide the shared property/value popover grammar, applied-clause controls, Label search/group presentation, and immediate application;
+- `TrailTriageRow` consumes shared `TrailLabelDots`, `TrailPriorityGlyph`, and `TrailDueDate` while still exposing no product selection or row action surface;
+- Filter and alternate Priority ordering never recompute the global Review Set; they suppress the positional Review Set boundary and keep the summary explicitly global;
 - standard Issue/Project draft creation and Triage Accept semantics remain implemented below UI;
-- Label presentation/control, Due editing control, shared View Bar/Filter interaction, shared Selection/Action interaction, shared Creation Composer UI, and the Triage Review Surface remain ahead.
+- Label/Due editing controls, shared Selection/Action interaction, shared Creation Composer UI, and the Triage Review Surface remain ahead.
 
 No page may paper over these gaps with hard-coded records, fake navigation, Lab-only data, one-off filter state, one-off Accept forms, or page-private semantic legality.
 
@@ -267,7 +282,7 @@ Phase A exit criteria:
 
 Phase A is complete. Local validation passed ESLint, 105 Vitest files / 358 tests, TypeScript, production esbuild, and `git diff --check`. Real Obsidian validation passed at normal and narrow pane widths with the authoritative 12-entry fixture, including Review Set top-up/boundary, Priority tie-break, title truncation, and stable shared Due presentation. No selection, Review, Accept, Defer, Delete, Composer, View Bar, or Filter interaction was introduced.
 
-#### Phase B - Queue completion, shared Label presentation, Filter, and Display
+#### Phase B - Queue completion, shared Label presentation, Filter, and Display - COMPLETE
 
 Goal: finish Triage as a complete scanning/browsing collection and mature only the shared semantic/query capabilities that the real Queue now needs.
 
@@ -293,6 +308,8 @@ Phase B exit criteria:
 - Filter semantics have focused Query tests plus shared UI interaction tests;
 - the Queue can browse/filter/order all active Triage entries without changing canonical facts or Review Set membership;
 - wide/narrow Obsidian validation proves View Bar reflow, row metadata reduction, Label/Due readability, and no content overlap.
+
+Phase B is complete. Final local validation passed ESLint, 108 Vitest files / 374 tests, TypeScript, production esbuild, and `git diff --check`. Representative real-Obsidian validation covered the default 12-entry Queue, shared Label dots, Due `This week` filtering to six entries, combined `Priority · Urgent` plus `Labels · TypeScript` filtering to two entries, grouped/searchable Label options, Priority-first Display ordering, global Review Set summary/boundary suppression under transformed views, and narrow-pane title/metadata/View-Bar behavior. No Selection, Review Surface, editing, Accept, Defer, Delete, or Composer UI was introduced.
 
 #### Phase C - Review Surface, editing, Defer, and Delete
 
@@ -475,8 +492,8 @@ The V1 build order remains dependency-aware, but the active UI portion is vertic
    |
    `- Triage vertical                              ACTIVE
       |- Phase A: Production page + real Queue      COMPLETE
-      |- Phase B: Queue semantics + Filter/Display  NEXT
-      |- Phase C: Review + Edit/Defer/Delete        QUEUED
+      |- Phase B: Queue semantics + Filter/Display  COMPLETE
+      |- Phase C: Review + Edit/Defer/Delete        NEXT
       |- Phase D: Composer + Accept                 QUEUED
       |- Phase E: Selection/Actions/keyboard        QUEUED
       `- Phase F: real fixture + integrated closure QUEUED
@@ -492,7 +509,7 @@ Shared capabilities follow three rules:
 2. when a real consumer proves a responsibility is shared, implement it at the shared owner rather than page-local first;
 3. consume the new shared owner immediately in the active vertical so its API, geometry, state ownership, and host behavior are proven in context.
 
-The next coding slice after this checkpoint is **Phase B - Queue completion, shared Label presentation, Filter, and Display**.
+The next coding slice after this checkpoint is **Phase C - Review Surface, editing, Defer, and Delete**.
 
 ## 6. Risk & Verification
 
@@ -512,7 +529,7 @@ A page may be tempted to sort, filter, compute Review Set, or inspect committed 
 
 **Review Set/filter confusion**
 
-Filtering could accidentally redefine Review Set or its boundary. Mitigation: Review Set is always global derived Query state; Filter changes visibility only.
+Filtering or alternate ordering could accidentally redefine Review Set or imply a false positional boundary. Phase B now proves the intended split: Review Set remains global derived Query state, Filter changes visibility only, and transformed views suppress the canonical-order boundary while keeping the global summary explicit. Later review progression must preserve this separation.
 
 **Accept semantic regression**
 
@@ -520,7 +537,7 @@ A target Composer could accidentally restore old source-property copying or sepa
 
 **Responsive/host mismatch**
 
-Phase A proved the real Queue at representative wide/narrow Obsidian widths, but later View Bar and Queue/Review composition can still fail in splits. Mitigation: each product phase validates representative wide/narrow panes only after the relevant real consumer exists; CSS/container behavior owns visual-only adaptation.
+Phase A proved the real Queue and Phase B proved its View Bar/Filter/Label metadata at representative wide/narrow Obsidian widths, but Phase C Queue/Review composition can still fail in splits. Mitigation: each product phase validates representative wide/narrow panes only after the relevant real consumer exists; CSS/container behavior owns visual-only adaptation.
 
 **Selection/action divergence**
 
@@ -546,7 +563,9 @@ The `27afda3...` creation-semantics checkpoint was locally green across 102 Vite
 
 The Phase A product-page checkpoint was locally green across 105 Vitest files / 358 tests, ESLint, TypeScript, production esbuild, and `git diff --check`. Representative real-Obsidian validation covered the formal Triage navigation/page at normal and narrow widths, the authoritative 12-entry Vault fixture, canonical queue ordering, Review Set count/boundary, Priority identity/tie-break, title truncation, and stable shared Due placement. Phase A intentionally exposed no selection or action controls.
 
-Together these checkpoints prove the lower-level prerequisites plus the formal Triage read path. They do not yet prove the Review Surface, Label presentation, View Bar/Filter, Selection/Action system, Composer UI, mutation workflows, or integrated Triage closure.
+The Phase B Queue-controls checkpoint is locally green across 108 Vitest files / 374 tests, ESLint, TypeScript, production esbuild, and `git diff --check`. Representative real-Obsidian validation covers the shared List-only View Bar, applied Filter clauses, timezone-aware Due filtering, cross-property Filter intersection, Label search/group options and compact dots, Priority Display ordering, Review Set/global-summary separation, and normal/narrow responsive behavior. Phase B still exposes no selection, Review/edit/disposition, or Composer UI.
+
+Together these checkpoints prove the lower-level prerequisites plus the formal Triage scanning/browsing path, shared Label presentation, and a real View Bar/Filter/Display consumer. They do not yet prove the Review Surface, editable Label/Due controls, Selection/Action system, Composer UI, mutation workflows, or integrated Triage closure.
 
 ## 7. Final State
 

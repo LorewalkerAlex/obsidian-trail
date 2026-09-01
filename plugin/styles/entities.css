@@ -112,6 +112,42 @@
   white-space: nowrap;
 }
 
+.trail-label-dots {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-1);
+  overflow: hidden;
+}
+
+.trail-label-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--trail-label-color-1);
+}
+
+.trail-label-dot[data-color-slot="1"] {
+  background: var(--trail-label-color-2);
+}
+
+.trail-label-dot[data-color-slot="2"] {
+  background: var(--trail-label-color-3);
+}
+
+.trail-label-dot[data-color-slot="3"] {
+  background: var(--trail-label-color-4);
+}
+
+.trail-label-dot[data-color-slot="4"] {
+  background: var(--trail-label-color-5);
+}
+
+.trail-label-dot[data-color-slot="5"] {
+  background: var(--trail-label-color-6);
+}
+
 .trail-triage-row__priority {
   display: inline-grid;
   width: var(--trail-icon-size-md);
@@ -165,12 +201,15 @@
 .trail-triage-row__labels,
 .trail-triage-row__due {
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
 }
 
 .trail-triage-row__labels {
+  min-width: 0;
+  max-width: 72px;
+  flex: 0 1 auto;
   gap: var(--trail-space-2);
+  overflow: hidden;
 }
 
 .trail-triage-row__due {

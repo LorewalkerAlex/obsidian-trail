@@ -19,22 +19,27 @@ import {
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
 import { selectTrailReadableTriageIssueIds } from "../shared/trail-effective-query";
-import { selectTrailTriageReviewSetIssueIds } from "./trail-triage-query";
+import {
+  selectTrailTriageReviewSetIssueIds,
+  selectTrailTriageVisibleIssueIds,
+} from "./trail-triage-query";
 
 function triageIssue({
   due,
   id,
+  labelIds = [],
   priority,
 }: {
   readonly due: number;
   readonly id: string;
+  readonly labelIds?: readonly string[];
   readonly priority?: TrailPriority;
 }): TrailTriageIssue {
   return {
     context: "triage",
     due,
     id,
-    labelIds: [],
+    labelIds,
     priority,
     title: id,
   };
@@ -94,6 +99,98 @@ describe("Triage Query", () => {
       "triage-medium",
       "triage-low",
       "triage-none",
+    ]);
+  });
+
+  it("filters with OR inside one property and AND across Triage properties", () => {
+    const now = Date.UTC(2026, 8, 1, 4);
+    const due = (day: number) => Date.UTC(2026, 8, day, 4);
+    const { store } = readyTriageStore([
+      triageIssue({ due: due(2), id: "triage-a", labelIds: ["label-work"], priority: "high" }),
+      triageIssue({ due: due(2), id: "triage-b", priority: "urgent" }),
+      triageIssue({ due: due(2), id: "triage-c", labelIds: ["label-work"], priority: "medium" }),
+      triageIssue({ due: due(2), id: "triage-d", priority: "high" }),
+    ]);
+
+    expect(selectTrailTriageVisibleIssueIds(store.getState(), {
+      filter: {
+        labels: {
+          kind: "discrete",
+          values: [{ kind: "value", value: "label-work" }],
+        },
+        priority: {
+          kind: "discrete",
+          values: [
+            { kind: "value", value: "urgent" },
+            { kind: "value", value: "high" },
+          ],
+        },
+      },
+      now,
+      ordering: "review-due",
+    })).toEqual(["triage-a"]);
+
+    expect(selectTrailTriageVisibleIssueIds(store.getState(), {
+      filter: {
+        labels: {
+          kind: "discrete",
+          values: [
+            { kind: "none" },
+            { kind: "value", value: "label-work" },
+          ],
+        },
+      },
+      now,
+      ordering: "review-due",
+    })).toEqual(["triage-b", "triage-a", "triage-d", "triage-c"]);
+  });
+
+  it("uses shared local-calendar Due cutoff semantics and keeps required Due non-nullable", () => {
+    const now = Date.UTC(2026, 8, 1, 4);
+    const { configuration, store } = readyTriageStore([
+      triageIssue({ due: Date.UTC(2026, 7, 31, 4), id: "triage-overdue" }),
+      triageIssue({ due: Date.UTC(2026, 8, 1, 15), id: "triage-today" }),
+      triageIssue({ due: Date.UTC(2026, 8, 2, 4), id: "triage-later" }),
+    ]);
+    expect(configuration.temporal.timezone).toBe("Asia/Singapore");
+
+    expect(selectTrailTriageVisibleIssueIds(store.getState(), {
+      filter: { due: { kind: "due", value: { kind: "today" } } },
+      now,
+      ordering: "review-due",
+    })).toEqual(["triage-overdue", "triage-today"]);
+
+    expect(selectTrailTriageVisibleIssueIds(store.getState(), {
+      filter: { due: { kind: "due", value: { kind: "overdue" } } },
+      now,
+      ordering: "review-due",
+    })).toEqual(["triage-overdue"]);
+  });
+
+  it("supports the constrained Priority ordering without changing canonical default ordering", () => {
+    const now = Date.UTC(2026, 8, 1, 4);
+    const { store } = readyTriageStore([
+      triageIssue({ due: Date.UTC(2026, 8, 2, 4), id: "triage-low", priority: "low" }),
+      triageIssue({ due: Date.UTC(2026, 8, 5, 4), id: "triage-urgent-later", priority: "urgent" }),
+      triageIssue({ due: Date.UTC(2026, 8, 3, 4), id: "triage-urgent-earlier", priority: "urgent" }),
+      triageIssue({ due: Date.UTC(2026, 8, 1, 4), id: "triage-none" }),
+    ]);
+
+    expect(selectTrailTriageVisibleIssueIds(store.getState(), {
+      filter: {},
+      now,
+      ordering: "priority",
+    })).toEqual([
+      "triage-urgent-earlier",
+      "triage-urgent-later",
+      "triage-low",
+      "triage-none",
+    ]);
+    expect(selectTrailReadableTriageIssueIds(store.getState())).toEqual([
+      "triage-none",
+      "triage-low",
+      "triage-urgent-earlier",
+      "triage-urgent-later",
     ]);
   });
 

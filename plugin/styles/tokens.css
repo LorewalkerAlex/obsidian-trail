@@ -83,6 +83,12 @@ body {
   --trail-progress: #d7a64a;
   --trail-priority-high: #e07a5f;
   --trail-label-accent: #b7bdf3;
+  --trail-label-color-1: #6f7bd9;
+  --trail-label-color-2: #5aa59f;
+  --trail-label-color-3: #ce9552;
+  --trail-label-color-4: #c76d86;
+  --trail-label-color-5: #8d78c2;
+  --trail-label-color-6: #6798cf;
 
   /* Typography. */
   --trail-font-ui: Inter, var(--font-interface), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
