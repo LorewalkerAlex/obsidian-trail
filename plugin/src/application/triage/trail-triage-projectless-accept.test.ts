@@ -19,9 +19,12 @@ import { TrailTriageApplication } from "./trail-triage-application";
 function harness() {
   const triage = {
     context: "triage" as const,
+    description: "Source body",
     due: 100,
+    estimate: "large" as const,
     id: "triage-a",
-    labelIds: [] as string[],
+    labelIds: ["label-work"],
+    priority: "high" as const,
     title: "Captured",
   };
   const project = {
@@ -34,7 +37,7 @@ function harness() {
   publishTrailCommittedRuntime(runtimeStore, buildTrailCommittedRuntimeCandidate({
     pluginData: {
       configuration: createTrailTestConfiguration(),
-      workspaceState: createTrailTestWorkspaceState(),
+      workspaceState: createTrailTestWorkspaceState(project.id),
     },
     sources: [
       { issues: [triage], kind: "triage", sourcePath: "Trail/Collections/Triage.md" },
@@ -65,29 +68,36 @@ function harness() {
   return { application, project, submitted, triage };
 }
 
-describe("TrailTriageApplication explicit-Project Accept", () => {
-  it("submits the target Project as canonical Workflow ownership", async () => {
+describe("TrailTriageApplication compatibility Accept", () => {
+  it("uses explicit Project ownership and only the automatic Title + Description seed", async () => {
     const test = harness();
     const receipt = test.application.accept(test.triage, test.project.id);
     await receipt.completion;
 
     expect(test.submitted).toHaveLength(1);
-    expect(test.submitted[0]).toMatchObject({
-      intent: "triage.accept",
-      effects: [
-        {
-          after: {
-            kind: "issue",
-            value: {
-              context: "workflow",
-              projectId: test.project.id,
-              title: "Captured",
-            },
-          },
-          kind: "create-entity",
+    const create = test.submitted[0]?.effects[0];
+    expect(create).toMatchObject({
+      after: {
+        kind: "issue",
+        value: {
+          context: "workflow",
+          description: "Source body",
+          labelIds: [],
+          projectId: test.project.id,
+          title: "Captured",
         },
-        { before: { kind: "issue", value: test.triage }, kind: "delete-entity" },
-      ],
+      },
+      kind: "create-entity",
+    });
+    if (create?.kind !== "create-entity" || create.after.kind !== "issue") {
+      throw new Error("Expected Workflow Issue create effect");
+    }
+    expect(create.after.value.due).toBeUndefined();
+    expect(create.after.value.estimate).toBeUndefined();
+    expect(create.after.value.priority).toBeUndefined();
+    expect(test.submitted[0]?.effects[1]).toEqual({
+      before: { kind: "issue", value: test.triage },
+      kind: "delete-entity",
     });
     expect(test.submitted[0]?.preconditions).toContainEqual({
       entity: { kind: "project", value: test.project },

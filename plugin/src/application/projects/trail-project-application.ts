@@ -1,10 +1,10 @@
 import type { TrailProject } from "../../domain/model/trail-entities";
 import type { TrailPriority } from "../../domain/model/trail-values";
+import { planCreateTrailProjectFromDraft } from "../../domain/planning/trail-creation-planning";
 import { planDeleteTrailProject } from "../../domain/planning/trail-delete-planning";
 import {
   planChangeTrailProjectInitiative,
   planChangeTrailProjectStatus,
-  planCreateTrailProject,
   planEditTrailProjectProperties,
 } from "../../domain/planning/trail-project-planning";
 import { sameTrailDomainEntity } from "../../domain/rules/trail-domain-equality";
@@ -28,6 +28,15 @@ import {
   type TrailCommandEnvironment,
 } from "../trail-command";
 
+export interface TrailProjectCreateInput {
+  readonly description?: string;
+  readonly due?: number;
+  readonly initiativeId?: string;
+  readonly labelIds: readonly string[];
+  readonly priority?: TrailPriority;
+  readonly title: string;
+}
+
 export interface TrailProjectPropertiesInput {
   readonly description?: string;
   readonly due?: number;
@@ -44,14 +53,27 @@ export class TrailProjectApplication {
   ) {}
 
   public create(title: string): TrailEntityMutationReceipt {
+    return this.createFromDraft({ labelIds: [], title });
+  }
+
+  /** Standard Project Composer submission. */
+  public createFromDraft(input: TrailProjectCreateInput): TrailEntityMutationReceipt {
     const state = readTrailPlanningState(this.runtimeStore);
     const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
-    // Every semantic command freezes a valid clock value before planning, even when unused by this effect.
     normalizeTrailCommandTime(this.environment);
-    const result = planCreateTrailProject(state, {
+    const result = planCreateTrailProjectFromDraft(state, {
       commandId,
+      description: normalizeTrailCommandDescription(input.description),
+      due: input.due === undefined
+        ? undefined
+        : normalizeTrailCommandTimestamp(input.due, "Due"),
+      initiativeId: input.initiativeId === undefined
+        ? undefined
+        : normalizeTrailCommandId(input.initiativeId, "Initiative ID"),
+      labelIds: normalizeTrailCommandIdSet(input.labelIds, "Label ID"),
+      priority: normalizeTrailCommandPriority(input.priority),
       projectId: normalizeTrailCommandId(this.environment.createId(), "Project ID"),
-      title: normalizeTrailCommandTitle(title, "Project"),
+      title: normalizeTrailCommandTitle(input.title, "Project"),
     });
     const planned = resolveTrailApplicationPlan(result);
     if (planned.kind === "needs-input") {

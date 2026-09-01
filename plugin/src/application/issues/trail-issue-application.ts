@@ -4,10 +4,10 @@ import type {
   TrailPriority,
 } from "../../domain/model/trail-values";
 import { planDeleteTrailWorkflowIssue } from "../../domain/planning/trail-delete-planning";
+import { planCreateTrailWorkflowIssueFromDraft } from "../../domain/planning/trail-creation-planning";
 import {
   planChangeTrailWorkflowIssueMilestone,
   planChangeTrailWorkflowIssueStatus,
-  planCreateTrailWorkflowIssue,
   planEditTrailWorkflowIssueProperties,
   planMoveTrailWorkflowIssueProject,
 } from "../../domain/planning/trail-issue-planning";
@@ -33,6 +33,17 @@ import {
   type TrailCommandEnvironment,
 } from "../trail-command";
 
+export interface TrailWorkflowIssueCreateInput {
+  readonly description?: string;
+  readonly due?: number;
+  readonly estimate?: TrailEstimate;
+  readonly labelIds: readonly string[];
+  readonly milestoneId?: string;
+  readonly priority?: TrailPriority;
+  readonly projectId: string;
+  readonly title: string;
+}
+
 export interface TrailWorkflowIssuePropertiesInput {
   readonly description?: string;
   readonly due?: number;
@@ -50,12 +61,34 @@ export class TrailIssueApplication {
   ) {}
 
   public create(projectId: string, title: string): TrailEntityMutationReceipt {
-    const result = planCreateTrailWorkflowIssue(readTrailPlanningState(this.runtimeStore), {
-      commandId: normalizeTrailCommandId(this.environment.createId(), "Command ID"),
-      effectiveAt: normalizeTrailCommandTime(this.environment),
+    return this.createFromDraft({
+      labelIds: [],
+      projectId,
+      title,
+    });
+  }
+
+  /** Standard Workflow Issue Composer submission. */
+  public createFromDraft(input: TrailWorkflowIssueCreateInput): TrailEntityMutationReceipt {
+    const state = readTrailPlanningState(this.runtimeStore);
+    const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
+    const effectiveAt = normalizeTrailCommandTime(this.environment);
+    const result = planCreateTrailWorkflowIssueFromDraft(state, {
+      commandId,
+      description: normalizeTrailCommandDescription(input.description),
+      due: input.due === undefined
+        ? undefined
+        : normalizeTrailCommandTimestamp(input.due, "Due"),
+      effectiveAt,
+      estimate: normalizeTrailCommandEstimate(input.estimate),
       issueId: normalizeTrailCommandId(this.environment.createId(), "Workflow Issue ID"),
-      projectId: normalizeTrailCommandId(projectId, "Project ID"),
-      title: normalizeTrailCommandTitle(title, "Workflow Issue"),
+      labelIds: normalizeTrailCommandIdSet(input.labelIds, "Label ID"),
+      milestoneId: input.milestoneId === undefined
+        ? undefined
+        : normalizeTrailCommandId(input.milestoneId, "Milestone ID"),
+      priority: normalizeTrailCommandPriority(input.priority),
+      projectId: normalizeTrailCommandId(input.projectId, "Project ID"),
+      title: normalizeTrailCommandTitle(input.title, "Workflow Issue"),
     });
     const planned = resolveTrailApplicationPlan(result);
     if (planned.kind === "needs-input") {
