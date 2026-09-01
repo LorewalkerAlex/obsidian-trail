@@ -157,7 +157,8 @@ Cycle candidate discovery is also a Query/UI concern. An Open Cycle may contain 
 | Stable entity presentation | UI Design + entity IDs + effective Runtime selection | `ui/entities` |
 | Shared Creation Composer / transient create UI state | UI Design + Query capability/defaults + target Application intents | `ui/interactions`, `ui/patterns` |
 | Shared collection Filter / location-scoped session state | UI Design + page registry + Query filter semantics | `ui/interactions`, `ui/patterns`, `query` |
-| Shared property controls / pickers / compact property grammar | UI Design + reusable entity property presentation | `ui/primitives`, `ui/patterns` |
+| Shared compact PropertyControl shell | UI Design + caller-supplied semantic property content; no picker/Domain semantics | `ui/patterns/trail-property-control.tsx`, `plugin/styles/patterns.css` |
+| Shared property pickers / semantic property grammar | UI Design + reusable entity property presentation + legal target/query semantics | `ui/entities`, `ui/interactions`, `ui/patterns`, `query` as required by the property |
 | Shared selection/action registry, Context/Command/Bulk orchestration, shortcut dispatch | UI Design + transient selection state + Query capabilities + Application intents | `ui/interactions`, `ui/patterns`, `adapters/obsidian` for host binding |
 | Reusable visual primitives/patterns | UI Design + design-system tokens | `ui/primitives`, `ui/patterns`, `ui/design-system` |
 | Obsidian source/plugin-data/workspace/file-event bridge | Obsidian API | `adapters/obsidian` |
@@ -212,7 +213,8 @@ Shared mechanisms appear once in this map. A new feature consumes an existing ca
 | Entity components | `plugin/src/ui/entities/` | page-specific copies |
 | Shared Creation Composer and create-state orchestration | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/` | page-local inline/modal create stacks |
 | Shared collection Filter grammar and session state | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/`, `plugin/src/query/` | page-private filter engines, hidden quick-filter state, or `runtime/store` canonical entity state |
-| Shared property controls and pickers | `plugin/src/ui/primitives/`, `plugin/src/ui/patterns/` | per-page property widgets |
+| Shared compact PropertyControl presentation shell | `plugin/src/ui/patterns/trail-property-control.tsx` + `plugin/styles/patterns.css` | property-specific semantics, picker/open state, legal targets, Query/Application mutation, or page-local copies |
+| Shared property pickers and semantic property controls | `plugin/src/ui/entities/`, `plugin/src/ui/interactions/`, reusable `plugin/src/ui/patterns/`, and `plugin/src/query/` where target legality is derived | per-page property widgets or `TrailPropertyControl` as a business-semantics owner |
 | Shared Selection / Action Registry / Bulk target intersection / shortcut dispatch | `plugin/src/ui/interactions/`, `plugin/src/ui/patterns/` with host binding in `plugin/src/adapters/obsidian/` | page-local command menus, page-local selection state machines, duplicate action catalogs, or shortcut-specific business logic |
 | Core primitive visual/interaction contracts | `plugin/src/ui/primitives/` + `plugin/styles/tokens.css` / `plugin/styles/primitives.css` | page-local low-level controls or arbitrary caller-owned pixel/color props |
 | Shared visual/composition patterns | `plugin/src/ui/patterns/` + `plugin/styles/patterns.css` | page-local copies or giant universal components |

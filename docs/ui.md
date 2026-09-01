@@ -828,6 +828,8 @@ Highlight/focus is not the same state as selection. Pointer hover or keyboard na
 
 List, Board, Triage, and other supported collection surfaces consume the same selection model rather than implementing page-specific variants. Selection is transient UI runtime state only. It is not Domain Data, committed/effective canonical Runtime, Workspace State, Markdown, Plugin Data, or a saved View. An action must never be applied to an invisible stale selection from another context merely because that selection once existed.
 
+On selectable List rows, the selection checkbox occupies a dedicated leading gutter: it is normally visually hidden, reveals on pointer hover or keyboard focus, and remains visible while the item is selected. The selection gutter does not replace Priority, Status, or another semantic leading property; selection presentation and semantic property presentation are independent responsibilities.
+
 The exact keyboard bindings used to toggle/range/select-all/clear are not frozen as product semantics. Trail owns a shared shortcut-dispatch mechanism and may choose bindings that fit the Obsidian host rather than copying Linear's literal keymap.
 
 #### 5.8.2 One action authority, multiple entry pointsTrail uses one shared **Action Registry** as the UI authority for actions available in the current context. An action has stable identity plus the context/capability information needed to determine whether it is available, which legal targets it may expose, and which existing Application intent it invokes.
@@ -1065,10 +1067,10 @@ A List Row should remain compact and normally single-line in the main informatio
 Conceptually:
 
 ```text
-[priority/selection slot]  Issue title         ◇ Milestone   ●●   Due
+[selection gutter]  [Priority]  Issue title         ◇ Milestone   ●●   Due
 ```
 
-The left leading slot may switch from Priority to a selection checkbox on hover/selection, following the low-noise selection pattern used by Linear. Exact mechanics are subject to implementation/accessibility calibration.
+The selection checkbox uses the shared dedicated left gutter described in Section 5.8.1. Priority remains a stable semantic property beside it rather than being replaced by selection state. Exact focus/range/select-all mechanics remain subject to shared interaction and accessibility calibration.
 
 The List has more horizontal space than Board, so it may show more optional secondary properties, but the row must not become a table of every available field.
 
@@ -1557,10 +1559,10 @@ Triage Row is a product-specific scanning surface that may reuse shared row/prop
 Conceptually:
 
 ```text
-[priority/selection slot]  Title                    ●●   Review Due
+[selection gutter]  [Priority]  Title                    ●●   Review Due
 ```
 
-Title is the strongest visual anchor. Priority, Labels, and Review Due use the same stable visual identities and picker primitives used elsewhere. Description/body stays out of the compact row and belongs in the Review Surface.
+Title is the strongest visual anchor. The selection checkbox uses the same dedicated gutter as other selectable List rows and does not replace Priority. Priority, Labels, and Review Due use the same stable visual identities and picker primitives used elsewhere. Description/body stays out of the compact row and belongs in the Review Surface.
 
 Triage Row does not show Workflow Status, Project, Milestone, Estimate, or Cycle because those are not part of Triage review semantics.
 
