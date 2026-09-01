@@ -1,0 +1,106 @@
+/* Semantic entity presentation and property-specific selection surfaces. */
+
+.trail-priority-glyph {
+  display: block;
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+  flex: 0 0 auto;
+  fill: currentColor;
+  color: currentColor;
+  overflow: visible;
+}
+
+.trail-priority-glyph__bar {
+  fill: currentColor;
+  opacity: 0.26;
+}
+
+.trail-priority-glyph__bar[data-active="true"] {
+  opacity: 1;
+}
+
+.trail-priority-glyph__urgent-frame {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.35;
+}
+
+.trail-priority-glyph__urgent-mark {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.55;
+}
+
+.trail-priority-select {
+  z-index: var(--layer-menu, 1000);
+  min-width: max(var(--radix-select-trigger-width), var(--trail-menu-min-width));
+  max-height: var(--radix-select-content-available-height);
+  padding: var(--trail-menu-padding);
+  border: 1px solid var(--trail-menu-border);
+  border-radius: var(--trail-menu-radius);
+  outline: 0;
+  background: var(--trail-menu-surface);
+  box-shadow: var(--trail-menu-shadow);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-menu-font-size);
+}
+
+.trail-priority-select__viewport {
+  display: grid;
+}
+
+.trail-priority-select__item {
+  display: grid;
+  height: var(--trail-menu-item-height);
+  grid-template-columns: var(--trail-menu-icon-size) minmax(0, 1fr) var(--trail-menu-icon-size);
+  align-items: center;
+  gap: var(--trail-menu-item-gap);
+  padding: 0 var(--trail-menu-item-padding-x);
+  border-radius: var(--trail-menu-item-radius);
+  outline: 0;
+  color: var(--trail-text-muted);
+  line-height: 1;
+  user-select: none;
+}
+
+.trail-priority-select__item[data-highlighted] {
+  background: var(--trail-menu-hover);
+  color: var(--trail-text-primary);
+}
+
+.trail-priority-select__item[data-state="checked"] {
+  color: var(--trail-text-secondary);
+}
+
+.trail-priority-select__item[data-state="checked"][data-highlighted] {
+  color: var(--trail-text-primary);
+}
+
+.trail-priority-select__glyph,
+.trail-priority-select__indicator {
+  display: inline-grid;
+  width: var(--trail-menu-icon-size);
+  height: var(--trail-menu-icon-size);
+  place-items: center;
+}
+
+.trail-priority-select__glyph .trail-priority-glyph {
+  width: var(--trail-menu-icon-size);
+  height: var(--trail-menu-icon-size);
+}
+
+.trail-priority-select__indicator {
+  justify-self: end;
+  color: var(--trail-text-muted);
+}
+
+.trail-priority-select__check {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}

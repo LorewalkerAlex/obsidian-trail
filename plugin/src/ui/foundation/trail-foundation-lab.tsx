@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
+import type { TrailPriority } from "../../domain/model/trail-values";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
+import { TrailPriorityPropertySelect } from "../entities/trail-priority-property-select";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
 import {
@@ -91,6 +93,7 @@ function CalibrationIcon({ kind }: { readonly kind: CalibrationIconKind }) {
 export function TrailFoundationLab({ control, revision }: TrailFoundationLabProps) {
   const [collectionRowSelected, setCollectionRowSelected] = useState(false);
   const [layout, setLayout] = useState<"board" | "list">("list");
+  const [priority, setPriority] = useState<TrailPriority | undefined>("high");
 
   return (
     <div className="trail-foundation-lab" data-runtime-control={control.kind}>
@@ -333,10 +336,10 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
             </div>
             <div className="trail-lab-property-row">
               <span>Priority</span>
-              <TrailPropertyControl>
-                <span aria-hidden="true" className="trail-lab-priority-glyph"><span /><span /><span /></span>
-                High
-              </TrailPropertyControl>
+              <TrailPriorityPropertySelect
+                onValueChange={setPriority}
+                value={priority}
+              />
             </div>
             <div className="trail-lab-property-row">
               <span>Estimate</span>
@@ -397,10 +400,10 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
                   <span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />
                   Backlog
                 </TrailPropertyControl>
-                <TrailPropertyControl>
-                  <span aria-hidden="true" className="trail-lab-priority-glyph"><span /><span /><span /></span>
-                  High
-                </TrailPropertyControl>
+                <TrailPriorityPropertySelect
+                  onValueChange={setPriority}
+                  value={priority}
+                />
                 <TrailPropertyControl>Project Trail</TrailPropertyControl>
                 <TrailPropertyControl>M</TrailPropertyControl>
                 <TrailPropertyControl aria-label="More properties specimen">…</TrailPropertyControl>

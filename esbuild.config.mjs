@@ -17,6 +17,7 @@ const stylesheetSources = [
   "plugin/styles/obsidian-native.css",
   "plugin/styles/primitives.css",
   "plugin/styles/patterns.css",
+  "plugin/styles/entities.css",
   "plugin/styles/shell.css",
   "plugin/styles/foundation.css",
 ];

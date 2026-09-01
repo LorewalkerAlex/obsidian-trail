@@ -704,34 +704,6 @@
   font-size: var(--trail-font-size-caption);
 }
 
-.trail-lab-priority-glyph {
-  display: inline-flex;
-  width: var(--trail-icon-size-sm);
-  height: var(--trail-icon-size-sm);
-  align-items: flex-end;
-  gap: 1.25px;
-  color: var(--trail-priority-high);
-}
-
-.trail-lab-priority-glyph span {
-  display: block;
-  width: 2.25px;
-  border-radius: 1px;
-  background: currentColor;
-}
-
-.trail-lab-priority-glyph span:nth-child(1) {
-  height: 3.5px;
-}
-
-.trail-lab-priority-glyph span:nth-child(2) {
-  height: 6px;
-}
-
-.trail-lab-priority-glyph span:nth-child(3) {
-  height: 9px;
-}
-
 .trail-lab-labels,
 .trail-lab-composer__properties,
 .trail-lab-composer__suggestions {
