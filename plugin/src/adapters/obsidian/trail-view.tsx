@@ -1,11 +1,23 @@
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { ItemView, type WorkspaceLeaf } from "obsidian";
+import {
+  ItemView,
+  type ViewStateResult,
+  type WorkspaceLeaf,
+} from "obsidian";
 
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TrailApp } from "../../ui/shell/trail-app";
-import type { TrailNavigationStore } from "../../ui/shell/trail-navigation-state";
+import {
+  trailLocationsEqual,
+  type TrailNavigationStore,
+} from "../../ui/shell/trail-navigation-state";
 import type { TrailUiActions } from "../../ui/shell/trail-ui-actions";
+import {
+  createTrailViewState,
+  readTrailViewState,
+  type TrailViewState,
+} from "./trail-view-state";
 
 export const TRAIL_VIEW_TYPE = "trail-view";
 
@@ -20,6 +32,7 @@ export class TrailView extends ItemView {
     private readonly navigationStore: TrailNavigationStore,
   ) {
     super(leaf);
+    this.navigation = true;
   }
 
   public getViewType(): string {
@@ -32,6 +45,20 @@ export class TrailView extends ItemView {
 
   public getIcon(): string {
     return "route";
+  }
+
+  public getState(): TrailViewState {
+    return createTrailViewState(this.navigationStore.getState().location);
+  }
+
+  public async setState(state: unknown, result: ViewStateResult): Promise<void> {
+    const nextLocation = readTrailViewState(state).location;
+    const currentLocation = this.navigationStore.getState().location;
+    if (!trailLocationsEqual(currentLocation, nextLocation)) {
+      (result as ViewStateResult & { history?: boolean }).history = true;
+    }
+    this.navigationStore.getState().restore(nextLocation);
+    await super.setState(state, result);
   }
 
   public async onOpen(): Promise<void> {

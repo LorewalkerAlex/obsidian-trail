@@ -11,6 +11,7 @@ import {
 } from "./trail-workspace-shell";
 
 export function TrailApp({
+  actions,
   navigationStore,
   runtimeStore,
 }: {
@@ -30,7 +31,7 @@ export function TrailApp({
     >
       {location.kind === "triage" ? (
         <TrailWorkspaceShell locationBar={<TrailLocationBar title="Triage" />}>
-          <TrailTriagePage runtimeStore={runtimeStore} />
+          <TrailTriagePage actions={actions.triage} runtimeStore={runtimeStore} />
         </TrailWorkspaceShell>
       ) : (
         <div className="trail-foundation">

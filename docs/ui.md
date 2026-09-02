@@ -97,7 +97,6 @@ Exact pixel dimensions, color values, opacity, spacing, and responsive threshold
 ### 2.2 Design-token authority and Linear reference inputs
 
 Linear reference values are **inputs to one Trail visual authority**, not literals for each component to copy independently.
-
 The V1 visual flow is:
 
 ```text
@@ -203,6 +202,72 @@ Trail does not duplicate the left sidebar, tab system, split system, or resize/c
 
 The normal File Explorer, Search, Bookmarks, and other Obsidian/plugin sidebar views remain available. Entering Trail context may reveal/select Trail Navigation without destructively rewriting the user's workspace.
 
+### 3.3 Main View navigation state and host history
+
+Trail uses the primary Obsidian leaf's native back/forward history for **Main View semantic navigation**. Trail does not create a second application history stack merely because its product locations render inside one native tab.
+
+The conceptual history model is a temporary ordered sequence plus one current cursor:
+
+```text
+[Home] [Triage / Queue] [Triage / Review A] [Triage / Review B]
+                                                       ^
+                                                    cursor
+```
+
+Back and Forward move the cursor through already-visited semantic Main View states. When the cursor is in the middle of the sequence and the user performs a new navigation instead of Forward, the old forward branch is discarded before the new state is appended:
+
+```text
+before
+[Home] [Triage / Queue] [Review A] [Review B] [Review C]
+                                ^
+                             cursor
+
+new navigation to Review D
+[Home] [Triage / Queue] [Review A] [Review D]
+                                           ^
+                                        cursor
+```
+
+Obsidian owns the history sequence, cursor, Back/Forward controls, branch truncation mechanics, and history lifetime. Trail owns the semantic View State that the host records/restores. Trail does not persist a parallel history in Domain Data, Runtime, Markdown, Plugin Data, or Workspace State.
+
+A history entry exists when the user has meaningfully navigated to another Main View surface: the test is **“does the user understand this as being somewhere else?”** Representative states include:
+
+```text
+Home
+Triage / Queue
+Triage / Review(triageIssueId)
+Projects
+Projects / Initiative(initiativeId)
+Project(projectId)
+Full Item(issueId)
+Cycles / Current
+Cycles / History / Cycle(cycleId)
+Search
+```
+
+The exact state shape is an implementation contract, not a new Domain model. Stable entity IDs are used where restoration needs identity; presentation-only geometry is derived again from current host capacity and current effective data.
+
+Triage Queue and Triage Review are therefore distinct history states even though both belong to the same top-level Triage product location and may share the same structural Location Bar title. Opening a Queue row navigates to `Triage / Review(issueId)`; returning to the full Queue navigates to `Triage / Queue`.
+
+Triage's Review **Previous / Next** controls are not Back/Forward aliases. Their target is resolved from the current visible/ordered Triage Query projection. Once a previous/next identity is resolved, moving to that Review is an ordinary Main View navigation and may create a new history entry. Host Back/Forward instead replay the already-visited state sequence and do not recompute Triage adjacency.
+
+The same separation applies to automatic workflow progression: Defer/Delete/Accept determine any successor from the current visible/ordered Queue according to the workflow rule, then navigate to that semantic Review state. History does not become the source of ordering or successor legality.
+
+The following are **not** navigation history entries because they do not change where the user is:
+
+- responsive wide/narrow layout changes, split/sidebar resize, and other host-capacity-derived geometry;
+- Filter/Display configuration within the current location;
+- inline edits to Title, Description, Priority, Labels, Due, Status, or other entity facts;
+- selection, hover, focus, scroll position, transient feedback, and pending mutation presentation;
+- opening/closing a Modal, Composer, Popover, Menu, Context Menu, property picker, confirmation surface, or other overlay;
+- local drafts held by those interactions.
+
+Those states may have their own scoped session lifetime, but they do not create history nodes. If an overlay succeeds and the product then navigates somewhere else, only the resulting Main View destination enters navigation history; reopening the completed overlay is never a Back operation.
+
+A restored history entry is interpreted against current authoritative/effective state. If its referenced entity no longer exists, Trail must not resurrect stale content or fabricate a private copy. Restoration falls back to the nearest valid containing product surface, such as a missing Triage Review returning to the Triage Queue, while normal current Query/Domain facts remain authoritative.
+
+This history model is orthogonal to breadcrumbs. Breadcrumbs express product structure and ancestor navigation; Back/Forward express visit history.
+
 ## 4. Trail Navigation
 
 ### 4.1 Structure
@@ -297,7 +362,6 @@ Cycles / History / Aug 11 – Aug 24
 Breadcrumbs describe Trail product structure, not visit history. Ancestors are navigable; the terminal segment is the current location.
 
 Back/forward history remains an Obsidian/browser host responsibility and is not duplicated in the Trail Location Bar.
-
 The right side contains only actions that belong to the current location/object, such as Inspector/Details toggle, Project context disclosure, Cycle History access, or a low-frequency overflow menu when applicable. If a location has no such action, no empty action shell is rendered merely for symmetry.
 
 A large repeated page title is not required when the Location Bar already establishes the current object and the content does not need an additional title hierarchy.
@@ -832,7 +896,9 @@ On selectable List rows, the selection checkbox occupies a dedicated leading gut
 
 The exact keyboard bindings used to toggle/range/select-all/clear are not frozen as product semantics. Trail owns a shared shortcut-dispatch mechanism and may choose bindings that fit the Obsidian host rather than copying Linear's literal keymap.
 
-#### 5.8.2 One action authority, multiple entry pointsTrail uses one shared **Action Registry** as the UI authority for actions available in the current context. An action has stable identity plus the context/capability information needed to determine whether it is available, which legal targets it may expose, and which existing Application intent it invokes.
+#### 5.8.2 One action authority, multiple entry points
+
+Trail uses one shared **Action Registry** as the UI authority for actions available in the current context. An action has stable identity plus the context/capability information needed to determine whether it is available, which legal targets it may expose, and which existing Application intent it invokes.
 
 Context Menu, Command Menu, `···`/overflow affordances, Bulk surfaces, and keyboard shortcuts consume that same authority. They do not need identical visible menus: Context Menu favors the small set of actions most relevant to the clicked/current object or selection, while Command Menu may expose a broader searchable set. Different presentation subsets do not create different action semantics.
 
@@ -1147,7 +1213,6 @@ The Current Cycle workspace does not repeat that marker because the enclosing co
 ### 7.5 Labels and metadata overflow
 
 Board Cards must not grow vertically in proportion to Label count.
-
 Dense surfaces show a bounded number of Label dots and a compact overflow indicator when needed. Full Label names remain available through tooltip, Peek, Inspector, Filter, or Picker.
 
 ## 8. Peek, Full Item, and Inspector
@@ -1547,7 +1612,6 @@ Triage Filter supports only:
 - Labels.
 
 Triage uses the same shared Filter grammar frozen in Section 5.3 and does not invent extra operators or Triage-only syntax. `Due` is the Triage review Due by context. Because Triage Due is required, its Due filter does not offer `No due`; the cutoff presets and `Pick date…` use the same temporal semantics as other collections.
-
 Filtering changes only which active Triage entries are visible. It does not redefine ordering, mutate properties, or recompute the global Review Set against the filtered subset. When a Filter is active, the UI should avoid presenting the unfiltered Review Set boundary as though it were a boundary in the filtered list; a global `to review` summary may remain clearly global.
 
 `Display` is intentionally constrained and owns only supported ordering choices. V1 exposes Review Due and Priority ordering choices and does not offer Group/Sub-group, Board, Timeline, manual ordering, or a generic Sort builder. Default ordering remains Review Due ascending, then Priority, then stable fallback.
@@ -1587,6 +1651,8 @@ Accept       Defer      Delete       ···
 Title and lightweight Markdown description/body are directly editable without a permanent Edit/Save/Cancel shell. Priority, Labels, and Review Due are compact enrichment properties. When the main Trail pane can comfortably support both surfaces, the compact Queue and Review Surface remain visible side by side inside the Main View. When that composition would make either surface unusably narrow, Review becomes the focused Main View surface while compact queue context, collection position, and previous/next navigation remain available; the user can return to the full Queue without leaving Triage. Review never moves into the persistent Right Inspector. Exact queue/review widths and transition thresholds remain full-shell calibration decisions.
 
 Adjacent-item navigation is first-class so a user can process a review session continuously. Completing a successful Accept, Defer, or Delete selects the next entry according to the current visible/ordered queue when one exists.
+
+Queue and Review participate in the Main View history model from Section 3.3. `Triage / Queue` and `Triage / Review(issueId)` are separate semantic navigation states. Review Previous/Next resolves adjacent identity from the current visible/ordered Queue and then performs normal navigation to that Review state; host Back/Forward traverses the already-visited history instead of substituting for Review sequencing.
 
 ### 10.5 Accept
 
@@ -2247,7 +2313,6 @@ The current Project title is displayed from the resolved stable Project referenc
 The picker lists existing ordinary Projects and marks the current Default. There is no `No default project`, Clear, or empty choice in normal V1 UI.
 
 Selecting another Project changes only `workspaceState.defaultProjectId`:
-
 ```text
 Default Project A
 → choose Project B
@@ -2272,7 +2337,7 @@ V1 does not add secondary `Set as default` actions to every Project context menu
 
 ## 17. V1 UI Freeze
 
-Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are now resolved at the V1 product-interaction level.
+Main View semantic navigation/history, Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are now resolved at the V1 product-interaction level.
 
 **V1 `ui.md` is frozen for formal implementation alignment.** Implementation may still calibrate the values explicitly listed in Section 19 against real Obsidian/Linear evidence, but it must not reopen the resolved product behavior merely because the current POC uses different panels, forms, layout, or error presentation.
 

@@ -32,6 +32,10 @@ import {
   TRAIL_VIEW_TYPE,
   TrailView,
 } from "./adapters/obsidian/trail-view";
+import {
+  createTrailViewState,
+  readTrailViewState,
+} from "./adapters/obsidian/trail-view-state";
 import { createObsidianWorkspaceLayoutIO } from "./adapters/obsidian/trail-workspace-layout-io-obsidian";
 import { createTrailApplicationSession } from "./application/trail-application-session";
 import { TrailWeeklyNoteApplication } from "./application/workspace/trail-weekly-note-application";
@@ -59,6 +63,7 @@ import { TrailRefreshController } from "./source-sync/refresh/trail-refresh-cont
 import { createTrailAuthoritativeSourceSync } from "./source-sync/trail-authoritative-source-sync";
 import {
   createTrailNavigationStore,
+  trailLocationsEqual,
   type TrailLocation,
   type TrailNavigationStore,
 } from "./ui/shell/trail-navigation-state";
@@ -337,10 +342,6 @@ export default class TrailPlugin extends Plugin {
     const correlationId = this.diagnostics.createCorrelationId("view.activate");
     this.diagnostics.record("view.activate.requested", { correlationId });
     try {
-      if (location !== undefined) {
-        this.navigationStore?.getState().navigate(location);
-      }
-
       const { workspace } = this.app;
       await workspace.ensureSideLeaf(
         TRAIL_NAVIGATION_VIEW_TYPE,
@@ -351,8 +352,26 @@ export default class TrailPlugin extends Plugin {
       let leaf = workspace.getLeavesOfType(TRAIL_VIEW_TYPE)[0];
       const reusedExistingLeaf = leaf !== undefined;
       if (leaf === undefined) {
+        const initialLocation = location
+          ?? this.navigationStore?.getState().location
+          ?? { kind: "home" };
         leaf = workspace.getLeaf("tab");
-        await leaf.setViewState({ active: true, type: TRAIL_VIEW_TYPE });
+        await leaf.setViewState({
+          active: true,
+          state: createTrailViewState(initialLocation),
+          type: TRAIL_VIEW_TYPE,
+        });
+      } else if (location !== undefined) {
+        const currentViewState = leaf.getViewState();
+        const currentLocation = readTrailViewState(currentViewState.state).location;
+        if (!trailLocationsEqual(currentLocation, location)) {
+          await leaf.setViewState({
+            ...currentViewState,
+            active: true,
+            state: createTrailViewState(location),
+            type: TRAIL_VIEW_TYPE,
+          });
+        }
       }
       await workspace.revealLeaf(leaf);
       this.diagnostics.record("view.activate.completed", {

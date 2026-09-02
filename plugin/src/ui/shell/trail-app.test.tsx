@@ -1,5 +1,11 @@
-import { act, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import type {
   TrailProject,
@@ -17,9 +23,9 @@ import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
+import { TrailApp } from "./trail-app";
 import { createTrailNavigationStore } from "./trail-navigation-state";
 import type { TrailUiActions } from "./trail-ui-actions";
-import { TrailApp } from "./trail-app";
 
 function readyTriageStore() {
   const configuration = createTrailTestConfiguration();
@@ -31,6 +37,7 @@ function readyTriageStore() {
   };
   const issue: TrailTriageIssue = {
     context: "triage",
+    description: "Review body",
     due: Date.UTC(2026, 8, 3, 4),
     id: "triage-a",
     labelIds: [],
@@ -61,7 +68,17 @@ function readyTriageStore() {
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
 
-  return store;
+  return { issue, store };
+}
+
+function uiActions(edit = vi.fn()): TrailUiActions {
+  return {
+    triage: {
+      defer: vi.fn(),
+      delete: vi.fn(),
+      edit,
+    },
+  } as unknown as TrailUiActions;
 }
 
 describe("TrailApp", () => {
@@ -69,7 +86,7 @@ describe("TrailApp", () => {
     const navigationStore = createTrailNavigationStore();
     render(
       <TrailApp
-        actions={{} as TrailUiActions}
+        actions={uiActions()}
         navigationStore={navigationStore}
         runtimeStore={createTrailRuntimeStore()}
       />,
@@ -80,12 +97,16 @@ describe("TrailApp", () => {
     expect(screen.queryByRole("heading", { name: "Home" })).not.toBeInTheDocument();
   }, 15_000);
 
-  it("dispatches the shared Triage location to the production Triage page", () => {
+  it("dispatches the shared Triage location and its UI-action boundary to the production Triage page", async () => {
     const navigationStore = createTrailNavigationStore();
-    const runtimeStore = readyTriageStore();
+    const { issue, store: runtimeStore } = readyTriageStore();
+    const edit = vi.fn((expectedIssue: TrailTriageIssue) => ({
+      entityId: expectedIssue.id,
+      kind: "unchanged" as const,
+    }));
     render(
       <TrailApp
-        actions={{} as TrailUiActions}
+        actions={uiActions(edit)}
         navigationStore={navigationStore}
         runtimeStore={runtimeStore}
       />,
@@ -96,7 +117,15 @@ describe("TrailApp", () => {
     });
 
     expect(screen.getByRole("heading", { level: 1, name: "Triage" })).toBeInTheDocument();
-    expect(screen.getByText("Real Triage row")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Real Triage row" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    fireEvent.change(title, { target: { value: "Edited through TrailApp" } });
+    fireEvent.blur(title);
+
+    await waitFor(() => expect(edit).toHaveBeenCalledTimes(1));
+    expect(edit).toHaveBeenCalledWith(issue, expect.objectContaining({
+      title: "Edited through TrailApp",
+    }));
     expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
   });
 });

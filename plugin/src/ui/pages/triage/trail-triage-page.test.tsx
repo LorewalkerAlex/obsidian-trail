@@ -1,4 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -12,20 +18,26 @@ import {
 import {
   createTrailRuntimeStore,
   setTrailRuntimeControl,
+  type TrailRuntimeStore,
 } from "../../../runtime/store/trail-runtime-store";
 import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "../../../test/trail-test-fixtures";
+import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { TrailTriagePage } from "./trail-triage-page";
 
+type TriagePageActions = Pick<TrailUiActions["triage"], "defer" | "delete" | "edit">;
+
 function triageIssue({
+  description,
   due,
   id,
   labelIds = [],
   priority,
   title = id,
 }: {
+  readonly description?: string;
   readonly due: number;
   readonly id: string;
   readonly labelIds?: readonly string[];
@@ -34,6 +46,7 @@ function triageIssue({
 }): TrailTriageIssue {
   return {
     context: "triage",
+    description,
     due,
     id,
     labelIds,
@@ -42,7 +55,10 @@ function triageIssue({
   };
 }
 
-function readyTriageStore(issues: readonly TrailTriageIssue[]) {
+function createTriageHarness(issues: readonly TrailTriageIssue[]): {
+  readonly publish: (nextIssues: readonly TrailTriageIssue[]) => void;
+  readonly store: TrailRuntimeStore;
+} {
   const configuration = createTrailTestConfiguration();
   const project: TrailProject = {
     id: "project-a",
@@ -51,30 +67,72 @@ function readyTriageStore(issues: readonly TrailTriageIssue[]) {
     title: "Project A",
   };
   const store = createTrailRuntimeStore();
+  const publish = (nextIssues: readonly TrailTriageIssue[]) => publishTrailCommittedRuntime(
+    store,
+    buildTrailCommittedRuntimeCandidate({
+      pluginData: {
+        configuration,
+        workspaceState: createTrailTestWorkspaceState(project.id),
+      },
+      sources: [
+        {
+          issues: [],
+          kind: "project",
+          milestones: [],
+          project,
+          sourcePath: "Trail/Projects/0001 Project A.md",
+        },
+        {
+          issues: nextIssues,
+          kind: "triage",
+          sourcePath: "Trail/Collections/Triage.md",
+        },
+      ],
+    }),
+    { sourceIssuesByPath: {} },
+  );
 
-  publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
-    pluginData: {
-      configuration,
-      workspaceState: createTrailTestWorkspaceState(project.id),
-    },
-    sources: [
-      {
-        issues: [],
-        kind: "project",
-        milestones: [],
-        project,
-        sourcePath: "Trail/Projects/0001 Project A.md",
-      },
-      {
-        issues,
-        kind: "triage",
-        sourcePath: "Trail/Collections/Triage.md",
-      },
-    ],
-  }), { sourceIssuesByPath: {} });
+  publish(issues);
   setTrailRuntimeControl(store, { kind: "ready" });
+  return { publish, store };
+}
 
-  return store;
+function readyTriageStore(issues: readonly TrailTriageIssue[]): TrailRuntimeStore {
+  return createTriageHarness(issues).store;
+}
+
+function triageActions(overrides: Partial<TriagePageActions> = {}): TriagePageActions {
+  return {
+    defer: vi.fn((issue: TrailTriageIssue) => ({
+      commandId: "command-defer",
+      completion: Promise.resolve(),
+      entityId: issue.id,
+    })),
+    delete: vi.fn((issue: TrailTriageIssue) => ({
+      commandId: "command-delete",
+      completion: Promise.resolve(),
+      entityId: issue.id,
+    })),
+    edit: vi.fn((issue: TrailTriageIssue) => ({
+      entityId: issue.id,
+      kind: "unchanged" as const,
+    })),
+    ...overrides,
+  };
+}
+
+function deferredCompletion(): {
+  readonly promise: Promise<void>;
+  readonly reject: (error: Error) => void;
+  readonly resolve: () => void;
+} {
+  let resolve!: () => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<void>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
 }
 
 afterEach(() => {
@@ -100,7 +158,9 @@ describe("TrailTriagePage", () => {
       })),
     ]);
 
-    const { container } = render(<TrailTriagePage runtimeStore={store} />);
+    const { container } = render(
+      <TrailTriagePage actions={triageActions()} runtimeStore={store} />,
+    );
 
     expect(screen.getByRole("region", { name: "Triage queue" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Triage view controls" })).toBeInTheDocument();
@@ -117,7 +177,307 @@ describe("TrailTriagePage", () => {
     expect(boundary).not.toBeNull();
     expect(boundary?.previousElementSibling).toHaveTextContent("triage-07");
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /review|accept|defer|delete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /accept|defer|delete/i })).not.toBeInTheDocument();
+  });
+
+  it("opens the production Review Surface and routes direct editing through the injected UI action boundary", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const issue = triageIssue({
+      description: "Original body",
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-review",
+      labelIds: ["label-work"],
+      priority: "high",
+      title: "Review me",
+    });
+    const edit = vi.fn((expectedIssue: TrailTriageIssue) => ({
+      entityId: expectedIssue.id,
+      kind: "unchanged" as const,
+    }));
+    const actions = triageActions({ edit });
+
+    render(<TrailTriagePage actions={actions} runtimeStore={readyTriageStore([issue])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Review me" }));
+
+    expect(screen.getByRole("region", { name: "Triage review" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Original body")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Priority: High" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Labels: Work" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review due" })).toBeInTheDocument();
+    expect(screen.getByText("1 / 1")).toBeInTheDocument();
+
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    fireEvent.change(title, { target: { value: "Edited title" } });
+    fireEvent.blur(title);
+
+    await waitFor(() => expect(edit).toHaveBeenCalledTimes(1));
+    expect(edit).toHaveBeenCalledWith(issue, {
+      description: "Original body",
+      due: issue.due,
+      labelIds: ["label-work"],
+      priority: "high",
+      title: "Edited title",
+    });
+  });
+
+  it("keeps needs-input edit feedback local and does not navigate away", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const due = (day: number) => Date.UTC(2026, 8, day, 4);
+    const actions = triageActions({
+      edit: vi.fn(() => ({
+        input: { code: "more-input", message: "More input is required." },
+        kind: "needs-input" as const,
+      })),
+    });
+    const store = readyTriageStore([
+      triageIssue({ due: due(2), id: "triage-a", title: "Entry A" }),
+      triageIssue({ due: due(3), id: "triage-b", title: "Entry B" }),
+    ]);
+
+    render(<TrailTriagePage actions={actions} runtimeStore={store} />);
+    fireEvent.click(screen.getByRole("button", { name: "Entry A" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Triage title" }), {
+      target: { value: "Unsaved A" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Next Triage entry" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("More input is required.");
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Unsaved A");
+    expect(screen.queryByDisplayValue("Entry B")).not.toBeInTheDocument();
+  });
+
+  it("keeps an edit draft visible when submitted persistence fails and Runtime has recovered", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const issue = triageIssue({
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-edit-failure",
+      title: "Original title",
+    });
+    const completion = deferredCompletion();
+    const actions = triageActions({
+      edit: vi.fn(() => ({
+        kind: "submitted" as const,
+        receipt: {
+          commandId: "command-edit",
+          completion: completion.promise,
+          entityId: issue.id,
+        },
+      })),
+    });
+
+    render(<TrailTriagePage actions={actions} runtimeStore={readyTriageStore([issue])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Original title" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    fireEvent.change(title, { target: { value: "Attempted title" } });
+    fireEvent.blur(title);
+
+    expect(await screen.findByText("Saving...")).toBeInTheDocument();
+    await act(async () => {
+      completion.reject(new Error("write failed"));
+      try {
+        await completion.promise;
+      } catch {
+        // Runtime recovery completes before the receipt rejects.
+      }
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Save failed: write failed");
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Attempted title");
+    expect(screen.getByRole("button", { name: "Defer Triage entry" })).toBeEnabled();
+  });
+
+  it("keeps editing available while one save settles and serializes the latest draft against the refreshed baseline", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const issue = triageIssue({
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-edit-queue",
+      title: "Original title",
+    });
+    const harness = createTriageHarness([issue]);
+    const firstCompletion = deferredCompletion();
+    const secondCompletion = deferredCompletion();
+    const edit = vi.fn()
+      .mockImplementationOnce(() => ({
+        kind: "submitted" as const,
+        receipt: {
+          commandId: "command-edit-1",
+          completion: firstCompletion.promise,
+          entityId: issue.id,
+        },
+      }))
+      .mockImplementationOnce(() => ({
+        kind: "submitted" as const,
+        receipt: {
+          commandId: "command-edit-2",
+          completion: secondCompletion.promise,
+          entityId: issue.id,
+        },
+      }));
+
+    render(
+      <TrailTriagePage
+        actions={triageActions({ edit })}
+        runtimeStore={harness.store}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Original title" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    fireEvent.change(title, { target: { value: "First title" } });
+    fireEvent.blur(title);
+
+    expect(await screen.findByText("Saving...")).toBeInTheDocument();
+    expect(title).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Defer Triage entry" })).toBeEnabled();
+
+    fireEvent.change(title, { target: { value: "Second title" } });
+    fireEvent.blur(title);
+    const firstSaved = { ...issue, title: "First title" };
+    act(() => {
+      harness.publish([firstSaved]);
+    });
+    await act(async () => {
+      firstCompletion.resolve();
+      await firstCompletion.promise;
+    });
+
+    await waitFor(() => expect(edit).toHaveBeenCalledTimes(2));
+    expect(edit).toHaveBeenNthCalledWith(2, firstSaved, expect.objectContaining({
+      title: "Second title",
+    }));
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Second title");
+
+    const secondSaved = { ...issue, title: "Second title" };
+    act(() => {
+      harness.publish([secondSaved]);
+    });
+    await act(async () => {
+      secondCompletion.resolve();
+      await secondCompletion.promise;
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Saving...")).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Second title");
+  });
+
+  it("waits for authoritative Defer completion and advances from the pre-disposition slot using current Query ordering", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const due = (day: number) => Date.UTC(2026, 8, day, 4);
+    const issueA = triageIssue({ due: due(2), id: "triage-a", title: "Entry A" });
+    const issueB = triageIssue({ due: due(3), id: "triage-b", title: "Entry B" });
+    const issueC = triageIssue({ due: due(4), id: "triage-c", title: "Entry C" });
+    const harness = createTriageHarness([issueA, issueB, issueC]);
+    const completion = deferredCompletion();
+    const defer = vi.fn((issue: TrailTriageIssue) => ({
+      commandId: "command-defer",
+      completion: completion.promise,
+      entityId: issue.id,
+    }));
+
+    render(
+      <TrailTriagePage
+        actions={triageActions({ defer })}
+        runtimeStore={harness.store}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Entry A" }));
+    fireEvent.click(screen.getByRole("button", { name: "Defer Triage entry" }));
+
+    expect(await screen.findByText("Deferring...")).toBeInTheDocument();
+    const deferredA = { ...issueA, due: due(9) };
+    act(() => {
+      harness.publish([deferredA, issueB, issueC]);
+    });
+
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Entry A");
+
+    await act(async () => {
+      completion.resolve();
+      await completion.promise;
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Entry B");
+    });
+    expect(defer).toHaveBeenCalledWith(issueA, due(9));
+  });
+
+  it("advances Delete from the removed entry's original slot after authoritative completion", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const due = (day: number) => Date.UTC(2026, 8, day, 4);
+    const issueA = triageIssue({ due: due(2), id: "triage-a", priority: "low", title: "Entry A" });
+    const issueB = triageIssue({ due: due(3), id: "triage-b", priority: "urgent", title: "Entry B" });
+    const issueC = triageIssue({ due: due(4), id: "triage-c", priority: "high", title: "Entry C" });
+    const issueD = triageIssue({ due: due(5), id: "triage-d", priority: "medium", title: "Entry D" });
+    const harness = createTriageHarness([issueA, issueB, issueC, issueD]);
+    const completion = deferredCompletion();
+    const remove = vi.fn((issue: TrailTriageIssue) => ({
+      commandId: "command-delete",
+      completion: completion.promise,
+      entityId: issue.id,
+    }));
+
+    render(
+      <TrailTriagePage
+        actions={triageActions({ delete: remove })}
+        runtimeStore={harness.store}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Display" }));
+    fireEvent.click(screen.getByRole("button", { name: "Priority" }));
+    fireEvent.click(screen.getByRole("button", { name: "Entry C" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Triage entry" }));
+
+    expect(await screen.findByText("Deleting...")).toBeInTheDocument();
+    act(() => {
+      harness.publish([issueA, issueB, issueD]);
+    });
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Entry C");
+
+    await act(async () => {
+      completion.resolve();
+      await completion.promise;
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Entry D");
+    });
+    expect(remove).toHaveBeenCalledWith(issueC);
+  });
+
+  it("keeps the active Review identity after a failed Delete and relies on Runtime recovery", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const issue = triageIssue({
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-delete",
+      title: "Keep on failure",
+    });
+    const completion = deferredCompletion();
+    const actions = triageActions({
+      delete: vi.fn(() => ({
+        commandId: "command-delete",
+        completion: completion.promise,
+        entityId: issue.id,
+      })),
+    });
+
+    render(<TrailTriagePage actions={actions} runtimeStore={readyTriageStore([issue])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Keep on failure" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Triage entry" }));
+    expect(await screen.findByText("Deleting...")).toBeInTheDocument();
+
+    await act(async () => {
+      completion.reject(new Error("persistence failed"));
+      try {
+        await completion.promise;
+      } catch {
+        // The Review Surface owns presentation only; Runtime/Source Sync own recovery.
+      }
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Delete failed: persistence failed");
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Keep on failure");
   });
 
   it("applies the shared Filter immediately without redefining the global Review Set boundary", () => {
@@ -132,7 +492,9 @@ describe("TrailTriagePage", () => {
       })),
     ]);
 
-    const { container } = render(<TrailTriagePage runtimeStore={store} />);
+    const { container } = render(
+      <TrailTriagePage actions={triageActions()} runtimeStore={store} />,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     fireEvent.click(screen.getByRole("button", { name: "Priority" }));
@@ -145,6 +507,7 @@ describe("TrailTriagePage", () => {
     expect(container.querySelector("[data-review-boundary='true']")).toBeNull();
     expect(screen.getByRole("button", { name: "Clear priority filter" })).toBeInTheDocument();
   });
+
   it("exposes the frozen Triage Filter registry and applies Due as a cutoff", () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
     const store = readyTriageStore([
@@ -153,7 +516,9 @@ describe("TrailTriagePage", () => {
       triageIssue({ due: Date.UTC(2026, 8, 2, 4), id: "triage-tomorrow", title: "Tomorrow" }),
     ]);
 
-    const { container } = render(<TrailTriagePage runtimeStore={store} />);
+    const { container } = render(
+      <TrailTriagePage actions={triageActions()} runtimeStore={store} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
 
     expect(screen.getByRole("button", { name: "Due" })).toBeInTheDocument();
@@ -183,7 +548,9 @@ describe("TrailTriagePage", () => {
       triageIssue({ due: Date.UTC(2026, 8, 3, 4), id: "triage-none", title: "No label item" }),
     ]);
 
-    const { container } = render(<TrailTriagePage runtimeStore={store} />);
+    const { container } = render(
+      <TrailTriagePage actions={triageActions()} runtimeStore={store} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     fireEvent.click(screen.getByRole("button", { name: "Labels" }));
 
@@ -213,7 +580,9 @@ describe("TrailTriagePage", () => {
       }),
     ]);
 
-    const { container } = render(<TrailTriagePage runtimeStore={store} />);
+    const { container } = render(
+      <TrailTriagePage actions={triageActions()} runtimeStore={store} />,
+    );
     const titles = () => Array.from(container.querySelectorAll(".trail-triage-row__title"))
       .map((element) => element.textContent);
 
@@ -237,7 +606,9 @@ describe("TrailTriagePage", () => {
       }),
     ]);
 
-    const { container } = render(<TrailTriagePage runtimeStore={store} />);
+    const { container } = render(
+      <TrailTriagePage actions={triageActions()} runtimeStore={store} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     fireEvent.click(screen.getByRole("button", { name: "Priority" }));
     fireEvent.click(screen.getByRole("button", { name: "High" }));
@@ -247,5 +618,4 @@ describe("TrailTriagePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(screen.getByText("Low only")).toBeInTheDocument();
   });
-
 });

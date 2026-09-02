@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import {
+  TrailLabelPropertySelect,
+  nextTrailLabelSelection,
+} from "./trail-label-property-select";
 import { TrailLabelDots, trailLabelColorSlot } from "./trail-label";
 
 describe("TrailLabelDots", () => {
@@ -31,5 +35,68 @@ describe("TrailLabelDots", () => {
 
     expect(screen.getByRole("img", { name: "Labels: Personal, TypeScript" })).toBeInTheDocument();
     expect(container.querySelectorAll(".trail-label-dot")).toHaveLength(2);
+  });
+});
+
+describe("TrailLabelPropertySelect", () => {
+  const groups = [
+    {
+      id: "group-area",
+      name: "Area",
+      registeredEntityTypes: ["issue" as const],
+      selectionMode: "single" as const,
+    },
+    {
+      id: "group-tech",
+      name: "Technology",
+      registeredEntityTypes: ["issue" as const],
+      selectionMode: "multiple" as const,
+    },
+  ];
+  const labels = [
+    { groupId: "group-area", id: "label-work", name: "Work" },
+    { groupId: "group-area", id: "label-personal", name: "Personal" },
+    { groupId: "group-tech", id: "label-ts", name: "TypeScript" },
+    { groupId: "group-tech", id: "label-css", name: "CSS" },
+  ];
+
+  it("replaces a sibling only inside a single-select Label group", () => {
+    expect(nextTrailLabelSelection({
+      group: groups[0],
+      labels,
+      selectedLabelIds: ["label-work", "label-ts"],
+      toggledLabelId: "label-personal",
+    })).toEqual(["label-ts", "label-personal"]);
+  });
+
+  it("toggles values independently inside a multiple-select Label group", () => {
+    expect(nextTrailLabelSelection({
+      group: groups[1],
+      labels,
+      selectedLabelIds: ["label-work", "label-ts"],
+      toggledLabelId: "label-css",
+    })).toEqual(["label-work", "label-ts", "label-css"]);
+
+    expect(nextTrailLabelSelection({
+      group: groups[1],
+      labels,
+      selectedLabelIds: ["label-work", "label-ts"],
+      toggledLabelId: "label-ts",
+    })).toEqual(["label-work"]);
+  });
+
+  it("uses the shared PropertyControl trigger with explicit selected names", () => {
+    render(
+      <TrailLabelPropertySelect
+        groups={groups}
+        labels={labels}
+        onValueChange={vi.fn()}
+        value={["label-work", "label-ts"]}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Labels: TypeScript, Work" });
+    expect(trigger).toHaveClass("trail-property-control");
+    expect(trigger).toHaveTextContent("TypeScript, Work");
   });
 });

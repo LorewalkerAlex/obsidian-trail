@@ -4,9 +4,32 @@
   box-sizing: border-box;
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   background: var(--trail-surface-canvas);
   color: var(--trail-text-primary);
+  container-type: inline-size;
+}
+
+.trail-triage-page__layout {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.trail-triage-page[data-review-open="true"] .trail-triage-page__layout {
+  grid-template-columns: minmax(280px, 38%) minmax(0, 1fr);
+}
+
+.trail-triage-page__queue-pane,
+.trail-triage-page__review-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.trail-triage-page[data-review-open="true"] .trail-triage-page__queue-pane {
+  border-right: 1px solid var(--trail-border-subtle);
 }
 
 .trail-triage-page__summary {
@@ -42,4 +65,205 @@
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-supporting);
   text-align: center;
+}
+
+.trail-triage-review {
+  min-height: 100%;
+  background: var(--trail-surface-canvas);
+}
+
+.trail-triage-review__header {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  min-width: 0;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--trail-space-6);
+  padding: var(--trail-space-2) var(--trail-space-7);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  background: var(--trail-surface-canvas);
+}
+
+.trail-triage-review__navigation,
+.trail-triage-review__actions {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-2);
+}
+
+.trail-triage-review__back {
+  display: none;
+}
+
+.trail-triage-review__position,
+.trail-triage-review__pending {
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trail-triage-review__pending {
+  margin-right: var(--trail-space-3);
+}
+
+.trail-triage-review__icon,
+.trail-triage-review__action-icon {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.45;
+}
+
+.trail-triage-review__action-icon {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  flex: 0 0 auto;
+}
+
+.trail-triage-review__actions .trail-button[data-action="delete"] {
+  color: var(--trail-text-muted);
+}
+
+.trail-triage-review__actions .trail-button[data-action="delete"]:hover:not(:disabled),
+.trail-triage-review__actions .trail-button[data-action="delete"]:focus-visible {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-hover);
+  color: var(--trail-danger);
+}
+
+.trail-triage-review__content {
+  box-sizing: border-box;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: var(--trail-space-15) var(--trail-space-14) var(--trail-space-16);
+}
+
+.trail-triage-review__title {
+  margin-bottom: var(--trail-space-8);
+}
+
+body .trail-triage-review__title input.trail-input {
+  width: 100%;
+  height: auto;
+  min-height: 36px;
+  padding: 0;
+  border-color: transparent;
+  border-radius: var(--trail-radius-xs);
+  background: transparent;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-page);
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1.3;
+}
+
+body .trail-triage-review__title input.trail-input:hover:not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+}
+
+body .trail-triage-review__title input.trail-input:focus {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+}
+
+.trail-triage-review__properties {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-3);
+  margin-bottom: var(--trail-space-13);
+}
+
+.trail-triage-review__description {
+  min-width: 0;
+}
+
+body .trail-triage-review__description textarea.trail-textarea {
+  width: 100%;
+  min-height: 240px;
+  padding: var(--trail-space-6) 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--trail-text-secondary);
+  line-height: 1.55;
+  resize: vertical;
+}
+
+body .trail-triage-review__description textarea.trail-textarea:hover:not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+}
+
+body .trail-triage-review__description textarea.trail-textarea:focus {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+}
+
+.trail-triage-review__feedback {
+  margin-top: var(--trail-space-8);
+  padding: var(--trail-space-6) var(--trail-space-7);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-surface-quiet);
+  color: var(--trail-danger);
+  font-size: var(--trail-font-size-supporting);
+}
+
+@container (max-width: 720px) {
+  .trail-triage-page[data-review-open="true"] .trail-triage-page__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trail-triage-page[data-review-open="true"] .trail-triage-page__queue-pane {
+    display: none;
+  }
+
+  .trail-triage-review__back {
+    display: inline-flex;
+  }
+
+  .trail-triage-review__content {
+    padding-right: var(--trail-space-11);
+    padding-left: var(--trail-space-11);
+  }
+}
+
+@container (max-width: 480px) {
+  .trail-triage-review__header {
+    gap: var(--trail-space-3);
+    padding-right: var(--trail-space-4);
+    padding-left: var(--trail-space-4);
+  }
+
+  .trail-triage-review__navigation,
+  .trail-triage-review__actions {
+    gap: var(--trail-space-1);
+  }
+
+  .trail-triage-review__action-label,
+  .trail-triage-review__pending {
+    display: none;
+  }
+
+  .trail-triage-review__actions .trail-button {
+    width: var(--trail-control-height-md);
+    padding: 0;
+  }
+
+  .trail-triage-review__content {
+    padding-top: var(--trail-space-13);
+    padding-right: var(--trail-space-8);
+    padding-left: var(--trail-space-8);
+  }
 }
