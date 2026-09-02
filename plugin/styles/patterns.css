@@ -52,7 +52,7 @@
   flex: 1 1 auto;
 }
 
-.trail-property-control {
+body button.trail-property-control {
   appearance: none;
   box-sizing: border-box;
   display: inline-flex;
@@ -64,10 +64,10 @@
   gap: var(--trail-space-4);
   margin: 0;
   padding: 0 var(--trail-space-5);
-  border: 1px solid var(--trail-border-default);
+  border: 1px solid var(--trail-control-border);
   border-radius: var(--trail-radius-sm);
   outline: 0;
-  background: var(--trail-surface-elevated);
+  background: var(--trail-control-surface);
   background-image: none;
   box-shadow: none;
   color: var(--trail-text-secondary);
@@ -78,23 +78,26 @@
   transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
 }
 
-.trail-property-control:hover:not(:disabled) {
-  background: var(--trail-surface-hover);
+body button.trail-property-control:hover:not(:disabled) {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
 }
 
-.trail-property-control:active:not(:disabled) {
-  background: var(--trail-state-pressed);
+body button.trail-property-control:active:not(:disabled) {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-pressed);
   color: var(--trail-text-primary);
 }
 
-.trail-property-control:focus-visible {
-  background: var(--trail-surface-hover);
+body button.trail-property-control:focus-visible {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
-  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
+  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
 }
 
-.trail-property-control:disabled {
+body button.trail-property-control:disabled {
   color: var(--trail-text-faint);
   cursor: default;
 }
@@ -135,7 +138,12 @@
   margin-left: auto;
 }
 
-.trail-view-bar__action {
+/*
+ * Trail-owned view controls intentionally out-rank Obsidian's generic
+ * body button:not(.clickable-icon) chrome so host gray never leaks into the
+ * Linear-faithful low-chrome interaction language.
+ */
+body button.trail-view-bar__action {
   appearance: none;
   box-sizing: border-box;
   display: inline-flex;
@@ -144,11 +152,12 @@
   align-items: center;
   gap: var(--trail-space-3);
   margin: 0;
-  padding: 0 var(--trail-space-3);
-  border: 0;
+  padding: 0 var(--trail-space-4);
+  border: 1px solid transparent;
   border-radius: var(--trail-radius-xs);
   outline: 0;
   background: transparent;
+  background-image: none;
   box-shadow: none;
   color: var(--trail-text-muted);
   font: inherit;
@@ -156,27 +165,34 @@
   font-weight: var(--trail-weight-medium);
   line-height: 1;
   white-space: nowrap;
-  transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
+  transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), color var(--trail-motion-fast);
 }
 
-.trail-view-bar__action:hover:not(:disabled),
-.trail-view-bar__action[data-active="true"] {
-  background: var(--trail-state-hover);
+body button.trail-view-bar__action:hover:not(:disabled) {
+  border-color: var(--trail-control-border);
+  background: var(--trail-control-surface-hover);
   color: var(--trail-text-secondary);
 }
 
-.trail-view-bar__action:active:not(:disabled) {
-  background: var(--trail-state-pressed);
+body button.trail-view-bar__action[data-active="true"] {
+  background: transparent;
+  color: var(--trail-text-secondary);
+}
+
+body button.trail-view-bar__action:active:not(:disabled) {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-pressed);
   color: var(--trail-text-primary);
 }
 
-.trail-view-bar__action:focus-visible {
-  background: var(--trail-state-hover);
+body button.trail-view-bar__action:focus-visible {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
-  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
+  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
 }
 
-.trail-view-bar__action:disabled {
+body button.trail-view-bar__action:disabled {
   color: var(--trail-text-faint);
   cursor: default;
 }
@@ -238,7 +254,7 @@
 }
 
 .trail-view-layout-switch .trail-icon-button:focus-visible {
-  background: var(--trail-state-hover);
+  background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
   box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
 }
@@ -275,8 +291,8 @@
   padding-top: var(--trail-space-6);
 }
 
-.trail-view-popover__item,
-.trail-view-popover__back {
+body button.trail-view-popover__item,
+body button.trail-view-popover__back {
   appearance: none;
   display: flex;
   width: 100%;
@@ -290,6 +306,7 @@
   border-radius: var(--trail-menu-item-radius);
   outline: 0;
   background: transparent;
+  background-image: none;
   box-shadow: none;
   color: var(--trail-text-secondary);
   font: inherit;
@@ -297,15 +314,15 @@
   text-align: left;
 }
 
-.trail-view-popover__item:hover,
-.trail-view-popover__back:hover,
-.trail-view-popover__item:focus-visible,
-.trail-view-popover__back:focus-visible {
+body button.trail-view-popover__item:hover,
+body button.trail-view-popover__back:hover,
+body button.trail-view-popover__item:focus-visible,
+body button.trail-view-popover__back:focus-visible {
   background: var(--trail-menu-hover);
   color: var(--trail-text-primary);
 }
 
-.trail-view-popover__back {
+body button.trail-view-popover__back {
   justify-content: flex-start;
   color: var(--trail-text-muted);
 }
@@ -335,27 +352,30 @@
   background: var(--trail-menu-separator);
 }
 
-.trail-view-popover__item--muted {
+body button.trail-view-popover__item--muted {
   color: var(--trail-text-muted);
 }
 
-.trail-view-popover__search {
+body input.trail-view-popover__search {
   box-sizing: border-box;
   width: calc(100% - (2 * var(--trail-space-4)));
-  height: var(--trail-control-height-md);
+  height: 26px;
+  min-height: 0;
   margin: var(--trail-space-2) var(--trail-space-4) var(--trail-space-3);
   padding: 0 var(--trail-space-5);
-  border: 1px solid var(--trail-border-default);
+  border: 1px solid var(--trail-border-subtle);
   border-radius: var(--trail-radius-xs);
   outline: 0;
   background: var(--trail-surface-canvas);
   color: var(--trail-text-secondary);
+  box-shadow: none;
   font: inherit;
+  font-size: var(--trail-font-size-control);
 }
 
-.trail-view-popover__search:focus {
-  border-color: var(--trail-focus-border);
-  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+body input.trail-view-popover__search:focus {
+  border-color: var(--trail-border-default);
+  box-shadow: 0 0 0 1px var(--trail-surface-quiet);
 }
 
 .trail-view-popover__date-field {
@@ -393,44 +413,52 @@
   height: var(--trail-control-height-sm);
   align-items: center;
   overflow: hidden;
-  border: 1px solid var(--trail-border-default);
+  border: 1px solid var(--trail-control-border);
   border-radius: var(--trail-radius-xs);
-  background: var(--trail-surface-very-quiet);
+  background: var(--trail-control-surface);
 }
 
-.trail-filter-chip__body,
-.trail-filter-chip__clear {
+body button.trail-filter-chip__body,
+body button.trail-filter-chip__clear {
   appearance: none;
   height: 100%;
+  min-height: 0;
   margin: 0;
   border: 0;
   outline: 0;
   background: transparent;
+  background-image: none;
+  box-shadow: none;
   color: var(--trail-text-muted);
   font: inherit;
-  font-size: var(--trail-font-size-caption);
+  font-size: var(--trail-font-size-supporting);
 }
 
-.trail-filter-chip__body {
+body button.trail-filter-chip__body {
   min-width: 0;
   max-width: 180px;
   padding: 0 var(--trail-space-4);
   overflow: hidden;
+  color: var(--trail-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.trail-filter-chip__clear {
-  width: var(--trail-control-height-sm);
-  flex: 0 0 var(--trail-control-height-sm);
+body button.trail-filter-chip__clear {
+  width: var(--trail-space-13);
+  flex: 0 0 var(--trail-space-13);
   padding: 0;
-  border-left: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-faint);
 }
 
-.trail-filter-chip__body:hover,
-.trail-filter-chip__clear:hover,
-.trail-filter-chip__body:focus-visible,
-.trail-filter-chip__clear:focus-visible {
-  background: var(--trail-state-hover);
+body button.trail-filter-chip__body:hover,
+body button.trail-filter-chip__body:focus-visible {
+  background: var(--trail-control-surface-hover);
+  color: var(--trail-text-primary);
+}
+
+body button.trail-filter-chip__clear:hover,
+body button.trail-filter-chip__clear:focus-visible {
+  background: transparent;
   color: var(--trail-text-primary);
 }

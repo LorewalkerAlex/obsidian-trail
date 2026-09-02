@@ -44,12 +44,12 @@ body {
   --trail-text-accent: #aeb5ef;
 
   /* Semantic lines and states. */
-  --trail-border-subtle: rgba(255, 255, 255, 0.052);
-  --trail-border-default: rgba(255, 255, 255, 0.09);
-  --trail-state-hover: rgba(255, 255, 255, 0.045);
-  --trail-state-hover-strong: rgba(255, 255, 255, 0.055);
-  --trail-state-pressed: rgba(255, 255, 255, 0.075);
-  --trail-state-selected: rgba(255, 255, 255, 0.065);
+  --trail-border-subtle: rgba(255, 255, 255, 0.045);
+  --trail-border-default: rgba(255, 255, 255, 0.075);
+  --trail-state-hover: rgba(255, 255, 255, 0.038);
+  --trail-state-hover-strong: rgba(255, 255, 255, 0.05);
+  --trail-state-pressed: rgba(255, 255, 255, 0.062);
+  --trail-state-selected: rgba(255, 255, 255, 0.04);
   --trail-state-accent-soft: rgba(94, 106, 210, 0.15);
   --trail-focus-border: rgba(130, 143, 255, 0.45);
   --trail-focus-ring: rgba(94, 106, 210, 0.35);
@@ -60,10 +60,10 @@ body {
   --trail-selection-fill: rgba(94, 106, 210, 0.24);
   --trail-accent-border: rgba(130, 143, 255, 0.24);
   --trail-accent-border-hover: rgba(145, 157, 255, 0.28);
-  --trail-surface-quiet: rgba(255, 255, 255, 0.035);
-  --trail-surface-very-quiet: rgba(255, 255, 255, 0.025);
-  --trail-surface-disabled: rgba(255, 255, 255, 0.018);
-  --trail-row-divider: rgba(255, 255, 255, 0.032);
+  --trail-surface-quiet: rgba(255, 255, 255, 0.03);
+  --trail-surface-very-quiet: rgba(255, 255, 255, 0.018);
+  --trail-surface-disabled: rgba(255, 255, 255, 0.014);
+  --trail-row-divider: rgba(255, 255, 255, 0.028);
   --trail-scrollbar-thumb: rgba(255, 255, 255, 0.085);
   --trail-scrollbar-thumb-hover: rgba(255, 255, 255, 0.145);
   --trail-scrollbar-thumb-lab: rgba(255, 255, 255, 0.11);
@@ -73,6 +73,14 @@ body {
   --trail-label-background: rgba(94, 106, 210, 0.11);
   --trail-checkmark-ink: #07100c;
   --trail-navigation-mark-fill: rgba(255, 255, 255, 0.075);
+
+  /* Shared neutral-control contract. */
+  --trail-control-surface: rgba(255, 255, 255, 0.018);
+  --trail-control-surface-hover: rgba(255, 255, 255, 0.038);
+  --trail-control-surface-pressed: rgba(255, 255, 255, 0.062);
+  --trail-control-border: rgba(255, 255, 255, 0.065);
+  --trail-control-border-hover: rgba(255, 255, 255, 0.095);
+  --trail-control-disabled-surface: rgba(255, 255, 255, 0.012);
 
   /* Semantic colors. */
   --trail-accent: var(--trail-reference-accent);

@@ -6,7 +6,8 @@
  * the plugin removes these mappings and returns control to the user's theme.
  * -------------------------------------------------------------------------- */
 
-body {
+/* Match Obsidian dark-theme specificity so Trail owns the mapped host variables. */
+body.theme-dark {
   color-scheme: dark;
 
   --background-primary: var(--trail-surface-canvas);
@@ -20,8 +21,8 @@ body {
   --background-modifier-border-focus: var(--trail-host-focus-border);
   --background-modifier-form-field: var(--trail-surface-canvas);
   --background-modifier-form-field-highlighted: var(--trail-surface-hover);
-  --interactive-normal: var(--trail-surface-elevated);
-  --interactive-hover: var(--trail-surface-hover);
+  --interactive-normal: var(--trail-control-surface);
+  --interactive-hover: var(--trail-control-surface-hover);
   --interactive-accent: var(--trail-accent);
   --interactive-accent-hover: var(--trail-accent-hover);
   --text-normal: var(--trail-text-primary);
@@ -74,7 +75,7 @@ body {
   --nav-item-color-active: var(--trail-text-primary);
   --nav-item-color-selected: var(--trail-text-primary);
   --nav-item-background-hover: var(--trail-state-hover);
-  --nav-item-background-active: var(--trail-surface-hover);
+  --nav-item-background-active: var(--trail-state-selected);
   --nav-item-background-selected: var(--trail-state-selected);
   --nav-item-padding: 2px 7px;
   --nav-item-parent-padding: 2px 7px;
@@ -82,7 +83,7 @@ body {
   --nav-item-children-margin-start: 7px;
   --nav-item-weight: 430;
   --nav-item-weight-hover: 430;
-  --nav-item-weight-active: 540;
+  --nav-item-weight-active: var(--trail-weight-medium);
   --nav-indentation-guide-width: 1px;
   --nav-indentation-guide-color: var(--trail-surface-quiet);
   --nav-collapse-icon-color: var(--trail-text-faint);
@@ -128,10 +129,10 @@ body {
   --button-radius: var(--trail-radius-sm);
   --pill-color: var(--trail-text-secondary);
   --pill-color-hover: var(--trail-text-primary);
-  --pill-background: var(--trail-surface-quiet);
-  --pill-background-hover: var(--trail-state-hover);
-  --pill-border-color: var(--trail-border-subtle);
-  --pill-border-color-hover: var(--trail-border-default);
+  --pill-background: var(--trail-control-surface);
+  --pill-background-hover: var(--trail-control-surface-hover);
+  --pill-border-color: var(--trail-control-border);
+  --pill-border-color-hover: var(--trail-control-border-hover);
   --pill-border-width: 1px;
   --pill-padding-x: var(--trail-space-4);
   --pill-padding-y: 1px;
