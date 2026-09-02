@@ -202,71 +202,37 @@ Trail does not duplicate the left sidebar, tab system, split system, or resize/c
 
 The normal File Explorer, Search, Bookmarks, and other Obsidian/plugin sidebar views remain available. Entering Trail context may reveal/select Trail Navigation without destructively rewriting the user's workspace.
 
-### 3.3 Main View navigation state and host history
+### 3.3 Page-level navigation and host history
 
-Trail uses the primary Obsidian leaf's native back/forward history for **Main View semantic navigation**. Trail does not create a second application history stack merely because its product locations render inside one native tab.
+Trail uses the primary Obsidian leaf's native back/forward history for **product-page navigation**. A Trail navigation has the same semantic effect as selecting the target page from Trail Navigation in the left sidebar: the sidebar is one navigation consumer, not a separate navigation model.
 
-The conceptual history model is a temporary ordered sequence plus one current cursor:
-
-```text
-[Home] [Triage / Queue] [Triage / Review A] [Triage / Review B]
-                                                       ^
-                                                    cursor
-```
-
-Back and Forward move the cursor through already-visited semantic Main View states. When the cursor is in the middle of the sequence and the user performs a new navigation instead of Forward, the old forward branch is discarded before the new state is appended:
-
-```text
-before
-[Home] [Triage / Queue] [Review A] [Review B] [Review C]
-                                ^
-                             cursor
-
-new navigation to Review D
-[Home] [Triage / Queue] [Review A] [Review D]
-                                           ^
-                                        cursor
-```
-
-Obsidian owns the history sequence, cursor, Back/Forward controls, branch truncation mechanics, and history lifetime. Trail owns the semantic View State that the host records/restores. Trail does not persist a parallel history in Domain Data, Runtime, Markdown, Plugin Data, or Workspace State.
-
-A history entry exists when the user has meaningfully navigated to another Main View surface: the test is **“does the user understand this as being somewhere else?”** Representative states include:
+Representative page-level locations include:
 
 ```text
 Home
-Triage / Queue
-Triage / Review(triageIssueId)
+Triage
 Projects
 Projects / Initiative(initiativeId)
 Project(projectId)
-Full Item(issueId)
-Cycles / Current
-Cycles / History / Cycle(cycleId)
+Cycles
 Search
 ```
 
-The exact state shape is an implementation contract, not a new Domain model. Stable entity IDs are used where restoration needs identity; presentation-only geometry is derived again from current host capacity and current effective data.
+A stable entity ID belongs in navigation state only when it identifies the product page itself, such as a Project Workspace or Initiative Focus page. Navigation state does not snapshot the entity content rendered by that page; current Runtime/Query facts remain authoritative when the page renders.
 
-Triage Queue and Triage Review are therefore distinct history states even though both belong to the same top-level Triage product location and may share the same structural Location Bar title. Opening a Queue row navigates to `Triage / Review(issueId)`; returning to the full Queue navigates to `Triage / Queue`.
+Obsidian owns the history sequence, cursor, Back/Forward controls, forward-branch truncation, and history lifetime. Trail owns the page-level location encoded in the host View State and does not persist a parallel history in Domain Data, Runtime, Markdown, Plugin Data, or Workspace State.
 
-Triage's Review **Previous / Next** controls are not Back/Forward aliases. Their target is resolved from the current visible/ordered Triage Query projection. Once a previous/next identity is resolved, moving to that Review is an ordinary Main View navigation and may create a new history entry. Host Back/Forward instead replay the already-visited state sequence and do not recompute Triage adjacency.
+Interactions **inside** the current page do not become host-history entries. This includes:
 
-The same separation applies to automatic workflow progression: Defer/Delete/Accept determine any successor from the current visible/ordered Queue according to the workflow rule, then navigate to that semantic Review state. History does not become the source of ordering or successor legality.
+- Triage List/Review state, the currently reviewed Triage entry, Review Previous/Next, and Review workflow progression;
+- Filter/Display configuration, selection, expanded/collapsed content, Peek/Inspector/content focus, hover, scroll position, and responsive geometry;
+- inline edits and their local drafts, pending/feedback presentation, property pickers, menus, confirmation surfaces, Modal/Composer/Popover state, and other overlays.
 
-The following are **not** navigation history entries because they do not change where the user is:
+Those states may have their own scoped session lifetime, but Back/Forward does not traverse them. For example, if the user visits `Project A -> Triage`, opens Review A, then advances to Review B, host Back returns to `Project A`; the explicit Review exit control returns from Review to the Triage List.
 
-- responsive wide/narrow layout changes, split/sidebar resize, and other host-capacity-derived geometry;
-- Filter/Display configuration within the current location;
-- inline edits to Title, Description, Priority, Labels, Due, Status, or other entity facts;
-- selection, hover, focus, scroll position, transient feedback, and pending mutation presentation;
-- opening/closing a Modal, Composer, Popover, Menu, Context Menu, property picker, confirmation surface, or other overlay;
-- local drafts held by those interactions.
+Entering or restoring Triage through page navigation establishes the normal Triage page entry state: the full List is the active Triage sub-surface, while location-scoped session state such as Filter may follow its own separately defined lifetime. Host history never restores a prior Review identity or local draft.
 
-Those states may have their own scoped session lifetime, but they do not create history nodes. If an overlay succeeds and the product then navigates somewhere else, only the resulting Main View destination enters navigation history; reopening the completed overlay is never a Back operation.
-
-A restored history entry is interpreted against current authoritative/effective state. If its referenced entity no longer exists, Trail must not resurrect stale content or fabricate a private copy. Restoration falls back to the nearest valid containing product surface, such as a missing Triage Review returning to the Triage Queue, while normal current Query/Domain facts remain authoritative.
-
-This history model is orthogonal to breadcrumbs. Breadcrumbs express product structure and ancestor navigation; Back/Forward express visit history.
+This history model is orthogonal to breadcrumbs and page-local workflow controls. Breadcrumbs express product structure and ancestor page navigation; Review Previous/Next and similar controls express interaction within the current page.
 
 ## 4. Trail Navigation
 
@@ -1632,12 +1598,12 @@ Triage Row does not show Workflow Status, Project, Milestone, Estimate, or Cycle
 
 ### 10.4 Triage Review Surface
 
-Opening a Triage Row enters a Linear-like sequential **Triage Review Surface** inside the same Trail workspace. It is non-modal and keeps the queue/context available rather than navigating to Workflow Issue Full Item or repurposing the persistent right Inspector.
+Opening a Triage Row enters a Linear-like sequential **Triage Review Surface** inside the Triage page. Review is page-local interaction state, not a separate Trail navigation location, and it never navigates to Workflow Issue Full Item or repurposes the persistent right Inspector.
 
 The surface prioritizes intake content first:
 
 ```text
-previous / next             position in active collection
+exit     previous / next             position in active collection
 
 Title
 
@@ -1648,12 +1614,13 @@ Description / body
 Accept       Defer      Delete       ···
 ```
 
-Title and lightweight Markdown description/body are directly editable without a permanent Edit/Save/Cancel shell. Priority, Labels, and Review Due are compact enrichment properties. When the main Trail pane can comfortably support both surfaces, the compact Queue and Review Surface remain visible side by side inside the Main View. When that composition would make either surface unusably narrow, Review becomes the focused Main View surface while compact queue context, collection position, and previous/next navigation remain available; the user can return to the full Queue without leaving Triage. Review never moves into the persistent Right Inspector. Exact queue/review widths and transition thresholds remain full-shell calibration decisions.
+Title and lightweight Markdown description/body are directly editable without a permanent Edit/Save/Cancel shell. Priority, Labels, and Review Due are compact enrichment properties. When the main Trail pane can comfortably support both surfaces, the compact Queue and Review Surface remain visible side by side inside the Main View. When that composition would make either surface unusably narrow, Review becomes the focused Main View surface while collection position and Previous/Next remain available. An explicit Review exit control returns to the full Triage List without leaving the Triage page. Review never moves into the persistent Right Inspector. Exact queue/review widths and transition thresholds remain full-shell calibration decisions.
 
-Adjacent-item navigation is first-class so a user can process a review session continuously. Completing a successful Accept, Defer, or Delete selects the next entry according to the current visible/ordered queue when one exists.
+Review Previous/Next is derived from the current visible/ordered Triage Queue. When the current entry belongs to that projection, Previous/Next move the page-local Review identity to the adjacent entry. If the current entry is no longer in the current visible projection, adjacency is unavailable rather than inferred from a stale historical slot.
 
-Queue and Review participate in the Main View history model from Section 3.3. `Triage / Queue` and `Triage / Review(issueId)` are separate semantic navigation states. Review Previous/Next resolves adjacent identity from the current visible/ordered Queue and then performs normal navigation to that Review state; host Back/Forward traverses the already-visited history instead of substituting for Review sequencing.
+Accept, Defer, and Delete are **Review-completing actions**. After one of those actions succeeds, the current entry is considered consumed for the active review progression and Review advances using the current visible/ordered Queue. The progression rule records the current entry's slot before the action, re-queries after success, excludes the just-completed identity when it still exists (as with Defer), and selects the entry occupying that slot. If no successor exists, Review exits to the Triage List. The progression is page-local and does not create host-history entries.
 
+Ordinary Title/Description/Priority/Labels/Review Due edits do not complete Review and therefore remain on the current entry. Uncommitted text-edit drafts are transient interaction state: leaving the current Review identity or leaving the Triage page discards them rather than silently turning a page transition into an implicit save. Exact text-editor commit gestures and DOM focus/blur mechanics belong to the editing interaction contract, not to Trail navigation.
 ### 10.5 Accept
 
 `Accept` is the primary Triage disposition. It means “formalize this intake,” not “turn this record into a Workflow Issue.”
@@ -1681,7 +1648,7 @@ Triage Priority, Labels, and Review Due are not automatically copied. The normal
 
 For Issue, standard creation semantics still require an explicit legal Project and create the Workflow Issue in Backlog; the current Default Project may initialize the normal Project picker only when legal. For Project, the ordinary Project creation defaults and validation apply.
 
-Canceling the target Composer leaves the Triage entry unchanged. After target creation succeeds, the source Triage entry is removed through the normal destination-first mutation path and the Review Surface advances to the next entry.
+Canceling the target Composer leaves the Triage entry unchanged. After target creation succeeds, the source Triage entry is removed through the normal destination-first mutation path and the shared Review-completion progression from Section 10.4 advances to the successor or exits to the List when no successor exists.
 
 ### 10.6 Defer
 
@@ -1704,13 +1671,13 @@ Next weekend
 Pick date…
 ```
 
-Calendar shortcuts resolve through the shared temporal/timezone policy. After Defer, the entry is immediately re-ordered by the normal Triage ordering. Because visibility is independent from Due, it remains browseable and can still be processed before the new Due; it may also remain inside the Review Set when the minimum-size rule pulls it into the current review target.
+Calendar shortcuts resolve through the shared temporal/timezone policy. After Defer succeeds, the entry is immediately re-ordered by the normal Triage ordering and the shared Review-completion progression from Section 10.4 advances to the successor rather than continuing to show the just-deferred entry. Because visibility is independent from Due, the deferred entry remains browseable in Triage and may still be processed again later; it may also remain inside the Review Set when the minimum-size rule pulls it into the current review target.
 
 ### 10.7 Delete, context actions, and shared interactions
 
 Delete replaces any V1 Discard concept. V1 does not preserve a separate discarded-Triage history or status merely for possible future similarity use.
 
-Delete is available from the Review Surface with lower visual weight than Accept/Defer and is also available from the normal `···`/right-click context menu. Destructive confirmation/recovery treatment should follow the shared interaction system and actual undo capability rather than a Triage-only deletion framework.
+Delete is available from the Review Surface with lower visual weight than Accept/Defer and is also available from the normal `···`/right-click context menu. Because V1 has no general persisted Triage discard/undo state, Delete requires the shared destructive confirmation/recovery treatment supported by Trail's actual capabilities rather than a Triage-only deletion framework. After confirmed Delete succeeds, the shared Review-completion progression from Section 10.4 advances to the successor or exits to the List.
 
 Triage participates in Trail's resolved shared Selection/Action system. Context Menu, Command Menu, keyboard dispatch, and any useful Triage Bulk action consume the same Action Registry and ordinary Triage capabilities; Triage does not define a second selection grammar, command system, or Bulk legality model. V1 exposes Bulk only where a concrete Triage consumer has one meaningful common action/target rather than attempting to make every Triage action bulk-capable.
 
