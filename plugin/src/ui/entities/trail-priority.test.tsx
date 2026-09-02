@@ -40,6 +40,28 @@ describe("Trail priority presentation", () => {
     );
   });
 
+  it("keeps the Linear-faithful identity family inside one shared glyph owner", () => {
+    const { container, rerender } = render(<TrailPriorityGlyph priority={undefined} />);
+
+    expect(container.querySelector(".trail-priority-glyph__none-mark")).not.toBeNull();
+    expect(container.querySelector(".trail-priority-glyph__bar")).toBeNull();
+
+    rerender(<TrailPriorityGlyph priority="urgent" />);
+
+    expect(container.querySelector(".trail-priority-glyph__urgent-block")).not.toBeNull();
+    expect(container.querySelector(".trail-priority-glyph__urgent-mark")).not.toBeNull();
+
+    rerender(<TrailPriorityGlyph priority="medium" />);
+
+    const bars = Array.from(container.querySelectorAll(".trail-priority-glyph__bar"));
+    expect(bars).toHaveLength(3);
+    expect(bars.map((bar) => bar.getAttribute("data-active"))).toEqual([
+      "true",
+      "true",
+      "false",
+    ]);
+  });
+
   it("can be decorative when surrounding content already names the value", () => {
     const { container } = render(
       <span>

@@ -2,34 +2,37 @@
 
 .trail-priority-glyph {
   display: block;
-  width: var(--trail-icon-size-sm);
-  height: var(--trail-icon-size-sm);
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
   flex: 0 0 auto;
-  fill: currentColor;
   color: currentColor;
   overflow: visible;
 }
 
-.trail-priority-glyph__bar {
-  fill: currentColor;
-  opacity: 0.26;
-}
-
-.trail-priority-glyph__bar[data-active="true"] {
-  opacity: 1;
-}
-
-.trail-priority-glyph__urgent-frame {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.35;
-}
-
-.trail-priority-glyph__urgent-mark {
+.trail-priority-glyph__none-mark {
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
-  stroke-width: 1.55;
+  stroke-width: 1.6;
+}
+
+.trail-priority-glyph__bar {
+  fill: currentColor;
+  opacity: 0.3;
+}
+
+.trail-priority-glyph__bar[data-active="true"] {
+  opacity: 0.92;
+}
+
+.trail-priority-glyph__urgent-block {
+  fill: currentColor;
+  opacity: 0.92;
+}
+
+.trail-priority-glyph__urgent-mark,
+.trail-priority-glyph__urgent-dot {
+  fill: var(--trail-surface-canvas);
 }
 
 .trail-priority-select {
@@ -153,7 +156,7 @@
   width: var(--trail-icon-size-md);
   height: var(--trail-icon-size-md);
   place-items: center;
-  color: var(--trail-text-secondary);
+  color: var(--trail-text-muted);
 }
 
 .trail-triage-row__priority .trail-priority-glyph {

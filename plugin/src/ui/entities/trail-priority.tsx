@@ -66,29 +66,29 @@ function TrailPriorityBars({ priority }: { readonly priority: "high" | "low" | "
       <rect
         className="trail-priority-glyph__bar"
         data-active={activeBars >= 1}
-        height="4"
+        height="4.6"
         rx="1"
-        width="2.4"
-        x="1.8"
-        y="9.5"
+        width="3"
+        x="1"
+        y="10"
       />
       <rect
         className="trail-priority-glyph__bar"
         data-active={activeBars >= 2}
-        height="7"
+        height="8.7"
         rx="1"
-        width="2.4"
-        x="6.8"
-        y="6.5"
+        width="3"
+        x="6.5"
+        y="5.9"
       />
       <rect
         className="trail-priority-glyph__bar"
         data-active={activeBars >= 3}
-        height="10"
+        height="13.2"
         rx="1"
-        width="2.4"
-        x="11.8"
-        y="3.5"
+        width="3"
+        x="12"
+        y="1.4"
       />
     </>
   );
@@ -114,24 +114,33 @@ export function TrailPriorityGlyph({
       viewBox="0 0 16 16"
     >
       {presentation.glyphKind === "none" ? (
-        <>
-          <circle cx="4" cy="8" r="1.15" />
-          <circle cx="8" cy="8" r="1.15" />
-          <circle cx="12" cy="8" r="1.15" />
-        </>
+        <path
+          className="trail-priority-glyph__none-mark"
+          d="M.9 8h3M6.5 8h3M12.1 8h3"
+        />
       ) : presentation.glyphKind === "urgent" ? (
         <>
           <rect
-            className="trail-priority-glyph__urgent-frame"
-            height="10.5"
-            rx="3"
-            width="10.5"
-            x="2.75"
-            y="2.75"
+            className="trail-priority-glyph__urgent-block"
+            height="13.4"
+            rx="2.15"
+            width="13.4"
+            x="1.3"
+            y="1.3"
           />
-          <path
+          <rect
             className="trail-priority-glyph__urgent-mark"
-            d="M8 5.25v4.1M8 11.4v.1"
+            height="4.8"
+            rx="0.7"
+            width="1.4"
+            x="7.3"
+            y="3.8"
+          />
+          <circle
+            className="trail-priority-glyph__urgent-dot"
+            cx="8"
+            cy="11.45"
+            r="0.85"
           />
         </>
       ) : (
