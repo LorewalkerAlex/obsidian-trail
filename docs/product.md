@@ -161,22 +161,31 @@ Custom Views and Favorites remain valid future workspace-state concepts, but the
 
 ### 3.11 Home
 
-Home is a compact global summary and routing surface, not another independent data system or an Issue execution view.
+Home is a modular, visual-first global summary and routing surface, not another independent data system or an Issue execution view.
 
-It combines high-frequency entry points with lightweight derived Workspace statistics. V1 Home composition is:
+The later V1 Home closure resolves the product content as:
 
 ```text
-Date / Time
-Current Cycle Summary
-Triage Summary
-Projects / Initiatives Summary
-Activity Heatmap
+Work Pulse
+├─ Current Cycle
+├─ Triage
+└─ In Progress Projects
+Lifecycle Activity Heatmap
+Work Trend
+Temporal Orientation
 Weekly Meeting Notes
+shared Home creation affordance
 ```
 
-Current Cycle, Triage, and Projects / Initiatives summaries are both overview and routing surfaces. Activity Heatmap is a lightweight derived visualization from retained Workflow Issue lifecycle facts; it is not a complete activity/event log.
+Work Pulse stays lightweight and routes into the existing work surfaces. Current Cycle uses the current period and Progress projection; Triage summarizes active intake pressure; In Progress Projects summarizes Projects in the Started lifecycle category with their existing Progress projection.
 
-Home does not define a separate Focus concept in V1. Future evidence may justify a Project-focus selector that consumes replaceable derived signals such as Progress, Health, Attention, Priority, Due, or activity. Such a selector remains consumer-specific ranking and does not add persisted `focusScore`, `healthScore`, or `rank` fields.
+Lifecycle Activity Heatmap derives daily density from currently retained Workflow Issue `createdAt`, `firstStartedAt`, and `terminalAt` lifecycle facts. Work Trend derives Backlog stock, Active stock, and day-local Completed flow from those retained lifecycle facts. Temporal Orientation provides current date/week context plus near-term Triage Review Due and Workflow Issue Due distribution.
+
+Weekly Meeting Notes remains the existing Trail-managed Weekly Update utility with Current + Archive/History and the small Open/Read, Edit Current, and Archive/Next workflow. The shared Home creation affordance routes into the standard Triage, Issue, Project, and Initiative creation flows rather than defining Home-specific creation semantics.
+
+These modules are derived presentation over existing Runtime, temporal, and utility-source facts. Home does not introduce daily snapshots, a full Activity/Event Log, productivity scores, persisted Health/Attention, a new Weekly Note entity, or a hidden Home ranking model.
+
+Home does not define a separate Focus concept in V1. Future evidence may justify a Project-focus selector that consumes replaceable derived signals, but such a selector remains a later consumer-specific product decision and does not add persisted `focusScore`, `healthScore`, or `rank` fields.
 
 ## 4. Experience
 

@@ -177,6 +177,25 @@ General rule:
 
 > In high-frequency scanning surfaces, prefer an established glyph, shape, or color over repeated text when the meaning remains clear. In selection, editing, tooltip, first-use, and accessibility contexts, provide explicit text.
 
+### 2.5 Foundation Lab verification boundary
+
+Foundation Lab is a **long-lived engineering verification and regression environment** for Trail's reusable UI contracts. It accompanies UI development before, during, and after production-page assembly; it is not a temporary pre-page gallery and does not retire when the first production consumer ships.
+
+The ownership relationship is:
+
+```text
+authoritative Product/UI contract
+→ independent reusable production owner
+   ├─ Foundation Lab representative scenarios
+   └─ production page/surface consumers
+```
+
+Foundation Lab imports the same independent production owners that product surfaces import. Production code must never depend on Foundation components, Foundation-only styling, fixtures, or behavior, and no reusable contract may exist only to make a Lab specimen look correct.
+
+For reusable UI work, Foundation Lab is the continuous verification gate for representative states, semantic variants, density, keyboard/focus behavior, constrained widths, and host-dependent calibration where applicable. When a reusable regression is discovered in production, add or reproduce a representative Foundation scenario when practical, fix the shared owner, and reverify both Foundation and affected production consumers.
+
+Foundation Lab is still **not design authority**. Product/UI documents decide behavior and ownership; Foundation proves that the independent implementation satisfies the accepted contract across representative conditions. Page-local workflow sequencing, canonical Query/Application legality, navigation meaning, and final page composition remain production/page responsibilities.
+
 ## 3. Host Composition
 
 ### 3.1 One primary Trail tab
@@ -2302,15 +2321,19 @@ If persisted Workspace State physically lacks `defaultProjectId` during initiali
 
 V1 does not add secondary `Set as default` actions to every Project context menu/Inspector. Such convenience can be added later only if real use shows that changing Default Project is frequent enough to justify another entry point.
 
-## 17. V1 UI Freeze
+## 17. V1 UI Rebaseline Status
 
-Main View semantic navigation/history, Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter are now resolved at the V1 product-interaction level.
+Main View semantic navigation/history, Project Workspace, Projects Root, Initiative Focus, Triage, Cycle, standard Creation Surface, simplified shared Filter, shared Selection/Action interaction semantics, Home, Workspace Grid/responsive composition, Search, Runtime/Data-Issue/optimistic feedback, and the Default Project setter all have prior explicit V1 design closure and remain the **resolved target baseline** during the current UI rebaseline.
 
-**V1 `ui.md` is frozen for formal implementation alignment.** Implementation may still calibrate the values explicitly listed in Section 19 against real Obsidian/Linear evidence, but it must not reopen the resolved product behavior merely because the current POC uses different panels, forms, layout, or error presentation.
+The previous global `V1 UI Freeze` label is temporarily suspended only so the coverage audit can repair genuine omissions, cross-document contradictions, or incomplete cross-surface ownership before implementation alignment resumes. Existing behavior is **not** reopened merely because current code, tests, Foundation specimens, or historical production pages differ from the target.
+
+When canonical documents appear to disagree, use both authority and decision chronology. A later explicit Product/UI closure with clear rationale remains durable design evidence even if an older summary in the canonical owner was not synchronized; that case is documentation drift and the stale canonical summary should be repaired. Recency never allows implementation code or tests to outrank Product/UI authority. Reopen a resolved behavior only for a genuine contradictory decision, a materially uncovered scenario with no target answer, or an explicit new user decision.
+
+After V1 cross-surface coverage is closed, reusable owners have their required Foundation/host evidence, and the canonical documents are synchronized, this section returns to a final V1 UI Freeze for production implementation alignment.
 
 ## 18. Explicitly Deferred Beyond Current V1 UI Closure
 
-The following product conveniences are deferred and do not block V1 UI freeze or formal implementation of the supported workflows:
+The following product conveniences are deferred and do not block the eventual V1 freeze or formal implementation of the supported workflows:
 
 - Custom Views user-facing creation/editing/navigation;
 - Favorites user-facing navigation and management;
