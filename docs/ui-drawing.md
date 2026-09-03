@@ -2644,11 +2644,472 @@ Do not reopen Home locally for:
 
 Lifecycle Activity's **layout reference is GitHub's contribution calendar**, adapted into Trail's Linear-derived dark visual system. This reference is a presentation decision only; GitHub contribution semantics, yearly horizon, and green palette are not imported.
 
-### 5.12 Next drawing target
+### 5.12 Creation Surfaces - closed
 
-Continue with the dedicated **Creation Surfaces** pass.
+Creation is one shared transient drafting interaction with entity-specific fields, defaults, and legal context. It is not a family of unrelated Page-local forms, a persisted Draft system, a Trail navigation location, or a second mutation model.
 
-All major Page entry contexts are now known. Draw Triage, Workflow Issue, Project, Initiative, and the lighter Milestone quick-create surface together so shared Composer geometry, focus, validation, keyboard behavior, responsive composition, invocation prefill, and cancel/create state transitions are resolved once rather than page by page.
+The central composition rule is:
+
+```text
+shared Creation Composer
+= transient overlay shell
++ light creation context
++ Title / body content center
++ compact existing property controls
++ restrained footer / Create action
++ shared focus, validation, dismiss, and responsive behavior
+```
+
+Triage, Workflow Issue, Project, and Initiative use this standard Composer composition. Milestone uses a smaller anchored quick-create composition because it is Project-local and has only Name, Due, and Description, while still reusing the same lower-level input, picker, button, focus, validation, and draft mechanics.
+
+#### 5.12.1 Shared overlay and navigation boundary
+
+A standard Creation Composer is a transient Obsidian-level overlay over the current working context:
+
+```text
+current Obsidian / Trail context
+             |
+             v
++--------------------------------------------------+
+| light creation context                        x  |
+|--------------------------------------------------|
+|                                                  |
+| Title                                            |
+|                                                  |
+| Description / body                               |
+|                                                  |
+| compact properties                               |
+|                                                  |
+|--------------------------------------------------|
+|                              primary-mod + Enter |
+|                                          Create  |
++--------------------------------------------------+
+```
+
+Rules:
+
+- opening a Composer does not navigate, replace the current Trail Page, change the Trail Inspector target, or create a host Back/Forward history entry;
+- the invoking Page/Obsidian surface remains the background context;
+- normal successful creation closes the Composer and returns to the invoking context rather than automatically navigating to the newly created entity;
+- cancel/dismiss creates nothing and returns to the invoking context;
+- Triage Accept remains the already-accepted workflow-specific exception after target creation: successful target creation is followed by source removal and Triage Review progression rather than ordinary create-and-return;
+- V1 has no saved Draft entity, Create-more mode, or unfinished-composer persistence.
+
+The overlay uses the established Trail/Linear-derived modal/surface, elevation, focus, button, and property-control grammar. Creation does not introduce another visual system merely because it is global enough to open over non-Trail Obsidian content.
+
+#### 5.12.2 Shared content hierarchy and property layout
+
+The common hierarchy is intentionally content-first:
+
+```text
+light context
+-> Title
+-> Description / body
+-> compact property controls
+-> footer / Create
+```
+
+Do not render standard creation as a tall label-and-input settings form. Title is the strongest editable identity; Description/body is the secondary content region; properties use the same compact semantic identities and picker mechanics accepted elsewhere.
+
+Representative standard shape:
+
+```text
++----------------------------------------------------------+
+| Issue · Project Trail v                               x  |
+|----------------------------------------------------------|
+|                                                          |
+| Fix parser edge case                                     |
+|                                                          |
+| Add description...                                       |
+|                                                          |
+|                                                          |
+| [Priority] [Labels] [Milestone] [Estimate] [Due]         |
+|                                                          |
+|----------------------------------------------------------|
+|                                      Ctrl/Cmd+Enter Create|
++----------------------------------------------------------+
+```
+
+Exact modal width/height, title/body line counts, property-chip spacing, footer hint text, and overlay animation remain full-shell calibration.
+
+#### 5.12.3 Dismiss and discard contract
+
+The close button, `Esc`, and backdrop click are three presentations of the **same dismiss intent**:
+
+```text
+x
+Esc
+click backdrop
+      |
+      v
+attempt dismiss
+      |
+      +-- no meaningful user draft changes
+      |      -> close immediately
+      |
+      `-- meaningful user draft changes
+             -> Discard changes?
+                  Cancel
+                  Discard
+```
+
+Dirty-state rules:
+
+- system/context prefill present when the invocation opens does not by itself count as a user modification;
+- changing Title, body, structural relation, or any editable property does count;
+- returning the draft exactly to its invocation baseline clears dirty state when there is no remaining user-authored difference;
+- opening/closing a picker without changing its value does not make the Composer dirty;
+- discard confirmation is shared Composer behavior rather than separate Triage/Issue/Project/Initiative confirmation logic.
+
+Quick Capture carries its user-authored dirty state into the full Triage Composer. The title typed in Quick Capture remains user draft content after expansion and therefore still requires discard confirmation if the user then dismisses without creating. Expansion must not reclassify that title as harmless system prefill.
+
+`Cancel` on the discard confirmation returns to the still-open Composer with its draft intact. `Discard` closes the full creation flow and creates nothing.
+
+#### 5.12.4 Focus, keyboard, validation, and failure feedback
+
+Initial focus follows structural readiness:
+
+```text
+required structural input unresolved?
+|- yes -> focus the required input
+`- no  -> focus Title
+```
+
+For example, context-neutral Issue creation may prefill a legal Default Project and focus Title. If no legal Project prefill exists, Project selection receives initial focus because Workflow Issue creation cannot succeed without one explicit legal Project.
+
+Keyboard behavior:
+
+- standard Composer uses the platform primary modifier + `Enter` for Create (`Ctrl+Enter` / `Cmd+Enter`);
+- ordinary `Enter` inside the full Composer does not become a global submit gesture;
+- exact visible shortcut hint and focus-ring calibration are deferred, but the semantic shortcut is shared across standard Composers;
+- `Esc` follows the shared dismiss/discard rule above.
+
+Validation remains low-noise:
+
+```text
+empty/invalid required input
+-> Create unavailable or submit rejected locally
+-> focus the concrete missing/invalid control
+-> concise local explanation
+```
+
+Do not paint every empty required field as an error immediately on open. Invalid-target explanations belong beside the relevant structural/property control; generic persistence/runtime failures remain in the Composer and preserve the draft.
+
+Representative persistence failure:
+
+```text
+--------------------------------------------------
+Could not create. Your changes are still here.
+
+                                      Create / Retry
+```
+
+A failed Create does not close the overlay, clear the user's draft, or silently fall back to another target.
+
+#### 5.12.5 Capability gating and legal target selection
+
+Creation affordances are removed or explained before the user completes an impossible form:
+
+- Completed/Canceled Project Workspace does not expose an active Project-local Create Issue action;
+- relation pickers present legal normal targets and may retain an unavailable target only when the explanation materially helps the user understand why it cannot be chosen;
+- an illegal current Default Project is treated as **no Issue Project prefill**, never as hidden permission to create there;
+- Application/Domain still enforce legality at submit; UI capability presentation is not the only guard.
+
+Invocation context supplies initial UI state only. It never changes canonical creation semantics.
+
+#### 5.12.6 Standard Triage Composer
+
+Representative shape:
+
+```text
++--------------------------------------------------+
+| Triage                                        x  |
+|--------------------------------------------------|
+|                                                  |
+| Something to review                              |
+|                                                  |
+| Add description...                               |
+|                                                  |
+|                                                  |
+| [Priority]        [Labels]        [Due Sep 10]   |
+|                                                  |
+|--------------------------------------------------|
+|                                      Create      |
++--------------------------------------------------+
+```
+
+Field contract:
+
+```text
+Title                 required
+Description / body    optional
+Priority              optional
+Labels                optional
+Due                    required review Due
+```
+
+Rules:
+
+- `Due` means Triage Review Due by context and does not need a redundant `Review Due` label;
+- the normal temporal policy supplies the visible default Due before Create;
+- Priority and Labels are optional;
+- no Workflow Status, Project, Milestone, Estimate, or Cycle control appears;
+- direct invocation from Triage Page, Triage true-empty CTA, or Home opens this full Composer immediately.
+
+#### 5.12.7 Quick Capture -> standard Triage Composer
+
+Quick Capture is an Obsidian-wide **command / global-hotkey** entry into standard Triage creation. It is not Trail navigation and does not reintroduce a `Capture` row/action into the already-closed normal Trail Sidebar composition.
+
+Initial title-first surface:
+
+```text
++------------------------------------------+
+| Capture to Triage                        |
+|                                          |
+| [ Something to review...               ] |
+|                                          |
+| Esc                                Enter |
++------------------------------------------+
+```
+
+The Title input receives focus immediately.
+
+Interaction:
+
+```text
+type Title
+-> Enter
+-> expand to the standard Triage Composer
+   -> Title preserved
+   -> normal Due default already present
+   -> ordinary Triage properties available
+-> normal Composer interaction
+-> Create
+```
+
+The first `Enter` does **not** create a Triage entry. Once the full Composer is open, Quick Capture has ended: ordinary Enter is not a special submit rule, and the standard Composer focus/dismiss/validation contract applies.
+
+Quick Capture itself also uses the shared dismiss semantics: an untouched capture closes immediately on `Esc`/backdrop; a typed title requires discard confirmation. The typed-title dirty state survives expansion as defined above.
+
+#### 5.12.8 Standard Workflow Issue Composer
+
+Representative shape:
+
+```text
++----------------------------------------------------------+
+| Issue · Project Trail v                               x  |
+|----------------------------------------------------------|
+|                                                          |
+| Fix parser edge case                                     |
+|                                                          |
+| Add description...                                       |
+|                                                          |
+|                                                          |
+| [Priority] [Labels] [Milestone] [Estimate] [Due]         |
+|                                                          |
+|----------------------------------------------------------|
+|                                      Create              |
++----------------------------------------------------------+
+```
+
+`Project` is a required structural relation and therefore belongs in the light header rather than being demoted to an optional property chip.
+
+Rules:
+
+- invocation context may prefill Project, but the final selected legal Project remains visible and editable before Create;
+- context-neutral creation uses the current Default Project only when that Project is a legal target;
+- changing Project clears any selected Milestone that is not legal in the new Project;
+- Milestone candidates are scoped to the selected Project;
+- Priority, Labels, Milestone, Estimate, and Due remain ordinary optional properties;
+- Status is absent: every new Workflow Issue uses the configured Backlog default regardless of which Page or visual Status region invoked creation;
+- Cycle is absent: Current Cycle membership remains an explicit relationship action, not a single-value Issue creation property.
+
+Invocation examples:
+
+```text
+Project Workspace +
+-> current Project prefilled
+
+Home + -> Issue
+-> legal Default Project may prefill
+
+Triage Accept -> Issue
+-> source Title/body seeded
+-> legal Default Project may prefill
+-> Triage Priority/Labels/Due do not copy automatically
+```
+
+#### 5.12.9 Standard Project Composer
+
+Representative shape:
+
+```text
++--------------------------------------------------+
+| Project                                       x  |
+|--------------------------------------------------|
+|                                                  |
+| Project title                                    |
+|                                                  |
+| Add description...                               |
+|                                                  |
+|                                                  |
+| [Initiative] [Priority] [Labels] [Due]           |
+|                                                  |
+|--------------------------------------------------|
+|                                      Create      |
++--------------------------------------------------+
+```
+
+Rules:
+
+- Initiative is an optional relation and remains an ordinary editable property;
+- Project Status is absent: normal Create uses the configured Unstarted-category default and lifecycle advancement happens later through normal Status interaction;
+- Projects Root invocation starts with Initiative unset;
+- Initiative Focus invocation prefills the current Initiative while leaving it editable;
+- Triage Accept -> Project seeds only source Title/body and follows ordinary Project defaults/validation;
+- Home invokes the same context-neutral Project Composer.
+
+#### 5.12.10 Standard Initiative Composer
+
+Representative shape:
+
+```text
++--------------------------------------------------+
+| Initiative                                    x  |
+|--------------------------------------------------|
+|                                                  |
+| Initiative title                                 |
+|                                                  |
+| Add description...                               |
+|                                                  |
+|                                                  |
+| [Priority]        [Labels]        [Due]           |
+|                                                  |
+|--------------------------------------------------|
+|                                      Create      |
++--------------------------------------------------+
+```
+
+Initiative has no Workflow Status and therefore no Status control. Project membership is not required during Initiative creation; Projects associate through their normal optional Initiative relation afterward.
+
+Projects Root may expose Initiative creation through its already-resolved secondary action context, and Home may invoke it through the shared `+` menu. Both reach this same Composer.
+
+#### 5.12.11 Milestone quick-create
+
+Milestone remains a Project-local checkpoint rather than a Page or full standard Composer consumer.
+
+When owning Project capability allows Milestone planning, the Project Inspector Milestones section may expose its compact `+` and open an anchored quick-create surface:
+
+```text
+Milestones                                  +
+                                              \
+                                               +------------------------------+
+                                               | New milestone                |
+                                               |------------------------------|
+                                               | Name                         |
+                                               | [ Foundation               ] |
+                                               |                              |
+                                               | [Due]                        |
+                                               |                              |
+                                               | Description                  |
+                                               | [ ...                      ] |
+                                               |                              |
+                                               |             Cancel   Create  |
+                                               +------------------------------+
+```
+
+Field contract:
+
+```text
+Name / title          required
+Due                   optional
+Description           optional
+Owning Project        implicit and fixed
+```
+
+Rules:
+
+- no Project picker appears because Milestone cannot be reparented and owning Project is supplied by Inspector context;
+- no Status, Priority, Labels, Estimate, or Cycle controls appear because Milestone does not own those facts;
+- the quick-create surface reuses shared input, body-edit, Due picker, Button, focus, validation, and dismiss mechanics;
+- its smaller anchored geometry is a legitimate composition difference, not a second creation framework;
+- if Project capability does not allow Milestone creation, the active `+` is absent/unavailable according to the shared capability treatment.
+
+#### 5.12.12 Responsive property access
+
+Constrained panes do not get a second simplified creation form.
+
+Normal width keeps the Composer's resolved property controls directly accessible:
+
+```text
+[Priority] [Labels] [Milestone] [Estimate] [Due]
+```
+
+As usable width shrinks, lower-priority optional properties may overflow through the shared compact-property mechanism, for example:
+
+```text
+[Priority] [Due] [More 3]
+```
+
+`More` contains the same property controls and values; it is not another property model.
+
+Responsive priorities:
+
+- required structural context never disappears into a deep overflow; Issue Project remains visible;
+- Triage required Due remains directly understandable/reachable;
+- Title/body remain the content center;
+- optional properties may overflow before the Composer becomes unusably narrow;
+- exact property overflow order, minimum width, modal dimensions, and whether a footer shortcut hint remains visible are calibration details.
+
+#### 5.12.13 Invocation matrix and post-create behavior
+
+The accepted creation entry graph is:
+
+| Invocation | Surface | Initial context/prefill | Success |
+|---|---|---|---|
+| Obsidian command / global Quick Capture shortcut | title-first Quick Capture -> Triage Composer | typed Title + normal Triage Due | close and return to invoking context |
+| Triage header `+` | Triage Composer | normal Triage Due | close and return to Triage |
+| Triage true-empty CTA | Triage Composer | normal Triage Due | close and return to Triage |
+| Home `+ -> Triage` | Triage Composer | normal Triage Due | close and return to Home |
+| Home `+ -> Issue` | Issue Composer | legal Default Project when available | close and return to Home |
+| Home `+ -> Project` | Project Composer | none | close and return to Home |
+| Home `+ -> Initiative` | Initiative Composer | none | close and return to Home |
+| Project Workspace `+` | Issue Composer | current legal Project | close and return to Project Workspace |
+| Projects Root `+` | Project Composer | none | close and return to Projects Root |
+| Initiative Focus `+` | Project Composer | current Initiative | close and return to Initiative Focus |
+| Triage Accept -> Issue | Issue Composer | source Title/body + legal Default Project when available | destination-first Accept then Review progression |
+| Triage Accept -> Project | Project Composer | source Title/body | destination-first Accept then Review progression |
+| Project Inspector Milestones `+` | Milestone quick-create | owning Project implicit | close quick-create; Inspector/Page context remains |
+
+Normal creation success does not automatically open Full Item or navigate to the new Project/Initiative. Navigation remains an explicit later user action rather than an implicit creation side effect.
+
+#### 5.12.14 Deferred/shared drawing boundary
+
+Creation Surfaces are closed at this drawing level.
+
+Do not reopen entity-specific creation locally for:
+
+- exact modal/popover pixel dimensions, radius, padding, shadow, or animation;
+- exact Title/body input heights or Markdown editing affordances already owned by shared content-editing interaction;
+- exact property-chip wrap/overflow threshold or `More` geometry;
+- exact picker/menu/calendar geometry;
+- exact shortcut-hint typography or platform-label rendering;
+- exact validation iconography and feedback animation;
+- exact focus-ring color/offset;
+- lower-level shared Button/Input/Textarea/PropertyControl APIs;
+- saved Drafts, Create-more, or other deferred creation features not in V1.
+
+The key durable drawing decisions are one standard transient Composer family, one shared dismiss/dirty contract, one shared focus/validation/keyboard contract, entity-specific field registries and legal context, Quick Capture as title-first command/hotkey entry into standard Triage creation, and a smaller Project-local Milestone quick-create composition.
+
+### 5.13 Next drawing target
+
+All major Page and Creation Surface compositions are now covered at the drawing level. Continue with the **cross-page comparison / shared-component extraction pass**:
+
+1. compare the accepted drawings side by side;
+2. identify only genuinely repeated visual/interaction responsibilities;
+3. keep Page-specific workflow composition local;
+4. prepare the one-time `docs/ui-blueprints.md` synthesis after the shared vocabulary is stable;
+5. then synchronize durable accepted decisions into canonical UI/implementation documentation and retire this temporary workbench.
 
 ## 6. What existing documents mean during this drawing pass
 
@@ -2705,6 +3166,12 @@ Accepted drawing state currently says:
 - Home reuses existing visual semantics/mechanics for Progress, lifecycle identity, Due-overdue emphasis, buttons, tooltips/focus, and content editing; density variants do not justify Home-specific duplicate components;
 - Home with no Current Cycle exposes `Start cycle` and invokes the already-accepted standard Start Cycle surface directly;
 - Home modules remain independent under partial data and constrained width; constrained composition reflows without hiding fixed V1 modules or shortening the three-month historical horizon;
+- Creation uses one shared transient Composer family for Triage, Workflow Issue, Project, and Initiative; opening/dismissing/creating does not create a Trail navigation location or host-history node;
+- standard Composer `x`, `Esc`, and backdrop click share one dismiss intent: unchanged/system-prefilled drafts close directly, while meaningful user changes require `Discard changes?`; Quick Capture user-authored Title remains dirty after expansion;
+- Quick Capture is an Obsidian command/global-hotkey title-first entry into the standard Triage Composer and does not reintroduce Capture into the closed normal Trail Sidebar;
+- Workflow Issue creation keeps required Project visible in the light header, creates in configured Backlog, and does not expose Status or Cycle as creation properties; changing Project clears an incompatible Milestone;
+- Project creation omits editable Status and uses the configured Unstarted default; Initiative creation has no Status; Milestone uses a smaller Project-local anchored quick-create over shared lower-level controls;
+- normal successful creation closes and returns to the invoking context; Triage Accept remains the destination-first source-removal/Review-progression exception.
 - Back / Forward remains host-owned.
 
 Do not synchronize canonical documents piecemeal after every small drawing decision. Perform durable synchronization after enough Page coverage exists to avoid repeated churn.
