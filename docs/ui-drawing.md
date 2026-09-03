@@ -1867,13 +1867,340 @@ The drawing intentionally supersedes older canonical UI assumptions where they c
 - any presentation implying close-time Issue Status/Project/Progress snapshots;
 - requiring Close and Start-next to be separate visible steps when the UI can offer `Close and start next` as a convenience path while preserving the existing two-step semantics underneath.
 
-### 5.10 Next drawing target
+### 5.10 Triage - closed
 
-Continue with **Triage**.
+Triage is a personal intake/review queue, not a normal Workflow Issue workspace. Its composition is intentionally compact: the Page owns one readable queue, a sequential Review mode, direct review-priority controls, and a Page-level creation invocation without importing Workflow Status, Board, Project routing, or a Trail Inspector.
 
-Triage is the remaining high-frequency top-level work Page whose queue/review semantics already exist canonically but have not yet been redrawn in this workbench. Draw its compact List, Review mode, true/filtered empty states, Review navigation/disposition actions, and constrained behavior without importing normal Workflow Status/Board semantics.
+The central composition rule is:
 
-Home should be drawn after Triage because Home summarizes Triage together with the already-closed Projects and Current Cycle surfaces.
+```text
+Triage Page
+= compact Queue
++ Review Set awareness
++ direct Filter / Order controls
++ standard Triage creation invocation
++ page-local Review mode
+```
+
+Triage does not become a persisted `TriageItem` model, a Snooze inbox, a team-routing surface, or another general Issue workspace.
+
+#### 5.10.1 Page identity, creation, and queue controls
+
+Representative default composition:
+
+```text
+Triage                                                   +
+
+10 to review
+
+Filter                                Order: Review due v
+----------------------------------------------------------------
+[ ] [P1] Revisit export shape              ..             Today
+[ ] [P2] Capture recruiting follow-up      .          Tomorrow
+[ ] [--] Compare parser alternatives                    Sep 06
+[ ] [P3] Investigate mobile note flow       ..          Sep 07
+[ ] [P2] Re-read migration notes                        Sep 08
+                  - review target ends -
+[ ] [--] Consider archive behavior                      Sep 18
+[ ] [P3] Explore another export format      .           Sep 22
+```
+
+Page rules:
+
+- `Triage` is the Page title; this top-level Page has no breadcrumb.
+- the compact header `+` is the stable Page-level creation affordance;
+- activating `+` opens the **standard Triage Composer directly** with normal Triage defaults; it does not pass through title-first Quick Capture;
+- Page drawing decides that this creation action exists, where it lives, what it creates, and its invocation context; the later Creation Surfaces pass decides Composer body geometry, focus, validation, keyboard behavior, and responsive layout;
+- creating a new Triage entry is not a Review disposition. If Review is currently open, creation does not complete, advance, or exit the current Review identity;
+- canceling the Composer creates nothing and returns to the same Page/Review context;
+- the Page has no Trail Inspector and does not take over an unrelated Obsidian Right Sidebar view.
+
+The permanent collection controls are:
+
+```text
+Filter
+Order: Review due | Priority
+```
+
+`Order` is a direct control because Triage owns exactly two ordering choices. There is no generic `Display` shell, Group/Subgroup, generic Sort builder, Board, or Timeline.
+
+The default order remains Review Due first, then Priority, then stable deterministic fallback. Choosing `Priority` changes presentation ordering only; it does not change Triage semantics or the derived Review Set.
+
+#### 5.10.2 Triage Row and Review Set presentation
+
+The compact Triage Row is:
+
+```text
+[Selection] [Priority] Title   Labels   Review Due
+```
+
+Information hierarchy:
+
+- Title is the strongest scanning identity;
+- selection stays in its own gutter rather than masquerading as completion Status;
+- Priority is compact high-value review context;
+- Labels stay low-noise and may use the same compact visual identity accepted elsewhere;
+- Review Due stays in a stable right-aligned scanning position;
+- Description/body is not normal List metadata and appears in Review;
+- Status, Project, Milestone, Estimate, and Cycle are absent.
+
+Rows remain compact and normally single-line. Activating the Row enters Review for that entry; Triage does not require a separate permanent `Start review` button merely to begin the same interaction.
+
+The derived Review Set remains visible as quiet global context:
+
+```text
+10 to review
+```
+
+When the Queue is unfiltered and ordered by Review Due, the List may show one subtle boundary after the last current Review Set entry:
+
+```text
+                  - review target ends -
+```
+
+The rendered boundary should be much quieter than the ASCII representation. It is orientation, not a second collection section.
+
+Filter behavior stays independent from Review Set derivation:
+
+- Filter dimensions are Due, Priority, and Labels;
+- Filter changes the visible Queue only and does not recompute Review Set membership;
+- when Filter is active, do not show the unfiltered Review Set boundary as though it were a filtered boundary;
+- when `Order: Priority` is active, the Review Set boundary also disappears because Review Set membership is no longer contiguous in the visible order;
+- in either case, a retained global count should make its scope explicit, for example `10 to review overall`.
+
+#### 5.10.3 Wide Review mode
+
+On comfortable Main View width, Review is a Page-local split inside Triage rather than a Peek, modal, Right Sidebar takeover, or separate Trail location.
+
+Representative composition:
+
+```text
+Triage                                                   +
+
+10 to review
+
++----------------------------------+------------------------------------------+
+| Filter       Order: Review due v | <-   ^   v                   3 / 14      |
+|----------------------------------|------------------------------------------|
+| [ ] [P1] Export shape      Today | Revisit export shape                     |
+| [ ] [P2] Recruiting     Tomorrow |                                          |
+|>[ ] [P2] Mobile flow      Sep 05 | [P2]   [Labels...]   [Due Sep 05]       |
+| [ ] [--] Parser           Sep 06 |                                          |
+| [ ] [P3] Migration        Sep 08 | Description                              |
+|                                  |                                          |
+|                                  | Compare the current mobile capture flow  |
+|                                  | with the desktop interaction and decide  |
+|                                  | what belongs in the normal path...       |
+|                                  |                                          |
+|                                  | [ Accept v ] [ Defer v ]   Delete   ...  |
++----------------------------------+------------------------------------------+
+```
+
+Composition rules:
+
+- the left pane is the current compact Triage Queue, not a Sidebar;
+- the current Queue Row is visibly selected/highlighted;
+- the right pane is the Review Surface for that identity;
+- the Review header owns only page-local exit/navigation/position controls;
+- the Review content owns editable Title, Priority, Labels, Review Due, and Description/body;
+- disposition actions form one low-noise action rail near the content end;
+- Accept is primary, Defer is secondary, and Delete has lower visual weight;
+- `...` remains the ordinary low-frequency context/action entry when needed;
+- Review does not summon a persistent Inspector because the review content already owns the necessary Triage properties/body.
+
+This wide composition is explicitly **not Peek**. Queue and Review are peer regions of the Triage Main View while Review mode is active.
+
+#### 5.10.4 Review navigation, drafts, and progression
+
+Review navigation is page-local:
+
+```text
+<-   ^   v            3 / 14
+```
+
+Meanings:
+
+- `<-` exits Review and restores the full Triage List without leaving the Triage Page;
+- `^` and `v` browse Previous/Next using the **current visible and ordered Queue**;
+- these controls do not call host Back/Forward and do not create separate navigation-history locations;
+- if the current identity falls out of the current Queue projection, adjacency is unavailable rather than inferred from a stale historical slot.
+
+Ordinary edits do not complete Review:
+
+- Title/Description/Priority/Labels/Review Due edits are not dispositions;
+- uncommitted Title/Description text drafts are discarded when leaving the current Review identity or leaving the Page;
+- Previous/Next, Review exit, or Page navigation must not become an implicit text-save mechanism.
+
+Accept, Defer, and Delete are Review-completing dispositions. After one succeeds:
+
+```text
+record current visible slot
+-> re-query current Queue
+-> exclude just-completed identity from active progression when it still exists
+-> select the entry now occupying that slot
+-> if no successor exists, exit Review to the full List
+```
+
+The explicit exclusion matters for Defer: the same Triage entry may remain browseable after its Review Due changes, but successful Defer must not immediately select that just-deferred identity again merely because it still occupies a nearby position.
+
+#### 5.10.5 Accept invocation boundary
+
+Accept means formalize this intake. It does not patch the source Triage record in place into Workflow context.
+
+Visible invocation boundary:
+
+```text
+[ Accept v ]
+     |
+     +-- Issue
+     `-- Project
+```
+
+Choosing a target opens the corresponding **standard Creation Composer**:
+
+```text
+Accept -> Issue
+       -> standard Issue Composer
+
+Accept -> Project
+       -> standard Project Composer
+```
+
+This drawing pass resolves only the invocation/action boundary. Composer body geometry remains for the shared Creation Surfaces pass.
+
+Prefill/commit rules remain:
+
+- Title and body are seeded from the Triage source;
+- Triage Priority, Labels, and Review Due are not copied automatically;
+- Issue creation still requires one explicit legal Project and follows ordinary Issue creation semantics;
+- Project creation follows ordinary Project defaults/validation;
+- canceling the target Composer leaves the Triage source unchanged and keeps Review on the same identity;
+- after destination creation succeeds, source removal happens through the normal destination-first path, then shared Review-completion progression advances.
+
+#### 5.10.6 Defer and Delete
+
+Defer changes Review Due on the same Triage entry; it does not create a Snooze/Deferred lifecycle state and does not hide the entry from the Queue.
+
+Visible interaction:
+
+```text
+[ Defer v ]
+     |
+     +-- +7 days
+     +-- Tomorrow
+     +-- This weekend
+     +-- Next weekend
+     +-- +1 month
+     `-- Pick date...
+```
+
+Primary activation uses `+7 days`. The disclosure exposes the alternate normal targets. Calendar shortcuts resolve through the shared temporal/timezone policy.
+
+After Defer succeeds, the entry reorders normally and shared progression advances to the successor rather than continuing to show the just-deferred entry. Because visibility is independent from Review Due, the deferred entry remains browseable and may still belong to the Review Set.
+
+Delete is visibly lower-weight than Accept/Defer. It is available from Review and the ordinary `...`/right-click context menu, and uses Trail's shared destructive confirmation/recovery treatment rather than inventing Triage-only discard history.
+
+#### 5.10.7 True and filtered empty states
+
+True empty keeps the permanent Page-level creation action and adds one centered zero-state invocation of the **same** standard Triage creation intent:
+
+```text
+Triage                                                   +
+
+Filter                                Order: Review due v
+----------------------------------------------------------------
+
+
+                         Triage is empty
+
+                  Add something to review.
+
+                       + Add to Triage
+```
+
+Rules:
+
+- header `+` remains the stable creation affordance;
+- `Add to Triage` is zero-state guidance and disappears after the first entry exists;
+- both controls open the standard Triage Composer directly;
+- this Page pass intentionally decides the creation invocation while leaving Composer internals to Creation Surfaces.
+
+Filtered empty does not add a second creation CTA because the underlying Queue is not empty:
+
+```text
+Triage                                                   +
+
+10 to review overall
+
+Filter   [Priority: High] [Due: This week]
+                                      Order: Review due v
+----------------------------------------------------------------
+
+
+                 No Triage entries match these filters
+
+                           Clear filters
+```
+
+The Review Set boundary is absent in filtered empty. The global review count may remain only when clearly labeled as `overall`.
+
+#### 5.10.8 Constrained Main View
+
+Constrained List keeps the same Page/Row grammar and progressively reduces low-priority secondary metadata rather than converting rows into cards. Title and Review Due scanning remain strongest; Labels may reduce before Priority/Title/Due.
+
+When Review is active and width cannot support a useful split, Main View switches fully to focused Review:
+
+```text
+Triage                                                   +
+
+<-      ^   v                              3 / 14
+------------------------------------------------------------
+
+Revisit export shape
+
+[P2]   [Labels...]   [Due Sep 05]
+
+
+Description
+
+Compare the current mobile capture flow with the
+desktop interaction and decide what belongs in the
+normal path...
+
+
+[ Accept v ]    [ Defer v ]       Delete       ...
+```
+
+Rules:
+
+- Queue, Filter, and Order are hidden while focused Review is active, but their Page/session state is preserved;
+- `<-` restores the Triage List rather than invoking host Back;
+- Previous/Next and position remain available;
+- the stable Page `+` creation affordance remains available because creation is a Triage Page capability, not a Queue-only action;
+- Review does not move into Right Sidebar and does not become a modal or Peek merely because width is constrained;
+- exact action wrapping and minimum widths remain visual calibration details.
+
+#### 5.10.9 Deferred/shared drawing boundary
+
+Triage is closed at this drawing level.
+
+Do not reopen Triage locally for:
+
+- exact row height, padding, divider opacity, or icon glyphs;
+- exact Review split ratio and responsive breakpoint;
+- exact Filter/Order menu geometry;
+- shared picker/calendar mechanics;
+- shared destructive confirmation visuals;
+- shared selection/bulk/context-menu visuals;
+- exact Composer geometry, focus, validation, shortcuts, or responsive behavior after a creation invocation has opened the standard Composer.
+
+The drawing intentionally supersedes older canonical UI composition that requires a generic Triage `Display` control. Triage instead exposes the two existing ordering choices directly through `Order: Review due | Priority` without introducing a generic view-builder shell.
+
+### 5.11 Next drawing target
+
+Continue with **Home**.
+
+Home can now compose against closed Triage, Projects, Project Workspace, and Current Cycle presentation rather than guessing their final visual responsibilities. Draw Home's own summary hierarchy, creation invocations, empty/partial states, and constrained behavior without duplicating full child Pages or turning Home into a generic dashboard builder.
 
 
 ## 6. What existing documents mean during this drawing pass
@@ -1901,7 +2228,8 @@ Canonical UI documentation still contains some older composition assumptions tha
 - any implication that Project Workspace Milestone needs its own Page or that compact Row/Card Milestone text itself is the quick-filter control.
 - Current Cycle `Display` and same-Project List clustering;
 - Cycle UI that exposes only separate Close/Start-next paths without the accepted `Close and start next` convenience;
-- historical Cycle presentation that could be mistaken for a close-time Issue snapshot.
+- historical Cycle presentation that could be mistaken for a close-time Issue snapshot;
+- Triage `Display` as a generic shell even though Triage owns only the direct Review Due/Priority ordering choices.
 
 Accepted drawing state currently says:
 
@@ -1921,6 +2249,10 @@ Accepted drawing state currently says:
 - Cycle membership is an explicit relation action rather than a normal single-valued Issue property;
 - `Close and start next` is a UI convenience over Close followed by Start-next, preserving close-first semantics and editable live preselection;
 - Historical Cycles retain final membership/time facts while resolving current live Issue fields and do not present snapshot Progress;
+- Triage uses Filter + direct `Order: Review due | Priority` with no Display, Board, or normal Workflow Status presentation;
+- Triage Page keeps a stable `+` invocation of the standard Triage Composer, and true empty adds `Add to Triage` as guidance for the same invocation;
+- Triage wide Review is a page-local Queue + Review split inside Main View, not Peek/Inspector/modal composition; constrained Review focuses the same Review Surface in Main View;
+- Triage Review exit/Previous/Next are page-local, while successful Accept/Defer/Delete use re-query-and-successor progression rather than host history;
 - Back / Forward remains host-owned.
 
 Do not synchronize canonical documents piecemeal after every small drawing decision. Perform durable synchronization after enough Page coverage exists to avoid repeated churn.
