@@ -2196,12 +2196,459 @@ Do not reopen Triage locally for:
 
 The drawing intentionally supersedes older canonical UI composition that requires a generic Triage `Display` control. Triage instead exposes the two existing ordering choices directly through `Order: Review due | Priority` without introducing a generic view-builder shell.
 
-### 5.11 Next drawing target
+### 5.11 Home - closed
 
-Continue with **Home**.
+Home is Trail's visual-first global orientation and routing surface. It is not a reduced Issue collection, a generic dashboard builder, or a second analytics system. Its fixed modules compose existing Trail facts and route into existing Pages/flows without duplicating those working surfaces.
 
-Home can now compose against closed Triage, Projects, Project Workspace, and Current Cycle presentation rather than guessing their final visual responsibilities. Draw Home's own summary hierarchy, creation invocations, empty/partial states, and constrained behavior without duplicating full child Pages or turning Home into a generic dashboard builder.
+The accepted vertical order is:
 
+```text
+Home
+-> This week
+-> Lifecycle activity
+-> Work trend + Weekly meeting notes
+-> Work pulse
+```
+
+This ordering is semantic rather than a fixed CSS grid. Wide Main View may place Work Trend and Weekly Meeting Notes beside each other; constrained Main View reflows them vertically while preserving the same reading order.
+
+#### 5.11.1 Page identity and shared creation
+
+Representative Page header:
+
+```text
+Home                                                      +
+```
+
+Rules:
+
+- `Home` is the top-level Page title and has no breadcrumb;
+- Home has no Trail Inspector and does not replace unrelated Obsidian Right Sidebar views;
+- the compact `+` is the already-frozen shared creation menu:
+
+```text
++
+|- Triage
+|- Issue
+|- Project
+`- Initiative
+```
+
+Each item opens the corresponding **standard Creation Composer**. Home does not own a Home-specific creation form. Choosing Triage opens the full standard Triage Composer directly rather than passing through title-first Quick Capture.
+
+Composer body geometry, focus, validation, keyboard behavior, and constrained composition remain for the dedicated Creation Surfaces pass.
+
+#### 5.11.2 This week
+
+`This week` is the first Home module because Home should establish immediate temporal orientation before retrospective analytics or current-system summaries.
+
+Representative wide shape:
+
+```text
+This week
+--------------------------------------------------------------------------------
+              Mon 31   Tue 1   Wed 2   Thu 3   Fri 4   Sat 5   Sun 6
+Triage          .        o       .      oo       .       .       .
+Issues          o        .      oo       o      oo       .       .
+                                           ^
+                                         Today
+```
+
+The module uses the Workspace temporal policy and the existing Monday-to-Sunday week semantics. It distinguishes exactly the two already-frozen Due sources:
+
+```text
+Triage Review Due
+Workflow Issue Due
+```
+
+Rules:
+
+- Triage and Workflow Issue markers use the same generic temporal-marker geometry/mechanics but distinct source semantics;
+- these markers do **not** reuse Label-specific components merely because both may be drawn as dots;
+- a quiet Today identity anchors the current day without turning the strip into a calendar application;
+- low counts may appear as individual dots; higher counts compress to a dot/count treatment rather than stacking without limit;
+- the exact compression threshold is calibration, not Product state;
+- hover/focus reveals the date plus the exact count for that source;
+- default markers are informational and do not create a click-through query surface;
+- Home does not invent a Workspace-wide Workflow Issue Page merely to support chart drill-down.
+
+A week with nothing due remains a full temporal strip rather than a prose empty state:
+
+```text
+              M   T   W   T   F   S   S
+Triage        .   .   .   .   .   .   .
+Issues        .   .   .   .   .   .   .
+```
+
+The absence of Due work is itself the information.
+
+#### 5.11.3 Lifecycle activity
+
+Lifecycle Activity uses a **GitHub contribution-calendar-style layout** as its structural reference while remaining visually Trail.
+
+Copy/adapt from the GitHub contribution graph:
+
+```text
+week columns
++ weekday rows
++ month labels
++ one cell per local calendar day
++ discrete intensity steps
++ hover/focus date and count detail
+```
+
+Do **not** copy GitHub's green palette, profile semantics, yearly scope, contribution rules, borders, or surrounding profile UI. Trail maps the calendar geometry into the established Linear-derived dark token system: Trail typography, surface/border treatment, spacing, focus treatment, and one Trail-compatible activity hue with intensity variation.
+
+Representative shape:
+
+```text
+Lifecycle activity
+--------------------------------------------------------------------------------
+Jun                         Jul                         Aug                 Sep
+. . : . . # . ...          . : : . # . . ...          . . # : ...        . : ...
+. : . . # . . ...          : . . # . : . ...          . : . . ...        ...
+...
+```
+
+The visible history window is fixed for V1 Home at:
+
+```text
+rolling 3 calendar months ending today
+```
+
+This is a calendar-month window in the configured Workspace timezone, not a hard-coded `90 days` duration. The left edge may use empty layout cells solely to align the first visible date into week-column geometry; those alignment cells do not encode data outside the three-month window.
+
+Each day's intensity is still derived only from the already-frozen equal-weight lifecycle events:
+
+```text
+Workflow Issue createdAt
++ Workflow Issue firstStartedAt
++ Workflow Issue terminalAt
+```
+
+Rules:
+
+- all three event kinds contribute equally to total daily density;
+- one hue with discrete intensity levels represents the total rather than assigning a separate color to each lifecycle timestamp kind;
+- hover/focus may disclose date plus Created/Started/Terminal counts and their total;
+- clicking a heatmap cell has no V1 drill-down navigation semantic;
+- an all-zero period remains the same empty-intensity grid rather than adding a large `No activity` message.
+
+#### 5.11.4 Work trend
+
+Work Trend shares the **same rolling three-calendar-month window** as Lifecycle Activity. Home does not define separate time horizons for the two historical modules.
+
+Representative composition:
+
+```text
+Work trend
+--------------------------------------------------------------
+Backlog    -----------Active            -----\----------Completed        _|_|__|_|_||_|
+
+                  trailing 3 months
+```
+
+The visual forms preserve the distinct semantics of the already-frozen series:
+
+```text
+Backlog stock   -> line
+Active stock    -> line
+Completed flow  -> day-local bars
+```
+
+Completed flow must not be rendered as a third cumulative-looking stock line.
+
+Rules:
+
+- lifecycle series colors/emphasis consume the existing Trail lifecycle semantic families instead of inventing chart-only concept colors;
+- chart axes, text, hover/focus, and tooltip treatment consume shared chart/foundation tokens where possible;
+- hover/focus reveals the date and exact Backlog/Active/Completed values;
+- clicking the chart does not create a hidden global Issue-query destination;
+- when no Workflow lifecycle history exists, retain the chart frame/legend and allow one quiet `No workflow history yet` message rather than fabricating values.
+
+#### 5.11.5 Weekly Meeting Notes
+
+Weekly Meeting Notes remains the existing `Current + Archive/History` utility inside Home. It does not become another Page, Domain entity, Inspector target, journal, or Full Item.
+
+Default read state:
+
+```text
+Weekly meeting notes                           History
+
+Current
+
+- Release preparation
+- Discuss parser cleanup
+- Review next cycle
+
+                                           Edit
+                                 Archive / Next
+```
+
+Editing is module-local:
+
+```text
+Weekly meeting notes
+
+Current
+
++---------------------------------------------+
+| - Release preparation                       |
+| - Discuss parser cleanup                    |
+| - Review next cycle                         |
+|                                             |
++---------------------------------------------+
+
+                                  Cancel   Save
+```
+
+Rules:
+
+- default Home state is read-oriented; an always-open textarea would over-weight this utility inside a visual-first Home;
+- `Edit` enters an inline/module-local edit state;
+- while editing, `Archive / Next` is hidden so an unfinished draft cannot acquire an ambiguous implicit-save/archive meaning;
+- `Save` uses the existing Current replacement behavior; `Cancel` discards the local edit draft;
+- `Archive / Next` uses the existing archive-current-and-clear-current behavior and is not a second history system;
+- only Current is editable through the normal Home module.
+
+Empty Current:
+
+```text
+Weekly meeting notes                           History
+
+
+                  No current notes
+
+                     Add notes
+```
+
+If no archive exists, omit `History`. `Archive / Next` is unavailable while Current is empty.
+
+History is a module-local read sub-view, not a modal or new Trail location:
+
+```text
+Weekly meeting notes                         <- Current
+
+History
+
+Sep 1
+Aug 25
+Aug 18
+Aug 11
+```
+
+Opening one archive entry replaces only the module body with read-only archived content and offers a local return to History/Current.
+
+#### 5.11.6 Work pulse
+
+Work Pulse is deliberately last. It acts as a compact routing/status dock after Home has already established near-term temporal context and recent work rhythm.
+
+Wide composition:
+
+```text
+Work pulse
+
++-----------------------------+ +----------------------+ +------------------------------+
+| Current cycle               | | Triage               | | In progress projects         |
+| Aug 25 - Sep 7              | |                      | | 4                            |
+| [=========-----]      67%   | | Overdue  3           | | [=======-]                   |
+|                             | | Remain   11           | | [====----]                   |
+|                             | | [===--------]         | | [======--]                   |
+|                             | |                      | | [===-----]                   |
++-----------------------------+ +----------------------+ +------------------------------+
+```
+
+Work Pulse must not reproduce the working collections from Current Cycle, Triage, or Projects.
+
+**Current Cycle**
+
+With a Current Cycle:
+
+```text
+Current cycle
+Aug 25 - Sep 7
+
+[============------]    67%
+```
+
+Rules:
+
+- period plus existing Cycle Progress are the default visible facts;
+- activating the module routes to Current Cycle Page;
+- Progress consumes the same shared Progress visual/semantic owner used by Project/Milestone/Cycle elsewhere, at a compact density;
+- an empty effective denominator remains unavailable rather than being fabricated as `0%`/`100%`;
+- a truly empty Cycle may show `0 issues` instead of a fake progress result;
+- if members exist but all are excluded from the effective denominator, use `Progress -`/unavailable treatment.
+
+With no Current Cycle:
+
+```text
+Current cycle
+
+             Start cycle
+```
+
+`Start cycle` invokes the **same standard Start Cycle surface** already accepted in the Cycle drawing. Home does not redirect to a fake `No current cycle` detail Page and does not own a simplified Cycle form. Cancel returns to Home with no Cycle created; successful Start follows the normal Start Cycle destination behavior.
+
+**Triage**
+
+```text
+Triage
+
+Overdue   3
+Remain   11
+
+[===--------]
+```
+
+The bar is a segmented summary, not Progress. `Overdue` and `Remain` are mutually exclusive parts of active Triage and use the already-frozen Home meanings.
+
+Rules:
+
+- the mechanical segmented-bar responsibility should be shared with other compact mutually-exclusive summary bars such as Project Temporal Attention rather than creating a `HomeTriageBar`;
+- Overdue consumes existing Due-overdue emphasis; Remain is neutral;
+- activating the module routes to Triage Page;
+- Home does not repeat `10 to review` Review Set presentation or Triage Rows;
+- zero active Triage may show `0 active` plus an empty segmented track; it does not add another creation CTA because Home header `+` and the Triage Page already own creation affordances.
+
+**In Progress Projects**
+
+```text
+In progress projects                                      4
+
+[=======-]
+[====----]
+[======--]
+[===-----]
+```
+
+Rules:
+
+- include only Projects in the Started lifecycle category;
+- every micro-bar is the existing Project Progress at a denser visual size, not a Home-specific progress model;
+- hover/focus discloses Project title and exact Progress;
+- activating a specific micro-bar routes to that Project Workspace;
+- activating the module title routes to Projects Root;
+- if more Projects exist than the module can usefully show, retain the existing stable Project ordering, show only the capacity-appropriate leading subset, and use a `+N more` route to Projects Root;
+- do not introduce a hidden Home Health/focus/ranking score merely to choose which Projects appear;
+- the exact number of visible micro-bars is width/visual calibration.
+
+#### 5.11.7 Home visual reuse contract
+
+Home is the strongest consumer so far of compact charts and micro-summaries, so this Page closes one explicit reuse rule:
+
+```text
+same semantic or same mechanical responsibility
+-> reuse the existing canonical/shared owner
+-> allow density / size / emphasis variants
+-> do not create another visual language for Home
+```
+
+Concrete expectations:
+
+- Current Cycle Progress -> shared Progress;
+- Project micro Progress -> shared Progress;
+- Triage Overdue/Remain -> shared segmented-summary mechanic plus existing Due-overdue semantic identity;
+- Start Cycle -> shared button/presentation plus standard Start Cycle invocation;
+- Weekly Notes editing -> shared content-edit/input/button mechanics;
+- Work Trend lifecycle identities -> existing lifecycle semantic color families;
+- tooltips/focus -> shared Tooltip/Popover/focus grammar;
+- This Week Due markers -> shared generic marker geometry/tokens, but not Label-specific semantic components;
+- Heatmap is a legitimate new visualization because no existing Trail component owns day-by-day activity density;
+- Work Trend is a legitimate new visualization because no existing Trail component owns historical stock/flow charts, but it must still reuse shared chart/foundation tokens and interaction grammar.
+
+Component extraction itself still waits for the shared-component pass after all Pages/Creation Surfaces; this rule prevents implementation from prematurely creating multiple Home-only representations for concepts Trail already renders elsewhere.
+
+#### 5.11.8 Empty and partial-data behavior
+
+Home is modular: one missing source does not replace the whole Page with a generic empty state.
+
+Representative partial behavior:
+
+```text
+This week              -> always keeps the current-week strip
+Lifecycle activity     -> always keeps the three-month grid
+Work trend             -> chart frame + quiet no-history text when truly empty
+Weekly meeting notes   -> local `No current notes` + Add notes
+Current Cycle pulse    -> Start cycle when none exists
+Triage pulse           -> 0 active when empty
+In Progress Projects   -> 0 / empty micro-progress area when none exist
+```
+
+The Page-level `+` remains available in every state. Home does not add a giant first-run welcome/empty screen that hides the fixed modules.
+
+#### 5.11.9 Constrained Main View
+
+Constrained Home keeps the accepted semantic order and reflows rather than deleting modules:
+
+```text
+Home                                      +
+
+This week
+--------------------------------------------
+       M   T   W   T   F   S   S
+T      .   o   .  oo   .   .   .
+I      o   .  oo   o  oo   .   .
+
+Lifecycle activity
+--------------------------------------------
+[          3-month heatmap              ]
+
+Work trend
+--------------------------------------------
+[               chart                   ]
+
+Weekly meeting notes
+--------------------------------------------
+Current
+...
+
+Work pulse
+--------------------------------------------
+Current cycle
+Aug 25 - Sep 7
+[==========----] 67%
+
+Triage
+Overdue 3    Remain 11
+[===---------]
+
+In progress projects
+[=======-]  [====----]
+[======--]  [===-----]
+```
+
+Rules:
+
+- Work Trend and Weekly Meeting Notes break from the wide side-by-side region into vertical order;
+- Lifecycle Activity preserves the three-calendar-month semantic horizon and may reduce cell size/label density instead of silently shortening the data window;
+- Work Trend keeps enough chart height to remain readable;
+- Work Pulse modules stack vertically when needed;
+- exact track counts, card borders/radius, chart heights, heatmap cell size, compression thresholds, and breakpoints remain calibration details.
+
+#### 5.11.10 Deferred/shared drawing boundary
+
+Home is closed at this drawing level.
+
+Do not reopen Home locally for:
+
+- exact module border/surface treatment or card radius;
+- exact grid track count/spans/gaps;
+- exact chart dimensions, stroke widths, heatmap cell size/gap, or intensity breakpoints;
+- exact number of visible Project micro-bars before `+N more`;
+- exact This Week dot-to-count compression threshold;
+- tooltip geometry or animation;
+- shared chart, marker, segmented-summary, Progress, button, or content-editing component APIs;
+- Creation Composer internals reached from the Home `+` menu;
+- Start Cycle surface internals already closed in the Cycle drawing.
+
+Lifecycle Activity's **layout reference is GitHub's contribution calendar**, adapted into Trail's Linear-derived dark visual system. This reference is a presentation decision only; GitHub contribution semantics, yearly horizon, and green palette are not imported.
+
+### 5.12 Next drawing target
+
+Continue with the dedicated **Creation Surfaces** pass.
+
+All major Page entry contexts are now known. Draw Triage, Workflow Issue, Project, Initiative, and the lighter Milestone quick-create surface together so shared Composer geometry, focus, validation, keyboard behavior, responsive composition, invocation prefill, and cancel/create state transitions are resolved once rather than page by page.
 
 ## 6. What existing documents mean during this drawing pass
 
@@ -2253,6 +2700,11 @@ Accepted drawing state currently says:
 - Triage Page keeps a stable `+` invocation of the standard Triage Composer, and true empty adds `Add to Triage` as guidance for the same invocation;
 - Triage wide Review is a page-local Queue + Review split inside Main View, not Peek/Inspector/modal composition; constrained Review focuses the same Review Surface in Main View;
 - Triage Review exit/Previous/Next are page-local, while successful Accept/Defer/Delete use re-query-and-successor progression rather than host history;
+- Home reads top-to-bottom as This week -> Lifecycle activity -> Work trend + Weekly meeting notes -> Work pulse, with Work Pulse last rather than as a top KPI banner;
+- Home Lifecycle Activity uses GitHub contribution-calendar geometry as the layout reference while retaining Trail/Linear-derived dark visual tokens, and both Lifecycle Activity and Work Trend show a rolling three-calendar-month window ending today;
+- Home reuses existing visual semantics/mechanics for Progress, lifecycle identity, Due-overdue emphasis, buttons, tooltips/focus, and content editing; density variants do not justify Home-specific duplicate components;
+- Home with no Current Cycle exposes `Start cycle` and invokes the already-accepted standard Start Cycle surface directly;
+- Home modules remain independent under partial data and constrained width; constrained composition reflows without hiding fixed V1 modules or shortening the three-month historical horizon;
 - Back / Forward remains host-owned.
 
 Do not synchronize canonical documents piecemeal after every small drawing decision. Perform durable synchronization after enough Page coverage exists to avoid repeated churn.
