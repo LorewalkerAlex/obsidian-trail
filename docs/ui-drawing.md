@@ -3101,15 +3101,391 @@ Do not reopen entity-specific creation locally for:
 
 The key durable drawing decisions are one standard transient Composer family, one shared dismiss/dirty contract, one shared focus/validation/keyboard contract, entity-specific field registries and legal context, Quick Capture as title-first command/hotkey entry into standard Triage creation, and a smaller Project-local Milestone quick-create composition.
 
-### 5.13 Next drawing target
+### 5.13 Shared Interactions - closed
 
-All major Page and Creation Surface compositions are now covered at the drawing level. Continue with the **cross-page comparison / shared-component extraction pass**:
+Cross-page comparison exposed a small set of repeated interaction responsibilities that must close once before shared-component extraction. These rules do not create another Page, workflow, or generic universal component. They define how existing Page-local actions compose when they use the same transient interaction mechanics.
 
-1. compare the accepted drawings side by side;
-2. identify only genuinely repeated visual/interaction responsibilities;
-3. keep Page-specific workflow composition local;
-4. prepare the one-time `docs/ui-blueprints.md` synthesis after the shared vocabulary is stable;
-5. then synchronize durable accepted decisions into canonical UI/implementation documentation and retire this temporary workbench.
+The shared rule is:
+
+```text
+same action semantic
+-> one Action Registry authority
+
+same transient interaction mechanic
+-> one focus / dismissal / layering grammar
+
+same visual resemblance only
+-> keep workflow composition separate
+-> reuse lower-level mechanics instead
+```
+
+#### 5.13.1 Transient interaction stack and focus ownership
+
+Menus, pickers, popovers, Peek, Composers/workflow modals, and confirmations may nest. Dismissal always belongs to the **topmost active interaction layer** rather than leaking through to its parent.
+
+Representative stack:
+
+```text
+Page
+`- Creation Composer
+   `- Labels Picker
+```
+
+`Esc` behavior is:
+
+```text
+Esc
+-> dismiss topmost active layer only
+-> restore focus to that layer's trigger/parent when still present
+-> never also dismiss the parent in the same key action
+```
+
+For example:
+
+```text
+Composer + Labels Picker
+Esc #1 -> close Labels Picker; Composer remains
+Esc #2 -> attempt Composer dismiss; shared dirty/discard contract applies
+```
+
+Likewise:
+
+```text
+Peek + Context Menu
+Esc #1 -> close Context Menu; Peek remains
+Esc #2 -> close Peek
+```
+
+When no higher transient layer is open, `Esc` may clear the current collection selection according to Section 5.13.3. Tooltip-only hover/focus detail is not a stack layer and does not consume `Esc`.
+
+Outside-click/backdrop behavior is owner-specific:
+
+- ordinary Menu/Picker/Popover outside click closes only that transient child;
+- Creation Composer backdrop click is the already-closed Composer dismiss intent and therefore follows dirty/discard rules;
+- confirmation backdrop click means Cancel and never confirms a destructive/lifecycle action;
+- Peek has no modal backdrop: unrelated Page interaction closes it, while ordinary activation of another eligible Issue retargets the same Peek surface;
+- closing a child interaction restores focus to its trigger when that trigger still exists;
+- closing a top-level transient surface restores focus to the invoking Page/collection context when practical.
+
+Host Back/Forward never becomes a transient-surface close mechanism. If the user actually navigates through host history, the previous Page's transient stack is discarded as that Page leaves; Peek/Menu/Picker/Composer states do not become history nodes.
+
+#### 5.13.2 Action Registry, Context Menu, and overflow
+
+Context Menu, `...` overflow, Command Menu, Bulk action surfaces, and keyboard shortcuts are presentations over one shared **Action Registry** authority. They may show different useful subsets, but an Action ID, capability rule, legal-target rule, and Application intent do not change by entry point.
+
+Context Menu uses the mature host Menu mechanic where practical and consumes Trail's shared Linear-derived menu presentation contract. It does not justify a second custom menu engine.
+
+Context Menu ordering follows responsibility groups when those groups exist:
+
+```text
+navigation / inspect
+--------------------
+frequent property / ordinary mutations
+--------------------
+relationship / lifecycle actions
+--------------------
+other low-frequency actions
+--------------------
+destructive actions
+```
+
+Empty groups disappear. `Delete` or equivalent destructive actions remain last and visually separated from ordinary mutation.
+
+Target presentation follows target-set shape rather than forcing every action into nested native menus:
+
+```text
+small fixed target set
+-> direct Menu/Submenu where useful
+
+large or searchable relation target set
+-> close Context Menu
+-> open the shared searchable Picker for that target family
+```
+
+For example Status/Priority/Estimate may fit a direct menu-like selector, while Project/large Milestone/Label target sets use their searchable picker mechanics.
+
+Action availability presentation is:
+
+```text
+action irrelevant to this entity/context
+-> absent
+
+action temporarily unavailable
++ explanation/recovery materially helps
+-> disabled/unavailable + concise reason
+```
+
+Do not fill menus with disabled actions that do not belong to the current entity at all.
+
+Context resolution preserves the already-accepted selection semantics:
+
+```text
+right-click selected item
+-> current relevant selection is action scope
+
+right-click unselected item
+-> explicitly invoked item is action scope
+-> unrelated stale selection is not action scope
+```
+
+Right-clicking an unselected item does **not** silently clear a different retained selection merely to execute this one menu. The menu establishes action scope; selection state remains a separate collection interaction. When a multi-selection is the scope, the menu may show one quiet count/identity summary so the user can see that the action applies to multiple items.
+
+An explicit entity-local action affordance inside another surface, such as Peek `...`, scopes actions to that explicit entity rather than silently inheriting an unrelated background multi-selection.
+
+#### 5.13.3 Selection and Bulk surface
+
+Selection is collection-local transient UI state. Highlight/focus, ordinary activation, and selection remain separate intents.
+
+A shared floating Bulk surface appears once for the collection while one or more items are selected:
+
+```text
+                       collection
+
+------------------------------------------------------------
+
+       +----------------------------------------------+
+       | 3 selected   [common actions]      ...   x  |
+       +----------------------------------------------+
+```
+
+List, Board, Triage, and other supported selectable collections consume the same collection-level interaction. Board does not create a separate Bulk bar per Status column or Project swimlane.
+
+The Bulk surface owns:
+
+- visible selection count;
+- a small set of useful common actions;
+- `...`/Command access to additional legal common actions;
+- an explicit clear-selection control.
+
+Bulk legality remains the already-frozen intersection rule:
+
+```text
+same action
++ same target
++ every selected item can legally accept it
+```
+
+Selection scope is always bounded by the current visible actionable collection projection:
+
+```text
+selection
+= selected identities
+  intersect
+  current visible actionable projection
+```
+
+Consequences:
+
+- applying a Filter that hides a selected item removes that item from selection;
+- collapsing/grouping presentation that makes a selected item non-visible removes it from active selection rather than retaining an invisible action target;
+- switching List -> Board retains only selected Issues still visible/actionable in Board; Backlog/Canceled items that are not Board members leave selection;
+- sorting/reordering visible items does not clear identities that remain visible;
+- navigating to another Trail location clears the collection selection rather than carrying it into another Page.
+
+When no higher transient layer is open, `Esc` may clear the current selection. Exact toggle/range/select-all key bindings remain Obsidian/implementation-time shortcut calibration; the underlying selection semantics do not depend on one literal Linear keymap.
+
+#### 5.13.4 Peek
+
+Peek is a shared Workflow Issue **inspection** surface for Issue collections. It does not expand to Project rows merely because another product may Peek other entity types, and it does not replace the already-closed Projects Root/Initiative navigation behavior.
+
+Its role remains:
+
+```text
+Row / Card
+-> scan
+
+Peek
+-> inspect hidden Issue detail without navigation
+
+Full Item
+-> deep editing
+```
+
+Opening rules:
+
+- ordinary activation of an eligible Workflow Issue Row/Card opens Peek;
+- selection controls and inline property/action controls do not also open Peek;
+- keyboard-focused/highlighted eligible Issue may toggle Peek with the shared preview shortcut during host calibration; `Space` is the primary Linear reference where it does not conflict with host/editor focus;
+- opening Peek does not create host history, change Trail location, or change persistent Inspector target.
+
+Wide Main View uses a floating right-side surface **inside Main View**, over the current collection rather than as an Obsidian Right Sidebar replacement or a permanent split:
+
+```text
++--------------------------------------+----------------------+
+| collection                           | Issue Peek           |
+|                                      |                      |
+| > current Issue                      | Title                |
+|   next Issue                         | Description...       |
+|                                      |                      |
+|                                      | Status / Priority    |
+|                                      | Project / Milestone  |
+|                                      | Labels / Due         |
+|                                      | Estimate / Cycle     |
+|                                      |                      |
+|                                      | ...   Open full item |
++--------------------------------------+----------------------+
+
+Right Sidebar -> current Page Inspector remains unchanged
+```
+
+Constrained Main View keeps the same transient responsibility but uses a near-full-width Main View floating surface. It does not become a bottom sheet, a Page location, or Right Sidebar content.
+
+Peek content is read-oriented in V1:
+
+- Title and body are read-only in Peek;
+- structured properties are inspectable but are not directly edited inside Peek;
+- entity actions such as Status/Priority change, Move, Cycle membership, or Delete use Peek's explicit `...`/shared Action Registry entry;
+- deep content/property work uses `Open full item` and normal Issue Full Item + Inspector composition.
+
+This keeps Row/Card inline property interactions, Peek inspection, and Full Item editing as separate depths rather than turning Peek into a second editor.
+
+Retargeting uses the current visible and ordered Issue collection:
+
+```text
+Peek = Issue A
+ordinary activate Issue B
+-> same Peek surface retargets to B
+-> no close/open navigation cycle
+-> no host-history entry
+```
+
+Adjacent keyboard browsing uses that same current visible/ordered collection. If the current Peek target disappears from the projection because of Filter or successful mutation, Peek closes rather than inferring a successor from a stale slot. Triage Review's success-progression algorithm remains Triage-specific and is not reused by Peek.
+
+Interaction with background UI:
+
+- clicking unrelated Page chrome/content closes Peek and performs that Page interaction;
+- ordinary activation of another eligible Issue retargets Peek;
+- activating an inline control on another background row performs that explicit control interaction rather than retargeting; Peek closes before/with the unrelated control interaction;
+- opening Peek does not select its Issue;
+- opening/clearing selection does not automatically open/close Peek unless a selected/filtered state removes the current target from the visible projection;
+- Peek `...` actions scope to the Peek target only, even if the background collection retains a different multi-selection.
+
+#### 5.13.5 Picker / Popover family
+
+Property and relation controls share mature picker mechanics without collapsing every semantic control into one `UniversalPicker` component.
+
+The interaction families are:
+
+```text
+small fixed single-select
+-> Select / Menu-like picker
+-> Status, Priority, Estimate
+
+large relation single-select
+-> searchable Picker
+-> Project, Initiative, Milestone when the target set can grow
+
+multi-select
+-> searchable multi Picker
+-> Labels
+
+temporal
+-> date/calendar Picker
+-> Due
+```
+
+They share only mechanical responsibilities:
+
+- anchored surface/elevation and viewport collision behavior;
+- keyboard traversal and selected/check grammar;
+- search-field grammar where search is useful;
+- empty-search result treatment;
+- focus restoration to the trigger on close;
+- top-layer `Esc` / outside-click dismissal;
+- capability-aware legal/unavailable target presentation.
+
+Single-select generally applies the chosen value to the owning surface state and closes. Multi-select applies each toggle immediately to the owning surface state and normally remains open until dismissed; it has no extra Save/Done step. "Apply" here means updating the current owner (for example a Composer draft, Filter state, or normal mutation flow), not bypassing that owner's existing persistence/validation contract.
+
+Activating a Row/Card property control is an explicit property interaction. It opens the appropriate picker and must not also trigger the Row/Card's ordinary Peek/navigation activation.
+
+#### 5.13.6 Shared confirmation mechanics
+
+Delete, draft discard, lifecycle confirmation, and other guarded actions may reuse one confirmation foundation while keeping their business consequences and semantic emphasis distinct.
+
+Shared mechanics are:
+
+```text
+confirmation opens
+-> focus a safe action / Cancel path by default
+
+Esc
+-> Cancel
+
+backdrop click
+-> Cancel
+
+explicit confirm action
+-> perform the guarded intent
+```
+
+Opening a confirmation must not make a held/repeated `Enter` immediately confirm a destructive action. Destructive Delete uses the shared danger treatment; lifecycle actions such as Close Cycle need not be painted as destructive merely because they require confirmation. `Discard changes` is destructive to transient draft state but is not a Domain Delete action.
+
+Confirmation copy states concrete consequences instead of generic dramatic wording. Recovery/Undo claims appear only when Trail actually owns the corresponding recovery capability.
+
+Complex guarded workflows remain compositional. For example Project Delete may require a legal child-Issue destination picker and concrete consequence counts; this reuses confirmation + picker mechanics rather than being reduced to a one-line universal `Are you sure?` dialog. If a Picker opens inside a confirmation, the picker is the top interaction layer: first `Esc` closes the Picker, the next `Esc` cancels the confirmation.
+
+#### 5.13.7 Contextual Command Menu and Obsidian commands
+
+Trail distinguishes host/global commands from the contextual Action Registry presentation:
+
+```text
+Obsidian Command Palette / registered plugin commands
+-> host/global intents
+-> open Trail, Quick Capture, global navigation/utility commands where useful
+
+Trail contextual Command Menu
+-> current Trail entity / selection / location actions
+-> shared Action Registry
+```
+
+The contextual Command Menu is searchable action presentation, not Search navigation and not another action authority. It may expose a broader useful action subset than the compact Context Menu while retaining the same Action IDs, capability rules, legal targets, and execution semantics.
+
+Invocation context resolves action scope the same way as other explicit action entry points. A collection invocation may use current selection; an explicit Peek/entity invocation scopes to that explicit entity. Exact shortcut binding (for example whether a Linear-like primary-modifier shortcut is appropriate) remains Obsidian/editor conflict calibration rather than Product semantics.
+
+#### 5.13.8 Sidebar Search boundary
+
+The closed Sidebar Search mode is navigation-only in V1. Older canonical assumptions from a Main-View Search Page must not leak Peek into unrelated current Main View content.
+
+```text
+Sidebar Search
+-> type/query
+-> highlight result
+-> click/Enter
+-> navigate(result.location)
+-> Search closes
+```
+
+Search results do not open Peek while Search remains in the Left Sidebar. This avoids presenting, for example, a Project/Issue Peek over an unrelated Triage/Home Main View merely because the user highlighted a Sidebar result. Search still uses keyboard-first result traversal and ordinary navigation activation.
+
+#### 5.13.9 Deferred/shared interaction boundary
+
+Shared Interactions are closed at this drawing level.
+
+Do not reopen these rules merely for:
+
+- exact Menu/Picker/Popover/Peek/Confirmation pixel dimensions, shadows, radius, padding, or animation;
+- exact menu/submenu maximum heights, collision offsets, or scroll indicators;
+- exact Bulk bar position offsets, action count before overflow, or transition animation;
+- exact Peek width, breakpoint, hover/focus delay, or preview shortcut when host/editor focus requires a different safe binding;
+- exact picker search threshold or which fixed enum uses Select versus Menu internally when observable behavior remains equivalent;
+- exact Contextual Command Menu shortcut;
+- exact focus-ring visual calibration;
+- lower-level Radix/Obsidian primitive selection where multiple mature mechanics can satisfy the same visible contract.
+
+The durable interaction decisions are one top-layer dismissal/focus stack, one Action Registry authority, one collection selection/Bulk grammar, read-oriented Workflow Issue Peek with current-projection retargeting, a picker family sharing mechanics rather than semantics, safe shared confirmation mechanics, and a contextual Command Menu distinct from Obsidian's global command surface and Sidebar Search.
+
+### 5.14 Next drawing target
+
+All major Page, Creation Surface, and shared-interaction semantics are now covered at the drawing level. Continue with the **final owner -> consumer shared-component extraction matrix**:
+
+1. enumerate repeated responsibilities from the accepted drawings;
+2. map each responsibility to its consumers and existing implementation owner where one already exists;
+3. decide whether the final owner belongs to foundation, primitive, pattern, semantic/entity UI, interaction, shell, or Page-local composition;
+4. explicitly record responsibilities that must **not** be universalized despite visual similarity;
+5. identify stale implementation contracts such as mandatory global Location Bar or `Display`-required View Bar without letting current code override the accepted drawing;
+6. freeze the shared vocabulary;
+7. generate the one-time `docs/ui-blueprints.md` synthesis only after that matrix is stable;
+8. then synchronize durable accepted decisions into canonical UI/implementation documentation and retire this temporary workbench.
 
 ## 6. What existing documents mean during this drawing pass
 
@@ -3171,7 +3547,16 @@ Accepted drawing state currently says:
 - Quick Capture is an Obsidian command/global-hotkey title-first entry into the standard Triage Composer and does not reintroduce Capture into the closed normal Trail Sidebar;
 - Workflow Issue creation keeps required Project visible in the light header, creates in configured Backlog, and does not expose Status or Cycle as creation properties; changing Project clears an incompatible Milestone;
 - Project creation omits editable Status and uses the configured Unstarted default; Initiative creation has no Status; Milestone uses a smaller Project-local anchored quick-create over shared lower-level controls;
-- normal successful creation closes and returns to the invoking context; Triage Accept remains the destination-first source-removal/Review-progression exception.
+- normal successful creation closes and returns to the invoking context; Triage Accept remains the destination-first source-removal/Review-progression exception;
+- transient Menu/Picker/Popover/Peek/Composer/Confirmation interactions use one top-layer dismissal/focus stack: `Esc` dismisses only the topmost layer and never leaks through to a parent in the same key action;
+- Context Menu, `...`, contextual Command Menu, Bulk surfaces, and keyboard shortcuts consume one Action Registry authority; explicit unselected/entity-local invocation cannot accidentally target unrelated stale selection;
+- collection selection uses one floating Bulk surface and is bounded by the current visible actionable projection, so Filter/layout/navigation cannot leave invisible stale action targets;
+- Peek is a read-oriented Workflow Issue inspection surface inside Main View: ordinary Issue activation opens/retargets it, it does not change Inspector/history, and deep editing remains Full Item responsibility;
+- Peek retargeting/adjacent browsing uses the current visible ordered collection, while a target that leaves the projection closes Peek rather than inheriting Triage Review's successor workflow;
+- property/relation controls use a shared picker family (fixed single-select, searchable relation, multi-select, temporal) with common focus/dismiss/search mechanics but separate semantic owners;
+- confirmations share safe focus/Cancel/dismiss mechanics while keeping Delete, draft discard, lifecycle close, and complex workflows semantically distinct; recovery/Undo claims require real capability;
+- Trail contextual Command Menu is a searchable Action Registry presentation distinct from Obsidian's global Command Palette and from Sidebar Search;
+- Sidebar Search is navigation-only in V1 and does not open Peek over an unrelated current Main View;
 - Back / Forward remains host-owned.
 
 Do not synchronize canonical documents piecemeal after every small drawing decision. Perform durable synchronization after enough Page coverage exists to avoid repeated churn.
