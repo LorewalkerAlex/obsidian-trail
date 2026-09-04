@@ -1,33 +1,48 @@
 import { describe, expect, it } from "vitest";
 
-import { createTrailNavigationStore } from "./trail-navigation-state";
+import {
+  createTrailNavigationStore,
+  trailLocationsEqual,
+} from "./trail-navigation-state";
 
-describe("TrailNavigationStore", () => {
-  it("counts explicit navigation requests", () => {
+describe("Trail navigation state", () => {
+  it("starts on Home with normal Sidebar navigation", () => {
     const store = createTrailNavigationStore();
-
-    store.getState().navigate({ kind: "triage" });
-
-    expect(store.getState().location).toEqual({ kind: "triage" });
-    expect(store.getState().requestId).toBe(1);
-  });
-
-  it("does not create duplicate requests for the current location", () => {
-    const store = createTrailNavigationStore();
-    store.getState().navigate({ kind: "triage" });
-
-    store.getState().navigate({ kind: "triage" });
-
-    expect(store.getState().requestId).toBe(1);
-  });
-
-  it("restores host history without creating a new navigation request", () => {
-    const store = createTrailNavigationStore();
-    store.getState().navigate({ kind: "triage" });
-
-    store.getState().restore({ kind: "home" });
 
     expect(store.getState().location).toEqual({ kind: "home" });
-    expect(store.getState().requestId).toBe(1);
+    expect(store.getState().sidebarMode).toBe("navigation");
+  });
+
+  it("keeps Sidebar Search orthogonal to the host-restored Page location", () => {
+    const store = createTrailNavigationStore({ kind: "projects" });
+
+    store.getState().openSearch();
+    expect(store.getState().location).toEqual({ kind: "projects" });
+    expect(store.getState().sidebarMode).toBe("search");
+
+    store.getState().restore({ kind: "project", projectId: "project-a" });
+    expect(store.getState().location).toEqual({
+      kind: "project",
+      projectId: "project-a",
+    });
+    expect(store.getState().sidebarMode).toBe("search");
+
+    store.getState().closeSearch();
+    expect(store.getState().location).toEqual({
+      kind: "project",
+      projectId: "project-a",
+    });
+    expect(store.getState().sidebarMode).toBe("navigation");
+  });
+
+  it("compares identity-bearing Page locations by stable entity identity", () => {
+    expect(trailLocationsEqual(
+      { kind: "issue", issueId: "issue-a" },
+      { kind: "issue", issueId: "issue-a" },
+    )).toBe(true);
+    expect(trailLocationsEqual(
+      { kind: "cycle", cycleId: "cycle-a" },
+      { kind: "cycle", cycleId: "cycle-b" },
+    )).toBe(false);
   });
 });

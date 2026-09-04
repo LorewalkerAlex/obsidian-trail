@@ -1,47 +1,65 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
 
-export type TrailLocation =
+export type TrailProductLocation =
   | { readonly kind: "cycles" }
   | { readonly kind: "home" }
   | { readonly initiativeId: string; readonly kind: "initiative" }
+  | { readonly issueId: string; readonly kind: "issue" }
   | { readonly projectId: string; readonly kind: "project" }
   | { readonly kind: "projects" }
-  | { readonly kind: "search" }
-  | { readonly kind: "triage" };
+  | { readonly kind: "triage" }
+  | { readonly cycleId: string; readonly kind: "cycle" };
 
-export function trailLocationsEqual(left: TrailLocation, right: TrailLocation): boolean {
-  if (left.kind !== right.kind) return false;
+export type TrailLocation =
+  | TrailProductLocation
+  | { readonly kind: "foundation" };
 
-  if (left.kind === "initiative" && right.kind === "initiative") {
-    return left.initiativeId === right.initiativeId;
-  }
-  if (left.kind === "project" && right.kind === "project") {
-    return left.projectId === right.projectId;
-  }
-  return true;
-}
+export type TrailSidebarMode = "navigation" | "search";
 
 export interface TrailNavigationState {
   readonly location: TrailLocation;
-  readonly requestId: number;
-  readonly navigate: (location: TrailLocation) => void;
+  readonly sidebarMode: TrailSidebarMode;
+  readonly closeSearch: () => void;
+  readonly openSearch: () => void;
   readonly restore: (location: TrailLocation) => void;
 }
 
 export type TrailNavigationStore = StoreApi<TrailNavigationState>;
 
-export function createTrailNavigationStore(): TrailNavigationStore {
-  return createStore<TrailNavigationState>((set) => ({
-    location: { kind: "home" },
-    navigate: (location) => set((state) => trailLocationsEqual(state.location, location)
-      ? state
-      : {
-          location,
-          requestId: state.requestId + 1,
-        }),
-    requestId: 0,
-    restore: (location) => set((state) => trailLocationsEqual(state.location, location)
-      ? state
-      : { location }),
+export function trailLocationsEqual(
+  left: TrailLocation,
+  right: TrailLocation,
+): boolean {
+  if (left.kind !== right.kind) return false;
+
+  switch (left.kind) {
+    case "cycle":
+      return right.kind === "cycle" && left.cycleId === right.cycleId;
+    case "initiative":
+      return right.kind === "initiative" && left.initiativeId === right.initiativeId;
+    case "issue":
+      return right.kind === "issue" && left.issueId === right.issueId;
+    case "project":
+      return right.kind === "project" && left.projectId === right.projectId;
+    default:
+      return true;
+  }
+}
+
+export function createTrailNavigationStore(
+  initialLocation: TrailLocation = { kind: "home" },
+): TrailNavigationStore {
+  return createStore<TrailNavigationState>((set, get) => ({
+    closeSearch: () => {
+      if (get().sidebarMode !== "navigation") set({ sidebarMode: "navigation" });
+    },
+    location: initialLocation,
+    openSearch: () => {
+      if (get().sidebarMode !== "search") set({ sidebarMode: "search" });
+    },
+    restore: (location) => {
+      if (!trailLocationsEqual(get().location, location)) set({ location });
+    },
+    sidebarMode: "navigation",
   }));
 }

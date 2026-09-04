@@ -55,7 +55,7 @@ export class TrailView extends ItemView {
     const nextLocation = readTrailViewState(state).location;
     const currentLocation = this.navigationStore.getState().location;
     if (!trailLocationsEqual(currentLocation, nextLocation)) {
-      (result as ViewStateResult & { history?: boolean }).history = true;
+      result.history = true;
     }
     this.navigationStore.getState().restore(nextLocation);
     await super.setState(state, result);

@@ -41,14 +41,12 @@ Known published alignment debt includes:
 
 1. `TrailWorkspaceShell` / `TrailLocationBar` still express a mandatory global location/title contract. Target: thin Workspace Frame/Page Surface; Page owns header/breadcrumb/actions.
 2. `TrailViewBarProps` still requires `display`. Target: composition-oriented Collection Controls with only the controls accepted by the current Page.
-3. navigation/history predates the final Sidebar Search closure. Search is temporary Left Sidebar state, not a Main View Page/location.
-4. Foundation Lab is still entangled with unfinished Page fallback behavior rather than acting only as a development showroom Page.
-5. Foundation organization is specimen-by-specimen but lacks the final showroom hierarchy and State Gallery + Live Interaction convention.
-6. `TrailProgress` is the correct shared visual owner but still needs unavailable and normal/compact/micro density states.
-7. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
-8. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
-9. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
-10. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
+3. Foundation Lab is now an explicit development-only navigation location and no longer a Product fallback, but it still needs the Stage 2 shared Page chassis and the Stage 3 showroom hierarchy.
+4. `TrailProgress` is the correct shared visual owner but still needs unavailable and normal/compact/micro density states.
+5. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
+6. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
+7. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
+8. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
 
 These are implementation gaps, not design questions.
 
@@ -277,7 +275,7 @@ The architectural contract is frozen by `architecture.md` + `design-to-code-map.
 
 Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
 
-**After this documentation checkpoint, the next active code slice is Stage 1.**
+**Stage 0 is closed. Stage 1 is the active implementation stage.**
 
 ## 6. Foundation Lab Contract
 
@@ -434,7 +432,8 @@ Current key status:
 | Collection Row / Property Control | Implemented / consumer evidence | preserve useful owner, align final states/props in showroom |
 | Workspace Frame / LocationBar | Alignment Required | Stage 2 thin Page chassis; remove mandatory global location owner |
 | Collection Controls / required Display | Alignment Required | replace with composition-oriented controls |
-| Foundation Lab | Alignment Required | independent development Page + organized showroom; no Product fallback |
+| Host navigation / Sidebar Search boundary | Host-proven | finish Stage 1 with the Right Sidebar Inspector carrier |
+| Foundation Lab | Host-proven navigation / Alignment Required | Stage 2 shared Page chassis; Stage 3 showroom hierarchy and specimen convention |
 | Progress | Alignment Required | add normal/compact/micro/unavailable specimens/contract |
 | Selection / Action Registry / Peek / Confirmation / Composer | Mapped / partial or pending | create production owners just in time from real Page needs |
 
@@ -455,6 +454,11 @@ Build Page-external mechanics first:
 - establish/align Right Sidebar Inspector carrier without implementing every Inspector.
 
 Exit: host navigation/history boundaries match final architecture and Foundation can be reached in development without being a Product fallback.
+
+Current status:
+
+- **Stage 1A complete / Host-proven** — final Left Sidebar information architecture, stable Product Page locations, temporary Sidebar Search state, native Obsidian Back/Forward history, development-only Foundation navigation, and removal of Product-to-Foundation fallback are implemented and verified in the real host.
+- **Remaining Stage 1 work** — establish/align the Right Sidebar Inspector carrier and verify its host behavior without implementing future Inspector contents.
 
 ### Stage 2 — Shared Main View Page Chassis
 
@@ -603,28 +607,28 @@ Complete:
 
 ## 9. Active Slice
 
-After this documentation checkpoint, the next code slice is:
+Stage 1A host navigation is complete and Host-proven. The next code slice is:
 
-### Stage 1A — host navigation skeleton
+### Stage 1B — Right Sidebar Inspector carrier
 
 Scope:
 
-1. align stable Trail Product locations with the final UI contract; remove Search as a Main View location;
-2. implement the final Left Sidebar skeleton and Default Project shortcut behavior from existing Query/Runtime facts;
-3. expose `Development / Foundation` only in diagnostics/development mode;
-4. separate Foundation from unfinished Product Page fallback behavior;
-5. preserve native Obsidian Back/Forward for stable Product Page transitions;
-6. keep transient UI mechanics out of navigation history;
-7. keep the slice focused on host/navigation contracts—do not redesign Page content yet.
+1. establish the Trail Inspector as an Obsidian Right Sidebar carrier rather than a fake Main View column;
+2. make carrier availability follow stable Page identity: Home, Triage, Projects Root, and Sidebar Search have no Trail Inspector; stable Initiative, Project, Issue, and Cycle locations may expose the matching carrier;
+3. keep Stage 1B focused on host placement/target lifetime and use minimal placeholder content where future Inspector Read Models are not implemented yet;
+4. decide initial Inspector visibility once on location entry from actual Obsidian workspace capacity;
+5. after location entry, leave Inspector open/closed state under user/host control rather than toggling it repeatedly on resize or other transient UI changes;
+6. preserve unrelated Right Sidebar views and avoid destructive replacement/closure;
+7. keep Inspector state separate from Sidebar Search, navigation history, Peek, and future Page-local transient state.
 
 Exit evidence:
 
-- focused navigation/history tests;
-- build/typecheck if the navigation contracts affect compilation/bundling;
-- representative Obsidian evidence for Left Sidebar placement, Page transition, Back/Forward, and development Foundation entry;
-- no Product Page silently renders Foundation as fallback.
+- focused carrier/location-entry tests;
+- typecheck/build if the host adapter contracts affect compilation/bundling;
+- representative Obsidian evidence for real Right Sidebar placement, stable-target/no-target transitions, user-controlled visibility after entry, and preservation of unrelated Right Sidebar views;
+- no future Inspector content/read model is prematurely implemented merely to prove the carrier.
 
-Stage 2 Page Chassis begins only after Stage 1A is a stable published checkpoint.
+Stage 2 Page Chassis begins only after Stage 1 is a stable published checkpoint.
 
 ## 10. Slice Definition of Done
 

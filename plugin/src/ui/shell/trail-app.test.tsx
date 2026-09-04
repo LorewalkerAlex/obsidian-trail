@@ -82,19 +82,48 @@ function uiActions(edit = vi.fn()): TrailUiActions {
 }
 
 describe("TrailApp", () => {
-  it("keeps Foundation Lab outside product locations while Home remains the canonical initial location", () => {
+  it("renders Home instead of silently falling back to Foundation", () => {
     const navigationStore = createTrailNavigationStore();
     render(
       <TrailApp
         actions={uiActions()}
         navigationStore={navigationStore}
         runtimeStore={createTrailRuntimeStore()}
+        showDevelopment={false}
       />,
     );
 
     expect(navigationStore.getState().location).toEqual({ kind: "home" });
+    expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
+  });
+
+  it("renders Foundation only for the explicit development location", () => {
+    const navigationStore = createTrailNavigationStore();
+    act(() => navigationStore.getState().restore({ kind: "foundation" }));
+
+    const { rerender } = render(
+      <TrailApp
+        actions={uiActions()}
+        navigationStore={navigationStore}
+        runtimeStore={createTrailRuntimeStore()}
+        showDevelopment
+      />,
+    );
+
     expect(screen.getByRole("heading", { name: "Foundation lab" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Home" })).not.toBeInTheDocument();
+
+    rerender(
+      <TrailApp
+        actions={uiActions()}
+        navigationStore={navigationStore}
+        runtimeStore={createTrailRuntimeStore()}
+        showDevelopment={false}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
   }, 15_000);
 
   it("dispatches the shared Triage location and its UI-action boundary to the production Triage page", async () => {
@@ -109,11 +138,12 @@ describe("TrailApp", () => {
         actions={uiActions(edit)}
         navigationStore={navigationStore}
         runtimeStore={runtimeStore}
+        showDevelopment={false}
       />,
     );
 
     act(() => {
-      navigationStore.getState().navigate({ kind: "triage" });
+      navigationStore.getState().restore({ kind: "triage" });
     });
 
     expect(screen.getByRole("heading", { level: 1, name: "Triage" })).toBeInTheDocument();
