@@ -40,12 +40,11 @@ Do not reopen already-closed Product/UI decisions because older code or tests ex
 Known published alignment debt includes:
 
 1. `TrailViewBarProps` still requires `display`. Target: composition-oriented Collection Controls with only the controls accepted by the current Page.
-2. Foundation Lab now mounts through the shared Page chassis and remains an explicit development-only location, but it still needs the Stage 3 showroom hierarchy and specimen convention.
-3. `TrailProgress` is the correct shared visual owner but still needs unavailable and normal/compact/micro density states.
-4. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
-5. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
-6. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
-7. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
+2. `TrailProgress` is the correct shared visual owner but still needs unavailable and normal/compact/micro density states.
+3. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
+4. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
+5. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
+6. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
 
 These are implementation gaps, not design questions.
 
@@ -274,7 +273,7 @@ The architectural contract is frozen by `architecture.md` + `design-to-code-map.
 
 Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
 
-**Stages 0, 1, and 2 are closed. Stage 3 is the active implementation stage.**
+**Stages 0, 1, 2, and 3 are closed. Stage 4 is the active implementation stage.**
 
 ## 6. Foundation Lab Contract
 
@@ -427,13 +426,13 @@ Current key status:
 | Domain/Persistence/Mutation Runtime core | Accepted | consume; do not remodel |
 | readable/effective Runtime snapshot | Implemented | use once per top-level Read Model evaluation; profile before caching |
 | Page/surface Read Model boundary | Mapped / partial evidence | introduce just in time, first where real Page construction requires it |
-| Button/Input/Checkbox/basic primitives | Implemented / Foundation evidence | reorganize showroom; calibrate only as real consumers require |
-| Collection Row / Property Control | Implemented / consumer evidence | preserve useful owner, align final states/props in showroom |
+| Button/Input/Checkbox/basic primitives | Implemented / Lab-proven | Stage 4 aligns remaining variants and responsive/focus/disabled states as real consumers require |
+| Collection Row / Property Control | Lab-proven / Consumer-proven | preserve useful owners; Stage 4 aligns final states/props |
 | Workspace Frame / Page Surface | Consumer-proven / Host-proven | consume as the stable shared Main View chassis |
 | Collection Controls / required Display | Alignment Required | replace with composition-oriented controls |
 | Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
 | Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Project/Issue/Cycle Inspector Read Models and content remain Stage 7/8/10 |
-| Foundation Lab | Host-proven / Consumer-proven | Stage 3 showroom hierarchy and specimen convention |
+| Foundation Lab | Accepted / Host-proven | consume as the development showroom; reusable ownership remains outside Foundation |
 | Progress | Alignment Required | add normal/compact/micro/unavailable specimens/contract |
 | Selection / Action Registry / Peek / Confirmation / Composer | Mapped / partial or pending | create production owners just in time from real Page needs |
 
@@ -498,6 +497,12 @@ Interactions
 Add consistent specimen wrappers, State Gallery presentation, and Live Interaction areas. Do not yet invent every missing future component.
 
 Exit: existing production warehouse owners can be found, compared, and calibrated systematically.
+
+Current status:
+
+- **Stage 3 complete / Lab-proven** — Foundation is organized under the frozen five-shelf hierarchy with Foundation-owned specimen wrappers and explicit State Gallery / Live Interaction presentation.
+- **Stage 3 Host-proven** — the showroom remains usable inside the shared Page chassis across representative Obsidian pane sizes, and structural specimen groups use visible labeling without redundant host hover labels.
+- **Stage 3 closed** — shown capabilities remain production owners consumed by Foundation; unimplemented future owners such as Action Registry, Peek, Confirmation, and the standard Composer remain omitted rather than being replaced by Lab-only substitutes.
 
 ### Stage 4 — Align existing production warehouse
 
@@ -615,28 +620,28 @@ Complete:
 
 ## 9. Active Slice
 
-Stage 2 Shared Main View Page Chassis is complete, Consumer-proven, and Host-proven. This checkpoint closes Stage 2. The next code slice is:
+Stage 3 Foundation showroom structure is complete, Lab-proven, and Host-proven. This checkpoint closes Stage 3. The next code slice is:
 
-### Stage 3 — Foundation showroom structure
+### Stage 4 — Align existing production warehouse
 
 Scope:
 
-1. reorganize Foundation into the frozen `Visual Foundations / Primitives / Patterns / Semantic Entities / Interactions` showroom hierarchy;
-2. introduce only Foundation-owned specimen organization wrappers such as section, state-grid, specimen-row, description, and control-group helpers;
-3. expose consistent State Gallery and Live Interaction presentation where the existing production owner benefits from each form;
-4. keep every reusable capability in production ownership and ensure Foundation remains only a development consumer;
-5. preserve the shared Workspace Frame/Page Surface established in Stage 2 rather than creating a Lab-only Main View structure;
-6. do not invent missing future production components merely to fill showroom categories.
+1. align existing production primitives and patterns to the frozen contracts without moving reusable ownership into Foundation;
+2. add the missing `TrailProgress` normal/compact/micro/unavailable contract and representative Foundation states;
+3. replace the required `display` View Bar contract with composition-oriented Collection Controls whose actual Filter/Order/Layout/etc. slots are supplied by each Page;
+4. align Collection Row, Property Control, and the currently implemented semantic identities only where their public states/props are needed by real or imminent Product consumers;
+5. calibrate responsive, focus-visible, disabled, selected/highlighted, and constrained-width states in Foundation using the accepted showroom structure;
+6. do not pull Selection/Action Registry/Peek/Confirmation/Composer or Product-specific workflow forward unless a real Stage 4 alignment dependency requires it.
 
 Exit evidence:
 
-- existing production owners can be found and compared under the frozen showroom hierarchy;
-- representative State Gallery and Live Interaction specimens use production owners rather than Foundation substitutes;
-- focused Foundation tests cover the new organizational contract;
-- diagnostics build and representative Obsidian inspection confirm the showroom remains usable across practical Main pane sizes;
-- no production Page imports Foundation-only wrappers or fixtures.
+- changed production owners have focused owner/direct-consumer tests and compile/build validation appropriate to their public contracts;
+- representative production states are visible in Foundation through the Stage 3 showroom wrappers;
+- the required-Display contract is removed from shared Collection Controls without introducing Page-specific workflow;
+- aligned owners remain reusable production code with real or imminent Product consumers rather than Foundation-only abstractions;
+- representative Obsidian inspection confirms responsive/focus/presentation behavior where jsdom cannot establish it.
 
-Stage 4 production-warehouse alignment begins only after Stage 3 is a stable published checkpoint.
+Stage 5 Triage completion begins only after Stage 4 is a stable published checkpoint.
 
 ## 10. Slice Definition of Done
 
