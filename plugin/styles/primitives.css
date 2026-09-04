@@ -171,11 +171,22 @@ body textarea.trail-textarea:disabled {
   box-sizing: border-box;
   display: block;
   width: 100%;
-  height: 4px;
   overflow: hidden;
   border: 0;
   border-radius: var(--trail-radius-pill);
   background: var(--trail-surface-quiet);
+}
+
+.trail-progress--normal {
+  height: 4px;
+}
+
+.trail-progress--compact {
+  height: 3px;
+}
+
+.trail-progress--micro {
+  height: 2px;
 }
 
 .trail-progress::-webkit-progress-bar {
@@ -191,6 +202,20 @@ body textarea.trail-textarea:disabled {
 .trail-progress::-moz-progress-bar {
   border-radius: inherit;
   background: var(--trail-accent);
+}
+
+.trail-progress--unavailable,
+.trail-progress--unavailable::-webkit-progress-bar {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--trail-border-default) 0 3px,
+    transparent 3px 6px
+  );
+}
+
+.trail-progress--unavailable::-webkit-progress-value,
+.trail-progress--unavailable::-moz-progress-bar {
+  background: transparent;
 }
 
 .trail-separator {

@@ -5,23 +5,22 @@ type NativeButtonProps = Omit<
   "className" | "style"
 >;
 
+export type TrailPropertyControlDensity = "compact" | "normal";
+
 export type TrailPropertyControlProps = NativeButtonProps & {
-  readonly density?: "compact";
+  readonly density?: TrailPropertyControlDensity;
 };
 
 export function TrailPropertyControl({
-  density,
+  density = "normal",
   type = "button",
   ...props
 }: TrailPropertyControlProps) {
-  const className = density === "compact"
-    ? "trail-property-control trail-property-control--compact"
-    : "trail-property-control";
-
   return (
     <button
       {...props}
-      className={className}
+      className={`trail-property-control trail-property-control--${density}`}
+      data-density={density}
       type={type}
     />
   );

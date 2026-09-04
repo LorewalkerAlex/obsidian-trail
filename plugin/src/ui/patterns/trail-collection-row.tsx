@@ -18,9 +18,30 @@ export type TrailCollectionRowProps = NativeCollectionRowProps & {
   readonly selectionControl?: ReactNode;
 };
 
-function isSelectionControlTarget(target: EventTarget | null): boolean {
-  return target instanceof Element
-    && target.closest(".trail-collection-row__selection") !== null;
+const TRAIL_COLLECTION_ROW_INTERACTIVE_SELECTOR = [
+  ".trail-collection-row__selection",
+  "a",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "[contenteditable='true']",
+  "[role='button']",
+  "[role='checkbox']",
+  "[role='combobox']",
+  "[role='link']",
+  "[role='menuitem']",
+  "[role='option']",
+  "[role='switch']",
+].join(", ");
+
+function isNestedInteractiveTarget(
+  target: EventTarget | null,
+  row: HTMLDivElement,
+): boolean {
+  if (!(target instanceof Element) || target === row) return false;
+  const interactive = target.closest(TRAIL_COLLECTION_ROW_INTERACTIVE_SELECTOR);
+  return interactive !== null && interactive !== row && row.contains(interactive);
 }
 
 export function TrailCollectionRow({
@@ -36,11 +57,11 @@ export function TrailCollectionRow({
   const hasLeading = leading !== undefined && leading !== null;
   const selectable = selectionControl !== undefined && selectionControl !== null;
   const handleClick: MouseEventHandler<HTMLDivElement> = (event) => {
-    if (isSelectionControlTarget(event.target)) return;
+    if (isNestedInteractiveTarget(event.target, event.currentTarget)) return;
     onClick?.(event);
   };
   const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = (event) => {
-    if (isSelectionControlTarget(event.target)) return;
+    if (isNestedInteractiveTarget(event.target, event.currentTarget)) return;
     onKeyDown?.(event);
   };
 

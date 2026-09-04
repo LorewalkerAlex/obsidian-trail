@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { TrailCheckbox } from "../primitives/trail-checkbox";
 import { TrailCollectionRow } from "./trail-collection-row";
+import { TrailPropertyControl } from "./trail-property-control";
 
 describe("TrailCollectionRow", () => {
   it("keeps selection presentation separate from semantic leading content", () => {
@@ -80,6 +81,65 @@ describe("TrailCollectionRow", () => {
     expect(onRowClick).toHaveBeenCalledOnce();
 
     fireEvent.keyDown(row, { key: "Enter" });
+    expect(onRowKeyDown).toHaveBeenCalledOnce();
+  });
+
+  it("keeps inline property and explicit action targets out of ordinary row activation", () => {
+    const onRowClick = vi.fn();
+    const onRowKeyDown = vi.fn();
+    const onPropertyClick = vi.fn();
+    const onActionClick = vi.fn();
+
+    render(
+      <TrailCollectionRow
+        data-testid="row"
+        onClick={onRowClick}
+        onKeyDown={onRowKeyDown}
+      >
+        <span>Issue title</span>
+        <TrailPropertyControl onClick={onPropertyClick}>In progress</TrailPropertyControl>
+        <button onClick={onActionClick} type="button">More</button>
+      </TrailCollectionRow>,
+    );
+
+    const property = screen.getByRole("button", { name: "In progress" });
+    const action = screen.getByRole("button", { name: "More" });
+
+    fireEvent.click(property);
+    fireEvent.keyDown(property, { key: "Enter" });
+    expect(onPropertyClick).toHaveBeenCalledOnce();
+    expect(onRowClick).not.toHaveBeenCalled();
+    expect(onRowKeyDown).not.toHaveBeenCalled();
+
+    fireEvent.click(action);
+    expect(onActionClick).toHaveBeenCalledOnce();
+    expect(onRowClick).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText("Issue title"));
+    expect(onRowClick).toHaveBeenCalledOnce();
+  });
+
+  it("does not mistake a focusable row itself for a nested interactive target", () => {
+    const onRowClick = vi.fn();
+    const onRowKeyDown = vi.fn();
+
+    render(
+      <TrailCollectionRow
+        data-testid="row"
+        onClick={onRowClick}
+        onKeyDown={onRowKeyDown}
+        role="button"
+        tabIndex={0}
+      >
+        <span>Focusable row title</span>
+      </TrailCollectionRow>,
+    );
+
+    const row = screen.getByRole("button", { name: "Focusable row title" });
+    fireEvent.click(screen.getByText("Focusable row title"));
+    fireEvent.keyDown(row, { key: "Enter" });
+
+    expect(onRowClick).toHaveBeenCalledOnce();
     expect(onRowKeyDown).toHaveBeenCalledOnce();
   });
 

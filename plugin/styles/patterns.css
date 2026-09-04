@@ -2,10 +2,10 @@
   box-sizing: border-box;
   display: flex;
   min-width: 0;
-  min-height: var(--trail-space-16);
+  min-height: var(--trail-control-height-lg);
   align-items: center;
-  gap: var(--trail-space-5);
-  padding: 0 var(--trail-space-7);
+  gap: var(--trail-space-4);
+  padding: 0 var(--trail-space-6);
   border-bottom: 1px solid var(--trail-row-divider);
   color: var(--trail-text-secondary);
   font-size: var(--trail-font-size-supporting);
@@ -58,14 +58,14 @@ body button.trail-property-control {
   display: inline-flex;
   width: fit-content;
   min-width: 0;
-  height: 26px;
+  height: var(--trail-control-height-sm);
   min-height: 0;
   align-items: center;
-  gap: var(--trail-space-4);
+  gap: var(--trail-space-3);
   margin: 0;
-  padding: 0 var(--trail-space-5);
+  padding: 0 var(--trail-space-4);
   border: 1px solid var(--trail-control-border);
-  border-radius: var(--trail-radius-sm);
+  border-radius: var(--trail-radius-xs);
   outline: 0;
   background: var(--trail-control-surface);
   background-image: none;
@@ -75,7 +75,7 @@ body button.trail-property-control {
   font-size: var(--trail-font-size-supporting);
   line-height: 1;
   white-space: nowrap;
-  transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
+  transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), color var(--trail-motion-fast);
 }
 
 body button.trail-property-control:hover:not(:disabled) {
@@ -98,32 +98,34 @@ body button.trail-property-control:focus-visible {
 }
 
 body button.trail-property-control:disabled {
+  border-color: var(--trail-border-subtle);
+  background: var(--trail-control-disabled-surface);
   color: var(--trail-text-faint);
   cursor: default;
 }
 
 .trail-property-control--compact {
-  min-width: 26px;
+  min-width: var(--trail-control-height-sm);
   justify-content: center;
-  padding: 0 var(--trail-space-4);
+  padding: 0 var(--trail-space-3);
 }
 
 .trail-view-bar {
   box-sizing: border-box;
   display: flex;
   min-width: 0;
-  min-height: var(--trail-control-height-lg);
+  min-height: var(--trail-control-height-md);
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trail-space-3) var(--trail-space-8);
-  padding: var(--trail-space-2) var(--trail-space-6);
+  gap: var(--trail-space-2) var(--trail-space-6);
+  padding: var(--trail-space-1) var(--trail-space-4);
   border-bottom: 1px solid var(--trail-border-subtle);
 }
 
 .trail-view-bar__leading {
   display: flex;
-  min-width: min(12rem, 100%);
-  flex: 1 1 12rem;
+  min-width: min(10rem, 100%);
+  flex: 1 1 10rem;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--trail-space-3);
@@ -134,7 +136,7 @@ body button.trail-property-control:disabled {
   min-width: 0;
   flex: 0 0 auto;
   align-items: center;
-  gap: var(--trail-space-2);
+  gap: var(--trail-space-1);
   margin-left: auto;
 }
 
@@ -216,7 +218,6 @@ body button.trail-view-bar__action:disabled {
   display: inline-flex;
   align-items: center;
   gap: var(--trail-space-1);
-  margin-right: var(--trail-space-2);
 }
 
 .trail-view-layout-switch .trail-icon-button {

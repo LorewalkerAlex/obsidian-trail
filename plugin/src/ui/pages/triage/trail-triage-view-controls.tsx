@@ -157,10 +157,8 @@ export function TrailTriageViewControls({
 
   return (
     <TrailViewBar
-      display={(
-        <TrailTriageDisplay onValueChange={onOrderingChange} value={ordering} />
-      )}
-      filter={(
+      label="Triage view controls"
+      leading={(
         <TrailCollectionFilter
           onClearAll={onClearAllFilters}
           onClearClause={onClearFilterClause}
@@ -170,7 +168,9 @@ export function TrailTriageViewControls({
           state={filter}
         />
       )}
-      label="Triage view controls"
+      trailing={(
+        <TrailTriageDisplay onValueChange={onOrderingChange} value={ordering} />
+      )}
     />
   );
 }

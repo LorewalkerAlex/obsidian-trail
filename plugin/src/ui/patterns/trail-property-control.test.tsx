@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { TrailPropertyControl } from "./trail-property-control";
 
 describe("TrailPropertyControl", () => {
-  it("provides a compact property-action shell without owning property semantics", () => {
+  it("provides the normal property-action shell without owning property semantics", () => {
     render(
       <TrailPropertyControl aria-haspopup="listbox">
         <span aria-hidden="true">◉</span>
@@ -14,20 +14,38 @@ describe("TrailPropertyControl", () => {
 
     const control = screen.getByRole("button", { name: "In progress" });
 
-    expect(control).toHaveClass("trail-property-control");
-    expect(control).not.toHaveClass("trail-property-control--compact");
+    expect(control).toHaveClass(
+      "trail-property-control",
+      "trail-property-control--normal",
+    );
+    expect(control).toHaveAttribute("data-density", "normal");
     expect(control).toHaveAttribute("aria-haspopup", "listbox");
     expect(control).toHaveAttribute("type", "button");
   });
 
-  it("exposes only the proven compact density variant", () => {
+  it("exposes the compact density through the same production owner", () => {
     render(
       <TrailPropertyControl density="compact">M</TrailPropertyControl>,
     );
 
-    expect(screen.getByRole("button", { name: "M" })).toHaveClass(
-      "trail-property-control--compact",
+    const control = screen.getByRole("button", { name: "M" });
+    expect(control).toHaveClass("trail-property-control--compact");
+    expect(control).toHaveAttribute("data-density", "compact");
+  });
+
+  it("preserves native disabled behavior as an explicit reusable state", () => {
+    const onClick = vi.fn();
+
+    render(
+      <TrailPropertyControl disabled onClick={onClick}>
+        Unavailable
+      </TrailPropertyControl>,
     );
+
+    const control = screen.getByRole("button", { name: "Unavailable" });
+    expect(control).toBeDisabled();
+    fireEvent.click(control);
+    expect(onClick).not.toHaveBeenCalled();
   });
 
   it("forwards native interaction without adding picker or mutation behavior", () => {

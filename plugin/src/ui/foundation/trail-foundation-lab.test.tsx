@@ -39,9 +39,35 @@ describe("TrailFoundationLab", () => {
     expect(screen.getByRole("searchbox", { name: "Search" })).toHaveClass("trail-input");
     expect(screen.getByRole("textbox", { name: "Description" })).toHaveClass("trail-textarea");
     expect(screen.getByRole("checkbox", { name: "Checked specimen" })).toBeChecked();
-    expect(screen.getByRole("progressbar", { name: "Progress partial" })).toHaveClass("trail-progress");
+    expect(screen.getByRole("progressbar", { name: "Progress partial" })).toHaveClass(
+      "trail-progress",
+      "trail-progress--normal",
+    );
+    expect(screen.getByRole("progressbar", { name: "Progress compact" })).toHaveClass(
+      "trail-progress--compact",
+    );
+    expect(screen.getByRole("progressbar", { name: "Progress micro" })).toHaveClass(
+      "trail-progress--micro",
+    );
+    expect(screen.getByRole("progressbar", { name: "Progress unavailable" })).toHaveAttribute(
+      "aria-valuetext",
+      "Unavailable",
+    );
     expect(screen.getByRole("separator", { name: "Separator specimen" })).toHaveClass("trail-separator");
-    expect(screen.getByRole("button", { name: "In progress" })).toHaveClass("trail-property-control");
+    expect(screen.getByRole("button", { name: "In progress" })).toHaveClass(
+      "trail-property-control",
+      "trail-property-control--normal",
+    );
+    expect(screen.getByRole("button", { name: "M" })).toHaveClass(
+      "trail-property-control--compact",
+    );
+    expect(screen.getByRole("button", { name: "Unavailable" })).toBeDisabled();
+    const collectionControls = within(screen.getByRole("group", {
+      name: "Project workspace view controls",
+    }));
+    expect(collectionControls.getByRole("button", { name: "Filter" })).toBeInTheDocument();
+    expect(collectionControls.getByRole("group", { name: "Project layout" })).toBeInTheDocument();
+    expect(collectionControls.queryByRole("button", { name: "Display" })).not.toBeInTheDocument();
     expect(screen.getByText("Selected collection row")).toBeInTheDocument();
     expect(screen.getByText("Review urgent capture before the next planning pass")).toBeInTheDocument();
 
@@ -70,6 +96,19 @@ describe("TrailFoundationLab", () => {
     fireEvent.click(selection);
     expect(selection).toBeChecked();
     expect(selectionRow).toHaveAttribute("data-selected", "true");
+
+    const intentSpecimen = screen.getByRole("group", {
+      name: "Row intent separation",
+    });
+    const property = within(intentSpecimen).getByRole("button", {
+      name: "Change inline status",
+    });
+    expect(within(intentSpecimen).getByText("Row 0 · Property 0")).toBeInTheDocument();
+
+    fireEvent.click(property);
+    expect(within(intentSpecimen).getByText("Row 0 · Property 1")).toBeInTheDocument();
+    fireEvent.click(within(intentSpecimen).getByText("Activate row content"));
+    expect(within(intentSpecimen).getByText("Row 1 · Property 1")).toBeInTheDocument();
 
     const layoutSpecimen = screen.getByRole("group", {
       name: "Layout choice",

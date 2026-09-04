@@ -122,9 +122,49 @@ describe("Trail core primitives", () => {
     render(<TrailProgress label="Project progress" max={12} value={8} />);
 
     const progress = screen.getByRole("progressbar", { name: "Project progress" });
-    expect(progress).toHaveClass("trail-progress");
+    expect(progress).toHaveClass("trail-progress", "trail-progress--normal");
     expect(progress).toHaveAttribute("max", "12");
     expect(progress).toHaveAttribute("value", "8");
+    expect(progress).not.toHaveAttribute("aria-valuetext");
+  });
+
+  it("supports compact and micro Progress density without changing value semantics", () => {
+    const { rerender } = render(
+      <TrailProgress density="compact" label="Compact progress" max={12} value={8} />,
+    );
+
+    expect(screen.getByRole("progressbar", { name: "Compact progress" })).toHaveClass(
+      "trail-progress--compact",
+    );
+
+    rerender(
+      <TrailProgress density="micro" label="Micro progress" max={12} value={8} />,
+    );
+
+    const progress = screen.getByRole("progressbar", { name: "Micro progress" });
+    expect(progress).toHaveClass("trail-progress--micro");
+    expect(progress).toHaveAttribute("max", "12");
+    expect(progress).toHaveAttribute("value", "8");
+  });
+
+  it("distinguishes unavailable Progress from a real zero value", () => {
+    const { rerender } = render(
+      <TrailProgress label="Project progress" max={12} value={0} />,
+    );
+
+    const zero = screen.getByRole("progressbar", { name: "Project progress" });
+    expect(zero).toHaveAttribute("value", "0");
+    expect(zero).not.toHaveClass("trail-progress--unavailable");
+    expect(zero).not.toHaveAttribute("aria-valuetext");
+
+    rerender(<TrailProgress label="Project progress" unavailable />);
+
+    const unavailable = screen.getByRole("progressbar", { name: "Project progress" });
+    expect(unavailable).toHaveClass("trail-progress--unavailable", "trail-progress--normal");
+    expect(unavailable).toHaveAttribute("aria-valuetext", "Unavailable");
+    expect(unavailable).toHaveAttribute("data-unavailable", "true");
+    expect(unavailable).toHaveAttribute("max", "1");
+    expect(unavailable).toHaveAttribute("value", "0");
   });
 
   it("uses a semantic horizontal Separator without caller-owned styling", () => {

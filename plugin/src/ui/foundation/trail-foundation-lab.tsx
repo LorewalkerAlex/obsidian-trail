@@ -22,7 +22,6 @@ import {
   LabControlGroup,
   LabSection,
   LabSpecimenRow,
-  LabStateGrid,
 } from "./trail-lab-showroom";
 
 interface TrailFoundationLabProps {
@@ -46,7 +45,7 @@ function runtimeLabel(control: TrailRuntimeControl): string {
   }
 }
 
-type CalibrationIconKind = "board" | "dots" | "filter" | "list" | "search" | "sliders";
+type CalibrationIconKind = "board" | "dots" | "filter" | "list" | "search";
 
 function CalibrationIcon({ kind }: { readonly kind: CalibrationIconKind }) {
   if (kind === "list") {
@@ -140,6 +139,8 @@ function CollectionRowContent({
 export function TrailFoundationLab({ control, revision }: TrailFoundationLabProps) {
   const [layout, setLayout] = useState<"board" | "list">("list");
   const [priority, setPriority] = useState<TrailPriority | undefined>("high");
+  const [propertyActions, setPropertyActions] = useState(0);
+  const [rowActivations, setRowActivations] = useState(0);
   const [selectionSelected, setSelectionSelected] = useState(false);
 
   return (
@@ -189,7 +190,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </LabSection>
 
       <LabSection
-        description="Generic production primitives shown without inventing the Stage 4 density or unavailable contracts that do not exist yet."
+        description="Generic production primitives shown without inventing future workflow-specific behavior."
         id="primitives"
         title="Primitives"
       >
@@ -227,25 +228,37 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
         </LabSpecimenRow>
 
         <LabSpecimenRow
-          description="Stage 4 still owns density and unavailable variants; this gallery only compares values supported by the current production owner."
+          description="One production owner now covers value states, normal/compact/micro density, and unavailable presentation without owning any progress calculation."
           kind="state-gallery"
           owner="TrailProgress"
           title="Progress"
         >
-          <LabStateGrid>
-            <div className="trail-lab-progress-specimen">
+          <div className="trail-lab-property-panel">
+            <div className="trail-lab-property-row">
+              <span>Normal · 0%</span>
               <TrailProgress label="Progress zero" max={12} value={0} />
-              <span>0%</span>
             </div>
-            <div className="trail-lab-progress-specimen">
+            <div className="trail-lab-property-row">
+              <span>Normal · 67%</span>
               <TrailProgress label="Progress partial" max={12} value={8} />
-              <span>67%</span>
             </div>
-            <div className="trail-lab-progress-specimen">
+            <div className="trail-lab-property-row">
+              <span>Normal · 100%</span>
               <TrailProgress label="Progress complete" max={12} value={12} />
-              <span>100%</span>
             </div>
-          </LabStateGrid>
+            <div className="trail-lab-property-row">
+              <span>Compact · 67%</span>
+              <TrailProgress density="compact" label="Progress compact" max={12} value={8} />
+            </div>
+            <div className="trail-lab-property-row">
+              <span>Micro · 67%</span>
+              <TrailProgress density="micro" label="Progress micro" max={12} value={8} />
+            </div>
+            <div className="trail-lab-property-row">
+              <span>Unavailable</span>
+              <TrailProgress label="Progress unavailable" unavailable />
+            </div>
+          </div>
         </LabSpecimenRow>
 
         <LabSpecimenRow kind="state-gallery" owner="TrailSeparator" title="Separator">
@@ -254,7 +267,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </LabSection>
 
       <LabSection
-        description="Reusable composition mechanics. Existing alignment debt is displayed as evidence and remains owned by Stage 4 rather than being silently redesigned here."
+        description="Reusable composition mechanics shown through production owners with page-supplied controls."
         id="patterns"
         title="Patterns"
       >
@@ -280,38 +293,42 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
           </div>
         </LabSpecimenRow>
 
-        <LabSpecimenRow kind="state-gallery" owner="TrailPropertyControl" title="Property control">
+        <LabSpecimenRow
+          description="The production shell exposes normal, compact, and native disabled states while property identity and picker behavior remain semantic-consumer responsibilities."
+          kind="state-gallery"
+          owner="TrailPropertyControl"
+          title="Property control"
+        >
           <div className="trail-lab-property-panel">
             <div className="trail-lab-property-row">
-              <span>Status</span>
+              <span>Normal</span>
               <TrailPropertyControl>
                 <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
                 In progress
               </TrailPropertyControl>
             </div>
             <div className="trail-lab-property-row">
-              <span>Estimate</span>
+              <span>Compact</span>
               <TrailPropertyControl density="compact">M</TrailPropertyControl>
             </div>
             <div className="trail-lab-property-row">
-              <span>More</span>
-              <TrailPropertyControl aria-label="More properties specimen">…</TrailPropertyControl>
+              <span>Disabled</span>
+              <TrailPropertyControl disabled>Unavailable</TrailPropertyControl>
             </div>
           </div>
         </LabSpecimenRow>
 
         <LabSpecimenRow
-          description="This is the current production View Bar contract. The required Display slot remains explicit alignment debt for Stage 4."
+          description="Leading and trailing slots are supplied by the page. This project-style specimen intentionally has no generic Display control."
           kind="state-gallery"
           owner="TrailViewBar"
-          title="Collection controls evidence"
+          title="Collection controls"
         >
           <div className="trail-lab-view-bar-specimen">
             <TrailViewBar
-              display={<TrailViewBarAction icon={<CalibrationIcon kind="sliders" />} label="Display" />}
-              filter={<TrailViewBarAction icon={<CalibrationIcon kind="filter" />} label="Filter" />}
               label="Project workspace view controls"
-              layout={(
+              leading={<TrailViewBarAction icon={<CalibrationIcon kind="filter" />} label="Filter" />}
+              trailing={(
                 <TrailViewLayoutSwitch
                   label="Project layout"
                   onValueChange={setLayout}
@@ -385,6 +402,37 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
                 size="M"
                 title="Toggle selection without changing semantic leading content"
               />
+            </TrailCollectionRow>
+          </div>
+        </LabSpecimenRow>
+
+        <LabSpecimenRow
+          description="Nested property controls keep their own intent; ordinary row activation remains available from non-interactive row content."
+          kind="live-interaction"
+          owner="TrailCollectionRow + TrailPropertyControl"
+          title="Row intent separation"
+        >
+          <div className="trail-lab-list">
+            <TrailCollectionRow
+              leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />}
+              onClick={() => setRowActivations((count) => count + 1)}
+            >
+              <div className="trail-lab-list-row__content">
+                <span className="trail-lab-list-row__id">TRAIL-203</span>
+                <span className="trail-lab-list-row__title">
+                  Activate row content
+                  <span className="trail-lab-list-row__meta">
+                    Row {rowActivations} · Property {propertyActions}
+                  </span>
+                </span>
+                <TrailPropertyControl
+                  aria-label="Change inline status"
+                  onClick={() => setPropertyActions((count) => count + 1)}
+                >
+                  <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
+                  In progress
+                </TrailPropertyControl>
+              </div>
             </TrailCollectionRow>
           </div>
         </LabSpecimenRow>

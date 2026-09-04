@@ -93,17 +93,15 @@ export function TrailViewLayoutSwitch<Value extends string>({
 }
 
 export type TrailViewBarProps = {
-  readonly display: ReactNode;
-  readonly filter: ReactNode;
   readonly label?: string;
-  readonly layout?: ReactNode;
+  readonly leading: ReactNode;
+  readonly trailing?: ReactNode;
 };
 
 export function TrailViewBar({
-  display,
-  filter,
-  label = "Collection view controls",
-  layout,
+  label = "Collection controls",
+  leading,
+  trailing,
 }: TrailViewBarProps) {
   return (
     <div
@@ -111,11 +109,10 @@ export function TrailViewBar({
       className="trail-view-bar"
       role="group"
     >
-      <div className="trail-view-bar__leading">{filter}</div>
-      <div className="trail-view-bar__trailing">
-        {layout}
-        {display}
-      </div>
+      <div className="trail-view-bar__leading">{leading}</div>
+      {trailing === undefined ? null : (
+        <div className="trail-view-bar__trailing">{trailing}</div>
+      )}
     </div>
   );
 }

@@ -17,19 +17,16 @@ function TestIcon({ name }: { readonly name: string }) {
 }
 
 describe("TrailViewBar", () => {
-  it("composes filter, binary layout, and display controls in one view bar", () => {
+  it("composes page-supplied leading and trailing controls without a required Display slot", () => {
     const onValueChange = vi.fn();
 
     render(
       <TrailViewBar
-        display={(
-          <TrailViewBarAction icon={<TestIcon name="display-icon" />} label="Display" />
-        )}
-        filter={(
+        label="Project workspace view controls"
+        leading={(
           <TrailViewBarAction icon={<TestIcon name="filter-icon" />} label="Filter" />
         )}
-        label="Project workspace view controls"
-        layout={(
+        trailing={(
           <TrailViewLayoutSwitch
             label="Project layout"
             onValueChange={onValueChange}
@@ -56,13 +53,12 @@ describe("TrailViewBar", () => {
     });
     const controls = within(viewBar);
     const filter = controls.getByRole("button", { name: "Filter" });
-    const display = controls.getByRole("button", { name: "Display" });
     const list = controls.getByRole("button", { name: "List layout" });
     const board = controls.getByRole("button", { name: "Board layout" });
 
     expect(filter).toHaveClass("trail-view-bar__action");
     expect(filter).toHaveAttribute("type", "button");
-    expect(display).toHaveClass("trail-view-bar__action");
+    expect(controls.queryByRole("button", { name: "Display" })).not.toBeInTheDocument();
     expect(list).toHaveAttribute("aria-pressed", "true");
     expect(board).toHaveAttribute("aria-pressed", "false");
 
@@ -71,24 +67,21 @@ describe("TrailViewBar", () => {
     expect(onValueChange).toHaveBeenCalledWith("board");
   });
 
-  it("lets List-only consumers omit the layout slot", () => {
-    render(
+  it("lets a consumer omit trailing controls instead of manufacturing a generic action", () => {
+    const { container } = render(
       <TrailViewBar
-        display={(
-          <TrailViewBarAction icon={<TestIcon name="display-icon" />} label="Display" />
-        )}
-        filter={(
+        label="Initiative focus controls"
+        leading={(
           <TrailViewBarAction icon={<TestIcon name="filter-icon" />} label="Filter" />
         )}
-        label="Triage view controls"
       />,
     );
 
-    const viewBar = screen.getByRole("group", { name: "Triage view controls" });
+    const viewBar = screen.getByRole("group", { name: "Initiative focus controls" });
     const controls = within(viewBar);
 
     expect(controls.getByRole("button", { name: "Filter" })).toBeInTheDocument();
-    expect(controls.getByRole("button", { name: "Display" })).toBeInTheDocument();
-    expect(controls.queryByRole("group", { name: "Layout" })).not.toBeInTheDocument();
+    expect(controls.queryByRole("button", { name: "Display" })).not.toBeInTheDocument();
+    expect(container.querySelector(".trail-view-bar__trailing")).toBeNull();
   });
 });

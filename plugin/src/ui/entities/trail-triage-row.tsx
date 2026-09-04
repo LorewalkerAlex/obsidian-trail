@@ -1,7 +1,4 @@
-import type {
-  MouseEventHandler,
-  ReactNode,
-} from "react";
+import type { ReactNode } from "react";
 
 import type { TrailPriority } from "../../domain/model/trail-values";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
@@ -22,11 +19,6 @@ export interface TrailTriageRowProps {
   readonly title: string;
 }
 
-function isInteractiveTarget(target: EventTarget | null): boolean {
-  return target instanceof Element
-    && target.closest("a, button, input, select, textarea, [role='button'], [role='combobox']") !== null;
-}
-
 export function TrailTriageRow({
   highlighted = false,
   labels,
@@ -38,14 +30,7 @@ export function TrailTriageRow({
   title,
 }: TrailTriageRowProps) {
   const priorityPresentation = getTrailPriorityPresentation(priority);
-  const handleRowClick: MouseEventHandler<HTMLDivElement> = (event) => {
-    if (isInteractiveTarget(event.target)) return;
-    onActivate?.();
-  };
-  const handleTitleClick: MouseEventHandler<HTMLButtonElement> = (event) => {
-    event.stopPropagation();
-    onActivate?.();
-  };
+  const activate = () => onActivate?.();
 
   return (
     <TrailCollectionRow
@@ -59,7 +44,7 @@ export function TrailTriageRow({
           <TrailPriorityGlyph priority={priority} />
         </span>
       )}
-      onClick={onActivate === undefined ? undefined : handleRowClick}
+      onClick={onActivate === undefined ? undefined : activate}
       selected={selected}
       selectionControl={onSelectedChange === undefined ? undefined : (
         <TrailCheckbox
@@ -75,7 +60,7 @@ export function TrailTriageRow({
         ) : (
           <button
             className="trail-triage-row__title trail-triage-row__title-button"
-            onClick={handleTitleClick}
+            onClick={activate}
             type="button"
           >
             {title}
