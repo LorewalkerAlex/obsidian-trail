@@ -67,7 +67,7 @@ Runtime
 | Sidebar Search | Initiative/Project/Workflow Issue discovery; no Search Page/Peek/Triage results | `query/search` Sidebar Search Read Model, `ui/shell`, shared result-list/navigation patterns | Query + Sidebar UI + host keyboard/focus |
 | Issue Full Item | stable Issue identity + lightweight Markdown body + structured Inspector | Issue Full Item Read Model, dedicated Issue Page/editor owner, Issue semantic UI, Obsidian/CodeMirror adapter conventions | Query + editor/UI + representative host |
 | Persistent Inspectors | effective entity presentation projection; host Right Sidebar | Query Inspector Read Models/entity presentation, Inspector compositions, Obsidian side-view adapter | Query + UI + host side-view |
-| Workspace Frame / responsive composition | actual pane capacity; Page-owned header/breadcrumb | `ui/shell` frame, shared Page Surface/Page Header/controls patterns, `ui/pages`, Obsidian adapter | UI + representative pane/split/sidebar sizes |
+| Workspace Frame / layout containment / responsive composition | actual pane capacity; Page-owned header/breadcrumb; owned normal-flow regions | `ui/shell` Frame/Page Surface for Main View capacity; direct-child allocation by owning `ui/pages`, `ui/patterns`, and `ui/entities`; Obsidian adapter for host pane capacity | UI + representative pane/split/sidebar sizes + constrained containment |
 | Runtime/Data-Issue feedback | Runtime control/pending/health + LKG; no feedback Domain facts | Runtime/Query inputs, surface Read Models, shared feedback patterns/shell, Obsidian host actions such as Open source | runtime/query + UI + performance/host |
 | External managed-file change | authoritative persistence + refresh/source-health convergence | source-sync/runtime/persistence/adapters | source-sync + representative host |
 | Breaking legacy schema upgrade | explicit one-way migration only | `migration` plus normal persistence/validation owners | migration + full consumer graph |
@@ -190,6 +190,7 @@ Foundation may own specimen wrappers, descriptions, controls, and fixture data. 
 | Responsibility | Target owner | Explicit non-responsibility |
 | --- | --- | --- |
 | Workspace Frame / Page Surface | `ui/shell` + thin shared pattern where useful | no mandatory Location Bar/breadcrumb/title or Page workflow |
+| Normal-flow layout containment / spatial allocation | whichever owner directly arranges the children: `ui/shell`, `ui/pages`, `ui/patterns`, or `ui/entities` as applicable | no `UniversalLayout`; a child does not position unrelated siblings; no uncontrolled overflow |
 | Page Header | `ui/patterns` | Page supplies actual identity/ancestry/actions |
 | Collection Controls | `ui/patterns` | no required Display; Page supplies Filter/Order/Layout/etc. |
 | Collection Row shell | `ui/patterns` | no Domain field knowledge and no Runtime lookup |
@@ -259,16 +260,21 @@ Styles remain canonically owned under `plugin/styles/` and are deterministically
 
 ## 6. Known Published-Code Alignment Targets
 
-The map describes **target ownership**, not current implementation state. At the `a3978382e1b7a08ca5662c70c085f298d9bf35de` documentation baseline, known published-code alignment targets include:
+The map describes **target ownership**, not current implementation state. At the published UI checkpoint `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` (`refactor: align shared ui contracts`), the following alignment facts are established:
 
-1. `TrailWorkspaceShell` currently requires `locationBar`, and `TrailLocationBar` owns a global `<h1>` location presentation. Target ownership is Workspace Frame/Page Surface only + Page-owned header/breadcrumb.
-2. `TrailViewBarProps` currently requires `display`. Target ownership is composition-oriented Collection Controls with Page-supplied direct controls and no generic Display requirement.
-3. `TrailProgress` is the correct shared owner but needs unavailable and density variants rather than entity-specific progress components.
-4. `ui/interactions` currently proves shared Filter mechanics but does not yet contain the complete Selection/Action Registry/Peek/transient-stack/Confirmation/Composer ownership required by the frozen V1 design.
-5. current Triage composition subscribes broadly to Runtime and combines several raw/focused selectors in the Page. Target: one Triage surface Read Model per top-level evaluation, with Page-local Review/Filter state remaining explicit UI input.
-6. existing shared/derived Query helpers can each acquire a readable Runtime snapshot independently. New surface composition must avoid repeated pending replay/index rebuild inside one top-level Read Model evaluation; introduce caching only if evidence later requires it.
-7. current Search Query still exposes legacy result kinds beyond the frozen Sidebar Search contract. Target result kinds are Initiative, Project, and Workflow Issue only; Search remains Left Sidebar mode rather than a Page/location.
-8. Foundation Lab must become a development showroom Page using the same Main View Page chassis as Product Pages, rather than defining a private chassis or remaining a fallback for unimplemented Product locations.
+- Workspace Frame / Page Surface ownership is aligned: the mandatory shared Location Bar contract is gone and Page identity remains Page-owned.
+- Collection Controls is composition-oriented and no longer requires a generic `Display` slot.
+- `TrailProgress` owns normal/compact/micro density plus explicit unavailable presentation.
+- Foundation is a development showroom on the shared Page chassis rather than a Product fallback/private component library.
+- `TrailCollectionRow` owns nested interactive-target isolation, and `TrailPropertyControl` exposes normal/compact/disabled reusable states.
+
+Known remaining published-code alignment targets include:
+
+1. normal-flow layout containment / spatial ownership is only partially consistent across current compositions. Direct-child owners must prevent sibling overlap, keep essential controls inside their allocated regions, and make intentional overflow ownership explicit.
+2. `ui/interactions` currently proves shared Filter mechanics but does not yet contain the complete Selection/Action Registry/Peek/transient-stack/Confirmation/Composer ownership required by the frozen V1 design.
+3. current Triage composition subscribes broadly to Runtime and combines several raw/focused selectors in the Page. Target: one Triage surface Read Model per top-level evaluation, with Page-local Review/Filter state remaining explicit UI input.
+4. existing shared/derived Query helpers can each acquire a readable Runtime snapshot independently. New surface composition must avoid repeated pending replay/index rebuild inside one top-level Read Model evaluation; introduce caching only if evidence later requires it.
+5. current Search Query still exposes legacy result kinds beyond the frozen Sidebar Search contract. Target result kinds are Initiative, Project, and Workflow Issue only; Search remains Left Sidebar mode rather than a Page/location.
 
 `docs/implementation.md` owns the execution order and current verification status for these gaps.
 
@@ -282,7 +288,9 @@ A reusable owner or Read Model is accepted when:
 - top-level Read Model evaluation uses one coherent readable snapshot and temporal reference where required;
 - reusable UI components can be driven by explicit semantic props from either Foundation fixtures or real Read Models;
 - keyboard/focus/accessibility behavior is proven where relevant;
-- constrained/normal widths preserve intended information priority;
+- normal-flow siblings do not overlap and essential controls remain inside their allocated regions;
+- constrained/normal widths preserve intended information priority without accidental Page-level overflow;
+- intentional overflow/top-layer escape has an explicit owning component or surface;
 - host-specific behavior is verified in representative real Obsidian conditions when unit/jsdom tests cannot establish it.
 
 Page tests should focus on Read Model consumption, Page composition, and workflow. Query tests own derived/read semantics. Lower UI component tests and Foundation specimens own reusable presentation/interaction states rather than re-proving Domain legality through Page code.

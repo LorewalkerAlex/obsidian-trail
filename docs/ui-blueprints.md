@@ -277,6 +277,7 @@ Production UI must never depend on Foundation-only implementations or fixtures.
 | Responsibility | Final owner layer | Main consumers | Shared contract | Explicit non-responsibility |
 | --- | --- | --- | --- | --- |
 | Workspace Frame | `ui/shell` | every Trail Page | Main View frame, pane-capacity input, host integration | no mandatory Location Bar; no breadcrumb/title semantics |
+| Normal-flow layout containment | owner that directly arranges the children: `ui/shell`, `ui/pages`, `ui/patterns`, or `ui/entities` | every visible composition | direct-child spatial allocation, non-overlap, shrink/overflow ownership | no `UniversalLayout`; child does not position unrelated siblings |
 | Page Header geometry | `ui/patterns` | Projects, Initiative, Project, Cycle, Triage, Home, Full Item | identity/actions layout and constrained priority | Page supplies breadcrumb, identity, actions |
 | Collection Controls | `ui/patterns` | Projects, Initiative, Project, Cycle, Triage | leading/trailing control geometry and responsive overflow | no required `Display`; Page supplies Filter/Order/Layout/Timeline tools |
 | Collection Row shell | `ui/patterns` | Project rows, Issue rows, Triage rows, selectors | selection gutter, leading/content regions, highlight/activation boundary | no Project/Status/Cycle field knowledge |
@@ -304,7 +305,47 @@ Production UI must never depend on Foundation-only implementations or fixtures.
 | Tooltip / focus-detail | shared pattern | Label, Progress, Attention, charts, Due markers | low-noise exact detail and accessibility text | not a hidden action system |
 | Runtime feedback | shared patterns/shell | all mutations and source-health consumers | quiet pending, transient failure, persistent Data Issue/read-only warning | Runtime/Query own health and mutation state |
 
-### 3.3 Responsibilities that must stay Page-local
+### 3.3 Layout containment blueprint
+
+Normal-flow Trail composition is a nested tree of owned layout regions. The box is conceptual as well as mechanical: it may have no visible border and may use intrinsic or flexible sizing, but its space belongs to that region in the parent layout.
+
+```text
+Obsidian Main View capacity
+`- Workspace Frame / Page Surface
+   `- Page composition region
+      |- optional Page header region
+      |- optional Collection Controls region
+      `- Page content region
+         `- collection / pattern region
+            `- row / card region
+               |- selection / leading region
+               |- primary flexible content region
+               `- metadata / property / action regions
+```
+
+Responsibility follows direct-child ownership:
+
+| Layer | Spatial responsibility |
+| --- | --- |
+| Workspace Frame / Page Surface | establish Main View/Page capacity, container context, and Page-level scroll boundary |
+| Page composition | allocate Page-owned direct regions and decide Page-level responsive recomposition |
+| Pattern | allocate its mechanical direct regions such as leading/trailing or selection/content |
+| Entity UI | preserve semantic scanning hierarchy inside the region assigned by its parent |
+| Primitive/control | own its control box and internal content; never position unrelated siblings |
+| Top-layer interaction surface | explicitly leave normal flow through its overlay/collision owner |
+
+Implementation rules:
+
+- ordinary siblings never solve pressure by overlapping each other's interactive/content regions;
+- flexible tracks must actually be able to shrink when the design says they are flexible; CSS choices such as `min-width: 0` or `minmax(0, 1fr)` are implementation techniques, not new Product semantics;
+- when capacity is insufficient, the responsible owner chooses shrink, wrap, truncate, lower-priority omission, responsive recomposition, or owner-owned overflow according to the frozen information priority;
+- `position: absolute` is not a substitute for normal-flow sibling allocation; use it only for decoration/anchored content inside an owned region or an explicitly top-layer surface;
+- scroll and overflow ownership stays local. A Board or Timeline may own horizontal overflow; a nested row/control must not accidentally force the whole Page to scroll horizontally;
+- visual paint such as focus rings and shadows may extend outside the layout box only when it does not steal layout or obstruct neighboring interaction targets.
+
+This blueprint does **not** require fixed widths or fixed heights. It requires owned space, predictable direct-child allocation, and explicit behavior when available space changes.
+
+### 3.4 Responsibilities that must stay Page-local
 
 Do **not** extract universal components for:
 
@@ -1724,6 +1765,18 @@ current identity
 
 Low-priority actions/metadata overflow or compress before the whole Page becomes horizontally scrolling.
 
+Responsive verification also enforces the Section 3.3 containment contract:
+
+```text
+normal-flow siblings do not overlap
+essential controls stay inside their allocated regions
+ordinary descendants do not create accidental Page-level overflow
+intentional scrolling remains owned by the component that requires it
+information priority survives constrained width
+```
+
+A surface may recompose, wrap, truncate, or omit secondary information as capacity changes. It must not use overlap or uncontrolled escape as a substitute for a responsive decision.
+
 | Surface | Wide / normal | Constrained |
 | --- | --- | --- |
 | Home | multiple modules share width; Work Trend + Weekly Notes may sit side by side | reflow vertically in semantic order; keep historical horizon |
@@ -1830,26 +1883,30 @@ This section maps the blueprint to the current published UI owners without allow
 | Current owner | Blueprint disposition |
 | --- | --- |
 | `TrailButton`, `TrailIconButton`, `TrailInput`, `TrailTextarea`, `TrailCheckbox`, `TrailSeparator` | keep as shared primitives; calibrate through semantic variants/tokens |
-| `TrailProgress` | keep one Progress owner; extend for unavailable and density variants rather than creating entity-specific progress components |
-| `TrailCollectionRow` | keep mechanical shell; preserve selection/leading/content separation and extend explicit inline-control activation boundaries as needed |
-| `TrailPropertyControl` | keep shared compact property trigger pattern |
+| `TrailProgress` | keep one Progress owner; normal/compact/micro/unavailable states are aligned and later consumers should reuse this owner |
+| `TrailCollectionRow` | keep mechanical shell; selection/leading/content separation and nested interactive-target isolation are shared row responsibilities |
+| `TrailPropertyControl` | keep shared compact property trigger pattern with normal/compact/disabled presentation states |
 | Priority / Label / Due semantic owners | keep and extend across Row/Card/Inspector/Composer/Picker consumers |
 | `TrailCollectionFilter` + filter state | keep as shared interaction owner; Pages supply registries/scope only |
 | `TrailTriageRow` | keep as product-specific semantic row over shared row/property owners |
 
-### 12.2 Refactor stale contracts
+### 12.2 Aligned shared contracts and remaining layout target
 
-**`TrailWorkspaceShell` / `TrailLocationBar`**
+**Workspace Frame / Page Surface**
 
-Current shell requires a `locationBar` and `TrailLocationBar` renders a global `<h1>`-style location owner. Final blueprint requires Page-owned breadcrumb/title/action composition. Refactor Workspace Shell to own the frame/capacity boundary only. A reusable Page Header pattern may exist, but it must not become a mandatory global Location Bar.
+The published shell now owns Main View frame/capacity, Page Surface scroll/inset policy, and pane/container responsive context without a mandatory Location Bar. Page identity remains Page composition.
 
-**`TrailViewBar`**
+**Collection Controls**
 
-Current `TrailViewBarProps` requires `display`. Final blueprint has no globally required Display. Replace/refactor toward composition-oriented **Collection Controls** with leading/trailing slots or equivalent semantic composition. Filter, direct Order, binary Layout, Timeline tools, or no trailing control are Page choices.
+The published `TrailViewBar` contract is composition-oriented through Page-supplied leading/trailing controls and no longer requires a generic `Display` slot. Individual Pages still own which Filter/Order/Layout controls belong there; final Triage `Filter + Order` presentation remains Stage 5 Page work.
 
-**`TrailProgress`**
+**Progress**
 
-Current `label + max + value` primitive lacks the accepted unavailable/compact/micro expression. Extend the same owner instead of adding `ProjectProgress`, `CycleProgress`, `HomeCycleProgress`, `HomeProjectProgress`, etc.
+The published `TrailProgress` owner now covers normal/compact/micro density and explicit unavailable presentation while remaining calculation-free.
+
+**Layout containment**
+
+The current codebase already contains useful local evidence such as Page Surface capacity boundaries, `min-width: 0`/`minmax(0, 1fr)` in selected compositions, Collection Row regions, and component-owned Board/Timeline overflow rules. It does not yet apply the Section 3.3 containment contract consistently across every current composition. Remaining alignment must audit Page/pattern/entity direct-child allocation so constrained width cannot push essential controls outside their owned region or create accidental Page-level overflow.
 
 ### 12.3 Missing shared interaction owners
 
@@ -1908,6 +1965,7 @@ The final documentation closure synchronizes the active canonical documents to t
 - Triage uses direct `Order: Review due | Priority`;
 - Home uses `This week -> Lifecycle activity -> Work trend + Weekly meeting notes -> Work pulse` with rolling three-calendar-month history;
 - standard Creation and Shared Interaction contracts in this blueprint are the implementation target;
+- normal-flow layout containment follows direct-child ownership with explicit overflow exceptions rather than implicit overlap;
 - `docs/design-to-code-map.md` maps Sidebar Search to Query + shell ownership rather than `ui/pages/search`.
 
 Future implementation work must align published code to those synchronized documents rather than reopening the retired drawing pass.
@@ -1921,7 +1979,9 @@ A reusable owner is accepted only when:
 - it matches the blueprint's semantic responsibility;
 - Page-specific workflow does not leak into the shared owner;
 - keyboard/focus/accessibility behavior is proven where relevant;
-- constrained and normal widths preserve the intended information priority;
+- normal-flow siblings do not overlap and essential controls remain inside their allocated regions;
+- constrained and normal widths preserve the intended information priority without accidental Page-level overflow;
+- any intentional overflow or top-layer escape has an explicit owning component/surface;
 - host-owned behavior is verified in representative real Obsidian conditions when it cannot be established reliably in DOM/unit tests.
 
 Page verification should focus on the Page's real composition and workflow, not on re-testing lower-layer Domain legality already owned elsewhere.
@@ -1956,6 +2016,7 @@ The active work after canonical synchronization is:
 
 ```text
 align implementation owners through coherent product verticals
+-> enforce normal-flow containment and explicit overflow ownership
 -> validate real production consumers
 -> calibrate exact visuals and host behavior in real Obsidian
 ```

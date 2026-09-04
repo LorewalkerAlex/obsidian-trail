@@ -117,6 +117,31 @@ Obsidian-native API/mechanic
 
 Context Menu is the canonical example: use Obsidian `Menu` mechanics where practical, styled through the shared Trail contract. Foundation Lab remains a verification consumer of production owners and never becomes a parallel production component library.
 
+### 2.5 Layout containment and spatial ownership
+
+Trail normal-flow composition follows one containment rule: every layout-bearing Page region, pattern region, entity region, and control occupies space allocated by its direct parent. **Containment does not imply fixed sizing.** A region may be intrinsic, flexible, content-driven, percentage-based, or responsive; it still owns the space the layout system assigns to it.
+
+Use these invariants:
+
+```text
+parent arranges direct children
+child contains and lays out its own internals
+normal-flow siblings do not overlap
+escape from normal flow must be explicit and owner-defined
+```
+
+Consequences:
+
+- the parent owns direct-child placement, tracks/regions, gaps, and distribution; a child does not position unrelated siblings;
+- when capacity tightens, the responsible owner explicitly chooses shrink, wrap, truncate, hide lower-priority metadata, recompose, or owner-owned scrolling;
+- accidental overflow, clipped essential controls, or one sibling painting interactive content through another sibling's region are layout failures, not responsive strategies;
+- flexible primary content absorbs ordinary width pressure according to the frozen information priority before lower-value metadata is allowed to force the whole Page wider;
+- scrolling or clipping belongs to the component whose blueprint requires it; descendants must not accidentally create Page-level horizontal overflow;
+- responsive decisions use actual containing-region/Main View capacity rather than assumed display resolution;
+- focus rings, shadows, and other paint effects may extend visually outside a box when they do not consume layout or obstruct neighboring interaction targets.
+
+Explicit escape owners remain valid. Board/Timeline canvases may own horizontal overflow once their minimum useful geometry is reached. Menu, Picker, Popover, Tooltip, Peek, Composer, Confirmation, and similar top-layer surfaces may leave ordinary flow only through their explicit overlay/collision owner. These cases do not authorize ordinary Page/row/control content to overlap neighboring layout regions.
+
 ## 3. Host Composition, Navigation, and Search
 
 ### 3.1 Host ownership
@@ -217,8 +242,7 @@ The following remain transient Page/session interaction state and do not become 
 - Filter/Order/layout;
 - selection;
 - section/group collapse;
-- Peek;
-- Triage Review identity/Previous/Next/progression;
+- Peek;- Triage Review identity/Previous/Next/progression;
 - Menu/Picker/Popover/Composer/Confirmation state;
 - inline edit drafts;
 - hover/focus/scroll/responsive geometry.
@@ -1474,6 +1498,8 @@ current identity
 
 Low-priority actions/metadata overflow or compress before the whole Page becomes horizontally scrolling.
 
+The containment invariant from Section 2.5 applies at every responsive step. Constrained composition is acceptable only when normal-flow siblings remain non-overlapping, essential controls stay inside their allocated regions, ordinary descendants do not create accidental Page-level horizontal overflow, and any intentional scrolling remains owned by the component whose blueprint requires it. A narrow layout may hide or recompose lower-priority content, but it must not solve width pressure by letting one component intrude into another component's space.
+
 | Surface | Wide / normal | Constrained |
 | --- | --- | --- |
 | Home | multiple modules; Work Trend + Weekly Notes may share a row | vertical semantic order; keep three-month history horizon |
@@ -1587,7 +1613,7 @@ Frozen V1 coverage includes:
 - shared Filter, Selection/Bulk, Action Registry, Context Menu, contextual Command Menu;
 - read-only Workflow Issue Peek;
 - transient interaction stack, Picker family, and Confirmation;
-- responsive composition;
+- layout containment/spatial ownership and responsive composition;
 - optimistic/runtime/Data-Issue feedback;
 - Default Project Settings.
 

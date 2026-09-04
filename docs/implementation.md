@@ -18,6 +18,13 @@ da1a84f86a5d3a1e234335839f0fde1eff92e341
 feat: checkpoint triage review and navigation
 ```
 
+The current published implementation checkpoint is:
+
+```text
+67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1
+refactor: align shared ui contracts
+```
+
 Current code is intentionally behind the frozen Product/UI target. Existing executable code is reusable evidence, not authority over the final architecture, UI composition, or implementation order.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
@@ -39,8 +46,8 @@ Do not reopen already-closed Product/UI decisions because older code or tests ex
 
 Known published alignment debt includes:
 
-1. `TrailViewBarProps` still requires `display`. Target: composition-oriented Collection Controls with only the controls accepted by the current Page.
-2. `TrailProgress` is the correct shared visual owner but still needs unavailable and normal/compact/micro density states.
+1. normal-flow layout containment / spatial ownership is only partially consistent across current compositions. Constrained host evidence has exposed cases where trailing content can escape or compete with sibling regions instead of staying inside parent-allocated space.
+2. remaining production primitive and semantic-identity focus, disabled, responsive, and visual states still need alignment where real or imminent Product consumers require them.
 3. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
 4. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
 5. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
@@ -426,14 +433,15 @@ Current key status:
 | Domain/Persistence/Mutation Runtime core | Accepted | consume; do not remodel |
 | readable/effective Runtime snapshot | Implemented | use once per top-level Read Model evaluation; profile before caching |
 | Page/surface Read Model boundary | Mapped / partial evidence | introduce just in time, first where real Page construction requires it |
-| Button/Input/Checkbox/basic primitives | Implemented / Lab-proven | Stage 4 aligns remaining variants and responsive/focus/disabled states as real consumers require |
-| Collection Row / Property Control | Lab-proven / Consumer-proven | preserve useful owners; Stage 4 aligns final states/props |
+| Button/Input/Checkbox/basic primitives | Implemented / Lab-proven | Stage 4 aligns remaining responsive/focus/disabled and visual states as real consumers require |
+| Collection Row / Property Control | Lab-proven / Consumer-proven / Host-proven | intent/state contracts aligned; finish containment and constrained-width calibration in Stage 4 |
 | Workspace Frame / Page Surface | Consumer-proven / Host-proven | consume as the stable shared Main View chassis |
-| Collection Controls / required Display | Alignment Required | replace with composition-oriented controls |
+| Collection Controls | Consumer-proven / Host-proven | public composition contract aligned; finish containment and final visual calibration in Stage 4 |
 | Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
 | Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Project/Issue/Cycle Inspector Read Models and content remain Stage 7/8/10 |
 | Foundation Lab | Accepted / Host-proven | consume as the development showroom; reusable ownership remains outside Foundation |
-| Progress | Alignment Required | add normal/compact/micro/unavailable specimens/contract |
+| Progress | Lab-proven / Host-proven | normal/compact/micro/unavailable contract aligned; consume in later Project/Cycle/Home surfaces |
+| Normal-flow layout containment | Mapped / partial implementation | complete direct-child containment and explicit overflow ownership before Stage 4 visual close |
 | Selection / Action Registry / Peek / Confirmation / Composer | Mapped / partial or pending | create production owners just in time from real Page needs |
 
 Update this ledger as the active execution snapshot; do not turn it into historical release notes.
@@ -514,9 +522,16 @@ Move current reusable evidence onto the frozen contracts, including:
 - Property Control;
 - final Collection Controls contract replacing required Display;
 - Priority/Status/Due/Label/Estimate semantic identities as required;
-- responsive/focus/disabled states in Foundation.
+- normal-flow layout containment / explicit overflow ownership;
+- responsive/focus/disabled states and final visual calibration in Foundation.
 
 Every aligned owner remains production code and must still have a real or imminent Product consumer.
+
+Current status:
+
+- **Stage 4 intermediate checkpoint published** — `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` aligns Progress density/unavailable states, removes the required-Display Collection Controls contract, centralizes Collection Row nested-interaction isolation, and aligns Property Control normal/compact/disabled states.
+- **Stage 4 contract evidence is green** — the shared-contract slices passed repository-wide or focused validation as appropriate and were inspected in representative real Obsidian wide/constrained conditions.
+- **Stage 4 remains active** — constrained visual evidence exposed a deeper layout-containment gap: normal-flow components need explicit owned space, direct-child allocation, non-overlap, and owner-defined overflow before the final Linear-faithful visual pass.
 
 ### Stage 5 — Finish Triage
 
@@ -620,28 +635,42 @@ Complete:
 
 ## 9. Active Slice
 
-Stage 3 Foundation showroom structure is complete, Lab-proven, and Host-proven. This checkpoint closes Stage 3. The next code slice is:
+Stage 4 has a stable published intermediate checkpoint at `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1`. Progress, Collection Controls, Collection Row interaction isolation, and Property Control state contracts are aligned; Stage 4 is not yet closed.
 
-### Stage 4 — Align existing production warehouse
+### Stage 4 continuation — Layout containment + final warehouse calibration
+
+The next implementation sequence is:
+
+```text
+canonical Layout Contract
+-> audit current Page / pattern / entity boundaries
+-> repair non-overlapping containment + explicit overflow ownership
+-> wide / constrained host verification
+-> Linear-faithful visual calibration
+-> Stage 4 close
+-> Stage 5 Triage
+```
 
 Scope:
 
-1. align existing production primitives and patterns to the frozen contracts without moving reusable ownership into Foundation;
-2. add the missing `TrailProgress` normal/compact/micro/unavailable contract and representative Foundation states;
-3. replace the required `display` View Bar contract with composition-oriented Collection Controls whose actual Filter/Order/Layout/etc. slots are supplied by each Page;
-4. align Collection Row, Property Control, and the currently implemented semantic identities only where their public states/props are needed by real or imminent Product consumers;
-5. calibrate responsive, focus-visible, disabled, selected/highlighted, and constrained-width states in Foundation using the accepted showroom structure;
-6. do not pull Selection/Action Registry/Peek/Confirmation/Composer or Product-specific workflow forward unless a real Stage 4 alignment dependency requires it.
+1. enforce the `ui.md` / `ui-blueprints.md` normal-flow containment contract without creating a `UniversalLayout`, parallel layout framework, or Page-global fixed sizing model;
+2. audit direct-child allocation from Workspace Frame/Page Surface through Page regions, shared patterns, entity rows/cards, and primitives;
+3. ensure flexible content can actually shrink and that space pressure resolves through explicit shrink/wrap/truncate/hide/recompose or owner-owned scrolling rather than sibling overlap or accidental Page overflow;
+4. preserve explicit exceptions such as Board/Timeline horizontal canvases and top-layer Menu/Picker/Popover/Peek/Composer/Confirmation surfaces, with overflow/collision owned by those components;
+5. after containment is stable, finish Linear-faithful baseline, spacing, optical alignment, density, focus, disabled, selected/highlighted, and constrained-width calibration;
+6. do not pull Stage 5 Triage workflow completion or later Selection/Action Registry/Peek/Confirmation/Composer work forward unless Stage 4 containment itself requires a shared mechanical fix.
 
 Exit evidence:
 
-- changed production owners have focused owner/direct-consumer tests and compile/build validation appropriate to their public contracts;
-- representative production states are visible in Foundation through the Stage 3 showroom wrappers;
-- the required-Display contract is removed from shared Collection Controls without introducing Page-specific workflow;
-- aligned owners remain reusable production code with real or imminent Product consumers rather than Foundation-only abstractions;
-- representative Obsidian inspection confirms responsive/focus/presentation behavior where jsdom cannot establish it.
+- normal-flow siblings do not overlap at representative normal/constrained widths;
+- essential controls remain inside their allocated regions;
+- ordinary descendants do not create accidental Page-level horizontal overflow;
+- intentional horizontal overflow/top-layer escape has the explicit owner required by the blueprint;
+- constrained layouts preserve the frozen information priority before low-priority metadata is removed or overflowed;
+- final reusable visual calibration remains production-owned and is visible in Foundation;
+- representative Obsidian inspection confirms the containment and final presentation where jsdom cannot establish them.
 
-Stage 5 Triage completion begins only after Stage 4 is a stable published checkpoint.
+Stage 5 Triage completion begins only after Stage 4 is closed and published.
 
 ## 10. Slice Definition of Done
 
@@ -708,6 +737,7 @@ V1 UI implementation is complete when:
 - reusable UI components receive semantic props and can be exercised both from Foundation fixtures and real Read Models;
 - Foundation is a development showroom Page on the same Page chassis, not a Product fallback or alternate component library;
 - shared owners have correct production ownership and no Page-specific workflow leaks into them;
+- normal-flow layout owners allocate real space to direct children so siblings do not overlap, and intentional overflow/escape has an explicit owner;
 - stale LocationBar/required-Display/Search-Page contracts are removed;
 - Selection/Action/Peek/Composer/Confirmation ownership is shared where frozen;
 - Query/Application/Domain remain the single owners of derived facts, legality, and semantic mutation;
