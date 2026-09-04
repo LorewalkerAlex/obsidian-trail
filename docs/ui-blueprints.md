@@ -1,6 +1,6 @@
 # Trail UI Blueprints
 
-> **Status: V1 composition blueprint.** This document is the one-time synthesis of the accepted Trail UI drawing set and shared-interaction closure published through `ef9eb982d0241545dc0d35e73be109ff8f6b9e59`. It turns those accepted drawings into a durable composition and ownership blueprint. It does not redefine Product, Domain, Data, or Architecture semantics.
+> **Status: V1 composition blueprint.** This document is the one-time synthesis of the accepted Trail UI drawing set and shared-interaction closure published through `ef9eb982d0241545dc0d35e73be109ff8f6b9e59`, first published as the final blueprint at `8e14fa87473b09134e455383170cfe571c9aeb97`. It turns those accepted drawings into a durable composition and ownership blueprint. It does not redefine Product, Domain, Data, or Architecture semantics.
 >
 > `docs/ui.md` remains the canonical UI behavior/presentation authority after synchronization. This blueprint exists to make the final V1 composition, shared-owner boundaries, responsive behavior, and implementation alignment concrete enough to build without reopening design.
 
@@ -1894,22 +1894,23 @@ Issue Full Item
 
 This is an ownership direction, not a requirement that every visible rectangle becomes a separate source file.
 
-### 12.5 Canonical/documentation synchronization targets
+### 12.5 Canonical/documentation synchronization status
 
-After this blueprint is accepted, synchronize stale statements rather than carrying two UI models forward. At minimum:
+The final documentation closure synchronizes the active canonical documents to this blueprint and retires the temporary drawing workbench. The synchronized active model therefore assumes:
 
-- Search: remove Page/location model, Triage-result kind, and Search-Peek behavior; use temporary Left Sidebar Search mode with Initiative/Project/Workflow Issue navigation results only;
-- Navigation: normal order is `Projects`, `<Default Project>`, `Cycles`; Quick Capture does not require a normal Sidebar action/row;
-- Shell: remove mandatory shared Location Bar/breadcrumb ownership;
-- Projects Root: remove generic Display/Sort assumptions;
-- Project Workspace: remove generic Display, hidden Milestone/Label clustering, and disappearing zero-count Status-section assumptions;
-- Current Cycle: remove Display and same-Project List clustering; retain Project row metadata in List and Project swimlanes in Board;
-- Historical Cycle: avoid any close-time Issue snapshot/Progress implication;
-- Triage: replace generic Display with direct `Order: Review due | Priority`;
-- Home: use accepted order `This week -> Lifecycle activity -> Work trend + Weekly meeting notes -> Work pulse` and rolling three-calendar-month history;
-- Creation: synchronize one transient Composer family, dirty/discard semantics, Quick Capture command/hotkey entry, and entity-specific registries;
-- Shared Interactions: synchronize top-layer dismissal, read-only Workflow Issue Peek, selection/Bulk visibility intersection, picker family, confirmation, and contextual Command Menu;
-- `docs/design-to-code-map.md`: Global Search mapping must no longer point at `ui/pages/search`/Search-location Peek behavior.
+- Sidebar Search is temporary Left Sidebar state with Initiative/Project/Workflow Issue navigation results only;
+- normal navigation order is `Projects`, `<Default Project>`, `Cycles`, with Quick Capture owned by the Obsidian command/global-shortcut entry;
+- Workspace Frame no longer requires a shared Location Bar/breadcrumb owner;
+- collection controls no longer require generic Display/Sort semantics;
+- Project/Cycle Lists use the frozen ordinary ordering rules rather than hidden Milestone/Label/same-Project clustering;
+- persistent zero-count Status sections remain part of the Project/Cycle List workflow skeleton;
+- Historical Cycle never implies close-time Issue-property snapshots or historical Progress;
+- Triage uses direct `Order: Review due | Priority`;
+- Home uses `This week -> Lifecycle activity -> Work trend + Weekly meeting notes -> Work pulse` with rolling three-calendar-month history;
+- standard Creation and Shared Interaction contracts in this blueprint are the implementation target;
+- `docs/design-to-code-map.md` maps Sidebar Search to Query + shell ownership rather than `ui/pages/search`.
+
+Future implementation work must align published code to those synchronized documents rather than reopening the retired drawing pass.
 
 ## 13. Verification boundary
 
@@ -1949,15 +1950,14 @@ This blueprint does not introduce:
 
 ## 15. Completion rule
 
-This blueprint is complete when it can be implemented without reopening Page composition or shared interaction semantics.
+This blueprint is complete: Page composition and shared interaction semantics are sufficiently resolved to implement without reopening the design pass.
 
-Remaining work after acceptance is:
+The active work after canonical synchronization is:
 
 ```text
-synchronize canonical UI / implementation / design-to-code documentation
--> remove superseded temporary drawing workbench
--> align implementation owners through coherent product verticals
--> calibrate exact visuals in real Obsidian
+align implementation owners through coherent product verticals
+-> validate real production consumers
+-> calibrate exact visuals and host behavior in real Obsidian
 ```
 
 Implementation evidence may refine calibration, component API shape, and internal file boundaries. It must not silently reintroduce superseded navigation, Display, Location Bar, Search Page, ordering, Cycle, Triage, Home, Peek, or Creation semantics.

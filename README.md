@@ -1,6 +1,6 @@
 # Trail
 
-Trail is a Markdown-first personal project and task management plugin for Obsidian. It keeps authoritative work data in readable Markdown while providing a focused task and project execution UI on top of the Vault.
+Trail is a Markdown-first personal project and task management plugin for Obsidian. It keeps authoritative work data in readable Markdown while providing a focused personal execution UI on top of the Vault.
 
 ## Current development state
 
@@ -23,6 +23,8 @@ docs/architecture.md
     ↓
 docs/ui.md
     ↓
+docs/ui-blueprints.md
+    ↓
 docs/design-to-code-map.md
 ```
 
@@ -34,15 +36,16 @@ docs/implementation.md
 code
 ```
 
-- `docs/product.md` — user-facing product purpose, scope, model, experience, and product rules.
-- `docs/domain.md` — canonical terminology, domain model, relationships, lifecycle, invariants, and derived/historical facts.
-- `docs/data.md` — logical records, identity, references, authority, Markdown / plugin-data persistence, integrity, and schema evolution.
-- `docs/architecture.md` — system boundaries, shared capabilities, dependency direction, runtime/write flows, reliability, host responsibility, and target architecture.
-- `docs/ui.md` — resolved target UI presentation and interaction answers that consume Product and Architecture; current implementation appearance is not an authority for this document.
+- `docs/product.md` — user-facing purpose, V1 scope, model, experience, and product rules.
+- `docs/domain.md` — canonical terminology, entities, relationships, lifecycle, invariants, and derived/historical facts.
+- `docs/data.md` — logical records, identity, references, authority, Markdown/plugin-data persistence, integrity, and schema evolution.
+- `docs/architecture.md` — system boundaries, dependency direction, runtime/write flows, reliability, host responsibility, and target architecture.
+- `docs/ui.md` — canonical V1 UI behavior and presentation semantics. Current implementation appearance is not authority for this document.
+- `docs/ui-blueprints.md` — durable V1 Page-composition, responsive, and shared-owner blueprint synthesized from the completed UI drawing pass. It concretizes `ui.md` without redefining Product/Domain semantics.
 - `docs/design-to-code-map.md` — traceability from resolved design responsibilities to canonical code owners and the target code tree.
-- `docs/implementation.md` — current execution baseline, implementation evidence, active changes, dependency-ordered build plan, and verification state.
+- `docs/implementation.md` — current implementation facts, alignment debt, active construction plan, and verification state.
 
-Git history is the historical archive. Superseded POC code and documents are not duplicated in the active repository tree.
+Git history is the historical archive. Superseded POC notes, drawing workbenches, and checkpoint narratives do not need to remain duplicated in the active documentation tree.
 
 ## Repository layout
 
@@ -104,23 +107,23 @@ npm run build:diagnostics
 npm run check
 ```
 
-- `npm run dev` watches the active TypeScript/React source and canonical stylesheet modules, writing generated Obsidian plugin artifacts.
+- `npm run dev` watches active TypeScript/React and canonical stylesheet modules and writes generated Obsidian plugin artifacts.
 - `npm run lint` includes architectural dependency restrictions.
 - `npm run test:run` runs the formal automated test suite once.
 - `npm run typecheck` checks the TypeScript implementation.
-- `npm run build` creates the production JavaScript bundle and deterministically composes the canonical stylesheet modules into one generated Obsidian `styles.css`, with development diagnostics disabled.
-- `npm run build:diagnostics` creates a diagnostics-enabled development JavaScript bundle and the same generated Obsidian stylesheet.
+- `npm run build` creates the production JavaScript bundle and deterministically composes canonical stylesheet modules into generated Obsidian `styles.css`.
+- `npm run build:diagnostics` creates a diagnostics-enabled development bundle and the same generated stylesheet.
 - `npm run check` runs lint, tests, typecheck, and the production build.
 
-During implementation, use focused owner-level validation while iterating. Run the full `npm run check` at a coherent checkpoint rather than after every small internal change.
+During implementation, use focused owner/direct-consumer validation while iterating. Run the full `npm run check` at coherent cross-cutting or release checkpoints rather than after every small internal change.
 
-For interactive development-host work, keep a diagnostics-enabled bundle loaded. `npm run check` ends with the production build and therefore disables diagnostics; after any production `npm run check` or `npm run build`, run `npm run build:diagnostics` before returning to manual Obsidian interaction so the development operation trace remains available.
+For interactive development-host work, keep a diagnostics-enabled bundle loaded. `npm run check` ends with the production build and therefore disables diagnostics; after a production build, run `npm run build:diagnostics` before returning to manual Obsidian interaction when operation-trace evidence is needed.
 
 ## Real Obsidian verification
 
-Representative real-host verification exercises host-specific risks that cannot be established by pure or jsdom tests alone. Diagnostics builds expose development-only validation evidence for the command / mutation / persistence / reconcile chain.
+Representative real-host verification exercises host-specific risks that pure or jsdom tests cannot establish reliably. Diagnostics builds expose development-only evidence for the command/mutation/persistence/reconcile chain.
 
-When `Trail/` is used during host validation, Git diff is an additional observation channel for the actual Markdown write effects. The versioned development-Vault `data.json` keeps Configuration/Workspace State references coherent with those observations across machines. The test state remains development evidence only; production correctness must not depend on diagnostics output or on any specific checked-in `Trail/` or development-Vault configuration value.
+When `Trail/` is used during host validation, Git diff is an additional observation channel for Markdown write effects. Versioned development-Vault `data.json` keeps Configuration/Workspace State references coherent with those observations across machines. Correctness must not depend on diagnostics output or on any specific checked-in development fixture value.
 
 ## Continuous integration
 
