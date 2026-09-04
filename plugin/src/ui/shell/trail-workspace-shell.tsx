@@ -1,28 +1,34 @@
 import type { ReactNode } from "react";
 
-export function TrailLocationBar({
-  title,
-}: {
-  readonly title: string;
-}) {
-  return (
-    <header aria-label="Location" className="trail-location-bar">
-      <h1 className="trail-location-bar__title">{title}</h1>
-    </header>
-  );
-}
+export type TrailPageSurfaceInset = "none" | "page";
+export type TrailPageSurfaceScroll = "nested" | "page";
 
-export function TrailWorkspaceShell({
+/** Mechanical Main View frame. Page identity and actions stay with the Page. */
+export function TrailWorkspaceFrame({
   children,
-  locationBar,
 }: {
   readonly children: ReactNode;
-  readonly locationBar: ReactNode;
+}) {
+  return <div className="trail-workspace-frame">{children}</div>;
+}
+
+/** Shared Main View capacity, responsive context, insets, and scroll boundary. */
+export function TrailPageSurface({
+  children,
+  inset = "none",
+  scroll = "nested",
+}: {
+  readonly children: ReactNode;
+  readonly inset?: TrailPageSurfaceInset;
+  readonly scroll?: TrailPageSurfaceScroll;
 }) {
   return (
-    <div className="trail-workspace-shell">
-      {locationBar}
-      <div className="trail-workspace-shell__content">{children}</div>
+    <div
+      className="trail-page-surface"
+      data-inset={inset}
+      data-scroll={scroll}
+    >
+      {children}
     </div>
   );
 }

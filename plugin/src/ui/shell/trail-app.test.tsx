@@ -81,10 +81,27 @@ function uiActions(edit = vi.fn()): TrailUiActions {
   } as unknown as TrailUiActions;
 }
 
+function expectSharedChassis(
+  container: HTMLElement,
+  expected: {
+    readonly inset: "none" | "page";
+    readonly scroll: "nested" | "page";
+  },
+): void {
+  const frame = container.querySelector<HTMLElement>(".trail-workspace-frame");
+  const surface = container.querySelector<HTMLElement>(".trail-page-surface");
+
+  expect(frame).not.toBeNull();
+  expect(surface).not.toBeNull();
+  expect(frame).toContainElement(surface);
+  expect(surface).toHaveAttribute("data-inset", expected.inset);
+  expect(surface).toHaveAttribute("data-scroll", expected.scroll);
+}
+
 describe("TrailApp", () => {
-  it("renders Home instead of silently falling back to Foundation", () => {
+  it("renders Home on the shared Page Surface instead of falling back to Foundation", () => {
     const navigationStore = createTrailNavigationStore();
-    render(
+    const { container } = render(
       <TrailApp
         actions={uiActions()}
         navigationStore={navigationStore}
@@ -96,44 +113,48 @@ describe("TrailApp", () => {
     expect(navigationStore.getState().location).toEqual({ kind: "home" });
     expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
+    expectSharedChassis(container, { inset: "page", scroll: "page" });
   });
 
-  it("renders Foundation only for the explicit development location", () => {
+  it("mounts Foundation on the same Page Surface only for the explicit development location", () => {
     const navigationStore = createTrailNavigationStore();
     act(() => navigationStore.getState().restore({ kind: "foundation" }));
 
-    const { rerender } = render(
+    const runtimeStore = createTrailRuntimeStore();
+    const { container, rerender } = render(
       <TrailApp
         actions={uiActions()}
         navigationStore={navigationStore}
-        runtimeStore={createTrailRuntimeStore()}
+        runtimeStore={runtimeStore}
         showDevelopment
       />,
     );
 
     expect(screen.getByRole("heading", { name: "Foundation lab" })).toBeInTheDocument();
+    expectSharedChassis(container, { inset: "none", scroll: "page" });
 
     rerender(
       <TrailApp
         actions={uiActions()}
         navigationStore={navigationStore}
-        runtimeStore={createTrailRuntimeStore()}
+        runtimeStore={runtimeStore}
         showDevelopment={false}
       />,
     );
 
     expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
+    expectSharedChassis(container, { inset: "page", scroll: "page" });
   }, 15_000);
 
-  it("dispatches the shared Triage location and its UI-action boundary to the production Triage page", async () => {
+  it("gives Triage its Page-owned identity inside the shared nested-scroll surface", async () => {
     const navigationStore = createTrailNavigationStore();
     const { issue, store: runtimeStore } = readyTriageStore();
     const edit = vi.fn((expectedIssue: TrailTriageIssue) => ({
       entityId: expectedIssue.id,
       kind: "unchanged" as const,
     }));
-    render(
+    const { container } = render(
       <TrailApp
         actions={uiActions(edit)}
         navigationStore={navigationStore}
@@ -147,6 +168,10 @@ describe("TrailApp", () => {
     });
 
     expect(screen.getByRole("heading", { level: 1, name: "Triage" })).toBeInTheDocument();
+    expect(container.querySelector(".trail-location-bar")).not.toBeInTheDocument();
+    expect(container.querySelector(".trail-triage-page-frame__title")).toHaveTextContent("Triage");
+    expectSharedChassis(container, { inset: "none", scroll: "nested" });
+
     fireEvent.click(screen.getByRole("button", { name: "Real Triage row" }));
     const title = screen.getByRole("textbox", { name: "Triage title" });
     fireEvent.change(title, { target: { value: "Edited through TrailApp" } });

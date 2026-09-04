@@ -33,44 +33,38 @@
   min-width: 0;
   min-height: 100%;
   overflow: hidden;
-  container-type: inline-size;
   background: var(--trail-surface-canvas);
   color: var(--trail-text-primary);
 }
 
-.trail-workspace-shell {
+.trail-workspace-frame {
   display: flex;
   height: 100%;
+  min-width: 0;
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
 }
 
-.trail-location-bar {
+.trail-page-surface {
   box-sizing: border-box;
-  display: flex;
-  min-height: var(--trail-control-height-lg);
-  flex: 0 0 auto;
-  align-items: center;
-  padding: 0 var(--trail-space-7);
-  border-bottom: 1px solid var(--trail-border-subtle);
-}
-
-.trail-location-bar__title {
-  margin: 0;
-  overflow: hidden;
-  color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-body);
-  font-weight: var(--trail-weight-emphasis);
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.trail-workspace-shell__content {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
   overflow: hidden;
+  container-type: inline-size;
+  background: var(--trail-surface-canvas);
+  color: var(--trail-text-primary);
+}
+
+.trail-page-surface[data-scroll="page"] {
+  overflow: auto;
+}
+
+.trail-page-surface[data-inset="page"] {
+  padding: var(--trail-space-8);
 }
 
 .trail-navigation,
@@ -274,10 +268,7 @@ body button.trail-navigation__row[aria-current="page"]:hover {
 }
 
 .trail-product-placeholder {
-  box-sizing: border-box;
-  height: 100%;
-  overflow: auto;
-  padding: var(--trail-space-8);
+  min-width: 0;
 }
 
 .trail-product-placeholder h1 {
@@ -332,25 +323,8 @@ body button.trail-navigation__row[aria-current="page"]:hover {
 
 .trail-foundation {
   box-sizing: border-box;
-  height: 100%;
+  min-width: 0;
   min-height: 100%;
-  overflow: auto;
-  scrollbar-color: var(--trail-scrollbar-thumb-lab) transparent;
-  scrollbar-width: thin;
   background: var(--trail-surface-canvas);
   color: var(--trail-text-primary);
-}
-
-.trail-foundation::-webkit-scrollbar {
-  width: 7px;
-}
-
-.trail-foundation::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.trail-foundation::-webkit-scrollbar-thumb {
-  border: 2px solid var(--trail-surface-canvas);
-  border-radius: var(--trail-radius-pill);
-  background: var(--trail-scrollbar-thumb-lab);
 }

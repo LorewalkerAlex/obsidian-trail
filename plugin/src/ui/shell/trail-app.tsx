@@ -3,7 +3,7 @@ import { useStore } from "zustand";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TRAIL_DEVELOPMENT_UI_ENABLED } from "../../trail-build-flags";
 import { TrailFoundationLab } from "../foundation/trail-foundation-lab";
-import { TrailTriagePage } from "../pages/triage/trail-triage-page";
+import { TrailTriagePageFrame } from "../pages/triage/trail-triage-page-frame";
 import type {
   TrailLocation,
   TrailNavigationStore,
@@ -11,8 +11,8 @@ import type {
 } from "./trail-navigation-state";
 import type { TrailUiActions } from "./trail-ui-actions";
 import {
-  TrailLocationBar,
-  TrailWorkspaceShell,
+  TrailPageSurface,
+  TrailWorkspaceFrame,
 } from "./trail-workspace-shell";
 
 function productPageTitle(location: TrailProductLocation): string {
@@ -80,17 +80,26 @@ export function TrailApp({
       data-runtime-control={control.kind}
       data-trail-location={currentLocation.kind}
     >
-      {currentLocation.kind === "foundation" ? (
-        <div className="trail-foundation">
-          <TrailFoundationLab control={control} revision={revision} />
-        </div>
-      ) : currentLocation.kind === "triage" ? (
-        <TrailWorkspaceShell locationBar={<TrailLocationBar title="Triage" />}>
-          <TrailTriagePage actions={actions.triage} runtimeStore={runtimeStore} />
-        </TrailWorkspaceShell>
-      ) : (
-        <TrailPendingProductPage location={currentLocation} />
-      )}
+      <TrailWorkspaceFrame>
+        {currentLocation.kind === "foundation" ? (
+          <TrailPageSurface scroll="page">
+            <div className="trail-foundation">
+              <TrailFoundationLab control={control} revision={revision} />
+            </div>
+          </TrailPageSurface>
+        ) : currentLocation.kind === "triage" ? (
+          <TrailPageSurface>
+            <TrailTriagePageFrame
+              actions={actions.triage}
+              runtimeStore={runtimeStore}
+            />
+          </TrailPageSurface>
+        ) : (
+          <TrailPageSurface inset="page" scroll="page">
+            <TrailPendingProductPage location={currentLocation} />
+          </TrailPageSurface>
+        )}
+      </TrailWorkspaceFrame>
     </main>
   );
 }

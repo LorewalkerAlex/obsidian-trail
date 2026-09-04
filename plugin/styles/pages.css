@@ -1,5 +1,42 @@
 /* Product-page composition. Shared patterns and semantic entities own reusable geometry. */
 
+.trail-triage-page-frame {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.trail-triage-page-frame__header {
+  box-sizing: border-box;
+  display: flex;
+  min-height: var(--trail-control-height-lg);
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 0 var(--trail-space-7);
+  border-bottom: 1px solid var(--trail-border-subtle);
+}
+
+.trail-triage-page-frame__title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-triage-page-frame__content {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
 .trail-triage-page {
   box-sizing: border-box;
   height: 100%;
@@ -7,7 +44,6 @@
   overflow: hidden;
   background: var(--trail-surface-canvas);
   color: var(--trail-text-primary);
-  container-type: inline-size;
 }
 
 .trail-triage-page__layout {

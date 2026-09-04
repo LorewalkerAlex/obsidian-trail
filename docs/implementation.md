@@ -39,14 +39,13 @@ Do not reopen already-closed Product/UI decisions because older code or tests ex
 
 Known published alignment debt includes:
 
-1. `TrailWorkspaceShell` / `TrailLocationBar` still express a mandatory global location/title contract. Target: thin Workspace Frame/Page Surface; Page owns header/breadcrumb/actions.
-2. `TrailViewBarProps` still requires `display`. Target: composition-oriented Collection Controls with only the controls accepted by the current Page.
-3. Foundation Lab is now an explicit development-only navigation location and no longer a Product fallback, but it still needs the Stage 2 shared Page chassis and the Stage 3 showroom hierarchy.
-4. `TrailProgress` is the correct shared visual owner but still needs unavailable and normal/compact/micro density states.
-5. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
-6. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
-7. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
-8. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
+1. `TrailViewBarProps` still requires `display`. Target: composition-oriented Collection Controls with only the controls accepted by the current Page.
+2. Foundation Lab now mounts through the shared Page chassis and remains an explicit development-only location, but it still needs the Stage 3 showroom hierarchy and specimen convention.
+3. `TrailProgress` is the correct shared visual owner but still needs unavailable and normal/compact/micro density states.
+4. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
+5. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
+6. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
+7. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
 
 These are implementation gaps, not design questions.
 
@@ -275,7 +274,7 @@ The architectural contract is frozen by `architecture.md` + `design-to-code-map.
 
 Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
 
-**Stage 0 and Stage 1 are closed. Stage 2 is the active implementation stage.**
+**Stages 0, 1, and 2 are closed. Stage 3 is the active implementation stage.**
 
 ## 6. Foundation Lab Contract
 
@@ -430,11 +429,11 @@ Current key status:
 | Page/surface Read Model boundary | Mapped / partial evidence | introduce just in time, first where real Page construction requires it |
 | Button/Input/Checkbox/basic primitives | Implemented / Foundation evidence | reorganize showroom; calibrate only as real consumers require |
 | Collection Row / Property Control | Implemented / consumer evidence | preserve useful owner, align final states/props in showroom |
-| Workspace Frame / LocationBar | Alignment Required | Stage 2 thin Page chassis; remove mandatory global location owner |
+| Workspace Frame / Page Surface | Consumer-proven / Host-proven | consume as the stable shared Main View chassis |
 | Collection Controls / required Display | Alignment Required | replace with composition-oriented controls |
 | Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
 | Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Project/Issue/Cycle Inspector Read Models and content remain Stage 7/8/10 |
-| Foundation Lab | Host-proven navigation / Alignment Required | Stage 2 shared Page chassis; Stage 3 showroom hierarchy and specimen convention |
+| Foundation Lab | Host-proven / Consumer-proven | Stage 3 showroom hierarchy and specimen convention |
 | Progress | Alignment Required | add normal/compact/micro/unavailable specimens/contract |
 | Selection / Action Registry / Peek / Confirmation / Composer | Mapped / partial or pending | create production owners just in time from real Page needs |
 
@@ -478,6 +477,12 @@ Prove the chassis with at least Foundation and one Product Page consumer.
 
 Exit: Foundation and Product Pages mount through the same Main View base.
 
+Current status:
+
+- **Stage 2 complete / Host-proven** — `TrailWorkspaceFrame` and `TrailPageSurface` provide the shared Main View frame, scroll/inset policy, and pane/container responsive context; the mandatory `TrailLocationBar` contract is removed and Page identity remains composition-owned.
+- **Stage 2 consumer-proven** — Foundation and Triage mount through the same chassis, and representative real-Obsidian checks confirm practical pane-size behavior, including Triage's existing constrained Review transition.
+- **Stage 2 closed** — Triage is only the proving Product consumer here; its final Queue/Review controls, Review exit presentation, and Read Model remain owned by Stage 5 rather than being pulled into chassis work.
+
 ### Stage 3 — Foundation showroom structure
 
 Reorganize Foundation into:
@@ -516,6 +521,7 @@ Then finish:
 
 - Queue + direct `Filter + Order` controls;
 - Review draft lifecycle and visible-order progression;
+- explicit Review exit back to the full Triage List in both wide and constrained compositions;
 - shared Confirmation for Delete;
 - shared transient Esc/focus behavior where required;
 - Triage Creation Composer path;
@@ -609,27 +615,28 @@ Complete:
 
 ## 9. Active Slice
 
-Stage 1 Host Chrome and navigation/history is complete and Host-proven. This checkpoint closes Stage 1. The next code slice is:
+Stage 2 Shared Main View Page Chassis is complete, Consumer-proven, and Host-proven. This checkpoint closes Stage 2. The next code slice is:
 
-### Stage 2 — Shared Main View Page Chassis
+### Stage 3 — Foundation showroom structure
 
 Scope:
 
-1. replace the mandatory global Location Bar/title contract with a thin shared Workspace Frame and Page Surface;
-2. establish shared content capacity, scroll/insets, and pane/container responsive context without introducing Page-specific workflow;
-3. keep Page Header/breadcrumb/actions composition-owned and optional rather than mandatory shell chrome;
-4. remove the mandatory shared Display/View Bar assumption from the chassis boundary;
-5. migrate Foundation and at least one Product Page consumer onto the same chassis so development and Product surfaces prove the same mechanical base;
-6. leave Foundation showroom reorganization, production warehouse alignment, and Product-specific Page completion to their later stages.
+1. reorganize Foundation into the frozen `Visual Foundations / Primitives / Patterns / Semantic Entities / Interactions` showroom hierarchy;
+2. introduce only Foundation-owned specimen organization wrappers such as section, state-grid, specimen-row, description, and control-group helpers;
+3. expose consistent State Gallery and Live Interaction presentation where the existing production owner benefits from each form;
+4. keep every reusable capability in production ownership and ensure Foundation remains only a development consumer;
+5. preserve the shared Workspace Frame/Page Surface established in Stage 2 rather than creating a Lab-only Main View structure;
+6. do not invent missing future production components merely to fill showroom categories.
 
 Exit evidence:
 
-- focused shell/chassis and direct-consumer tests;
-- typecheck/build where the shared shell contracts affect compilation/bundling;
-- representative Obsidian evidence across practical pane sizes using both Foundation and a Product Page;
-- Foundation and Product Pages mount through the same Main View base without a mandatory Location Bar or Display contract.
+- existing production owners can be found and compared under the frozen showroom hierarchy;
+- representative State Gallery and Live Interaction specimens use production owners rather than Foundation substitutes;
+- focused Foundation tests cover the new organizational contract;
+- diagnostics build and representative Obsidian inspection confirm the showroom remains usable across practical Main pane sizes;
+- no production Page imports Foundation-only wrappers or fixtures.
 
-Stage 3 Foundation showroom work begins only after Stage 2 is a stable published checkpoint.
+Stage 4 production-warehouse alignment begins only after Stage 3 is a stable published checkpoint.
 
 ## 10. Slice Definition of Done
 
