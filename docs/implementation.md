@@ -529,9 +529,10 @@ Every aligned owner remains production code and must still have a real or immine
 
 Current status:
 
-- **Stage 4 intermediate checkpoint published** — `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` aligns Progress density/unavailable states, removes the required-Display Collection Controls contract, centralizes Collection Row nested-interaction isolation, and aligns Property Control normal/compact/disabled states.
-- **Stage 4 contract evidence is green** — the shared-contract slices passed repository-wide or focused validation as appropriate and were inspected in representative real Obsidian wide/constrained conditions.
-- **Stage 4 remains active** — constrained visual evidence exposed a deeper layout-containment gap: normal-flow components need explicit owned space, direct-child allocation, non-overlap, and owner-defined overflow before the final Linear-faithful visual pass.
+- **Stage 4 shared-contract checkpoint published** — `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` aligns Progress density/unavailable states, removes the required-Display Collection Controls contract, centralizes Collection Row nested-interaction isolation, and aligns Property Control normal/compact/disabled states.
+- **Stage 4 layout-ownership checkpoint published** — `795dfb54feacc10571f3cfedae6f5a606fe96cb2` replaces the Foundation Collection Row specimen's anonymous child-index track schema with stable `id / primary / trailing` direct regions and keeps showroom-only interaction feedback outside the row. This is a spatial-ownership correction, not a breakpoint-specific width patch.
+- **Representative host evidence is green for the audited surfaces** — real Obsidian inspection covered Foundation Collection Row / Property Control in normal and constrained desktop panes, plus Triage wide Queue + Review and constrained single-column Review recomposition; no sibling overlap or essential-control escape was observed in those audited surfaces.
+- **Stage 4 remains active** — continue auditing remaining current Page / pattern / entity / primitive owners for direct-child spatial ownership and explicit overflow responsibility. Only proven supported-desktop containment defects justify more structural code; after the audit is stable, finish the Linear-faithful visual calibration pass.
 
 ### Stage 5 — Finish Triage
 
@@ -635,7 +636,7 @@ Complete:
 
 ## 9. Active Slice
 
-Stage 4 has a stable published intermediate checkpoint at `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1`. Progress, Collection Controls, Collection Row interaction isolation, and Property Control state contracts are aligned; Stage 4 is not yet closed.
+Stage 4 now has two published checkpoints: `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` for shared UI contract alignment and `795dfb54feacc10571f3cfedae6f5a606fe96cb2` for the first concrete Layout Contract repair. Progress, Collection Controls, Collection Row interaction isolation, Property Control states, and the repaired Foundation row spatial schema are aligned; Stage 4 is not yet closed.
 
 ### Stage 4 continuation — Layout containment + final warehouse calibration
 
@@ -644,12 +645,25 @@ The next implementation sequence is:
 ```text
 canonical Layout Contract
 -> audit current Page / pattern / entity boundaries
--> repair non-overlapping containment + explicit overflow ownership
--> wide / constrained host verification
+-> repair remaining proven containment defects
+-> representative host verification where needed
 -> Linear-faithful visual calibration
 -> Stage 4 close
 -> Stage 5 Triage
 ```
+
+Current audit snapshot:
+
+- Workspace Frame / Page Surface, Triage Page wide/constrained composition, Collection Controls, production Collection Row, Triage Row, Property Control/basic primitives, and current top-layer picker/popover owners have been inspected without a second proven production containment defect so far;
+- the Foundation Collection Row specimen did contain a real parent/child schema contradiction and was repaired in `795dfb54feacc10571f3cfedae6f5a606fe96cb2`;
+- continue the remaining owner audit from this checkpoint rather than restarting from generic overflow scans or Foundation-only stress cases.
+
+Desktop calibration boundary for Stage 4:
+
+- reason from the actual Trail Main View capacity, not monitor resolution;
+- a normal desktop pane and roughly half of a typical laptop workspace are the representative normal/constrained scenarios; approximately `900–1200px` and `680–720px` are engineering references, not values the user must measure manually;
+- widths materially below about `650px` are diagnostic rather than V1 desktop acceptance targets unless a later Product surface explicitly establishes smaller supported capacity;
+- do not add breakpoint branches, clipping, or overflow suppression solely to satisfy unsupported extreme widths; do repair any genuine parent/child ownership contradiction that an extreme stress case reveals independently of that width.
 
 Scope:
 
