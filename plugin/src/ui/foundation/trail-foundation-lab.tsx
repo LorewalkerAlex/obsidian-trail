@@ -129,9 +129,13 @@ function CollectionRowContent({
   return (
     <div className="trail-lab-list-row__content">
       <span className="trail-lab-list-row__id">{id}</span>
-      <span className="trail-lab-list-row__title">{title}</span>
-      <span className="trail-lab-label-chip trail-lab-label-chip--quiet">{label}</span>
-      <span className="trail-lab-list-row__meta">{size}</span>
+      <span className="trail-lab-list-row__primary">
+        <span className="trail-lab-list-row__title">{title}</span>
+      </span>
+      <span className="trail-lab-list-row__trailing">
+        <span className="trail-lab-label-chip trail-lab-label-chip--quiet">{label}</span>
+        <span className="trail-lab-list-row__meta">{size}</span>
+      </span>
     </div>
   );
 }
@@ -419,21 +423,23 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
             >
               <div className="trail-lab-list-row__content">
                 <span className="trail-lab-list-row__id">TRAIL-203</span>
-                <span className="trail-lab-list-row__title">
-                  Activate row content
-                  <span className="trail-lab-list-row__meta">
-                    Row {rowActivations} · Property {propertyActions}
-                  </span>
+                <span className="trail-lab-list-row__primary">
+                  <span className="trail-lab-list-row__title">Activate row content</span>
                 </span>
-                <TrailPropertyControl
-                  aria-label="Change inline status"
-                  onClick={() => setPropertyActions((count) => count + 1)}
-                >
-                  <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
-                  In progress
-                </TrailPropertyControl>
+                <span className="trail-lab-list-row__trailing">
+                  <TrailPropertyControl
+                    aria-label="Change inline status"
+                    onClick={() => setPropertyActions((count) => count + 1)}
+                  >
+                    <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
+                    In progress
+                  </TrailPropertyControl>
+                </span>
               </div>
             </TrailCollectionRow>
+          </div>
+          <div aria-live="polite" className="trail-lab-interaction-feedback" role="status">
+            Row activations: {rowActivations} · Property actions: {propertyActions}
           </div>
         </LabSpecimenRow>
 

@@ -71,6 +71,16 @@ describe("TrailFoundationLab", () => {
     expect(screen.getByText("Selected collection row")).toBeInTheDocument();
     expect(screen.getByText("Review urgent capture before the next planning pass")).toBeInTheDocument();
 
+    const rowContents = Array.from(container.querySelectorAll(".trail-lab-list-row__content"));
+    expect(rowContents.length).toBeGreaterThan(0);
+    for (const rowContent of rowContents) {
+      const directRegions = Array.from(rowContent.children);
+      expect(directRegions).toHaveLength(3);
+      expect(directRegions[0]).toHaveClass("trail-lab-list-row__id");
+      expect(directRegions[1]).toHaveClass("trail-lab-list-row__primary");
+      expect(directRegions[2]).toHaveClass("trail-lab-list-row__trailing");
+    }
+
     expect(screen.queryByText("Overlays and composer")).not.toBeInTheDocument();
     expect(screen.queryByText("Improve project creation flow")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
@@ -103,12 +113,23 @@ describe("TrailFoundationLab", () => {
     const property = within(intentSpecimen).getByRole("button", {
       name: "Change inline status",
     });
-    expect(within(intentSpecimen).getByText("Row 0 · Property 0")).toBeInTheDocument();
+    const propertyRegion = property.closest(".trail-lab-list-row__trailing");
+    expect(propertyRegion).not.toBeNull();
+    expect(propertyRegion?.parentElement).toHaveClass("trail-lab-list-row__content");
+
+    const intentPrimary = intentSpecimen.querySelector(".trail-lab-list-row__primary");
+    expect(intentPrimary).not.toBeNull();
+    expect(Array.from(intentPrimary?.children ?? [])).toHaveLength(1);
+    expect(intentPrimary?.children[0]).toHaveClass("trail-lab-list-row__title");
+
+    const interactionFeedback = within(intentSpecimen).getByRole("status");
+    expect(interactionFeedback).toHaveTextContent("Row activations: 0 · Property actions: 0");
+    expect(interactionFeedback.closest(".trail-lab-list-row__content")).toBeNull();
 
     fireEvent.click(property);
-    expect(within(intentSpecimen).getByText("Row 0 · Property 1")).toBeInTheDocument();
+    expect(interactionFeedback).toHaveTextContent("Row activations: 0 · Property actions: 1");
     fireEvent.click(within(intentSpecimen).getByText("Activate row content"));
-    expect(within(intentSpecimen).getByText("Row 1 · Property 1")).toBeInTheDocument();
+    expect(interactionFeedback).toHaveTextContent("Row activations: 1 · Property actions: 1");
 
     const layoutSpecimen = screen.getByRole("group", {
       name: "Layout choice",
