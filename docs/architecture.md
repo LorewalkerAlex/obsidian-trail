@@ -134,18 +134,21 @@ Owns authoritative source lifecycle and convergence:
 
 Owns read-side derived logic and reusable selection:
 
-- effective-state selection;
+- readable/effective-state selection;
 - status/configuration interpretation;
 - effective Project/Issue capability projection;
+- shared semantic entity projections;
+- Page/surface Read Models;
 - entity presentation/Inspector projection;
 - Progress/Attention/Health inputs and other rebuildable summaries;
 - source-health selection;
 - structural narrowing;
 - shared filter/sort/group/search helpers;
-- page-specific selectors when product pages need them;
 - Workspace Default Project resolution and legal-target candidate selection for consumers that need an initial Project choice.
 
-Query does not mutate persistence, create a second entity state model, or turn a derived capability/score into authority.
+Query is the UI-facing read boundary over Runtime. It may accept transient UI inputs such as filter state, ordering, layout-relevant scope, and one explicit temporal `now`, then return immutable rebuildable projections for a Page, Inspector, Sidebar mode, picker, or other consumer.
+
+Query does not mutate persistence, create a second entity state model, own UI-local interaction lifetime, or turn a derived capability/score into authority.
 
 ### 2.8 Application
 
@@ -172,7 +175,9 @@ Owns product composition and interaction/presentation:
 - primitives/patterns/design system;
 - local drafts and continuous interaction state.
 
-UI reads effective runtime/query state and emits Application intents. It does not call Vault/plugin-data persistence directly and does not independently reimplement lifecycle legality with scattered `if project.status === ...` logic.
+UI reads Query Read Models and emits Application intents. Page/shell/Inspector composition may invoke Query, but reusable primitives, patterns, and semantic entity components receive semantic props and do not reach into Runtime maps/indexes or call Query on their own. This keeps production components portable into Foundation Lab fixtures and across Product Pages.
+
+UI does not call Vault/plugin-data persistence directly and does not independently reimplement lifecycle legality with scattered `if project.status === ...` logic.
 
 ### 2.10 Obsidian adapters
 
@@ -256,6 +261,8 @@ Effective State
 ```
 
 Pending plans never mutate committed truth before authoritative persistence confirms them.
+
+Readable UI state uses optimistic Effective State while Runtime is `ready`; during refresh/recovery/read-only conditions, Query may expose one coherent committed last-known-good snapshot instead of replaying optimism over an unsafe base.
 
 Local hover, drag pointer, selection, modal draft, resize, and animation state remains local UI state rather than entering the central Domain/Runtime overlay.
 
@@ -342,28 +349,73 @@ Important rules:
 
 UI surfaces consume this result rather than each implementing their own lifecycle matrix. Domain/Application still enforce legality when an intent is submitted; capability projection is not a security/consistency boundary by itself.
 
-### 3.8 Entity presentation projection
+### 3.8 Query Read Models and presentation projections
 
-Inspector/summary rendering must be based on entity meaning rather than physical carrier shape.
+Query turns one readable Runtime snapshot into UI-facing immutable projections. It is not a second datastore and does not own a second entity lifecycle.
 
-Conceptually:
+The read chain is:
 
 ```text
-Effective Runtime entity
-+ inverse/current relationships
-+ derived summaries
-+ applicable capabilities
-→ EntityPresentationProjection
+Committed Runtime
++ ordered Pending plans
+        ↓
+Readable / Effective Snapshot
+        ↓
+shared derived facts + semantic projections
+        ↓
+Page / Inspector / Sidebar / picker Read Model
+        ↓
+UI composition
 ```
 
-This allows, for example:
+A top-level Read Model evaluation acquires one readable snapshot, then passes that snapshot through shared helpers. Nested helpers must not independently rebuild Effective Runtime for every field or collection when they are part of the same evaluation.
 
-- Project Inspector to show Progress/Attention not stored on Project;
-- Issue Inspector to show current Cycle context although Cycle membership is physically stored by Cycle;
-- UI to omit opaque IDs, Markdown source paths/ranges, raw metadata markers, or unhelpful lifecycle timestamps;
-- storage direction to remain independent from presentation direction.
+Two projection scopes are expected.
 
-The projection is page/entity-specific enough to remain meaningful. Do not build a schema-driven universal Inspector that blindly renders every runtime field.
+**Shared semantic projections** expose reusable meaning without Page layout knowledge, for example:
+
+```text
+ProjectSummary
+IssueSummary
+StatusPresentation
+Progress
+Attention
+EffectiveCapabilities
+CurrentCycleContext
+```
+
+**Surface Read Models** compose those shared facts for one consumer, for example:
+
+```text
+ProjectsRootReadModel
+InitiativeFocusReadModel
+ProjectWorkspaceReadModel
+ProjectInspectorReadModel
+TriagePageReadModel
+CurrentCycleReadModel
+HomeReadModel
+SidebarSearchReadModel
+```
+
+Exact types are introduced just in time when the surface is implemented. V1 does not require every future Read Model to be designed up front and does not create a universal `TrailEverythingViewModel`.
+
+A Read Model may include current entity facts, resolved relationship meaning, derived summaries, capabilities, legal candidates, ordered/grouped collections, filter options, and UI-relevant source-health state. It must not expose physical source paths/ranges, parser fingerprints, raw Runtime indexes, or other storage mechanics merely because they are available internally.
+
+Transient UI state remains owned by UI, but may be passed explicitly into Query when it changes the visible projection:
+
+```text
+Runtime State
++ Page identity/scope
++ Filter / Order / supported layout inputs
++ one explicit temporal `now` when required
+→ Read Model
+```
+
+Selection, hover, focused identity, menu/picker openness, Peek target, Composer/Review draft, scroll, resize, and animation remain UI interaction state unless a specific Query needs one as a read-only input. `now` is an evaluation input, not authoritative Runtime state, so one projection uses one coherent temporal reference.
+
+Read Models are rebuildable and disposable. They are not persisted, not mutated by UI, and do not gain write methods. User actions still flow through Application.
+
+Memoization/caching is evidence-driven. First establish one readable snapshot per top-level evaluation and structurally narrow work through Runtime indexes. Add revision/pending-aware memoization only when representative profiling proves it valuable; do not introduce a general materialized-query cache engine preemptively.
 
 ### 3.9 Shared UI capabilities
 
@@ -380,13 +432,15 @@ Design tokens
 Representative capabilities include:
 
 - **Core primitives** — Button/IconButton, Input/Textarea, Checkbox, Tooltip/Popover, Menu, Select/Combobox, Dialog, Separator, Kbd, Progress, and other generic interaction surfaces whose responsibility is proven independently of a specific pattern;
-- **Layout selection** — belongs to View Bar/shared-pattern composition by default; promote a generic segmented-control primitive only if multiple real consumers prove one stable independent contract;
-- **Shared patterns** — Surface, CollectionRow/Card foundations, Toolbar/View controls, PropertyControl shell, overlay/composer carriers, list/board foundations, and reusable focus/selection presentation;
-- **Trail semantic components** — Status, Priority, Estimate, Due, Label, Project/Initiative identity, Milestone, IssueRow/IssueCard, ProjectRow, and semantic progress;
+- **Collection-control composition** — shared mechanical geometry for Filter/Order/Layout/other Page-supplied controls; no globally required Display control;
+- **Shared patterns** — Surface, CollectionRow/Card foundations, Page Header, Collection Controls, PropertyControl shell, overlay/composer carriers, list/board foundations, and reusable focus/selection presentation;
+- **Trail semantic components** — Status, Priority, Estimate, Due, Label, Project/Initiative identity, Milestone, IssueRow/IssueCard, Project Summary Row, and semantic progress;
 - **Cross-surface interactions** — Creation state, Filter state, Selection/Action Registry, Peek/Inspector targeting, Command/Context/Bulk orchestration, and keyboard dispatch;
 - **Optional scale mechanisms** — long-list virtualization only when representative evidence requires it.
 
-Core primitives own generic interaction/accessibility mechanics and expose small typed semantic variants such as `size`, `density`, or `variant`; they do not expose arbitrary low-level style knobs as their normal API. Patterns compose primitives around a stable UI responsibility. Semantic components bind Trail meaning to those lower layers. Pages choose composition and capability, not pixel geometry.
+Core primitives own generic interaction/accessibility mechanics and expose small typed semantic variants such as `size`, `density`, or `variant`; they do not expose arbitrary low-level style knobs as their normal API. Patterns compose primitives around a stable UI responsibility. Semantic components bind Trail meaning supplied by Read Models to those lower layers. Pages choose composition and capability, not pixel geometry.
+
+Reusable primitives/patterns/entities are data-source agnostic: they do not import the central Runtime Store or Query merely to fetch their own props. A Product Page may feed them from a Read Model; Foundation Lab may feed the same production component from fixture/specimen data.
 
 Reuse means moving stable mechanisms downward while leaving real semantic differences in the layer that owns them. Do not replace duplication with a giant component whose API is a matrix of booleans, arbitrary style props, or context-specific branches. Product-specific candidates and legality remain in Query/Application/Domain rather than leaking into generic primitives.
 
@@ -430,30 +484,33 @@ Current Linear reference + host calibration evidence
 
 V1 implements the Dark presentation only. Token/component structure should remain theme-extensible without requiring a second light implementation or light-specific parallel component tree now.
 
-The main Trail workspace has one reusable shell contract:
+The Main View uses one thin shared chassis rather than a global location/content template:
 
 ```text
-TrailWorkspaceShell
-├─ LocationBar
-├─ optional contextual disclosure
-├─ optional ViewBar
-└─ Content
+TrailView / host leaf
+└─ Workspace Frame
+   └─ Page Surface
+      ├─ optional Page-owned Header / breadcrumb / actions
+      └─ Page-owned content composition
 ```
 
-`LocationBar` owns current location/breadcrumb and object-level actions. `ViewBar` owns collection presentation controls. Its contract allows compatible capability slots such as Filter, Group, Sort, Display, layout selection, and collection actions when the consumer actually supports them. A lifecycle capability can remove an unavailable layout without changing the underlying Project data projection.
+Workspace Frame/Page Surface own mechanical Main View concerns such as content capacity, scroll/container behavior, shared insets, and responsive context. They do not invent a mandatory global `LocationBar`, title, breadcrumb, `Display`, Filter, Sort, or Page action set. Page Header and Collection Controls may be shared patterns, but Pages supply the actual identity, ancestry, actions, and supported controls.
 
 UI state ownership is orthogonal by responsibility:
 
 ```text
-Navigation State       where am I?
-Collection View State  how am I viewing this collection?
+Navigation State       what stable Product Page is active?
+Sidebar Search State   is Trail Navigation temporarily in Search mode?
+Collection View State  how is this Page collection being viewed?
 Inspector State        what persistent context is shown beside it?
-Peek State             what am I temporarily previewing?
+Peek State             what is temporarily previewed?
 ```
 
-These are transient UI concerns, not Domain or authoritative Runtime facts. Navigation can be shared across separate Obsidian/React view roots so `TrailNavigationView` and the main `TrailView` consume one location owner. Collection presentation state is separate from navigation so List/Board and future filter/group/sort/display choices do not redefine location. Inspector and Peek targets are separate from both, allowing a Project board, an open Project Details inspector, and an Issue Peek to coexist without conflating selection or navigation.
+These are transient UI concerns, not Domain or authoritative Runtime facts. Navigation can be shared across separate Obsidian/React view roots so `TrailNavigationView` and the main `TrailView` consume one location owner. Collection presentation state is separate from navigation so List/Board, Filter, Order, collapse, and selection do not redefine location. Inspector and Peek targets are separate from both.
 
-Navigation locations should represent stable product locations rather than today's component tree, for example Home, Triage, Search, Projects Root, Initiative, Project, Cycles, and a Full Item location where supported. The sidebar Default Project shortcut resolves its stable `defaultProjectId` and navigates to the ordinary `Project(projectId)` location; it does not introduce a second Standalone route or Project component tree. Components request navigation through a navigation capability instead of scattering page-specific `setState` chains, leaving a natural extension point for future host choices such as opening the same Full Item content in a new Obsidian tab or split.
+Navigation locations represent stable Product Pages, for example Home, Triage, Projects Root, Initiative, Project, Cycles, and Full Item locations where supported. Sidebar Search is not a Page/location. The sidebar Default Project shortcut resolves its stable `defaultProjectId` and navigates to ordinary `Project(projectId)`.
+
+Foundation Lab is development/calibration UI, not V1 Product navigation. Development/diagnostics builds may expose a `Development / Foundation` entry in Trail Navigation, but that entry must resolve through the same Main View Workspace Frame/Page Surface used by Product Pages. Foundation must not require a private Main View chassis. Production navigation omits the entry.
 
 Entity fields and actions are shared capabilities, while Peek, Inspector/Details, and Full Item View are separate surface compositions:
 
@@ -513,10 +570,12 @@ interactions
 → headless/shared UI state and action mechanics consumed across patterns/entities/pages
 
 foundation
-→ development/calibration consumer only; production layers never depend on it
+→ development/calibration Page and specimen consumer only; production layers never depend on it
 ```
 
-`primitives` do not know Trail Domain entities or page contexts. `patterns` know reusable interface responsibilities but not business legality. `entities` may bind effective Query/presentation meaning to lower UI layers. `pages` compose product scenarios. `shell` owns cross-location composition and host-facing Trail surfaces. `interactions` owns shared transient mechanics/state without becoming a second Domain/Runtime model.
+`primitives` do not know Trail Domain entities, Runtime, Query, or page contexts. `patterns` know reusable interface responsibilities but not business legality or Runtime access. `entities` bind semantic props to lower UI layers but do not fetch their own Runtime/query data. `pages`, Inspector compositions, and shell compositions consume Query Read Models and Application intents. `interactions` owns shared transient mechanics/state without becoming a second Domain/Runtime model.
+
+Foundation Lab owns only showroom composition, specimen wrappers/descriptions, fixture data, and development-only navigation exposure. Its displayed Button, Priority, Issue Row, Picker, Confirmation, and other reusable parts are production owners imported from the shared warehouse; they do not belong to Foundation.
 
 #### Variants and composition
 
@@ -529,13 +588,14 @@ Structural variation uses React composition instead of widening one component wi
 State lives at the smallest owner that needs its lifetime:
 
 ```text
-Domain / authoritative facts          → Domain / Runtime / Query owners
+Domain / authoritative facts          → Domain / Runtime owners
+rebuildable read projection           → Query Read Model
 cross-root or location-session UI     → focused shared Zustand owner
 component draft / open state          → local React state or focused headless primitive
 hover / focus-visible / pressed state → CSS / browser state
 ```
 
-A shared store is not the default merely because Zustand is available. Purely visual state must not enter canonical Runtime, and component-local interaction state must not become a global UI store without a real cross-consumer lifetime requirement.
+A shared store is not the default merely because Zustand is available. Purely visual state must not enter canonical Runtime, and component-local interaction state must not become a global UI store without a real cross-consumer lifetime requirement. Transient Page state may be passed to Query as explicit read input without transferring its ownership to Query.
 
 #### Responsive behavior
 
@@ -552,8 +612,10 @@ Frontend verification follows ownership:
 - token/stylesheet guards protect single visual authority and Lab-only isolation where useful;
 - primitive tests cover semantic variants, accessibility states, and generic interaction contracts;
 - pattern/interaction tests cover shared focus, selection, menu/composer/filter/action behavior;
-- semantic component tests cover Trail presentation contracts against Query/capability inputs;
-- page tests cover composition and user workflows without re-proving lower-layer mechanics;
+- semantic component tests cover Trail presentation contracts against explicit semantic props;
+- Query tests cover Read Model meaning, ordering/grouping, temporal inputs, capabilities, and projection boundaries;
+- Foundation Lab exercises visual states and live interaction specimens without becoming the only test oracle;
+- page tests cover Read Model consumption, composition, and user workflows without re-proving lower-layer mechanics;
 - representative real Obsidian validation covers host selectors, portal/focus behavior, pane/container response, drag/pointer behavior, and whole-application visual integration that jsdom cannot establish.
 
 Architecture guards should make known invalid dependencies and migration-only identities difficult to reintroduce, while avoiding a speculative custom frontend framework.
@@ -563,9 +625,9 @@ Architecture guards should make known invalid dependencies and migration-only id
 ### 4.1 Intended direction
 
 ```text
-UI
+UI composition
 ↓
-Application + Query
+Query Read Models + Application intents
 ↓
 Domain / Mutation / Runtime contracts
 ↓
@@ -579,17 +641,21 @@ Obsidian adapters implement host ports upward.
 Composition Root assembles the graph.
 ```
 
+Reusable primitives/patterns/entities sit below Page composition and receive props; they do not reverse-depend on Runtime/Query.
+
 ### 4.2 Forbidden reverse dependencies
 
 - Domain must not depend on Obsidian, React, Markdown parser, persistence implementation, Runtime Store, Source Sync, or UI.
 - Semantic Planner must not depend on React, Vault API, Application orchestration, Persistence, Runtime, or mutation execution.
 - Markdown must not depend on Persistence/Application/Runtime/UI.
 - Persistence must not depend on Application/Query/Runtime/UI or Obsidian adapter implementation.
-- Runtime must not depend on Markdown parser, Application, Source Sync, UI, or host APIs.
+- Runtime must not depend on Markdown parser, Application, Source Sync, Query, UI, or host APIs.
 - Mutation must not depend on Application/UI/host adapters; execution uses Persistence contracts rather than Markdown internals.
-- Query must not mutate persistence.
+- Query must not mutate persistence, own UI-local lifetime, or create a second authoritative entity store.
 - Application must not directly parse Markdown or call raw persistence/host APIs.
 - UI must not directly use Vault/plugin-data write mechanisms or become the only owner/enforcer of lifecycle legality.
+- reusable `ui/primitives`, `ui/patterns`, and `ui/entities` must not depend on `TrailRuntimeStore`, Runtime indexes, or Page-specific Query access merely to obtain display data.
+- production UI must not depend on Foundation-only wrappers, fixtures, routes, or styles.
 
 Architectural restrictions should be enforced through module shape, types, lint, and tests where practical rather than relying on documentation alone.
 
@@ -635,10 +701,13 @@ Markdown + plugin data
 → canonical record assembly
 → Domain/reference/workspace validation
 → committed Runtime + ownership/indexes
-→ effective Runtime
-→ Query/selectors/capabilities/presentation projections
-→ UI
+→ readable/effective Runtime snapshot
+→ Query shared projections + surface Read Model
+→ UI composition
+→ production primitives/patterns/entities
 ```
+
+A Product Page, Inspector, or Sidebar mode should receive a surface-level Read Model rather than reconstructing business meaning by directly walking Runtime maps/indexes. Foundation Lab normally bypasses business Query by supplying fixture/specimen props to the same production UI components.
 
 Cold full rebuild is valid V1 behavior. Normal Trail writes reconcile affected sources rather than requiring a full workspace scan on every mutation.
 
@@ -808,16 +877,18 @@ Current architecture permits source-scoped gating where ownership is reliable an
 ### 5.12 Query flow
 
 ```text
-Effective Runtime + temporal context
-→ derived rules / capabilities / presentation summaries
-→ structural narrowing
+Runtime State + Page/surface input + temporal context
+→ acquire one readable/effective Runtime snapshot
+→ shared derived rules / capabilities / semantic projections
+→ structural narrowing through indexes
 → shared filter/sort/group/search helpers
-→ page-specific selection
-→ stable IDs / grouped IDs / small summaries
+→ Page/surface-specific Read Model
 → UI
 ```
 
-V1 does not require a generic query engine or cost-based optimizer.
+A top-level Page/Inspector/Sidebar query should not repeatedly replay pending plans and rebuild indexes through nested selectors when one snapshot can be shared through the evaluation. Existing selector APIs may remain as focused helpers, but new composition should prefer snapshot-aware helpers and one surface Read Model boundary.
+
+V1 does not require a generic query engine, universal ViewModel graph, materialized query cache engine, or cost-based optimizer.
 
 Useful default ordering semantics include:
 
@@ -874,10 +945,10 @@ Application
 → use-case normalization/wiring and semantic outcomes
 
 Query
-→ derived/read behavior, effective capabilities, presentation summaries
+→ readable snapshot policy, shared projections, derived behavior, Page/surface Read Models
 
 UI
-→ user interaction and presentation contracts driven by capabilities
+→ composition and interaction contracts driven by Read Models/capabilities
 
 Real Obsidian
 → independent host-specific mechanisms and representative end-to-end evidence
@@ -919,16 +990,20 @@ YES full cold rebuild
 YES affected-source normal reconcile
 YES small structural/reference indexes
 YES global serial mutation queue
-YES on-demand selectors
+YES one readable snapshot per top-level Read Model evaluation
+YES on-demand selectors / Read Models
 YES ordinary React rendering
 YES virtualization when long-list evidence requires it
 
 NO persistent runtime cache initially
+NO universal ViewModel store
 NO Web Worker initially
 NO generic query dependency graph
 NO materialized query cache engine
 NO concurrent mutation scheduler
 ```
+
+Read-model evaluation should first eliminate avoidable repeated Effective Snapshot/index rebuild work before adding memoization. Revision/pending-aware caches are introduced only when representative profiling justifies them.
 
 Performance changes are evidence-driven and must not create a second source of truth.
 
@@ -990,7 +1065,7 @@ Obsidian Host
     ↑ adapters / ports
 
 UI
-    ↓ intents / reads
+    ↓ intents / Read Models
 Application + Query
     ↓
 Domain Logic + Mutation + Runtime
@@ -1007,7 +1082,9 @@ The target preserves these structural properties:
 - Persistence and physical Markdown remain below runtime/application concerns.
 - Runtime distinguishes committed, optimistic, control, and health state.
 - Source Sync owns convergence and external refresh.
-- Query/Application expose shared effective capability and presentation projections so UI surfaces do not fork lifecycle logic.
-- UI/pages compose reusable capabilities rather than each owning a private data stack.
+- Query owns the UI-facing Read Model boundary over one readable Runtime snapshot and exposes shared capabilities/derived facts without creating a second entity store.
+- Page/Inspector/Sidebar composition consumes Query Read Models instead of rebuilding business meaning from Runtime maps/indexes.
+- reusable UI components receive semantic props and remain portable between Product Pages and Foundation Lab fixtures.
+- Foundation Lab uses the same Main View Page chassis as Product Pages while remaining development-only navigation.
 - `main.ts` remains a thin composition root.
 - Architecture-significant code locations are defined in `design-to-code-map.md`; current implementation gaps are defined only in `implementation.md`.

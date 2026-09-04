@@ -4,238 +4,646 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The public documentation baseline for the completed V1 UI rebaseline is:
+The current durable documentation baseline before this implementation-plan rebaseline is:
 
 ```text
-8e14fa87473b09134e455383170cfe571c9aeb97
-docs: add final ui blueprints
+a3978382e1b7a08ca5662c70c085f298d9bf35de
+docs: finalize v1 ui rebaseline
 ```
 
-The latest published executable UI checkpoint before the rebaseline documentation pass is:
+The latest published executable UI checkpoint before the UI/document rebaseline remains:
 
 ```text
 da1a84f86a5d3a1e234335839f0fde1eff92e341
 feat: checkpoint triage review and navigation
 ```
 
-That code checkpoint is followed by documentation-only audit/rebaseline commits. Therefore **current code is intentionally behind the final UI target**.
+Current code is intentionally behind the frozen Product/UI target. Existing executable code is reusable evidence, not authority over the final architecture, UI composition, or implementation order.
 
-The active construction gate remains **Product Workspace / V1 UI Implementation**, with the first formal product vertical still centered on Triage. Phase B is the last accepted Triage construction boundary; Phase C is **IN PROGRESS** and the current code must not be described as final Triage or final shared-interaction implementation.
+The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
-## 2. Frozen Target vs Current Code
+## 2. Frozen Target and Current Alignment Debt
 
-The target UI is now frozen through:
+The implementation target is resolved through:
 
 ```text
-docs/ui.md
--> docs/ui-blueprints.md
--> docs/design-to-code-map.md
+product.md / domain.md / data.md
+-> architecture.md
+-> ui.md
+-> ui-blueprints.md
+-> design-to-code-map.md
+-> this implementation plan
 ```
 
-Implementation should align to that target without reopening Page composition or shared interaction semantics merely because older components/tests use a different contract.
+Do not reopen already-closed Product/UI decisions because older code or tests express a stale contract.
 
-Current published alignment debt includes:
+Known published alignment debt includes:
 
-1. `TrailWorkspaceShell` requires a `locationBar`, and `TrailLocationBar` owns a global `<h1>` location presentation. Final target: Workspace Frame only; breadcrumb/title/actions are Page-owned, optionally sharing a Page Header pattern.
-2. `TrailViewBarProps` requires `display`. Final target: composition-oriented Collection Controls with no globally required Display; Triage uses direct `Filter + Order`, Projects/Project/Cycle use only their accepted direct controls.
-3. `TrailProgress` is the correct shared visual owner but needs unavailable plus normal/compact/micro density rather than entity-specific progress components.
-4. shared Filter exists, but Selection/Action Registry/Bulk/Peek/transient interaction stack/Confirmation/standard Creation Composer are not yet complete shared production owners.
-5. current navigation/history code predates the final Sidebar Search closure. Search must become temporary Left Sidebar state, not a Main View Page/location.
-6. current partial Triage Review code predates the final Shared Interactions closure and must align its dismissal/focus/action/confirmation behavior without discarding already-valid Query/Application work.
+1. `TrailWorkspaceShell` / `TrailLocationBar` still express a mandatory global location/title contract. Target: thin Workspace Frame/Page Surface; Page owns header/breadcrumb/actions.
+2. `TrailViewBarProps` still requires `display`. Target: composition-oriented Collection Controls with only the controls accepted by the current Page.
+3. navigation/history predates the final Sidebar Search closure. Search is temporary Left Sidebar state, not a Main View Page/location.
+4. Foundation Lab is still entangled with unfinished Page fallback behavior rather than acting only as a development showroom Page.
+5. Foundation organization is specimen-by-specimen but lacks the final showroom hierarchy and State Gallery + Live Interaction convention.
+6. `TrailProgress` is the correct shared visual owner but still needs unavailable and normal/compact/micro density states.
+7. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
+8. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
+9. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
+10. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
 
 These are implementation gaps, not design questions.
 
 ## 3. Established Foundations
 
-The following lower layers are already established and should be consumed rather than re-modeled while aligning UI:
+The following lower layers are already established and should be consumed rather than re-modeled:
 
 - Domain model, validation, lifecycle rules, and semantic planning;
 - required Project ownership for Workflow Issues;
-- required normal-ready Default Project reference and startup recovery path;
+- required normal-ready Default Project reference and startup recovery;
 - Markdown schema/codecs and authoritative Persistence;
-- Mutation Plans, physical materialization, Single/Source Transition/Integrity Batch execution, and global mutation ordering;
-- committed/effective Runtime, optimistic projection, reconciliation, source ownership, indexes, control, and source health;
-- Query ownership of derived projections, ordering, legal targets, temporal semantics, and capabilities;
+- Mutation Plans, physical materialization, transaction topologies, execution, and global mutation ordering;
+- committed Runtime, optimistic pending projection, reconciliation, source ownership, structural/reference indexes, control, and source health;
+- Query ownership of derived facts, ordering, legal targets, capabilities, and presentation projections;
 - Application ownership of semantic use cases;
 - fixed T-Shirt Estimate levels and configurable numeric weights;
 - explicit Cycle Start/Close/Start-next semantics;
 - canonical Project/Milestone/Cycle Progress semantics;
 - modular stylesheet ownership and deterministic Obsidian stylesheet assembly;
-- Visual Foundation and shared primitive/pattern work already accepted through real consumers.
+- existing production primitives/patterns/entities already proven through current consumers and Foundation Lab.
 
-Do not add page-local Domain legality, persistence shortcuts, alternate query languages, or temporary duplicate action systems while implementing the final UI.
+Do not add page-local Domain legality, persistence shortcuts, a second Runtime/ViewModel store, alternate query languages, or duplicate action/filter/confirmation systems merely to make UI implementation convenient.
 
-## 4. Published UI Evidence
+## 4. Implementation Operating Model
 
-### 4.1 Reusable primitives and patterns
+### 4.1 Dependency-first program
 
-Published reusable UI currently includes, among other established owners:
-
-- `TrailButton`;
-- `TrailIconButton`;
-- `TrailInput`;
-- `TrailTextarea`;
-- `TrailCheckbox`;
-- `TrailProgress`;
-- `TrailSeparator`;
-- `TrailCollectionRow`;
-- `TrailPropertyControl`;
-- current `TrailViewBar` / layout switch mechanics;
-- shared Priority semantic identity/selector;
-- shared Label dots/selector;
-- shared Due presentation/selector;
-- shared collection Filter state/query helpers/popover presentation;
-- current Workspace shell/location carrier;
-- modular Trail tokens and Obsidian host-variable mapping.
-
-Existing owners remain useful evidence when their mechanical responsibility still matches the frozen target. Do not preserve a stale API solely because it already has tests.
-
-### 4.2 Triage Phase A/B evidence
-
-The important accepted checkpoints include:
+Implementation follows this global sequence:
 
 ```text
-4bc2bb7eb30e3f67039c8d2145c0fe0f6c25ce20  feat: add priority semantic selection
-20f5283693721bd636aebbec57da4885ff80c3c8  feat: add triage scanning foundation
-27afda30ab594fcd24bcfa38ba5b6a9aefef276f  refactor: align triage creation semantics
-fcf9de7f80339a4817432cb8ca88f6b5408152f5  docs: define triage vertical implementation plan
-83a57631560f6f876f30d80d81fbcc01e3861f55  feat: add production triage queue
-1580e41c10846fe3c6e09893024e94953fe4f123  feat: add triage queue controls
+Stage 0  Read Architecture closure
+         ↓
+Stage 1  Host Chrome and navigation/history
+         ↓
+Stage 2  Shared Main View Page Chassis
+         ↓
+Stage 3  Foundation Lab showroom structure
+         ↓
+Stage 4  Align the existing production UI warehouse
+         ↓
+Stage 5  Finish Triage
+         ↓
+Stage 6  Projects Root + Initiative Focus
+         ↓
+Stage 7  Project Workspace + Inspectors
+         ↓
+Stage 8  Issue interaction/detail chain
+         ↓
+Stage 9  Board / Timeline / Sidebar Search
+         ↓
+Stage 10 Cycles
+         ↓
+Stage 11 Home
+         ↓
+Stage 12 Full-system calibration and V1 exit
 ```
 
-Accepted/query-backed evidence includes:
+A later stage may not create a private substitute for an unresolved earlier-stage owner.
 
-- canonical Triage ordering: Review Due ascending -> Priority -> stable identity;
-- canonical Review Set derivation: seven-day horizon then fill to at least ten while retaining all horizon entries;
-- production `TrailTriageRow` over `TrailCollectionRow` + selection gutter + shared Priority identity;
-- compact Label dots and Due presentation;
-- shared Filter grammar with Triage registry Due/Priority/Labels;
-- real wide/narrow Obsidian evidence for Queue density, Filter interaction, label identity, and responsive control-row mechanics;
-- normal creation planning where Triage Accept creates a new standard Issue/Project identity and automatically seeds only title/body.
+### 4.2 Standard implementation slice
 
-The old Phase B `Display` presentation is **evidence for a responsive control-row mechanic only**. It is not final Triage semantics; the final target uses direct `Order: Review due | Priority` and removes required Display from the shared pattern.
+Every code slice follows the same loop:
 
-### 4.3 Partial Phase C evidence
+1. **Contract** — identify the already-resolved Product/Architecture/UI behavior being implemented.
+2. **Owner** — identify the production code owner from `design-to-code-map.md`.
+3. **Consumer graph** — trace Query/Application/Page/tests/host consumers before editing.
+4. **Production implementation** — implement the smallest complete owner; do not put reusable behavior in Foundation-only code.
+5. **Foundation specimen** — when the owner is visual/reusable, display representative states and live behavior in Foundation before Product-Page installation.
+6. **Real consumer** — install the owner in the real Page/surface that proves the need; Page-specific workflow stays Page-local.
+7. **Verification** — run the smallest sufficient owner/direct-consumer tests and representative host checks only when host behavior cannot be established automatically.
+8. **Checkpoint** — publish a coherent GitHub checkpoint only after the slice exit condition is satisfied.
 
-Executable checkpoint:
+Foundation is not required for a pure Domain/Runtime/Query owner that has no independent visual contract. Conversely, a reusable visual/interaction owner is not accepted merely because a Page happens to render it once.
+
+### 4.3 Just-in-time shared ownership
+
+Do not build a speculative complete component library before Product work.
+
+When a Product Page requires a reusable capability:
 
 ```text
-da1a84f86a5d3a1e234335839f0fde1eff92e341
-feat: checkpoint triage review and navigation
+Page needs capability X
+→ production warehouse already has X?
+   ├─ yes: verify Foundation coverage is adequate, then consume it
+   └─ no: implement production X
+          → expose representative Foundation specimens
+          → calibrate states/interactions
+          → install into the Product Page
 ```
 
-It adds useful but not yet accepted-as-final evidence:
+This is layer-aware, but demand-driven. Shared owners are created before the Page uses them, while their contract is proved by a real Product need.
 
-- non-modal Triage Review over the real Queue;
-- Title/Description editing and shared Priority/Label/Due edit controls;
-- Defer/Delete wiring through existing UI-action/Application boundaries;
-- current serialized draft-save/disposition behavior;
-- Defer as same-identity +7 calendar days;
-- Delete through normal Triage delete intent;
-- visible-order successor selection after successful disposition;
-- wide Queue+Review and narrow focused-Review composition;
-- Obsidian host View State integration for top-level Page Back/Forward.
+## 5. Stage 0 — Read Architecture
 
-The final design now gives Phase C a clearer correction target:
+### 5.1 Frozen read chain
 
-- Review is page-local and never a host-history node;
-- uncommitted text is discarded on identity/Page leave rather than implicitly saved by navigation;
-- Accept/Defer/Delete use the frozen post-success slot/re-query progression;
-- Triage Delete consumes the shared Confirmation mechanics;
-- Menu/Picker/Confirmation/Review must obey top-layer Esc/focus ownership;
-- shared Action Registry/context resolution should replace page-local action duplication when the real consumer is introduced.
-
-## 5. Active Implementation Strategy
-
-Implement through coherent product verticals over established foundations:
+The central read architecture is:
 
 ```text
-frozen Product/UI target
--> choose one coherent vertical
--> introduce only the shared owner that the vertical now proves it needs
--> consume that owner immediately in the real vertical
--> validate owner + direct consumers
--> verify host behavior only where automated evidence is insufficient
--> publish a stable checkpoint
--> continue until the vertical exit criteria are satisfied
+Authoritative Persistence
+        ↓
+Domain Model
+        ↓
+Runtime Store
+        ↓
+Readable / Effective Snapshot
+        ↓
+Query shared projections + surface Read Model
+        ↓
+Page / Inspector / Sidebar composition
+        ↓
+production UI components
 ```
 
-Do **not** return to a speculative layer-first program such as “build every generic pattern before any Page.” Shared owners mature just in time from real product demand.
+Runtime remains the single central in-memory operational store. V1 does **not** create a second mutable ViewModel store.
 
-The dependency rule remains strict: a Page must not bypass an unresolved canonical Domain/Query/Application owner merely to make UI implementation convenient.
+### 5.2 Runtime ownership
 
-## 6. Immediate Plan
+Runtime continues to own:
 
-### Phase C — finish Triage Review alignment
+```text
+Committed authoritative state
+Runtime indexes
+source ownership
+ordered pending Mutation Plans
+control lifecycle
+source health
+revision
+```
 
-Goal: make the existing Triage vertical conform to the frozen Triage + Shared Interactions contract without reopening product design.
+Effective planning/UI state is committed state plus ordered pending effects while the Runtime is safely `ready`. Refresh/read-only recovery may expose coherent committed last-known-good state instead.
 
-Required work:
+### 5.3 Query Read Model ownership
 
-1. replace generic Triage Display with direct Order while preserving proven Filter/control-row mechanics;
-2. align Review draft lifecycle with explicit commit/discard behavior and no navigation-as-save;
-3. align Accept/Defer/Delete progression to the current visible/ordered projection rule;
-4. consume shared Confirmation for destructive Delete;
-5. make nested Picker/Menu/Confirmation Esc/focus behavior obey the transient-stack contract;
-6. remove/rewrite stale shell/history assumptions that directly block Triage's final Page-owned composition;
-7. validate Query/Application semantics through focused tests and run representative Obsidian host checks only for Review layout/focus/history behaviors that require the host.
+Query is the UI-facing read boundary over Runtime.
 
-Exit: Triage Queue + Review + creation/disposition interactions match `docs/ui.md`/blueprint and no Triage-specific duplicate action/filter/confirmation mechanism remains.
+A top-level surface Read Model may combine:
 
-### Shared interaction owners — introduce from real consumers
+- entity facts;
+- inverse/current relationships;
+- derived Progress/Attention/Health facts;
+- effective capabilities and legal targets;
+- resolved semantic presentation data;
+- ordered/grouped collection projections;
+- filter options;
+- UI-relevant Runtime health state.
 
-After/while Phase C proves the need, mature these shared owners through concrete Page consumers:
+Read Models are immutable, disposable, rebuildable, and non-authoritative. UI never mutates them.
 
-- Selection state + Bulk Bar integration;
-- Action Registry/context resolution;
-- Context Menu/overflow adapters;
-- transient interaction stack;
-- shared Confirmation;
-- read-only Workflow Issue Peek;
-- Picker-family common mechanics where existing property controls can actually share them;
-- standard Creation Composer infrastructure.
+Expected scopes include shared semantic projections plus just-in-time surface models such as:
 
-Do not create empty frameworks with no production consumer.
+```text
+ProjectSummary
+IssueSummary
+StatusPresentation
+EffectiveCapabilities
 
-### Projects vertical
+TriagePageReadModel
+ProjectsRootReadModel
+InitiativeFocusReadModel
+ProjectWorkspaceReadModel
+ProjectInspectorReadModel
+CurrentCycleReadModel
+HomeReadModel
+SidebarSearchReadModel
+```
+
+Do not design all future concrete types before their surface implementation, and do not introduce a universal `TrailEverythingViewModel`.
+
+### 5.4 Top-level evaluation rule
+
+One top-level Read Model evaluation should:
+
+```text
+Runtime State
++ Page/surface identity
++ explicit transient query inputs
++ one explicit `now` when needed
+        ↓
+acquire readable/effective snapshot once
+        ↓
+pass the snapshot through shared projection helpers
+        ↓
+return one coherent Read Model
+```
+
+Do not repeatedly replay pending plans/rebuild Runtime indexes through nested selectors within the same evaluation when one snapshot can be shared.
+
+Do not add a generalized memoization/cache framework first. Measure representative Projects/Issues and add revision/pending-aware memoization only when evidence justifies it.
+
+### 5.5 UI-state boundary
+
+These remain UI-owned transient state:
+
+- Filter values and Order choice;
+- List/Board presentation choice;
+- selection/highlight/focus;
+- collapsed groups;
+- Peek/menu/picker/confirmation open state;
+- Composer and Triage Review drafts;
+- scroll/resize/animation state.
+
+A transient value may be passed into Query as an explicit input when it changes the visible projection. That does not move its ownership into Runtime/Query.
+
+### 5.6 Reusable component boundary
+
+Reusable production components do not fetch their own business data.
+
+Target dependency:
+
+```text
+Query Read Model ───────────────┐
+                               ↓
+                        production component
+                               ↑
+Foundation fixture ─────────────┘
+```
+
+Examples such as `TrailIssueRow`, `TrailProjectSummaryRow`, `TrailPriority`, `TrailProgress`, and shared patterns receive semantic props. They do not require `TrailRuntimeStore` or Runtime-index access merely to render themselves.
+
+This is what makes the production warehouse truly portable between Foundation and Product Pages.
+
+### 5.7 Stage 0 exit
+
+The architectural contract is frozen by `architecture.md` + `design-to-code-map.md` + this plan.
+
+Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
+
+**After this documentation checkpoint, the next active code slice is Stage 1.**
+
+## 6. Foundation Lab Contract
+
+### 6.1 Role
+
+Foundation Lab is Trail's development showroom: an effectively unbounded Main View canvas that lays out production UI owners so their visual states, variants, and live interactions can be inspected independently of a Product workflow.
+
+It is not:
+
+- a Product dashboard;
+- a production navigation destination;
+- a private component library;
+- the owner of reusable components;
+- a substitute for Page/workflow tests;
+- the fallback rendering for unfinished Product locations.
+
+### 6.2 Same Page chassis
+
+Foundation must be a real development Page using the same Main View chassis as Product Pages:
+
+```text
+Workspace Frame
+→ Page Surface
+   ├─ Foundation Page
+   ├─ Triage Page
+   ├─ Projects Page
+   └─ ...
+```
+
+If Foundation needs a different fundamental Main View structure in order to display a reusable component, the shared Page/chassis boundary is wrong.
+
+A diagnostics/development build may expose:
+
+```text
+Development
+Foundation
+```
+
+in Trail's Left Sidebar. Production navigation omits this entry. Foundation remains development infrastructure rather than a Product location contract.
+
+### 6.3 Showroom organization
+
+Foundation is organized as an infinite vertical showroom:
+
+```text
+Visual Foundations
+Primitives
+Patterns
+Semantic Entities
+Interactions
+```
+
+Sections are organizational shelves, not ownership layers inside Foundation.
+
+Foundation-only code may include:
+
+```text
+LabSection
+LabStateGrid
+LabSpecimenRow
+LabDescription
+LabControlGroup
+fixture builders/data
+```
+
+Those wrappers never become dependencies of production Pages.
+
+### 6.4 Specimen convention
+
+A reusable capability should expose two complementary specimen forms where useful.
+
+**State Gallery** freezes representative visual states, for example:
+
+```text
+Button
+- primary
+- secondary
+- ghost
+- danger
+- disabled
+- focus-visible
+
+Progress
+- normal
+- compact
+- micro
+- unavailable
+- 0 / partial / 100%
+
+Collection Row
+- normal
+- hover/focus
+- highlighted
+- selected
+- long title
+- constrained width
+```
+
+**Live Interaction** demonstrates behavior that needs actual manipulation, for example:
+
+```text
+Priority selection
+Picker keyboard/Esc/focus return
+Context Menu
+Selection + Bulk
+Confirmation
+Peek retarget/dismissal
+Composer + nested Picker
+```
+
+Not every specimen requires both forms; use the smallest demonstration that proves the component contract.
+
+### 6.5 Warehouse rule
+
+Nothing reusable shown in Foundation belongs to Foundation.
+
+```text
+production warehouse
+├─ primitives
+├─ patterns
+├─ semantic entities
+└─ shared interactions
+
+Foundation Page
+└─ imports and displays those production owners
+```
+
+A Product Page uses the same production owner and may customize only supported semantic props, slots, and composition.
+
+## 7. Shared-owner Maturity
+
+A file existing is not enough to call a shared owner complete.
+
+Use these maturity states:
+
+| State | Meaning |
+| --- | --- |
+| **Mapped** | canonical responsibility and target owner are known |
+| **Implemented** | production owner exists |
+| **Lab-proven** | representative visual/interaction states are exposed in Foundation when applicable |
+| **Consumer-proven** | at least one real Product consumer uses the owner |
+| **Host-proven** | required Obsidian-specific behavior is verified when applicable |
+| **Accepted** | current contract is stable enough for later dependencies |
+| **Alignment Required** | useful implementation exists but its public contract conflicts with the frozen target |
+
+Current key status:
+
+| Owner/capability | Current status | Next requirement |
+| --- | --- | --- |
+| Domain/Persistence/Mutation Runtime core | Accepted | consume; do not remodel |
+| readable/effective Runtime snapshot | Implemented | use once per top-level Read Model evaluation; profile before caching |
+| Page/surface Read Model boundary | Mapped / partial evidence | introduce just in time, first where real Page construction requires it |
+| Button/Input/Checkbox/basic primitives | Implemented / Foundation evidence | reorganize showroom; calibrate only as real consumers require |
+| Collection Row / Property Control | Implemented / consumer evidence | preserve useful owner, align final states/props in showroom |
+| Workspace Frame / LocationBar | Alignment Required | Stage 2 thin Page chassis; remove mandatory global location owner |
+| Collection Controls / required Display | Alignment Required | replace with composition-oriented controls |
+| Foundation Lab | Alignment Required | independent development Page + organized showroom; no Product fallback |
+| Progress | Alignment Required | add normal/compact/micro/unavailable specimens/contract |
+| Selection / Action Registry / Peek / Confirmation / Composer | Mapped / partial or pending | create production owners just in time from real Page needs |
+
+Update this ledger as the active execution snapshot; do not turn it into historical release notes.
+
+## 8. Global Dependency Roadmap
+
+### Stage 1 — Host Chrome and navigation/history
+
+Build Page-external mechanics first:
+
+- final Trail Left Sidebar information architecture;
+- development-only Foundation entry;
+- stable Product Page navigation locations;
+- remove Search as a Page/location and reserve temporary Sidebar Search state;
+- preserve/use Obsidian native Back/Forward history for stable Page navigation;
+- keep transient Filter/Peek/Review/Composer/etc. out of host history;
+- establish/align Right Sidebar Inspector carrier without implementing every Inspector.
+
+Exit: host navigation/history boundaries match final architecture and Foundation can be reached in development without being a Product fallback.
+
+### Stage 2 — Shared Main View Page Chassis
+
+Implement the thin common mechanical base:
+
+- Workspace Frame;
+- Page Surface;
+- shared content capacity/scroll/insets;
+- pane/container responsive context;
+- Page Header geometry where proven useful;
+- no mandatory Location Bar;
+- no mandatory Display/View Bar contract.
+
+Prove the chassis with at least Foundation and one Product Page consumer.
+
+Exit: Foundation and Product Pages mount through the same Main View base.
+
+### Stage 3 — Foundation showroom structure
+
+Reorganize Foundation into:
+
+```text
+Visual Foundations
+Primitives
+Patterns
+Semantic Entities
+Interactions
+```
+
+Add consistent specimen wrappers, State Gallery presentation, and Live Interaction areas. Do not yet invent every missing future component.
+
+Exit: existing production warehouse owners can be found, compared, and calibrated systematically.
+
+### Stage 4 — Align existing production warehouse
+
+Move current reusable evidence onto the frozen contracts, including:
+
+- Button/IconButton/Input/Textarea/Checkbox/Separator;
+- Progress density/unavailable states;
+- Collection Row;
+- Property Control;
+- final Collection Controls contract replacing required Display;
+- Priority/Status/Due/Label/Estimate semantic identities as required;
+- responsive/focus/disabled states in Foundation.
+
+Every aligned owner remains production code and must still have a real or imminent Product consumer.
+
+### Stage 5 — Finish Triage
+
+Before/with Triage construction, define the Triage Page Read Model from current proven Query semantics.
+
+Then finish:
+
+- Queue + direct `Filter + Order` controls;
+- Review draft lifecycle and visible-order progression;
+- shared Confirmation for Delete;
+- shared transient Esc/focus behavior where required;
+- Triage Creation Composer path;
+- Selection/Action owners only where Triage now proves a real need;
+- no navigation-as-save and no Review history node.
+
+Exit: Triage is the first complete final V1 vertical rather than another partial phase checkpoint.
+
+### Stage 6 — Projects Root + Initiative Focus
 
 Implement in dependency order:
 
-1. Projects Root + Project Summary Row + Group Header + final Collection Controls;
-2. Initiative Focus using the same Project collection owner;
-3. Project Workspace List with persistent Status skeleton and final ordinary Issue ordering;
-4. Project Inspector Progress/Attention/Milestones;
-5. Project Board;
-6. Projects Timeline;
-7. Project deletion/settings integration where not already exposed.
+- shared Project Summary projection/row;
+- Projects Root Read Model;
+- Group Header / Empty State where missing;
+- Projects Root List + Timeline control boundary;
+- Initiative Focus Read Model reusing the Project collection owner;
+- Project/Initiative creation through shared Composer when required.
 
-### Cycle vertical
+### Stage 7 — Project Workspace + Inspectors
 
-Reuse the Project/Issue collection owners:
+Implement:
 
-- Current Cycle List/Board;
-- Project swimlanes;
+- Project Workspace Read Model;
+- persistent Status sections;
+- Issue Row semantic projection/variants;
+- Project-scoped Filter/order rules;
+- Project Inspector Read Model;
+- Progress / Temporal Attention / Milestones;
+- lifecycle capabilities and Page actions.
+
+### Stage 8 — Issue interaction/detail chain
+
+Build one coherent chain:
+
+```text
+Issue Row/Card
+→ read-only Peek
+→ Issue Full Item
+→ Issue Inspector
+```
+
+Introduce/complete shared Selection, Action Registry, Context Menu/overflow, Bulk Bar, Picker mechanics, Confirmation, and transient stack only as the real chain proves them.
+
+### Stage 9 — Project execution views + Sidebar Search
+
+After Issue collection/interaction owners are stable:
+
+- Project Board and Status drag mutation;
+- Projects Timeline geometry/query projection;
+- Project deletion/settings integration;
+- final Sidebar Search mode using only Initiative/Project/Workflow Issue Read Models and normal navigation.
+
+### Stage 10 — Cycles
+
+Reuse mature Issue/collection/interaction owners for:
+
+- Current Cycle List;
+- Current Cycle Board + Project swimlanes;
 - Add/Remove membership and Add Issues;
-- Start/Close/Close-and-start-next;
+- Start/Close/Start-next flows;
 - Cycle Inspector;
-- Historical Cycle flat List.
+- Historical Cycle List.
 
-No parallel Issue model, Board engine, Filter grammar, or snapshot subsystem.
+Cycle should be a high-reuse vertical; it must not create parallel Issue/Filter/Board/Selection machinery.
 
-### Home / Full Item / remaining surfaces
+### Stage 11 — Home
 
-After core collection/entity owners are mature:
+Implement after its major source projections are stable:
 
-- Home fixed modules and routing;
-- Issue Full Item + Issue Inspector;
-- Sidebar Search;
-- Initiative Inspector;
-- final Default Project Settings presentation;
-- final runtime/Data-Issue feedback placement and full-shell visual calibration.
+- This week;
+- Lifecycle Activity;
+- Work Trend + Weekly Notes;
+- Work Pulse;
+- Home creation action.
 
-## 7. Validation Policy
+Home adds Page-specific visualization/composition, not another foundational interaction system.
 
-Use repository-native checks according to actual impact rather than ritual file count.
+### Stage 12 — Full-system calibration and V1 exit
+
+Complete:
+
+- runtime/Data-Issue feedback placement;
+- responsive calibration across representative pane sizes;
+- keyboard/focus conflict calibration;
+- Inspector entry/reveal behavior;
+- Foundation visual regression sweep;
+- whole-shell Obsidian integration;
+- evidence-driven performance/virtualization where required;
+- final full validation/release checkpoint.
+
+## 9. Active Slice
+
+After this documentation checkpoint, the next code slice is:
+
+### Stage 1A — host navigation skeleton
+
+Scope:
+
+1. align stable Trail Product locations with the final UI contract; remove Search as a Main View location;
+2. implement the final Left Sidebar skeleton and Default Project shortcut behavior from existing Query/Runtime facts;
+3. expose `Development / Foundation` only in diagnostics/development mode;
+4. separate Foundation from unfinished Product Page fallback behavior;
+5. preserve native Obsidian Back/Forward for stable Product Page transitions;
+6. keep transient UI mechanics out of navigation history;
+7. keep the slice focused on host/navigation contracts—do not redesign Page content yet.
+
+Exit evidence:
+
+- focused navigation/history tests;
+- build/typecheck if the navigation contracts affect compilation/bundling;
+- representative Obsidian evidence for Left Sidebar placement, Page transition, Back/Forward, and development Foundation entry;
+- no Product Page silently renders Foundation as fallback.
+
+Stage 2 Page Chassis begins only after Stage 1A is a stable published checkpoint.
+
+## 10. Slice Definition of Done
+
+A code slice is complete only when:
+
+- its canonical contract is already resolved;
+- production ownership is correct;
+- changed public contracts have their consumer graph closed;
+- reusable visual owners have representative Foundation coverage when applicable;
+- at least one real Product consumer exists or the slice is explicitly Host/Chassis infrastructure required before Product composition;
+- no Page-local duplicate mechanism bypasses Domain/Query/Application ownership;
+- focused tests prove new behavior at the correct layer;
+- host-only behavior has representative Obsidian evidence when required;
+- factual documentation is calibrated if implementation changed an architectural/ownership fact;
+- the intended manifest is committed/pushed and the remote GitHub commit is re-read before the checkpoint is called complete.
+
+## 11. Validation Policy
+
+Use repository-native checks according to actual impact.
 
 ### Documentation-only
 
@@ -243,20 +651,22 @@ Level 1 only:
 
 ```text
 git diff --check
-+ any real docs-specific validator if one exists
++ real documentation validator if one exists
 ```
 
 Do not run source lint/test/typecheck/build for pure Markdown by default.
 
 ### Local UI/query/application changes
 
-Run Level 1 plus focused owner/direct-consumer tests. Add typecheck/build only when the changed contracts affect compilation/bundling. Use real Obsidian only for host behavior that jsdom/pure tests cannot establish.
+Run Level 1 plus focused owner/direct-consumer tests. Add typecheck/build when changed contracts affect compilation/bundling. Use real Obsidian only for host behavior that jsdom/pure tests cannot establish.
 
-### Shared contracts / schema / Domain / tooling / broad refactor
+### Shared contracts / Domain / schema / tooling / broad refactor
 
-Escalate to repository-wide `npm run check` when the consumer graph is cross-cutting, uncertain, or the change is a formal release/checkpoint boundary that requires it.
+Escalate to repository-wide `npm run check` when the consumer graph is cross-cutting, uncertain, or the change is a formal release gate.
 
-## 8. Publication Rule
+A visual Foundation specimen does not replace owner tests, Product-consumer tests, or host validation. It is the stable visual/interaction showroom for reusable production parts.
+
+## 12. Publication Rule
 
 GitHub `main` is the durable checkpoint.
 
@@ -270,20 +680,23 @@ For each implementation round:
 6. commit and push separately from mutation/validation;
 7. re-read GitHub and verify the resulting remote commit before declaring the round complete.
 
-Do not use `git add -A` when paths are known. If commit succeeds but push fails, push the existing commit rather than recreating it. If push succeeds but local verification fails, re-read GitHub before attempting another push.
+Do not use `git add -A` when paths are known. If commit succeeds but push fails, push the existing commit rather than recreating it.
 
-## 9. Completion Definition
+## 13. V1 Completion Definition
 
 V1 UI implementation is complete when:
 
 - implemented Pages match frozen `docs/ui.md` behavior and `docs/ui-blueprints.md` composition;
-- shared owners have real production consumers and no Page-specific workflow leaks into them;
-- current known stale `LocationBar`/required-`display` contracts are removed or refactored;
-- Sidebar Search is shell state rather than a Page;
+- the Runtime→Readable Snapshot→Query Read Model→UI boundary is followed by Product Pages/Inspectors/Sidebar surfaces;
+- reusable UI components receive semantic props and can be exercised both from Foundation fixtures and real Read Models;
+- Foundation is a development showroom Page on the same Page chassis, not a Product fallback or alternate component library;
+- shared owners have correct production ownership and no Page-specific workflow leaks into them;
+- stale LocationBar/required-Display/Search-Page contracts are removed;
 - Selection/Action/Peek/Composer/Confirmation ownership is shared where frozen;
-- Query/Application/Domain remain the single source of legality and derived facts;
+- Query/Application/Domain remain the single owners of derived facts, legality, and semantic mutation;
 - responsive and host-specific behavior is calibrated in real Obsidian;
 - full-shell visual presentation is coherent across Trail and relevant native host surfaces;
+- representative scale evidence does not require unresolved performance work;
 - the final coherent checkpoint passes the appropriate repository/release validation gate and is verified on GitHub.
 
-Historical implementation details remain available in Git history. This document should stay a current execution snapshot rather than accumulating another permanent chronological archive.
+Historical implementation details remain in Git history. This document remains the current execution plan and active status snapshot, not another chronological archive.
