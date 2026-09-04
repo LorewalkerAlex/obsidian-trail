@@ -14,6 +14,11 @@ import {
   type TrailDiagnosticStorage,
 } from "./adapters/obsidian/trail-diagnostics-storage-obsidian";
 import {
+  TrailInspectorHost,
+  TRAIL_INSPECTOR_VIEW_TYPE,
+} from "./adapters/obsidian/trail-inspector-host";
+import { TrailInspectorView } from "./adapters/obsidian/trail-inspector-view";
+import {
   TRAIL_NAVIGATION_VIEW_TYPE,
   TrailNavigationView,
 } from "./adapters/obsidian/trail-navigation-view";
@@ -61,6 +66,7 @@ import { createTrailWeeklyNoteRepository } from "./persistence/utility-sources/t
 import { createTrailRuntimeStore } from "./runtime/store/trail-runtime-store";
 import { TrailRefreshController } from "./source-sync/refresh/trail-refresh-controller";
 import { createTrailAuthoritativeSourceSync } from "./source-sync/trail-authoritative-source-sync";
+import { createTrailInspectorStore } from "./ui/shell/trail-inspector-state";
 import {
   createTrailNavigationStore,
   trailLocationsEqual,
@@ -92,7 +98,9 @@ const fileKinds: TrailObsidianFileKinds = {
 /** Composition root: lifecycle, dependency graph, view/command/event registration only. */
 export default class TrailPlugin extends Plugin {
   private diagnostics: TrailDiagnostics = NOOP_TRAIL_DIAGNOSTICS;
+  private disposeInspectorNavigation: (() => void) | null = null;
   private disposeRuntimeDiagnostics: (() => void) | null = null;
+  private inspectorHost: TrailInspectorHost | null = null;
   private mutationQueue: TrailMutationQueue | null = null;
   private navigationStore: TrailNavigationStore | null = null;
   private refreshController: TrailRefreshController | null = null;
@@ -124,6 +132,7 @@ export default class TrailPlugin extends Plugin {
 
     const runtimeStore = createTrailRuntimeStore();
     const navigationStore = createTrailNavigationStore();
+    const inspectorStore = createTrailInspectorStore();
     this.navigationStore = navigationStore;
     const mutationQueue = new TrailMutationQueue();
     const writeGuard = createTrailHostWriteGuard();
@@ -238,6 +247,17 @@ export default class TrailPlugin extends Plugin {
         navigationStore,
       ),
     );
+    this.registerView(
+      TRAIL_INSPECTOR_VIEW_TYPE,
+      (leaf: WorkspaceLeaf) => new TrailInspectorView(leaf, inspectorStore),
+    );
+
+    const inspectorHost = new TrailInspectorHost(this.app.workspace, inspectorStore);
+    this.inspectorHost = inspectorHost;
+    this.disposeInspectorNavigation = navigationStore.subscribe((state, previousState) => {
+      if (trailLocationsEqual(state.location, previousState.location)) return;
+      this.syncInspector(state.location);
+    });
 
     this.addRibbonIcon("route", "Open Trail", () => {
       void this.activateView();
@@ -294,6 +314,7 @@ export default class TrailPlugin extends Plugin {
 
     this.app.workspace.onLayoutReady(() => {
       diagnostics.record("host.layout.ready");
+      this.syncInspector(navigationStore.getState().location);
       diagnostics.record("plugin.initialization.requested");
       void refreshController.initialize().then(
         ({ bootstrapped }) => {
@@ -328,8 +349,11 @@ export default class TrailPlugin extends Plugin {
 
   public onunload(): void {
     this.diagnostics.record("plugin.unloading");
+    this.disposeInspectorNavigation?.();
+    this.disposeInspectorNavigation = null;
     this.disposeRuntimeDiagnostics?.();
     this.disposeRuntimeDiagnostics = null;
+    this.inspectorHost = null;
     this.mutationQueue?.dispose();
     this.mutationQueue = null;
     this.navigationStore = null;
@@ -374,6 +398,8 @@ export default class TrailPlugin extends Plugin {
         }
       }
       await workspace.revealLeaf(leaf);
+      const visibleLocation = readTrailViewState(leaf.getViewState().state).location;
+      this.syncInspector(visibleLocation);
       this.diagnostics.record("view.activate.completed", {
         correlationId,
         data: { reusedExistingLeaf },
@@ -389,5 +415,24 @@ export default class TrailPlugin extends Plugin {
       });
       throw error;
     }
+  }
+
+  private syncInspector(location: TrailLocation): void {
+    const inspectorHost = this.inspectorHost;
+    if (inspectorHost === null) return;
+
+    const mainLeaf = this.app.workspace.getLeavesOfType(TRAIL_VIEW_TYPE)[0];
+    const mainViewWidth = mainLeaf?.view.containerEl.clientWidth ?? 0;
+    void inspectorHost.enterLocation(location, mainViewWidth).catch((error: unknown) => {
+      this.diagnostics.record("host.inspector.sync-failed", {
+        data: {
+          errorMessage: errorMessage(error),
+          errorName: errorName(error),
+          locationKind: location.kind,
+        },
+        level: "error",
+      });
+      console.error("Trail Inspector host sync failed", error);
+    });
   }
 }

@@ -3,7 +3,8 @@
  * -------------------------------------------------------------------------- */
 
 .trail-view,
-.trail-navigation-view {
+.trail-navigation-view,
+.trail-inspector-view {
   height: 100%;
   padding: 0;
   color: var(--trail-text-primary);
@@ -14,12 +15,14 @@
   background: var(--trail-surface-canvas);
 }
 
-.trail-navigation-view {
+.trail-navigation-view,
+.trail-inspector-view {
   background: var(--trail-surface-sidebar);
 }
 
 .trail-view__root,
-.trail-navigation-view__root {
+.trail-navigation-view__root,
+.trail-inspector-view__root {
   height: 100%;
   min-height: 100%;
 }
@@ -288,6 +291,43 @@ body button.trail-navigation__row[aria-current="page"]:hover {
   margin: var(--trail-space-4) 0 0;
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-body);
+}
+
+.trail-inspector {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 100%;
+  overflow: auto;
+  padding: var(--trail-space-9) var(--trail-space-8);
+  background: var(--trail-surface-sidebar);
+  color: var(--trail-text-primary);
+}
+
+.trail-inspector__header {
+  display: grid;
+  gap: var(--trail-space-3);
+}
+
+.trail-inspector__eyebrow {
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1.2;
+}
+
+.trail-inspector__header h2 {
+  margin: 0;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-strong);
+  line-height: 1.25;
+}
+
+.trail-inspector__placeholder {
+  margin: var(--trail-space-8) 0 0;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  line-height: 1.45;
 }
 
 .trail-foundation {

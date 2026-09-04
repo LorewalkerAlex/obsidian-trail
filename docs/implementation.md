@@ -275,7 +275,7 @@ The architectural contract is frozen by `architecture.md` + `design-to-code-map.
 
 Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
 
-**Stage 0 is closed. Stage 1 is the active implementation stage.**
+**Stage 0 and Stage 1 are closed. Stage 2 is the active implementation stage.**
 
 ## 6. Foundation Lab Contract
 
@@ -432,7 +432,8 @@ Current key status:
 | Collection Row / Property Control | Implemented / consumer evidence | preserve useful owner, align final states/props in showroom |
 | Workspace Frame / LocationBar | Alignment Required | Stage 2 thin Page chassis; remove mandatory global location owner |
 | Collection Controls / required Display | Alignment Required | replace with composition-oriented controls |
-| Host navigation / Sidebar Search boundary | Host-proven | finish Stage 1 with the Right Sidebar Inspector carrier |
+| Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
+| Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Project/Issue/Cycle Inspector Read Models and content remain Stage 7/8/10 |
 | Foundation Lab | Host-proven navigation / Alignment Required | Stage 2 shared Page chassis; Stage 3 showroom hierarchy and specimen convention |
 | Progress | Alignment Required | add normal/compact/micro/unavailable specimens/contract |
 | Selection / Action Registry / Peek / Confirmation / Composer | Mapped / partial or pending | create production owners just in time from real Page needs |
@@ -458,7 +459,8 @@ Exit: host navigation/history boundaries match final architecture and Foundation
 Current status:
 
 - **Stage 1A complete / Host-proven** — final Left Sidebar information architecture, stable Product Page locations, temporary Sidebar Search state, native Obsidian Back/Forward history, development-only Foundation navigation, and removal of Product-to-Foundation fallback are implemented and verified in the real host.
-- **Remaining Stage 1 work** — establish/align the Right Sidebar Inspector carrier and verify its host behavior without implementing future Inspector contents.
+- **Stage 1B complete / Host-proven** — Trail Inspector is established as an Obsidian Right Sidebar carrier with stable target lifetime, entry-time reveal policy, user/host-controlled visibility after entry, and non-destructive coexistence with unrelated Right Sidebar views.
+- **Stage 1 closed** — Inspector carrier behavior is established without pulling future Inspector Read Models or Product content forward; Project/Issue/Cycle Inspector content remains owned by Stages 7/8/10.
 
 ### Stage 2 — Shared Main View Page Chassis
 
@@ -607,28 +609,27 @@ Complete:
 
 ## 9. Active Slice
 
-Stage 1A host navigation is complete and Host-proven. The next code slice is:
+Stage 1 Host Chrome and navigation/history is complete and Host-proven. This checkpoint closes Stage 1. The next code slice is:
 
-### Stage 1B — Right Sidebar Inspector carrier
+### Stage 2 — Shared Main View Page Chassis
 
 Scope:
 
-1. establish the Trail Inspector as an Obsidian Right Sidebar carrier rather than a fake Main View column;
-2. make carrier availability follow stable Page identity: Home, Triage, Projects Root, and Sidebar Search have no Trail Inspector; stable Initiative, Project, Issue, and Cycle locations may expose the matching carrier;
-3. keep Stage 1B focused on host placement/target lifetime and use minimal placeholder content where future Inspector Read Models are not implemented yet;
-4. decide initial Inspector visibility once on location entry from actual Obsidian workspace capacity;
-5. after location entry, leave Inspector open/closed state under user/host control rather than toggling it repeatedly on resize or other transient UI changes;
-6. preserve unrelated Right Sidebar views and avoid destructive replacement/closure;
-7. keep Inspector state separate from Sidebar Search, navigation history, Peek, and future Page-local transient state.
+1. replace the mandatory global Location Bar/title contract with a thin shared Workspace Frame and Page Surface;
+2. establish shared content capacity, scroll/insets, and pane/container responsive context without introducing Page-specific workflow;
+3. keep Page Header/breadcrumb/actions composition-owned and optional rather than mandatory shell chrome;
+4. remove the mandatory shared Display/View Bar assumption from the chassis boundary;
+5. migrate Foundation and at least one Product Page consumer onto the same chassis so development and Product surfaces prove the same mechanical base;
+6. leave Foundation showroom reorganization, production warehouse alignment, and Product-specific Page completion to their later stages.
 
 Exit evidence:
 
-- focused carrier/location-entry tests;
-- typecheck/build if the host adapter contracts affect compilation/bundling;
-- representative Obsidian evidence for real Right Sidebar placement, stable-target/no-target transitions, user-controlled visibility after entry, and preservation of unrelated Right Sidebar views;
-- no future Inspector content/read model is prematurely implemented merely to prove the carrier.
+- focused shell/chassis and direct-consumer tests;
+- typecheck/build where the shared shell contracts affect compilation/bundling;
+- representative Obsidian evidence across practical pane sizes using both Foundation and a Product Page;
+- Foundation and Product Pages mount through the same Main View base without a mandatory Location Bar or Display contract.
 
-Stage 2 Page Chassis begins only after Stage 1 is a stable published checkpoint.
+Stage 3 Foundation showroom work begins only after Stage 2 is a stable published checkpoint.
 
 ## 10. Slice Definition of Done
 
