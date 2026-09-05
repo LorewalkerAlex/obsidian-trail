@@ -192,7 +192,7 @@
   white-space: nowrap;
 }
 
-.trail-triage-row__title-button {
+body button.trail-triage-row__title-button {
   appearance: none;
   margin: 0;
   padding: 0;
@@ -204,7 +204,7 @@
   font-family: inherit;
 }
 
-.trail-triage-row__title-button:focus-visible {
+body button.trail-triage-row__title-button:focus-visible {
   border-radius: var(--trail-radius-xs);
   box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
 }
