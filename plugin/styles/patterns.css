@@ -475,7 +475,7 @@ body button.trail-filter-chip__clear:focus-visible {
 .trail-confirmation__overlay {
   position: fixed;
   inset: 0;
-  z-index: var(--layer-modal, 1100);
+  z-index: calc(var(--layer-modal, 1100) + 2);
   background: var(--trail-overlay-scrim);
 }
 
@@ -484,7 +484,7 @@ body button.trail-filter-chip__clear:focus-visible {
   position: fixed;
   top: 50%;
   left: 50%;
-  z-index: calc(var(--layer-modal, 1100) + 1);
+  z-index: calc(var(--layer-modal, 1100) + 3);
   width: min(360px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow-y: auto;
@@ -536,4 +536,127 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
 
 body .trail-confirmation__actions button.trail-button[data-confirmation-tone="danger"]:focus-visible {
   box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+}
+
+.trail-composer__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal, 1100);
+  background: var(--trail-overlay-scrim);
+}
+
+.trail-composer__content {
+  box-sizing: border-box;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: calc(var(--layer-modal, 1100) + 1);
+  display: flex;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-lg);
+  outline: 0;
+  background: var(--trail-surface-overlay);
+  box-shadow: var(--trail-shadow-overlay);
+  color: var(--trail-text-secondary);
+  transform: translate(-50%, -50%);
+}
+
+.trail-composer__header,
+.trail-composer__footer {
+  box-sizing: border-box;
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--trail-space-6);
+  padding: var(--trail-space-6) var(--trail-space-8);
+}
+
+.trail-composer__header {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--trail-border-subtle);
+}
+
+.trail-composer__context {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  font-weight: var(--trail-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-composer__close-icon {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.4;
+}
+
+.trail-composer__body {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--trail-space-11);
+}
+
+.trail-composer__fields {
+  display: grid;
+  min-width: 0;
+  gap: var(--trail-space-8);
+}
+
+body .trail-composer__fields input.trail-input,
+body .trail-composer__fields textarea.trail-textarea {
+  width: 100%;
+}
+
+body .trail-composer__fields input.trail-input {
+  min-height: 34px;
+  font-size: var(--trail-font-size-subtitle);
+  font-weight: var(--trail-weight-emphasis);
+}
+
+body .trail-composer__fields textarea.trail-textarea {
+  min-height: 112px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.trail-composer__properties {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-3);
+}
+
+.trail-composer__feedback {
+  margin: 0 var(--trail-space-11) var(--trail-space-6);
+  padding: var(--trail-space-6) var(--trail-space-7);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-surface-quiet);
+  color: var(--trail-danger);
+  font-size: var(--trail-font-size-supporting);
+}
+
+.trail-composer__footer {
+  justify-content: flex-end;
+  border-top: 1px solid var(--trail-border-subtle);
+}
+
+.trail-composer__shortcut {
+  margin-right: auto;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
 }

@@ -1,10 +1,14 @@
-import { useState } from "react";
+import {
+  useRef,
+  useState,
+} from "react";
 
 import type { TrailPriority } from "../../domain/model/trail-values";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
 import { TrailPriorityPropertySelect } from "../entities/trail-priority-property-select";
 import { TrailTriageRow } from "../entities/trail-triage-row";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
+import { TrailComposer } from "../patterns/trail-composer";
 import { TrailConfirmation } from "../patterns/trail-confirmation";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
 import {
@@ -138,6 +142,59 @@ function CollectionRowContent({
         <span className="trail-lab-list-row__meta">{size}</span>
       </span>
     </div>
+  );
+}
+
+function ComposerSpecimen() {
+  const [created, setCreated] = useState(0);
+  const [description, setDescription] = useState("");
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  const openComposer = () => {
+    setDescription("");
+    setTitle("");
+    setOpen(true);
+  };
+
+  return (
+    <LabControlGroup label="Standard creation shell">
+      <TrailButton onClick={openComposer}>Open composer specimen</TrailButton>
+      <span aria-live="polite" className="trail-lab-type-muted">
+        Created specimens: {created}
+      </span>
+      <TrailComposer
+        canSubmit={title.trim().length > 0}
+        context="Triage"
+        dirty={title !== "" || description !== ""}
+        initialFocusRef={titleRef}
+        onDismiss={() => setOpen(false)}
+        onSubmit={() => {
+          setCreated((count) => count + 1);
+          setOpen(false);
+        }}
+        open={open}
+        submitLabel="Create"
+      >
+        <div className="trail-composer__fields">
+          <TrailInput
+            aria-label="Composer specimen title"
+            onChange={(event) => setTitle(event.currentTarget.value)}
+            placeholder="Title"
+            ref={titleRef}
+            value={title}
+          />
+          <TrailTextarea
+            aria-label="Composer specimen description"
+            onChange={(event) => setDescription(event.currentTarget.value)}
+            placeholder="Add description..."
+            rows={4}
+            value={description}
+          />
+        </div>
+      </TrailComposer>
+    </LabControlGroup>
   );
 }
 
@@ -385,10 +442,19 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </LabSection>
 
       <LabSection
-        description="Only interaction behavior already owned by production components is shown. Action Registry, Peek, and standard Composer remain absent until their production owners exist."
+        description="Only interaction behavior already owned by production components is shown. Action Registry and Peek remain absent until their production owners exist."
         id="interactions"
         title="Interactions"
       >
+        <LabSpecimenRow
+          description="Shared creation shell owns transient focus, dirty-dismiss, keyboard submit, feedback, and overlay mechanics while consumers supply entity fields and submit intent."
+          kind="live-interaction"
+          owner="TrailComposer"
+          title="Composer"
+        >
+          <ComposerSpecimen />
+        </LabSpecimenRow>
+
         <LabSpecimenRow
           description="Shared guarded-action mechanics keep safe focus, cancellation, concrete consequence copy, and explicit confirmation in one production owner."
           kind="live-interaction"

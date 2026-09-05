@@ -25,7 +25,7 @@ export interface TrailUiActions {
   >;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
-    "accept" | "capture" | "convertToProject" | "defer" | "delete" | "edit"
+    "accept" | "capture" | "convertToProject" | "create" | "defer" | "delete" | "edit"
   >;
   readonly weeklyNote: Pick<
     TrailWeeklyNoteApplication,
