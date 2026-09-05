@@ -109,7 +109,7 @@ export function TrailLabelPropertySelect({
           disabled={disabled}
         >
           {selected.length === 0 ? null : <TrailLabelDots labels={selected} />}
-          <span>{summary}</span>
+          <span className="trail-label-property-select__summary">{summary}</span>
         </TrailPropertyControl>
       </Popover.Trigger>
       <Popover.Portal>

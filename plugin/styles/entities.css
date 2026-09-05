@@ -123,6 +123,14 @@
   overflow: hidden;
 }
 
+.trail-label-property-select__summary {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .trail-label-dot {
   width: 6px;
   height: 6px;
