@@ -106,7 +106,8 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
-    "accept" | "capture" | "convertToProject" | "create" | "defer" | "delete" | "edit"
+    "accept" | "acceptFromDraft" | "capture" | "convertToProject" | "convertToProjectFromDraft"
+    | "create" | "defer" | "delete" | "edit"
   >;
 } {
   if (!diagnostics.enabled) return session;
@@ -424,6 +425,29 @@ export function createDiagnosticTrailUiActions(
           return recordThrown(diagnostics, "ui.triage.accept", error, data);
         }
       },
+      acceptFromDraft(expectedIssue, input): TrailEntityMutationReceipt {
+        const data = {
+          descriptionProvided: input.description !== undefined && input.description.trim() !== "",
+          due: input.due ?? null,
+          estimate: input.estimate ?? null,
+          labelCount: input.labelIds.length,
+          milestoneId: input.milestoneId ?? null,
+          priority: input.priority ?? null,
+          projectId: input.projectId,
+          sourceIssueId: expectedIssue.id,
+          titleLength: input.title.length,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.triage.accept",
+            session.triage.acceptFromDraft(expectedIssue, input),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.triage.accept", error, data);
+        }
+      },
       capture(title: string): TrailEntityMutationReceipt {
         const data = { titleLength: title.length };
         try {
@@ -444,6 +468,27 @@ export function createDiagnosticTrailUiActions(
             diagnostics,
             "ui.triage.convert-project",
             session.triage.convertToProject(expectedIssue),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.triage.convert-project", error, data);
+        }
+      },
+      convertToProjectFromDraft(expectedIssue, input): TrailEntityMutationReceipt {
+        const data = {
+          descriptionProvided: input.description !== undefined && input.description.trim() !== "",
+          due: input.due ?? null,
+          initiativeId: input.initiativeId ?? null,
+          labelCount: input.labelIds.length,
+          priority: input.priority ?? null,
+          sourceIssueId: expectedIssue.id,
+          titleLength: input.title.length,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.triage.convert-project",
+            session.triage.convertToProjectFromDraft(expectedIssue, input),
             data,
           );
         } catch (error: unknown) {

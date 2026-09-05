@@ -20,12 +20,17 @@ import {
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
 import { TrailDueDate } from "../../entities/trail-due";
 import { TrailLabelDots } from "../../entities/trail-label";
+import {
+  TrailProjectComposer,
+  TrailWorkflowIssueComposer,
+} from "../../entities/trail-standard-creation-composers";
 import { TrailTriageRow } from "../../entities/trail-triage-row";
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
 import { TrailButton } from "../../primitives/trail-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import {
   TrailTriageReviewSurface,
+  type TrailTriageAcceptTarget,
   type TrailTriageReviewDraft,
   type TrailTriageReviewPendingKind,
 } from "./trail-triage-review-surface";
@@ -35,8 +40,20 @@ const TRAIL_TRIAGE_DEFER_DAYS = 7;
 
 type TrailTriagePageActions = Pick<
   TrailUiActions["triage"],
-  "defer" | "delete" | "edit"
+  "acceptFromDraft" | "convertToProjectFromDraft" | "defer" | "delete" | "edit"
 >;
+
+type TrailTriageAcceptInput =
+  | Parameters<TrailTriagePageActions["acceptFromDraft"]>[1]
+  | Parameters<TrailTriagePageActions["convertToProjectFromDraft"]>[1];
+
+
+interface TrailTriageAcceptComposerSession {
+  readonly description: string;
+  readonly kind: TrailTriageAcceptTarget;
+  readonly referenceTimestamp: number;
+  readonly title: string;
+}
 
 interface TrailTriageReviewSession {
   readonly anchorIndex: number;
@@ -125,6 +142,7 @@ export function TrailTriagePage({
   const configuration = readModel?.configuration ?? null;
   const issueIds = readModel?.visibleIssueIds ?? [];
   const [reviewSession, setReviewSession] = useState<TrailTriageReviewSession | null>(null);
+  const [acceptSession, setAcceptSession] = useState<TrailTriageAcceptComposerSession | null>(null);
   const editRequestVersionRef = useRef(0);
   const editTaskRef = useRef<Promise<boolean> | null>(null);
   const reviewTransitionRef = useRef(false);
@@ -479,9 +497,45 @@ export function TrailTriagePage({
 
   const closeReview = async () => runReviewTransition(async () => {
     await settleRequestedReviewEdit();
+    setAcceptSession(null);
     reviewSessionRef.current = null;
     setReviewSession(null);
   });
+
+  const openAcceptComposer = (kind: TrailTriageAcceptTarget) => {
+    const session = reviewSessionRef.current;
+    if (session === null) return;
+    setAcceptSession({
+      description: session.draft.description,
+      kind,
+      referenceTimestamp: Date.now(),
+      title: session.draft.title,
+    });
+  };
+
+  const submitAccept = async (
+    kind: TrailTriageAcceptTarget,
+    input: TrailTriageAcceptInput,
+  ): Promise<void> => {
+    await settleRequestedReviewEdit();
+    const session = reviewSessionRef.current;
+    if (session === null) throw new Error("Triage Review is no longer open.");
+    const current = selectTrailReadableTriageIssueById(runtimeStore.getState(), session.issueId);
+    if (current === undefined) throw new Error("This Triage entry is no longer available.");
+    const sourceSlot = currentReviewSlot(visibleIssueIdsNow(), session);
+
+    const receipt = kind === "issue"
+      ? actions.acceptFromDraft(
+          current,
+          input as Parameters<TrailTriagePageActions["acceptFromDraft"]>[1],
+        )
+      : actions.convertToProjectFromDraft(
+          current,
+          input as Parameters<TrailTriagePageActions["convertToProjectFromDraft"]>[1],
+        );
+    await receipt.completion;
+    progressAfterDisposition(current.id, sourceSlot);
+  };
 
   const navigation = reviewSession === null
     ? undefined
@@ -558,6 +612,7 @@ export function TrailTriagePage({
                 configuration={configuration}
                 draft={reviewSession.draft}
                 feedback={reviewSession.feedback}
+                onAccept={openAcceptComposer}
                 onBack={() => {
                   void closeReview();
                 }}
@@ -588,6 +643,37 @@ export function TrailTriagePage({
           )}
         </div>
       )}
+
+      {acceptSession?.kind === "issue" && readModel !== null && configuration !== null ? (
+        <TrailWorkflowIssueComposer
+          configuration={configuration}
+          initialProjectId={readModel.accept.issue.defaultProjectId}
+          onCreate={(input) => submitAccept("issue", input)}
+          onOpenChange={(open) => {
+            if (!open) setAcceptSession(null);
+          }}
+          open
+          projects={readModel.accept.issue.projects}
+          referenceTimestamp={acceptSession.referenceTimestamp}
+          seedDescription={acceptSession.description}
+          seedTitle={acceptSession.title}
+        />
+      ) : null}
+
+      {acceptSession?.kind === "project" && readModel !== null && configuration !== null ? (
+        <TrailProjectComposer
+          configuration={configuration}
+          initiatives={readModel.accept.project.initiatives}
+          onCreate={(input) => submitAccept("project", input)}
+          onOpenChange={(open) => {
+            if (!open) setAcceptSession(null);
+          }}
+          open
+          referenceTimestamp={acceptSession.referenceTimestamp}
+          seedDescription={acceptSession.description}
+          seedTitle={acceptSession.title}
+        />
+      ) : null}
     </section>
   );
 }

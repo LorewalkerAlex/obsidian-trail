@@ -9,6 +9,7 @@ import type {
   TrailLabel,
   TrailLabelGroup,
 } from "../../domain/model/trail-configuration";
+import type { TrailLabelEntityType } from "../../domain/model/trail-values";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
 import { TrailLabelDots } from "./trail-label";
 
@@ -54,33 +55,48 @@ export function nextTrailLabelSelection(input: {
 
 export interface TrailLabelPropertySelectProps {
   readonly disabled?: boolean;
+  readonly entityType?: TrailLabelEntityType;
   readonly groups: readonly TrailLabelGroup[];
   readonly labels: readonly TrailLabel[];
+  readonly layer?: "menu" | "modal-child";
   readonly onValueChange: (labelIds: readonly string[]) => void;
   readonly value: readonly string[];
 }
 
 export function TrailLabelPropertySelect({
   disabled = false,
+  entityType = "issue",
   groups,
   labels,
+  layer = "menu",
   onValueChange,
   value,
 }: TrailLabelPropertySelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const issueGroups = useMemo(() => groups
-    .filter(({ registeredEntityTypes }) => registeredEntityTypes.includes("issue"))
+  const applicableGroups = useMemo(() => groups
+    .filter(({ registeredEntityTypes }) => registeredEntityTypes.includes(entityType))
     .sort((left, right) => {
       const nameOrder = left.name.localeCompare(right.name);
       return nameOrder !== 0 ? nameOrder : left.id.localeCompare(right.id);
-    }), [groups]);
-  const selected = useMemo(() => selectedLabels(labels, value), [labels, value]);
+    }), [entityType, groups]);
+  const applicableGroupIds = useMemo(
+    () => new Set(applicableGroups.map(({ id }) => id)),
+    [applicableGroups],
+  );
+  const applicableLabels = useMemo(
+    () => labels.filter(({ groupId }) => applicableGroupIds.has(groupId)),
+    [applicableGroupIds, labels],
+  );
+  const selected = useMemo(
+    () => selectedLabels(applicableLabels, value),
+    [applicableLabels, value],
+  );
   const selectedIds = useMemo(() => new Set(value), [value]);
   const normalizedSearch = search.trim().toLocaleLowerCase();
-  const visibleGroups = issueGroups.map((group) => ({
+  const visibleGroups = applicableGroups.map((group) => ({
     group,
-    labels: labels
+    labels: applicableLabels
       .filter((label) => (
         label.groupId === group.id
         && (normalizedSearch === ""
@@ -117,6 +133,7 @@ export function TrailLabelPropertySelect({
           align="start"
           aria-label="Labels"
           className="trail-label-select"
+          data-trail-transient-layer={layer}
           collisionPadding={8}
           sideOffset={4}
         >
@@ -142,7 +159,7 @@ export function TrailLabelPropertySelect({
                       key={label.id}
                       onClick={() => onValueChange(nextTrailLabelSelection({
                         group,
-                        labels,
+                        labels: applicableLabels,
                         selectedLabelIds: value,
                         toggledLabelId: label.id,
                       }))}

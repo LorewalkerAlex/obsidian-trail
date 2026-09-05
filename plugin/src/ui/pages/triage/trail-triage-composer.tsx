@@ -153,18 +153,22 @@ export function TrailTriageComposer({
         <div aria-label="Triage properties" className="trail-composer__properties" role="group">
           <TrailPriorityPropertySelect
             disabled={pending}
+            layer="modal-child"
             onValueChange={(priority) => updateDraft({ priority })}
             value={draft.priority}
           />
           <TrailLabelPropertySelect
             disabled={pending}
+            entityType="issue"
             groups={configuration.labelGroups}
             labels={configuration.labels}
+            layer="modal-child"
             onValueChange={(labelIds) => updateDraft({ labelIds })}
             value={draft.labelIds}
           />
           <TrailDuePropertySelect
             disabled={pending}
+            layer="modal-child"
             onValueChange={(due) => updateDraft({ due })}
             timezone={configuration.temporal.timezone}
             value={draft.due}

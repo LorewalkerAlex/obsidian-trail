@@ -35,6 +35,7 @@ function fromSelectValue(value: string): TrailPriority | undefined {
 
 export interface TrailPriorityPropertySelectProps {
   readonly disabled?: boolean;
+  readonly layer?: "menu" | "modal-child";
   readonly onValueChange: (priority: TrailPriority | undefined) => void;
   readonly value: TrailPriority | undefined;
 }
@@ -53,6 +54,7 @@ function TrailPrioritySelectCheck() {
 
 export function TrailPriorityPropertySelect({
   disabled = false,
+  layer = "menu",
   onValueChange,
   value,
 }: TrailPriorityPropertySelectProps) {
@@ -74,6 +76,7 @@ export function TrailPriorityPropertySelect({
         <Select.Content
           align="start"
           className="trail-priority-select"
+          data-trail-transient-layer={layer}
           position="popper"
           sideOffset={4}
         >

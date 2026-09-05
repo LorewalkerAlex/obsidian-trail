@@ -72,11 +72,16 @@ function deferredCompletion() {
 
 function frameActions(create: TrailUiActions["triage"]["create"]) {
   return {
+    acceptFromDraft: vi.fn(),
+    convertToProjectFromDraft: vi.fn(),
     create,
     defer: vi.fn(),
     delete: vi.fn(),
     edit: vi.fn(),
-  } as unknown as Pick<TrailUiActions["triage"], "create" | "defer" | "delete" | "edit">;
+  } as unknown as Pick<
+    TrailUiActions["triage"],
+    "acceptFromDraft" | "convertToProjectFromDraft" | "create" | "defer" | "delete" | "edit"
+  >;
 }
 
 afterEach(() => {

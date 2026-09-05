@@ -5,6 +5,7 @@ export interface TrailViewPopoverProps {
   readonly align?: "center" | "end" | "start";
   readonly children: ReactNode;
   readonly label: string;
+  readonly layer?: "menu" | "modal-child";
   readonly onOpenChange?: (open: boolean) => void;
   readonly open?: boolean;
   readonly trigger: ReactElement;
@@ -14,6 +15,7 @@ export function TrailViewPopover({
   align = "start",
   children,
   label,
+  layer = "menu",
   onOpenChange,
   open,
   trigger,
@@ -27,6 +29,7 @@ export function TrailViewPopover({
           aria-label={label}
           className="trail-view-popover"
           collisionPadding={8}
+          data-trail-transient-layer={layer}
           sideOffset={4}
         >
           {children}

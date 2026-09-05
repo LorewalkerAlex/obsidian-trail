@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -52,12 +52,19 @@ describe("TrailLabelPropertySelect", () => {
       registeredEntityTypes: ["issue" as const],
       selectionMode: "multiple" as const,
     },
+    {
+      id: "group-project",
+      name: "Project Area",
+      registeredEntityTypes: ["project" as const],
+      selectionMode: "single" as const,
+    },
   ];
   const labels = [
     { groupId: "group-area", id: "label-work", name: "Work" },
     { groupId: "group-area", id: "label-personal", name: "Personal" },
     { groupId: "group-tech", id: "label-ts", name: "TypeScript" },
     { groupId: "group-tech", id: "label-css", name: "CSS" },
+    { groupId: "group-project", id: "label-delivery", name: "Delivery" },
   ];
 
   it("replaces a sibling only inside a single-select Label group", () => {
@@ -99,4 +106,25 @@ describe("TrailLabelPropertySelect", () => {
     expect(trigger).toHaveClass("trail-property-control");
     expect(trigger).toHaveTextContent("TypeScript, Work");
   });
+
+  it("uses the requested entity registration and modal-child transient layer", () => {
+    render(
+      <TrailLabelPropertySelect
+        entityType="project"
+        groups={groups}
+        labels={labels}
+        layer="modal-child"
+        onValueChange={vi.fn()}
+        value={[]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Labels: No labels" }));
+    const picker = screen.getByRole("dialog", { name: "Labels" });
+    expect(picker).toHaveAttribute("data-trail-transient-layer", "modal-child");
+    expect(screen.getByText("Project Area")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Delivery/ })).toBeInTheDocument();
+    expect(screen.queryByText("Technology")).not.toBeInTheDocument();
+  });
+
 });

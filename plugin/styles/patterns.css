@@ -110,6 +110,15 @@ body button.trail-property-control:disabled {
   padding: 0 var(--trail-space-3);
 }
 
+.trail-property-control__summary {
+  min-width: 0;
+  max-width: 180px;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .trail-view-bar {
   box-sizing: border-box;
   display: flex;
@@ -470,6 +479,10 @@ body button.trail-filter-chip__clear:hover,
 body button.trail-filter-chip__clear:focus-visible {
   background: transparent;
   color: var(--trail-text-primary);
+}
+
+body [data-trail-transient-layer="modal-child"] {
+  z-index: calc(var(--layer-modal, 1100) + 2);
 }
 
 .trail-confirmation__overlay {

@@ -644,20 +644,24 @@ Stage 4 is closed. Its implementation/host exit checkpoint ends at `1fc8fc3fc402
 
 Stage 5 is now the active implementation slice. The repository already contains a partial Triage Queue/Review surface that served as Stage 2/4 proving evidence; Stage 5 owns finishing that vertical against the frozen V1 behavior rather than treating the partial implementation as final.
 
+The Stage 5 functional path is now green through Triage Accept. The implemented behavior includes the Triage Page Read Model, direct Filter + Order controls, Review draft/progression semantics, explicit Review exit, shared Confirmation, the standard Triage Creation Composer, and destination-first Accept into standard Issue or Project creation. Focused automated checks, diagnostics build/typecheck, and representative real-Obsidian interaction checks establish that the current behavior is functionally usable.
+
+This is a **functional checkpoint, not visual acceptance of the Standard Composer family**. Real-host review found that the shared Triage / Issue / Project Composer composition still needs visual hierarchy and density calibration before Stage 5 can close. In particular, structural relations such as Project / Initiative must read more clearly than optional metadata, and nested picker presentation must be calibrated as part of the same shared owner rather than patched page by page.
+
 The next implementation sequence is:
 
 ```text
-current proven Domain / Query semantics
--> define the Triage Page Read Model
--> finish Queue with direct Filter + Order controls
--> finish Review draft lifecycle + visible-order progression
--> make Review exit return to the full Triage List in wide and constrained compositions
--> add shared Confirmation / transient Esc-focus mechanics where Triage proves the need
--> finish the Triage Creation Composer path
--> add Selection / Action owners only if the real Triage workflow now requires them
--> representative automated + Obsidian verification
+publish the green Triage functional checkpoint on main
+-> run a dedicated Composer visual-calibration subtask while remaining on main
+-> expose representative Standard Triage / Issue / Project Composer production owners in Foundation
+-> calibrate shared information hierarchy, property density, picker geometry, and modal-child presentation in Foundation
+-> keep Triage Creation and Triage Accept consuming the same calibrated production owners; do not copy Foundation-only UI into Product Pages
+-> run one representative real-Obsidian visual verification against the calibrated owner family
+-> publish the calibrated production-owner checkpoint on main and calibrate factual implementation status
 -> Stage 5 close
 ```
+
+Selection / Action Registry / Bulk / Peek remain deferred because the completed Triage workflow has not proven a need to pull them forward. Foundation remains the calibration consumer of production owners, not an alternate component library or a source of Lab-only Product UI.
 
 Scope:
 

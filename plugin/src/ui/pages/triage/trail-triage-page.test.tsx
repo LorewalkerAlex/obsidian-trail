@@ -27,7 +27,10 @@ import {
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { TrailTriagePage } from "./trail-triage-page";
 
-type TriagePageActions = Pick<TrailUiActions["triage"], "defer" | "delete" | "edit">;
+type TriagePageActions = Pick<
+  TrailUiActions["triage"],
+  "acceptFromDraft" | "convertToProjectFromDraft" | "defer" | "delete" | "edit"
+>;
 
 function triageIssue({
   description,
@@ -103,6 +106,16 @@ function readyTriageStore(issues: readonly TrailTriageIssue[]): TrailRuntimeStor
 
 function triageActions(overrides: Partial<TriagePageActions> = {}): TriagePageActions {
   return {
+    acceptFromDraft: vi.fn((issue: TrailTriageIssue) => ({
+      commandId: "command-accept-issue",
+      completion: Promise.resolve(),
+      entityId: `accepted-${issue.id}`,
+    })),
+    convertToProjectFromDraft: vi.fn((issue: TrailTriageIssue) => ({
+      commandId: "command-accept-project",
+      completion: Promise.resolve(),
+      entityId: `project-${issue.id}`,
+    })),
     defer: vi.fn((issue: TrailTriageIssue) => ({
       commandId: "command-defer",
       completion: Promise.resolve(),
@@ -651,6 +664,135 @@ describe("TrailTriagePage", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Delete failed: persistence failed");
     expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Keep on failure");
+  });
+
+  it("opens the explicit two-target Accept disclosure and seeds Issue creation from Review text only", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const issue = triageIssue({
+      description: "Persisted body",
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-accept",
+      labelIds: ["label-work"],
+      priority: "high",
+      title: "Persisted title",
+    });
+    const edit = vi.fn((expected: TrailTriageIssue) => ({
+      entityId: expected.id,
+      kind: "unchanged" as const,
+    }));
+
+    render(
+      <TrailTriagePage
+        actions={triageActions({ edit })}
+        runtimeStore={readyTriageStore([issue])}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Persisted title" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    const description = screen.getByRole("textbox", { name: "Triage description" });
+    fireEvent.focus(title);
+    fireEvent.change(title, { target: { value: "Draft title" } });
+    fireEvent.change(description, { target: { value: "Draft body" } });
+    const accept = screen.getByRole("button", { name: "Accept Triage entry" });
+    fireEvent.blur(title, { relatedTarget: accept });
+
+    fireEvent.click(accept);
+    expect(screen.getByRole("dialog", { name: "Accept Triage entry as" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Issue" }));
+
+    expect(screen.getByRole("dialog", { name: "Issue · Project A" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Issue title" })).toHaveValue("Draft title");
+    expect(screen.getByRole("textbox", { name: "Issue description" })).toHaveValue("Draft body");
+    expect(screen.getByRole("button", { name: "Project: Project A" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Priority: No priority" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Labels: No labels" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Milestone: No milestone" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Estimate: No estimate" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Due: No due" })).toBeInTheDocument();
+    expect(edit).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close composer" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Issue · Project A" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Draft title");
+    expect(edit).not.toHaveBeenCalled();
+  });
+
+  it("completes Project Accept destination-first and advances Review only after completion", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const issueA = triageIssue({
+      description: "Source body",
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-a",
+      labelIds: ["label-work"],
+      priority: "urgent",
+      title: "Entry A",
+    });
+    const issueB = triageIssue({
+      due: Date.UTC(2026, 8, 3, 4),
+      id: "triage-b",
+      title: "Entry B",
+    });
+    const harness = createTriageHarness([issueA, issueB]);
+    const completion = deferredCompletion();
+    const convertToProjectFromDraft = vi.fn((issue: TrailTriageIssue) => ({
+      commandId: "command-accept-project",
+      completion: completion.promise,
+      entityId: `project-${issue.id}`,
+    }));
+    const edit = vi.fn((expected: TrailTriageIssue) => ({
+      entityId: expected.id,
+      kind: "unchanged" as const,
+    }));
+
+    render(
+      <TrailTriagePage
+        actions={triageActions({ convertToProjectFromDraft, edit })}
+        runtimeStore={harness.store}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Entry A" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Triage title" }), {
+      target: { value: "Draft project" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Triage description" }), {
+      target: { value: "Draft project body" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Accept Triage entry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Project" }));
+
+    expect(screen.getByRole("dialog", { name: "Project" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Project title" })).toHaveValue("Draft project");
+    expect(screen.getByRole("textbox", { name: "Project description" })).toHaveValue("Draft project body");
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(convertToProjectFromDraft).toHaveBeenCalledTimes(1));
+    expect(convertToProjectFromDraft).toHaveBeenCalledWith(issueA, {
+      description: "Draft project body",
+      due: undefined,
+      initiativeId: undefined,
+      labelIds: [],
+      priority: undefined,
+      title: "Draft project",
+    });
+    expect(edit).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Creating..." })).toBeDisabled();
+
+    act(() => {
+      harness.publish([issueB]);
+    });
+    expect(screen.getByRole("dialog", { name: "Project" })).toBeInTheDocument();
+
+    await act(async () => {
+      completion.resolve();
+      await completion.promise;
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Project" })).not.toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Entry B");
+    });
   });
 
   it("applies the shared Filter immediately without redefining the global Review Set boundary", () => {

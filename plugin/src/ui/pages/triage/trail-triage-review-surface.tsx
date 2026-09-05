@@ -1,9 +1,12 @@
+import { useState } from "react";
+
 import type { TrailConfiguration } from "../../../domain/model/trail-configuration";
 import type { TrailTriageIssue } from "../../../domain/model/trail-entities";
 import { TrailDuePropertySelect } from "../../entities/trail-due-property-select";
 import { TrailLabelPropertySelect } from "../../entities/trail-label-property-select";
 import { TrailPriorityPropertySelect } from "../../entities/trail-priority-property-select";
 import { TrailConfirmation } from "../../patterns/trail-confirmation";
+import { TrailViewPopover } from "../../patterns/trail-view-popover";
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import { TrailInput } from "../../primitives/trail-input";
@@ -17,6 +20,7 @@ export interface TrailTriageReviewDraft {
   readonly title: string;
 }
 
+export type TrailTriageAcceptTarget = "issue" | "project";
 export type TrailTriageReviewPendingKind = "defer" | "delete" | "edit";
 
 function TrailArrowIcon({ direction }: { readonly direction: "down" | "left" | "up" }) {
@@ -37,6 +41,14 @@ function TrailClockIcon() {
     <svg aria-hidden="true" className="trail-triage-review__action-icon" viewBox="0 0 16 16">
       <circle cx="8" cy="8" r="5.25" />
       <path d="M8 5v3.25l2.25 1.25" />
+    </svg>
+  );
+}
+
+function TrailChevronIcon() {
+  return (
+    <svg aria-hidden="true" className="trail-triage-review__action-icon" viewBox="0 0 16 16">
+      <path d="M4.5 6.25 8 9.75l3.5-3.5" />
     </svg>
   );
 }
@@ -66,6 +78,7 @@ export interface TrailTriageReviewSurfaceProps {
   readonly configuration: TrailConfiguration;
   readonly draft: TrailTriageReviewDraft;
   readonly feedback?: string;
+  readonly onAccept: (target: TrailTriageAcceptTarget) => void;
   readonly onBack: () => void;
   readonly onCommitDraft: () => void;
   readonly onDefer: () => void;
@@ -87,6 +100,7 @@ export function TrailTriageReviewSurface({
   configuration,
   draft,
   feedback,
+  onAccept,
   onBack,
   onCommitDraft,
   onDefer,
@@ -101,6 +115,7 @@ export function TrailTriageReviewSurface({
   pending,
   positionLabel,
 }: TrailTriageReviewSurfaceProps) {
+  const [acceptOpen, setAcceptOpen] = useState(false);
   const mutationLocked = pending === "defer" || pending === "delete";
   const pendingLabel = pending === "edit"
     ? "Saving..."
@@ -143,10 +158,46 @@ export function TrailTriageReviewSurface({
           />
           <span className="trail-triage-review__position">{positionLabel}</span>
         </div>
-        <div className="trail-triage-review__actions">
+        <div
+          className="trail-triage-review__actions"
+          data-review-transition-region="true"
+        >
           {pendingLabel === undefined ? null : (
             <span className="trail-triage-review__pending">{pendingLabel}</span>
           )}
+          <TrailViewPopover
+            align="end"
+            label="Accept Triage entry as"
+            onOpenChange={setAcceptOpen}
+            open={acceptOpen}
+            trigger={(
+              <TrailButton
+                aria-label="Accept Triage entry"
+                disabled={mutationLocked}
+                variant="primary"
+              >
+                <span className="trail-triage-review__action-label">Accept</span>
+                <TrailChevronIcon />
+              </TrailButton>
+            )}
+          >
+            <div className="trail-view-popover__stack">
+              <div className="trail-view-popover__title">Accept as</div>
+              {(["issue", "project"] as const).map((target) => (
+                <button
+                  className="trail-view-popover__item"
+                  key={target}
+                  onClick={() => {
+                    setAcceptOpen(false);
+                    onAccept(target);
+                  }}
+                  type="button"
+                >
+                  <span>{target === "issue" ? "Issue" : "Project"}</span>
+                </button>
+              ))}
+            </div>
+          </TrailViewPopover>
           <TrailButton
             aria-label="Defer Triage entry"
             data-action="defer"

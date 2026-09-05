@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type {
+  TrailInitiative,
+  TrailMilestone,
   TrailProject,
   TrailTriageIssue,
 } from "../../domain/model/trail-entities";
@@ -48,11 +50,21 @@ function triageIssue({
 
 function readyTriageStore(issues: readonly TrailTriageIssue[]) {
   const configuration = createTrailTestConfiguration();
+  const initiative: TrailInitiative = {
+    id: "initiative-a",
+    labelIds: [],
+    title: "Initiative A",
+  };
   const project: TrailProject = {
     id: "project-a",
     labelIds: [],
     statusDefinitionId: "project-unstarted",
     title: "Project A",
+  };
+  const milestone: TrailMilestone = {
+    id: "milestone-a",
+    projectId: project.id,
+    title: "Milestone A",
   };
   const store = createTrailRuntimeStore();
 
@@ -63,9 +75,14 @@ function readyTriageStore(issues: readonly TrailTriageIssue[]) {
     },
     sources: [
       {
+        initiative,
+        kind: "initiative",
+        sourcePath: "Trail/Initiatives/0001 Initiative A.md",
+      },
+      {
         issues: [],
         kind: "project",
-        milestones: [],
+        milestones: [milestone],
         project,
         sourcePath: "Trail/Projects/0001 Project A.md",
       },
@@ -225,6 +242,19 @@ describe("Triage Query", () => {
     });
     expect(page?.queue[0]?.labels.map((label) => label.id)).toEqual(["label-work"]);
     expect(page?.visibleIssueIds).toEqual(page?.queue.map((item) => item.id));
+    expect(page?.accept).toEqual({
+      issue: {
+        defaultProjectId: "project-a",
+        projects: [{
+          id: "project-a",
+          milestones: [{ id: "milestone-a", title: "Milestone A" }],
+          title: "Project A",
+        }],
+      },
+      project: {
+        initiatives: [{ id: "initiative-a", title: "Initiative A" }],
+      },
+    });
     expect(page?.reviewSet).toEqual({
       boundaryAfterIssueId: "triage-08",
       count: 10,

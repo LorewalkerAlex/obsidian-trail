@@ -11,7 +11,7 @@ import { TrailTriagePage } from "./trail-triage-page";
 
 type TrailTriagePageFrameActions = Pick<
   TrailUiActions["triage"],
-  "create" | "defer" | "delete" | "edit"
+  "acceptFromDraft" | "convertToProjectFromDraft" | "create" | "defer" | "delete" | "edit"
 >;
 
 function TrailAddIcon() {

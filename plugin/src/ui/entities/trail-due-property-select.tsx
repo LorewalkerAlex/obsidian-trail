@@ -63,6 +63,7 @@ function TrailCalendarIcon() {
 
 export interface TrailDuePropertySelectProps {
   readonly disabled?: boolean;
+  readonly layer?: "menu" | "modal-child";
   readonly onValueChange: (timestamp: TrailTimestamp) => void;
   readonly timezone: string;
   readonly value: TrailTimestamp;
@@ -70,6 +71,7 @@ export interface TrailDuePropertySelectProps {
 
 export function TrailDuePropertySelect({
   disabled = false,
+  layer = "menu",
   onValueChange,
   timezone,
   value,
@@ -99,6 +101,7 @@ export function TrailDuePropertySelect({
           align="start"
           aria-label="Review due"
           className="trail-due-select"
+          data-trail-transient-layer={layer}
           collisionPadding={8}
           sideOffset={4}
         >
