@@ -315,6 +315,14 @@ body button.trail-view-popover__back {
   text-align: left;
 }
 
+body button.trail-view-popover__item > span:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 body button.trail-view-popover__item:hover,
 body button.trail-view-popover__back:hover,
 body button.trail-view-popover__item:focus-visible,
