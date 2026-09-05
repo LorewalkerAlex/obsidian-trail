@@ -28,6 +28,7 @@ import {
   LabSection,
   LabSpecimenRow,
 } from "./trail-lab-showroom";
+import { TrailStandardComposerFamilySpecimen } from "./trail-standard-composer-family-specimen";
 
 interface TrailFoundationLabProps {
   readonly control: TrailRuntimeControl;
@@ -446,6 +447,15 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
         id="interactions"
         title="Interactions"
       >
+        <LabSpecimenRow
+          description="Embedded production Composer surfaces isolate visual hierarchy from modal behavior: compare Triage, Issue, and Project directly here, while the separate Composer specimen continues to prove overlay/focus/dismiss mechanics."
+          kind="live-interaction"
+          owner="TrailComposerSurface + TrailStandardComposerForm"
+          title="Standard Composer family"
+        >
+          <TrailStandardComposerFamilySpecimen />
+        </LabSpecimenRow>
+
         <LabSpecimenRow
           description="Shared creation shell owns transient focus, dirty-dismiss, keyboard submit, feedback, and overlay mechanics while consumers supply entity fields and submit intent."
           kind="live-interaction"

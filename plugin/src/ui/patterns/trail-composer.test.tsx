@@ -11,7 +11,7 @@ import {
 import { describe, expect, it, vi } from "vitest";
 
 import { TrailInput } from "../primitives/trail-input";
-import { TrailComposer } from "./trail-composer";
+import { TrailComposer, TrailComposerSurface } from "./trail-composer";
 
 function ComposerHarness({
   onSubmit = vi.fn(),
@@ -46,6 +46,26 @@ function ComposerHarness({
 }
 
 describe("TrailComposer", () => {
+  it("keeps the production surface renderable without modal behavior", () => {
+    const onSubmit = vi.fn();
+    const { container } = render(
+      <TrailComposerSurface
+        canSubmit
+        context="Project"
+        onSubmit={onSubmit}
+        submitLabel="Create"
+      >
+        <div>Embedded composer body</div>
+      </TrailComposerSurface>,
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(container.querySelector(".trail-composer__surface")).toBeInTheDocument();
+    expect(screen.getByText("Project")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
   it("focuses the requested field and reserves Ctrl/Cmd+Enter for submit", async () => {
     const onSubmit = vi.fn();
     render(<ComposerHarness onSubmit={onSubmit} />);

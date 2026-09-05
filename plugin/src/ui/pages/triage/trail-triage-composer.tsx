@@ -11,6 +11,11 @@ import { TrailDuePropertySelect } from "../../entities/trail-due-property-select
 import { TrailLabelPropertySelect } from "../../entities/trail-label-property-select";
 import { TrailPriorityPropertySelect } from "../../entities/trail-priority-property-select";
 import { TrailComposer } from "../../patterns/trail-composer";
+import {
+  TrailStandardComposerEditor,
+  TrailStandardComposerForm,
+  TrailStandardComposerProperties,
+} from "../../patterns/trail-standard-composer-form";
 import { TrailInput } from "../../primitives/trail-input";
 import { TrailTextarea } from "../../primitives/trail-textarea";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
@@ -133,24 +138,26 @@ export function TrailTriageComposer({
       pending={pending}
       submitLabel="Create"
     >
-      <div className="trail-composer__fields">
-        <TrailInput
-          aria-label="Triage title"
-          disabled={pending}
-          onChange={(event) => updateDraft({ title: event.currentTarget.value })}
-          placeholder="Title"
-          ref={titleRef}
-          value={draft.title}
-        />
-        <TrailTextarea
-          aria-label="Triage description"
-          disabled={pending}
-          onChange={(event) => updateDraft({ description: event.currentTarget.value })}
-          placeholder="Add description..."
-          rows={6}
-          value={draft.description}
-        />
-        <div aria-label="Triage properties" className="trail-composer__properties" role="group">
+      <TrailStandardComposerForm>
+        <TrailStandardComposerEditor>
+          <TrailInput
+            aria-label="Triage title"
+            disabled={pending}
+            onChange={(event) => updateDraft({ title: event.currentTarget.value })}
+            placeholder="Title"
+            ref={titleRef}
+            value={draft.title}
+          />
+          <TrailTextarea
+            aria-label="Triage description"
+            disabled={pending}
+            onChange={(event) => updateDraft({ description: event.currentTarget.value })}
+            placeholder="Add description..."
+            rows={3}
+            value={draft.description}
+          />
+        </TrailStandardComposerEditor>
+        <TrailStandardComposerProperties label="Triage properties">
           <TrailPriorityPropertySelect
             disabled={pending}
             layer="modal-child"
@@ -173,8 +180,8 @@ export function TrailTriageComposer({
             timezone={configuration.temporal.timezone}
             value={draft.due}
           />
-        </div>
-      </div>
+        </TrailStandardComposerProperties>
+      </TrailStandardComposerForm>
     </TrailComposer>
   );
 }

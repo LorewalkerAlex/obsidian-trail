@@ -22,6 +22,12 @@ import {
 } from "../../domain/rules/trail-temporal-rules";
 import { TrailComposer } from "../patterns/trail-composer";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
+import {
+  TrailStandardComposerEditor,
+  TrailStandardComposerForm,
+  TrailStandardComposerProperties,
+  TrailStandardComposerRelation,
+} from "../patterns/trail-standard-composer-form";
 import { TrailViewPopover } from "../patterns/trail-view-popover";
 import { TrailInput } from "../primitives/trail-input";
 import { TrailTextarea } from "../primitives/trail-textarea";
@@ -80,6 +86,7 @@ function TrailRelationPropertySelect({
         <TrailPropertyControl
           aria-label={`${label}: ${summary}`}
           aria-haspopup="dialog"
+          aria-required={required || undefined}
           disabled={disabled}
           ref={triggerRef}
         >
@@ -451,24 +458,26 @@ export function TrailWorkflowIssueComposer({
       pending={pending}
       submitLabel="Create"
     >
-      <div className="trail-composer__fields">
-        <TrailInput
-          aria-label="Issue title"
-          disabled={pending}
-          onChange={(event) => updateDraft({ title: event.currentTarget.value })}
-          placeholder="Title"
-          ref={titleRef}
-          value={draft.title}
-        />
-        <TrailTextarea
-          aria-label="Issue description"
-          disabled={pending}
-          onChange={(event) => updateDraft({ description: event.currentTarget.value })}
-          placeholder="Add description..."
-          rows={6}
-          value={draft.description}
-        />
-        <div aria-label="Issue properties" className="trail-composer__properties" role="group">
+      <TrailStandardComposerForm>
+        <TrailStandardComposerEditor>
+          <TrailInput
+            aria-label="Issue title"
+            disabled={pending}
+            onChange={(event) => updateDraft({ title: event.currentTarget.value })}
+            placeholder="Title"
+            ref={titleRef}
+            value={draft.title}
+          />
+          <TrailTextarea
+            aria-label="Issue description"
+            disabled={pending}
+            onChange={(event) => updateDraft({ description: event.currentTarget.value })}
+            placeholder="Add description..."
+            rows={3}
+            value={draft.description}
+          />
+        </TrailStandardComposerEditor>
+        <TrailStandardComposerRelation label="Project" required>
           <TrailRelationPropertySelect
             disabled={pending}
             label="Project"
@@ -487,6 +496,8 @@ export function TrailWorkflowIssueComposer({
             triggerRef={projectRef}
             value={draft.projectId}
           />
+        </TrailStandardComposerRelation>
+        <TrailStandardComposerProperties label="Issue properties">
           <TrailPriorityPropertySelect
             disabled={pending}
             layer="modal-child"
@@ -522,8 +533,8 @@ export function TrailWorkflowIssueComposer({
             timezone={configuration.temporal.timezone}
             value={draft.due}
           />
-        </div>
-      </div>
+        </TrailStandardComposerProperties>
+      </TrailStandardComposerForm>
     </TrailComposer>
   );
 }
@@ -622,24 +633,26 @@ export function TrailProjectComposer({
       pending={pending}
       submitLabel="Create"
     >
-      <div className="trail-composer__fields">
-        <TrailInput
-          aria-label="Project title"
-          disabled={pending}
-          onChange={(event) => updateDraft({ title: event.currentTarget.value })}
-          placeholder="Title"
-          ref={titleRef}
-          value={draft.title}
-        />
-        <TrailTextarea
-          aria-label="Project description"
-          disabled={pending}
-          onChange={(event) => updateDraft({ description: event.currentTarget.value })}
-          placeholder="Add description..."
-          rows={6}
-          value={draft.description}
-        />
-        <div aria-label="Project properties" className="trail-composer__properties" role="group">
+      <TrailStandardComposerForm>
+        <TrailStandardComposerEditor>
+          <TrailInput
+            aria-label="Project title"
+            disabled={pending}
+            onChange={(event) => updateDraft({ title: event.currentTarget.value })}
+            placeholder="Title"
+            ref={titleRef}
+            value={draft.title}
+          />
+          <TrailTextarea
+            aria-label="Project description"
+            disabled={pending}
+            onChange={(event) => updateDraft({ description: event.currentTarget.value })}
+            placeholder="Add description..."
+            rows={3}
+            value={draft.description}
+          />
+        </TrailStandardComposerEditor>
+        <TrailStandardComposerRelation label="Initiative">
           <TrailRelationPropertySelect
             disabled={pending}
             label="Initiative"
@@ -648,6 +661,8 @@ export function TrailProjectComposer({
             placeholder="No initiative"
             value={draft.initiativeId}
           />
+        </TrailStandardComposerRelation>
+        <TrailStandardComposerProperties label="Project properties">
           <TrailPriorityPropertySelect
             disabled={pending}
             layer="modal-child"
@@ -670,8 +685,8 @@ export function TrailProjectComposer({
             timezone={configuration.temporal.timezone}
             value={draft.due}
           />
-        </div>
-      </div>
+        </TrailStandardComposerProperties>
+      </TrailStandardComposerForm>
     </TrailComposer>
   );
 }

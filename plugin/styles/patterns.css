@@ -564,18 +564,34 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
   top: 50%;
   left: 50%;
   z-index: calc(var(--layer-modal, 1100) + 1);
-  display: flex;
   width: min(560px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
+  outline: 0;
+  transform: translate(-50%, -50%);
+}
+
+.trail-composer__dialog-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.trail-composer__surface {
+  box-sizing: border-box;
+  display: flex;
+  width: min(560px, 100%);
+  max-height: inherit;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--trail-border-default);
   border-radius: var(--trail-radius-lg);
-  outline: 0;
   background: var(--trail-surface-overlay);
   box-shadow: var(--trail-shadow-overlay);
   color: var(--trail-text-secondary);
-  transform: translate(-50%, -50%);
 }
 
 .trail-composer__header,
@@ -591,7 +607,7 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
 
 .trail-composer__header {
   justify-content: space-between;
-  border-bottom: 1px solid var(--trail-border-subtle);
+  padding-bottom: var(--trail-space-3);
 }
 
 .trail-composer__context {
@@ -672,4 +688,129 @@ body .trail-composer__fields textarea.trail-textarea {
   margin-right: auto;
   color: var(--trail-text-faint);
   font-size: var(--trail-font-size-caption);
+}
+
+/* Standard Composer family visual hierarchy. */
+.trail-standard-composer-form {
+  display: grid;
+  min-width: 0;
+  gap: var(--trail-space-10);
+}
+
+.trail-standard-composer-form__editor {
+  display: grid;
+  min-width: 0;
+  gap: var(--trail-space-3);
+  padding: 0 var(--trail-space-2) var(--trail-space-4);
+}
+
+body .trail-standard-composer-form__editor input.trail-input,
+body .trail-standard-composer-form__editor textarea.trail-textarea {
+  width: 100%;
+  padding-right: 0;
+  padding-left: 0;
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body .trail-standard-composer-form__editor input.trail-input {
+  min-height: 32px;
+  color: var(--trail-text-primary);
+  font-size: 15px;
+  font-weight: var(--trail-weight-strong);
+  letter-spacing: -0.012em;
+}
+
+body .trail-standard-composer-form__editor textarea.trail-textarea {
+  min-height: 64px;
+  padding-top: var(--trail-space-2);
+  padding-bottom: var(--trail-space-4);
+  color: var(--trail-text-secondary);
+  line-height: 1.5;
+  resize: none;
+}
+
+body .trail-standard-composer-form__editor input.trail-input:hover:not(:disabled),
+body .trail-standard-composer-form__editor textarea.trail-textarea:hover:not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+}
+
+body .trail-standard-composer-form__editor input.trail-input:focus,
+body .trail-standard-composer-form__editor textarea.trail-textarea:focus {
+  border-color: transparent;
+  background: var(--trail-surface-very-quiet);
+  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+}
+
+.trail-standard-composer-form__relation {
+  display: flex;
+  min-width: 0;
+  min-height: var(--trail-control-height-md);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-4);
+  padding: var(--trail-space-1) var(--trail-space-2);
+}
+
+.trail-standard-composer-form__relation-label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: var(--trail-space-3);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  white-space: nowrap;
+}
+
+.trail-standard-composer-form__relation-control {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+body .trail-standard-composer-form__relation button.trail-property-control {
+  max-width: 100%;
+  height: var(--trail-control-height-md);
+  padding: 0 var(--trail-space-6);
+  border-color: var(--trail-control-border-hover);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-control-surface-hover);
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-medium);
+}
+
+body .trail-standard-composer-form__relation button.trail-property-control:hover:not(:disabled),
+body .trail-standard-composer-form__relation button.trail-property-control:focus-visible {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-pressed);
+  color: var(--trail-text-primary);
+}
+
+.trail-standard-composer-form__properties {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-4);
+  padding: var(--trail-space-2);
+}
+
+body .trail-standard-composer-form__properties button.trail-property-control {
+  height: var(--trail-control-height-md);
+  padding: 0 var(--trail-space-6);
+  border-color: var(--trail-control-border);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-control-surface);
+  color: var(--trail-text-secondary);
+}
+
+body .trail-standard-composer-form__properties button.trail-property-control:hover:not(:disabled),
+body .trail-standard-composer-form__properties button.trail-property-control:focus-visible {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-hover);
+  color: var(--trail-text-primary);
 }
