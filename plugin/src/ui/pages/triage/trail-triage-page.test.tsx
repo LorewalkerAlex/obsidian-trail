@@ -180,7 +180,7 @@ describe("TrailTriagePage", () => {
     expect(screen.queryByRole("button", { name: /accept|defer|delete/i })).not.toBeInTheDocument();
   });
 
-  it("opens the production Review Surface and routes direct editing through the injected UI action boundary", async () => {
+  it("opens the production Review Surface and routes explicit field commits through the UI action boundary", async () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
     const issue = triageIssue({
       description: "Original body",
@@ -220,30 +220,124 @@ describe("TrailTriagePage", () => {
     });
   });
 
-  it("keeps needs-input edit feedback local and does not navigate away", async () => {
+  it("discards an uncommitted title draft when Next changes Review identity", async () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
     const due = (day: number) => Date.UTC(2026, 8, day, 4);
+    const edit = vi.fn((issue: TrailTriageIssue) => ({
+      entityId: issue.id,
+      kind: "unchanged" as const,
+    }));
+    const store = readyTriageStore([
+      triageIssue({ due: due(2), id: "triage-a", title: "Entry A" }),
+      triageIssue({ due: due(3), id: "triage-b", title: "Entry B" }),
+    ]);
+
+    render(<TrailTriagePage actions={triageActions({ edit })} runtimeStore={store} />);
+    fireEvent.click(screen.getByRole("button", { name: "Entry A" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    const next = screen.getByRole("button", { name: "Next Triage entry" });
+    fireEvent.focus(title);
+    fireEvent.change(title, { target: { value: "Unsaved A" } });
+    fireEvent.blur(title, { relatedTarget: next });
+    fireEvent.click(next);
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Entry B");
+    });
+    expect(edit).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous Triage entry" }));
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Entry A");
+    });
+  });
+
+  it("uses Back as an explicit Review exit without saving an uncommitted draft", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const issue = triageIssue({
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-back",
+      title: "Back target",
+    });
+    const edit = vi.fn((expectedIssue: TrailTriageIssue) => ({
+      entityId: expectedIssue.id,
+      kind: "unchanged" as const,
+    }));
+
+    render(
+      <TrailTriagePage
+        actions={triageActions({ edit })}
+        runtimeStore={readyTriageStore([issue])}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Back target" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    const back = screen.getByRole("button", { name: "Back to Triage queue" });
+    fireEvent.focus(title);
+    fireEvent.change(title, { target: { value: "Discard me" } });
+    fireEvent.blur(title, { relatedTarget: back });
+    fireEvent.click(back);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("region", { name: "Triage review" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: "Back target" })).toBeInTheDocument();
+    expect(edit).not.toHaveBeenCalled();
+  });
+
+  it("does not save a text draft when focus leaves the Triage Page", () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const issue = triageIssue({
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-leave",
+      title: "Leave target",
+    });
+    const edit = vi.fn((expectedIssue: TrailTriageIssue) => ({
+      entityId: expectedIssue.id,
+      kind: "unchanged" as const,
+    }));
+    const { unmount } = render(
+      <TrailTriagePage
+        actions={triageActions({ edit })}
+        runtimeStore={readyTriageStore([issue])}
+      />,
+    );
+    const outside = document.createElement("button");
+    document.body.append(outside);
+
+    fireEvent.click(screen.getByRole("button", { name: "Leave target" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    fireEvent.focus(title);
+    fireEvent.change(title, { target: { value: "Transient only" } });
+    fireEvent.blur(title, { relatedTarget: outside });
+    unmount();
+
+    expect(edit).not.toHaveBeenCalled();
+    outside.remove();
+  });
+
+  it("keeps needs-input feedback local for an explicit field commit", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
     const actions = triageActions({
       edit: vi.fn(() => ({
         input: { code: "more-input", message: "More input is required." },
         kind: "needs-input" as const,
       })),
     });
-    const store = readyTriageStore([
-      triageIssue({ due: due(2), id: "triage-a", title: "Entry A" }),
-      triageIssue({ due: due(3), id: "triage-b", title: "Entry B" }),
-    ]);
-
-    render(<TrailTriagePage actions={actions} runtimeStore={store} />);
-    fireEvent.click(screen.getByRole("button", { name: "Entry A" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Triage title" }), {
-      target: { value: "Unsaved A" },
+    const issue = triageIssue({
+      due: Date.UTC(2026, 8, 2, 4),
+      id: "triage-needs-input",
+      title: "Needs input",
     });
-    fireEvent.click(screen.getByRole("button", { name: "Next Triage entry" }));
+
+    render(<TrailTriagePage actions={actions} runtimeStore={readyTriageStore([issue])} />);
+    fireEvent.click(screen.getByRole("button", { name: "Needs input" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    fireEvent.change(title, { target: { value: "Unsaved title" } });
+    fireEvent.blur(title);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("More input is required.");
-    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Unsaved A");
-    expect(screen.queryByDisplayValue("Entry B")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Unsaved title");
   });
 
   it("keeps an edit draft visible when submitted persistence fails and Runtime has recovered", async () => {
@@ -286,7 +380,7 @@ describe("TrailTriagePage", () => {
     expect(screen.getByRole("button", { name: "Defer Triage entry" })).toBeEnabled();
   });
 
-  it("keeps editing available while one save settles and serializes the latest draft against the refreshed baseline", async () => {
+  it("keeps editing available while one save settles and serializes an explicitly recommitted draft", async () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
     const issue = triageIssue({
       due: Date.UTC(2026, 8, 2, 4),
@@ -359,6 +453,80 @@ describe("TrailTriagePage", () => {
       expect(screen.queryByText("Saving...")).not.toBeInTheDocument();
     });
     expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Second title");
+  });
+
+  it("does not auto-save a newer uncommitted draft when navigation waits for an earlier save", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const due = (day: number) => Date.UTC(2026, 8, day, 4);
+    const issueA = triageIssue({ due: due(2), id: "triage-a", title: "Entry A" });
+    const issueB = triageIssue({ due: due(3), id: "triage-b", title: "Entry B" });
+    const harness = createTriageHarness([issueA, issueB]);
+    const completion = deferredCompletion();
+    const edit = vi.fn(() => ({
+      kind: "submitted" as const,
+      receipt: {
+        commandId: "command-edit",
+        completion: completion.promise,
+        entityId: issueA.id,
+      },
+    }));
+
+    render(
+      <TrailTriagePage
+        actions={triageActions({ edit })}
+        runtimeStore={harness.store}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Entry A" }));
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    fireEvent.change(title, { target: { value: "First title" } });
+    fireEvent.blur(title);
+    expect(await screen.findByText("Saving...")).toBeInTheDocument();
+
+    fireEvent.change(title, { target: { value: "Second title" } });
+    const next = screen.getByRole("button", { name: "Next Triage entry" });
+    fireEvent.blur(title, { relatedTarget: next });
+    fireEvent.click(next);
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Second title");
+
+    const firstSaved = { ...issueA, title: "First title" };
+    act(() => {
+      harness.publish([firstSaved, issueB]);
+    });
+    await act(async () => {
+      completion.resolve();
+      await completion.promise;
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Entry B");
+    });
+    expect(edit).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous Triage entry" }));
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("First title");
+    });
+  });
+
+  it("disables Previous and Next when the active Review identity leaves the visible projection", () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T04:00:00.000Z"));
+    const due = (day: number) => Date.UTC(2026, 8, day, 4);
+    const store = readyTriageStore([
+      triageIssue({ due: due(2), id: "triage-low", priority: "low", title: "Low current" }),
+      triageIssue({ due: due(3), id: "triage-high", priority: "high", title: "High visible" }),
+    ]);
+
+    render(<TrailTriagePage actions={triageActions()} runtimeStore={store} />);
+    fireEvent.click(screen.getByRole("button", { name: "Low current" }));
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(screen.getByRole("button", { name: "Priority" }));
+    fireEvent.click(screen.getByRole("button", { name: "High" }));
+
+    expect(screen.getByText("Not in current view - 1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous Triage entry" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next Triage entry" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Low current");
   });
 
   it("waits for authoritative Defer completion and advances from the pre-disposition slot using current Query ordering", async () => {

@@ -91,18 +91,18 @@ function reviewNavigation(input: {
   readonly positionLabel: string;
 } {
   const index = input.visibleIssueIds.indexOf(input.session.issueId);
-  if (index >= 0) {
+  if (index < 0) {
     return {
-      canNext: index < input.visibleIssueIds.length - 1,
-      canPrevious: index > 0,
-      positionLabel: `${index + 1} / ${input.visibleIssueIds.length}`,
+      canNext: false,
+      canPrevious: false,
+      positionLabel: `Not in current view - ${input.visibleIssueIds.length}`,
     };
   }
 
   return {
-    canNext: input.session.anchorIndex < input.visibleIssueIds.length,
-    canPrevious: input.session.anchorIndex > 0 && input.visibleIssueIds.length > 0,
-    positionLabel: `Not in current view - ${input.visibleIssueIds.length}`,
+    canNext: index < input.visibleIssueIds.length - 1,
+    canPrevious: index > 0,
+    positionLabel: `${index + 1} / ${input.visibleIssueIds.length}`,
   };
 }
 
@@ -125,6 +125,7 @@ export function TrailTriagePage({
   const configuration = readModel?.configuration ?? null;
   const issueIds = readModel?.visibleIssueIds ?? [];
   const [reviewSession, setReviewSession] = useState<TrailTriageReviewSession | null>(null);
+  const editRequestVersionRef = useRef(0);
   const editTaskRef = useRef<Promise<boolean> | null>(null);
   const reviewTransitionRef = useRef(false);
   const reviewSessionRef = useRef(reviewSession);
@@ -176,10 +177,13 @@ export function TrailTriagePage({
   };
 
   const commitReviewDraft = (): Promise<boolean> => {
+    editRequestVersionRef.current += 1;
     if (editTaskRef.current !== null) return editTaskRef.current;
 
     const task = (async (): Promise<boolean> => {
-      while (true) {
+      let handledRequestVersion = 0;
+      while (handledRequestVersion < editRequestVersionRef.current) {
+        handledRequestVersion = editRequestVersionRef.current;
         const session = reviewSessionRef.current;
         if (
           session === null
@@ -222,12 +226,17 @@ export function TrailTriagePage({
             runtimeStore.getState(),
             session.issueId,
           );
+          const latest = reviewSessionRef.current;
+          if (latest === null || latest.issueId !== session.issueId) return true;
           const nextSession = current === undefined
-            ? { ...anchoredSession, draft, feedback: undefined, pending: undefined }
-            : reviewSessionFromIssue(current, anchorIndex);
+            ? { ...anchoredSession, draft: latest.draft, feedback: undefined, pending: undefined }
+            : {
+                ...reviewSessionFromIssue(current, anchorIndex),
+                draft: latest.draft === draft ? reviewDraftFromIssue(current) : latest.draft,
+              };
           reviewSessionRef.current = nextSession;
           setReviewSession(nextSession);
-          return true;
+          continue;
         }
 
         const pendingSession: TrailTriageReviewSession = {
@@ -242,25 +251,23 @@ export function TrailTriagePage({
         try {
           await result.receipt.completion;
         } catch (error: unknown) {
+          const latest = reviewSessionRef.current;
+          if (latest === null || latest.issueId !== session.issueId) return false;
           const recovered = selectTrailReadableTriageIssueById(
             runtimeStore.getState(),
             session.issueId,
           );
-          const latest = reviewSessionRef.current;
-          const latestDraft = latest?.issueId === session.issueId
-            ? latest.draft
-            : draft;
           const feedback = `Save failed: ${errorMessage(error)}`;
           const nextSession: TrailTriageReviewSession = recovered === undefined
             ? {
                 ...pendingSession,
-                draft: latestDraft,
+                draft: latest.draft,
                 feedback,
                 pending: undefined,
               }
             : {
                 ...reviewSessionFromIssue(recovered, anchorIndex),
-                draft: latestDraft,
+                draft: latest.draft,
                 feedback,
               };
           reviewSessionRef.current = nextSession;
@@ -280,26 +287,29 @@ export function TrailTriagePage({
         }
 
         const latest = reviewSessionRef.current;
-        const latestDraft = latest?.issueId === session.issueId
-          ? latest.draft
-          : draft;
-        const draftChangedWhileSaving = latestDraft !== draft;
+        if (latest === null || latest.issueId !== session.issueId) return true;
+        const draftChangedWhileSaving = latest.draft !== draft;
+        const hasQueuedCommit = editRequestVersionRef.current > handledRequestVersion;
         const nextSession: TrailTriageReviewSession = {
           ...reviewSessionFromIssue(current, anchorIndex),
-          draft: draftChangedWhileSaving ? latestDraft : reviewDraftFromIssue(current),
-          pending: draftChangedWhileSaving ? "edit" : undefined,
+          draft: draftChangedWhileSaving ? latest.draft : reviewDraftFromIssue(current),
+          pending: hasQueuedCommit ? "edit" : undefined,
         };
         reviewSessionRef.current = nextSession;
         setReviewSession(nextSession);
-
-        if (!draftChangedWhileSaving) return true;
       }
+      return true;
     })().finally(() => {
       editTaskRef.current = null;
     });
 
     editTaskRef.current = task;
     return task;
+  };
+
+  const settleRequestedReviewEdit = async (): Promise<void> => {
+    const task = editTaskRef.current;
+    if (task !== null) await task;
   };
 
   const runReviewTransition = async (operation: () => Promise<void>): Promise<void> => {
@@ -439,16 +449,13 @@ export function TrailTriagePage({
   });
 
   const navigateReview = async (direction: "next" | "previous") => runReviewTransition(async () => {
-    if (!(await commitReviewDraft())) return;
+    await settleRequestedReviewEdit();
     const session = reviewSessionRef.current;
     if (session === null) return;
     const visibleIssueIds = visibleIssueIdsNow();
     const currentIndex = visibleIssueIds.indexOf(session.issueId);
-    const targetIndex = currentIndex >= 0
-      ? currentIndex + (direction === "next" ? 1 : -1)
-      : direction === "next"
-        ? session.anchorIndex
-        : session.anchorIndex - 1;
+    if (currentIndex < 0) return;
+    const targetIndex = currentIndex + (direction === "next" ? 1 : -1);
     const targetIssueId = visibleIssueIds[targetIndex];
     if (targetIssueId !== undefined) openReviewFromRuntime(targetIssueId, targetIndex);
   });
@@ -457,24 +464,21 @@ export function TrailTriagePage({
     const currentSession = reviewSessionRef.current;
     if (currentSession?.issueId === issueId) return;
 
-    // Opening the first Review is synchronous and must not acquire the async
-    // transition guard. Once the Review is visible, its actions are immediately
-    // interactive instead of being silently dropped until a microtask releases
-    // the guard. Switching away from an existing Review still serializes through
-    // draft commit before changing identity.
     if (currentSession === null) {
       openReviewFromRuntime(issueId, anchorIndex);
       return;
     }
 
     void runReviewTransition(async () => {
-      if (!(await commitReviewDraft())) return;
+      await settleRequestedReviewEdit();
+      const latestSession = reviewSessionRef.current;
+      if (latestSession?.issueId === issueId) return;
       openReviewFromRuntime(issueId, anchorIndex);
     });
   };
 
   const closeReview = async () => runReviewTransition(async () => {
-    if (!(await commitReviewDraft())) return;
+    await settleRequestedReviewEdit();
     reviewSessionRef.current = null;
     setReviewSession(null);
   });

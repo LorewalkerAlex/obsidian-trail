@@ -48,6 +48,17 @@ function TrailTrashIcon() {
   );
 }
 
+function shouldCommitTextDraftOnBlur(
+  currentTarget: HTMLElement,
+  relatedTarget: EventTarget | null,
+): boolean {
+  if (!(relatedTarget instanceof Element)) return true;
+  const reviewSurface = currentTarget.closest(".trail-triage-review");
+  if (reviewSurface === null) return true;
+  if (!reviewSurface.contains(relatedTarget)) return false;
+  return relatedTarget.closest("[data-review-transition-region='true']") === null;
+}
+
 export interface TrailTriageReviewSurfaceProps {
   readonly canNext: boolean;
   readonly canPrevious: boolean;
@@ -105,7 +116,10 @@ export function TrailTriageReviewSurface({
       data-pending={pending}
     >
       <header className="trail-triage-review__header">
-        <div className="trail-triage-review__navigation">
+        <div
+          className="trail-triage-review__navigation"
+          data-review-transition-region="true"
+        >
           <span className="trail-triage-review__back">
             <TrailIconButton
               disabled={mutationLocked}
@@ -158,7 +172,11 @@ export function TrailTriageReviewSurface({
           <TrailInput
             aria-label="Triage title"
             disabled={mutationLocked}
-            onBlur={onCommitDraft}
+            onBlur={(event) => {
+              if (shouldCommitTextDraftOnBlur(event.currentTarget, event.relatedTarget)) {
+                onCommitDraft();
+              }
+            }}
             onChange={(event) => onTitleChange(event.currentTarget.value)}
             value={draft.title}
           />
@@ -189,7 +207,11 @@ export function TrailTriageReviewSurface({
           <TrailTextarea
             aria-label="Triage description"
             disabled={mutationLocked}
-            onBlur={onCommitDraft}
+            onBlur={(event) => {
+              if (shouldCommitTextDraftOnBlur(event.currentTarget, event.relatedTarget)) {
+                onCommitDraft();
+              }
+            }}
             onChange={(event) => onDescriptionChange(event.currentTarget.value)}
             placeholder="Add description..."
             rows={10}
