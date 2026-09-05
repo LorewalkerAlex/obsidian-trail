@@ -433,15 +433,15 @@ Current key status:
 | Domain/Persistence/Mutation Runtime core | Accepted | consume; do not remodel |
 | readable/effective Runtime snapshot | Implemented | use once per top-level Read Model evaluation; profile before caching |
 | Page/surface Read Model boundary | Mapped / partial evidence | introduce just in time, first where real Page construction requires it |
-| Button/Input/Checkbox/basic primitives | Implemented / Lab-proven | Stage 4 aligns remaining responsive/focus/disabled and visual states as real consumers require |
-| Collection Row / Property Control | Lab-proven / Consumer-proven / Host-proven | intent/state contracts aligned; finish containment and constrained-width calibration in Stage 4 |
+| Button/Input/Checkbox/basic primitives | Accepted / Lab-proven / Consumer-proven / Host-proven | consume; add semantic variants only from proven Product needs |
+| Collection Row / Property Control | Accepted / Lab-proven / Consumer-proven / Host-proven | consume; Stage 4 containment/state calibration is closed |
 | Workspace Frame / Page Surface | Consumer-proven / Host-proven | consume as the stable shared Main View chassis |
-| Collection Controls | Consumer-proven / Host-proven | public composition contract aligned; finish containment and final visual calibration in Stage 4 |
+| Collection Controls | Accepted / Consumer-proven / Host-proven | consume the aligned leading/trailing composition; Page-specific control choices remain Page-owned |
 | Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
 | Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Project/Issue/Cycle Inspector Read Models and content remain Stage 7/8/10 |
 | Foundation Lab | Accepted / Host-proven | consume as the development showroom; reusable ownership remains outside Foundation |
 | Progress | Lab-proven / Host-proven | normal/compact/micro/unavailable contract aligned; consume in later Project/Cycle/Home surfaces |
-| Normal-flow layout containment | Mapped / partial implementation | complete direct-child containment and explicit overflow ownership before Stage 4 visual close |
+| Normal-flow layout containment | Accepted / Host-proven | preserve direct-child ownership and explicit overflow responsibility in later Pages |
 | Selection / Action Registry / Peek / Confirmation / Composer | Mapped / partial or pending | create production owners just in time from real Page needs |
 
 Update this ledger as the active execution snapshot; do not turn it into historical release notes.
@@ -530,9 +530,11 @@ Every aligned owner remains production code and must still have a real or immine
 Current status:
 
 - **Stage 4 shared-contract checkpoint published** — `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` aligns Progress density/unavailable states, removes the required-Display Collection Controls contract, centralizes Collection Row nested-interaction isolation, and aligns Property Control normal/compact/disabled states.
-- **Stage 4 layout-ownership checkpoint published** — `795dfb54feacc10571f3cfedae6f5a606fe96cb2` replaces the Foundation Collection Row specimen's anonymous child-index track schema with stable `id / primary / trailing` direct regions and keeps showroom-only interaction feedback outside the row. This is a spatial-ownership correction, not a breakpoint-specific width patch.
-- **Representative host evidence is green for the audited surfaces** — real Obsidian inspection covered Foundation Collection Row / Property Control in normal and constrained desktop panes, plus Triage wide Queue + Review and constrained single-column Review recomposition; no sibling overlap or essential-control escape was observed in those audited surfaces.
-- **Stage 4 remains active** — continue auditing remaining current Page / pattern / entity / primitive owners for direct-child spatial ownership and explicit overflow responsibility. Only proven supported-desktop containment defects justify more structural code; after the audit is stable, finish the Linear-faithful visual calibration pass.
+- **Layout Contract frozen and first structural repair published** — `8044437c2afe8db5281101ebcd5180802cc35a0e` defines direct-child spatial ownership and explicit overflow responsibility; `795dfb54feacc10571f3cfedae6f5a606fe96cb2` applies it to the Foundation Collection Row specimen with stable `id / primary / trailing` regions rather than width-specific patching.
+- **Remaining proven containment defects are repaired** — `f195a6247bf0a7b38a027d3106ba7a1e980b202b` makes shared popover item labels absorb width pressure without invading trailing meta/check regions, and `741848e2bbaec41c81ac7b5cc793be6a3f2821cc` gives dynamic Label Property summaries their own shrink/truncate region.
+- **Final host visual leak is repaired** — `1fc8fc3fc4025c743c064abbb58df07640eded48` prevents Obsidian's generic button chrome from leaking onto Triage row titles without changing row geometry or visual tokens.
+- **Representative host evidence is green** — real Obsidian inspection covers Foundation in the full shell, Triage wide Queue + Review, constrained single-column Review, Collection Row / Property Control containment, and the Label picker top layer; normal-flow siblings remain contained and the final presentation is visually coherent at the supported desktop calibration boundary.
+- **Stage 4 complete / Host-proven and closed** — the existing production warehouse is aligned to the frozen shared contracts, the current owner graph has no remaining proven Stage 4 containment contradiction, and the Linear-faithful visual calibration pass is accepted. Stage 5 Triage is now the active slice.
 
 ### Stage 5 — Finish Triage
 
@@ -636,55 +638,47 @@ Complete:
 
 ## 9. Active Slice
 
-Stage 4 now has two published checkpoints: `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` for shared UI contract alignment and `795dfb54feacc10571f3cfedae6f5a606fe96cb2` for the first concrete Layout Contract repair. Progress, Collection Controls, Collection Row interaction isolation, Property Control states, and the repaired Foundation row spatial schema are aligned; Stage 4 is not yet closed.
+Stage 4 is closed. Its implementation/host exit checkpoint ends at `1fc8fc3fc4025c743c064abbb58df07640eded48`, after the shared-contract alignment, Layout Contract audit, proven containment repairs, and final real-Obsidian visual check were published and verified. Do not reopen Stage 4 unless later repository evidence creates a concrete contradiction with the frozen ownership/layout contracts.
 
-### Stage 4 continuation — Layout containment + final warehouse calibration
+### Stage 5 active — Finish Triage vertical
+
+Stage 5 is now the active implementation slice. The repository already contains a partial Triage Queue/Review surface that served as Stage 2/4 proving evidence; Stage 5 owns finishing that vertical against the frozen V1 behavior rather than treating the partial implementation as final.
 
 The next implementation sequence is:
 
 ```text
-canonical Layout Contract
--> audit current Page / pattern / entity boundaries
--> repair remaining proven containment defects
--> representative host verification where needed
--> Linear-faithful visual calibration
--> Stage 4 close
--> Stage 5 Triage
+current proven Domain / Query semantics
+-> define the Triage Page Read Model
+-> finish Queue with direct Filter + Order controls
+-> finish Review draft lifecycle + visible-order progression
+-> make Review exit return to the full Triage List in wide and constrained compositions
+-> add shared Confirmation / transient Esc-focus mechanics where Triage proves the need
+-> finish the Triage Creation Composer path
+-> add Selection / Action owners only if the real Triage workflow now requires them
+-> representative automated + Obsidian verification
+-> Stage 5 close
 ```
-
-Current audit snapshot:
-
-- Workspace Frame / Page Surface, Triage Page wide/constrained composition, Collection Controls, production Collection Row, Triage Row, Property Control/basic primitives, and current top-layer picker/popover owners have been inspected without a second proven production containment defect so far;
-- the Foundation Collection Row specimen did contain a real parent/child schema contradiction and was repaired in `795dfb54feacc10571f3cfedae6f5a606fe96cb2`;
-- continue the remaining owner audit from this checkpoint rather than restarting from generic overflow scans or Foundation-only stress cases.
-
-Desktop calibration boundary for Stage 4:
-
-- reason from the actual Trail Main View capacity, not monitor resolution;
-- a normal desktop pane and roughly half of a typical laptop workspace are the representative normal/constrained scenarios; approximately `900–1200px` and `680–720px` are engineering references, not values the user must measure manually;
-- widths materially below about `650px` are diagnostic rather than V1 desktop acceptance targets unless a later Product surface explicitly establishes smaller supported capacity;
-- do not add breakpoint branches, clipping, or overflow suppression solely to satisfy unsupported extreme widths; do repair any genuine parent/child ownership contradiction that an extreme stress case reveals independently of that width.
 
 Scope:
 
-1. enforce the `ui.md` / `ui-blueprints.md` normal-flow containment contract without creating a `UniversalLayout`, parallel layout framework, or Page-global fixed sizing model;
-2. audit direct-child allocation from Workspace Frame/Page Surface through Page regions, shared patterns, entity rows/cards, and primitives;
-3. ensure flexible content can actually shrink and that space pressure resolves through explicit shrink/wrap/truncate/hide/recompose or owner-owned scrolling rather than sibling overlap or accidental Page overflow;
-4. preserve explicit exceptions such as Board/Timeline horizontal canvases and top-layer Menu/Picker/Popover/Peek/Composer/Confirmation surfaces, with overflow/collision owned by those components;
-5. after containment is stable, finish Linear-faithful baseline, spacing, optical alignment, density, focus, disabled, selected/highlighted, and constrained-width calibration;
-6. do not pull Stage 5 Triage workflow completion or later Selection/Action Registry/Peek/Confirmation/Composer work forward unless Stage 4 containment itself requires a shared mechanical fix.
+1. consume the existing Domain, Query, mutation, host-history, and Stage 4 layout contracts rather than remodeling them;
+2. define one Page-facing Triage Read Model from current proven Query semantics before completing presentation logic;
+3. make the Queue control boundary directly `Filter + Order`; the aligned Collection Controls pattern supplies mechanics but does not force a generic Display control;
+4. complete Review draft save/progression semantics and preserve visible-order Previous/Next behavior without turning Review identity into host history;
+5. provide an explicit Review exit back to the full Triage List in both wide and constrained compositions;
+6. add shared Confirmation, Esc/focus handling, Composer, Selection, or Action owners only where the completed Triage workflow proves a real reusable responsibility;
+7. preserve Stage 4 direct-child spatial ownership and supported-desktop containment instead of solving workflow work with new global layout machinery;
+8. keep navigation-as-save and parallel Review history out of the design.
 
 Exit evidence:
 
-- normal-flow siblings do not overlap at representative normal/constrained widths;
-- essential controls remain inside their allocated regions;
-- ordinary descendants do not create accidental Page-level horizontal overflow;
-- intentional horizontal overflow/top-layer escape has the explicit owner required by the blueprint;
-- constrained layouts preserve the frozen information priority before low-priority metadata is removed or overflowed;
-- final reusable visual calibration remains production-owned and is visible in Foundation;
-- representative Obsidian inspection confirms the containment and final presentation where jsdom cannot establish them.
-
-Stage 5 Triage completion begins only after Stage 4 is closed and published.
+- Triage has one explicit Page Read Model and no Page-local duplicate Domain/Query semantics;
+- Queue exposes the frozen direct Filter + Order control grammar;
+- Review editing, save/defer/delete/progression, and explicit exit behavior match the resolved V1 contract;
+- required Confirmation / transient focus / Composer mechanics are owned at the correct shared layer and are not Triage-only duplicates;
+- wide and constrained desktop compositions preserve the Stage 4 containment contract;
+- focused automated checks plus representative real-Obsidian verification establish the first complete final V1 vertical;
+- factual documentation and the public `main` checkpoint are updated before Stage 5 is called closed.
 
 ## 10. Slice Definition of Done
 
