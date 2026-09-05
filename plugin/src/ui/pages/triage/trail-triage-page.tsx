@@ -1,6 +1,5 @@
 import {
   Fragment,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -8,15 +7,12 @@ import { useStore } from "zustand";
 
 import type { TrailTriageIssue } from "../../../domain/model/trail-entities";
 import { addTrailCalendarDays } from "../../../domain/rules/trail-temporal-rules";
-import { isTrailCollectionFilterActive } from "../../../query/shared/trail-collection-filter";
 import {
   selectTrailReadableConfiguration,
   selectTrailReadableTriageIssueById,
-  selectTrailReadableTriageIssueIds,
 } from "../../../query/shared/trail-effective-query";
 import {
-  selectTrailTriageReviewSetIssueIds,
-  selectTrailTriageVisibleIssueIds,
+  selectTrailTriagePageReadModel,
   type TrailTriageFilterPropertyId,
   type TrailTriageFilterState,
   type TrailTriageOrdering,
@@ -118,11 +114,16 @@ export function TrailTriagePage({
   readonly runtimeStore: TrailRuntimeStore;
 }) {
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
-  const configuration = selectTrailReadableConfiguration(state);
-  const canonicalIssueIds = selectTrailReadableTriageIssueIds(state);
   const now = Date.now();
   const filters = useTrailCollectionFilterState<TrailTriageFilterPropertyId>();
   const [ordering, setOrdering] = useState<TrailTriageOrdering>("review-due");
+  const readModel = selectTrailTriagePageReadModel(state, {
+    filter: filters.state,
+    now,
+    ordering,
+  });
+  const configuration = readModel?.configuration ?? null;
+  const issueIds = readModel?.visibleIssueIds ?? [];
   const [reviewSession, setReviewSession] = useState<TrailTriageReviewSession | null>(null);
   const editTaskRef = useRef<Promise<boolean> | null>(null);
   const reviewTransitionRef = useRef(false);
@@ -133,29 +134,14 @@ export function TrailTriagePage({
   filterStateRef.current = filters.state;
   orderingRef.current = ordering;
 
-  const filterActive = isTrailCollectionFilterActive(filters.state);
-  const issueIds = selectTrailTriageVisibleIssueIds(state, {
-    filter: filters.state,
-    now,
-    ordering,
-  });
-  const reviewSetIssueIds = selectTrailTriageReviewSetIssueIds(state, now);
-  const showReviewBoundary = !filterActive && ordering === "review-due";
-  const reviewBoundaryIssueId = showReviewBoundary && reviewSetIssueIds.length < canonicalIssueIds.length
-    ? reviewSetIssueIds[reviewSetIssueIds.length - 1]
-    : undefined;
-  const labelsById = useMemo(() => new Map(
-    (configuration?.labels ?? []).map((label) => [label.id, label] as const),
-  ), [configuration]);
-
-  const visibleIssueIdsNow = (): readonly string[] => selectTrailTriageVisibleIssueIds(
+  const visibleIssueIdsNow = (): readonly string[] => selectTrailTriagePageReadModel(
     runtimeStore.getState(),
     {
       filter: filterStateRef.current,
       now: Date.now(),
       ordering: orderingRef.current,
     },
-  );
+  )?.visibleIssueIds ?? [];
 
   const openReviewFromRuntime = (issueId: string, anchorIndex: number): boolean => {
     const issue = selectTrailReadableTriageIssueById(runtimeStore.getState(), issueId);
@@ -503,7 +489,7 @@ export function TrailTriagePage({
       className="trail-triage-page"
       data-review-open={reviewSession === null ? "false" : "true"}
     >
-      {configuration === null ? null : (
+      {readModel === null || configuration === null ? null : (
         <div className="trail-triage-page__layout">
           <div className="trail-triage-page__queue-pane">
             <TrailTriageViewControls
@@ -517,40 +503,36 @@ export function TrailTriagePage({
               ordering={ordering}
             />
             <div className="trail-triage-page__summary">
-              {reviewSetIssueIds.length} to review{filterActive || ordering !== "review-due" ? " overall" : ""}
+              {readModel.reviewSet.count} to review{readModel.reviewSet.needsGlobalQualifier ? " overall" : ""}
             </div>
-            {filterActive && canonicalIssueIds.length > 0 && issueIds.length === 0 ? (
+            {readModel.filteredEmpty ? (
               <div className="trail-triage-page__filtered-empty">
                 <span>No Triage entries match the filters.</span>
                 <TrailButton onClick={filters.clearAll}>Clear filters</TrailButton>
               </div>
             ) : (
               <div className="trail-triage-page__queue">
-                {issueIds.map((issueId, index) => {
-                  const issue = selectTrailReadableTriageIssueById(state, issueId);
-                  if (issue === undefined) return null;
-                  const labels = issue.labelIds
-                    .map((labelId) => labelsById.get(labelId))
-                    .filter((label) => label !== undefined);
-
+                {readModel.queue.map((item, index) => {
                   return (
-                    <Fragment key={issue.id}>
+                    <Fragment key={item.id}>
                       <TrailTriageRow
-                        highlighted={reviewSession?.issueId === issue.id}
-                        labels={labels.length === 0 ? undefined : <TrailLabelDots labels={labels} />}
+                        highlighted={reviewSession?.issueId === item.id}
+                        labels={item.labels.length === 0
+                          ? undefined
+                          : <TrailLabelDots labels={item.labels} />}
                         onActivate={() => {
-                          void activateReview(issue.id, index);
+                          void activateReview(item.id, index);
                         }}
-                        priority={issue.priority}
+                        priority={item.priority}
                         reviewDue={(
                           <TrailDueDate
-                            timestamp={issue.due}
+                            timestamp={item.due}
                             timezone={configuration.temporal.timezone}
                           />
                         )}
-                        title={issue.title}
+                        title={item.title}
                       />
-                      {issue.id === reviewBoundaryIssueId ? (
+                      {item.id === readModel.reviewSet.boundaryAfterIssueId ? (
                         <div
                           aria-hidden="true"
                           className="trail-triage-page__review-boundary"

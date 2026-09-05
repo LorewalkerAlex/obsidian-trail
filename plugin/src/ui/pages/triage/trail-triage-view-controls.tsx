@@ -71,7 +71,7 @@ function filterProperties(
   ];
 }
 
-function TrailTriageDisplay({
+function TrailTriageOrder({
   onValueChange,
   value,
 }: {
@@ -83,18 +83,16 @@ function TrailTriageDisplay({
     { label: "Review due", value: "review-due" },
     { label: "Priority", value: "priority" },
   ] as const satisfies readonly { readonly label: string; readonly value: TrailTriageOrdering }[];
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? "Review due";
 
   return (
     <TrailViewPopover
       align="end"
-      label="Triage display"
+      label="Triage order"
       onOpenChange={setOpen}
       open={open}
       trigger={(
-        <TrailViewBarAction
-          data-active={value !== "review-due" ? "true" : undefined}
-          label="Display"
-        />
+        <TrailViewBarAction label={`Order: ${selectedLabel}`} />
       )}
     >
       <div className="trail-view-popover__stack">
@@ -169,7 +167,7 @@ export function TrailTriageViewControls({
         />
       )}
       trailing={(
-        <TrailTriageDisplay onValueChange={onOrderingChange} value={ordering} />
+        <TrailTriageOrder onValueChange={onOrderingChange} value={ordering} />
       )}
     />
   );

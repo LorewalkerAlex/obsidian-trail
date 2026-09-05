@@ -165,7 +165,7 @@ describe("TrailTriagePage", () => {
     expect(screen.getByRole("region", { name: "Triage queue" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Triage view controls" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Filter" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Display" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Order: Review due" })).toBeInTheDocument();
     expect(screen.getByText("10 to review")).toBeInTheDocument();
     const titles = Array.from(container.querySelectorAll(".trail-triage-row__title"))
       .map((element) => element.textContent);
@@ -424,7 +424,7 @@ describe("TrailTriagePage", () => {
         runtimeStore={harness.store}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Display" }));
+    fireEvent.click(screen.getByRole("button", { name: "Order: Review due" }));
     fireEvent.click(screen.getByRole("button", { name: "Priority" }));
     fireEvent.click(screen.getByRole("button", { name: "Entry C" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete Triage entry" }));
@@ -587,9 +587,10 @@ describe("TrailTriagePage", () => {
       .map((element) => element.textContent);
 
     expect(titles()).toEqual(["Low earlier", "Urgent later"]);
-    fireEvent.click(screen.getByRole("button", { name: "Display" }));
+    fireEvent.click(screen.getByRole("button", { name: "Order: Review due" }));
     fireEvent.click(screen.getByRole("button", { name: "Priority" }));
 
+    expect(screen.getByRole("button", { name: "Order: Priority" })).toBeInTheDocument();
     expect(titles()).toEqual(["Urgent later", "Low earlier"]);
     expect(screen.getByText("2 to review overall")).toBeInTheDocument();
     expect(container.querySelector("[data-review-boundary='true']")).toBeNull();

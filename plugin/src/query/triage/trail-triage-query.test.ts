@@ -20,6 +20,7 @@ import {
 } from "../../test/trail-test-fixtures";
 import { selectTrailReadableTriageIssueIds } from "../shared/trail-effective-query";
 import {
+  selectTrailTriagePageReadModel,
   selectTrailTriageReviewSetIssueIds,
   selectTrailTriageVisibleIssueIds,
 } from "./trail-triage-query";
@@ -192,6 +193,71 @@ describe("Triage Query", () => {
       "triage-urgent-earlier",
       "triage-urgent-later",
     ]);
+  });
+
+  it("builds one Page-facing projection for queue rows and Review Set presentation", () => {
+    const now = Date.UTC(2026, 8, 1, 4);
+    const due = (day: number) => Date.UTC(2026, 8, day, 4);
+    const { store } = readyTriageStore([
+      triageIssue({
+        due: due(2),
+        id: "triage-work",
+        labelIds: ["label-work"],
+        priority: "high",
+      }),
+      ...Array.from({ length: 11 }, (_, index) => triageIssue({
+        due: due(index + 3),
+        id: `triage-${String(index).padStart(2, "0")}`,
+      })),
+    ]);
+
+    const page = selectTrailTriagePageReadModel(store.getState(), {
+      filter: {},
+      now,
+      ordering: "review-due",
+    });
+
+    expect(page).not.toBeNull();
+    expect(page?.queue[0]).toMatchObject({
+      id: "triage-work",
+      priority: "high",
+      title: "triage-work",
+    });
+    expect(page?.queue[0]?.labels.map((label) => label.id)).toEqual(["label-work"]);
+    expect(page?.visibleIssueIds).toEqual(page?.queue.map((item) => item.id));
+    expect(page?.reviewSet).toEqual({
+      boundaryAfterIssueId: "triage-08",
+      count: 10,
+      needsGlobalQualifier: false,
+    });
+    expect(page?.filteredEmpty).toBe(false);
+
+    const priorityPage = selectTrailTriagePageReadModel(store.getState(), {
+      filter: {
+        priority: {
+          kind: "discrete",
+          values: [{ kind: "value", value: "high" }],
+        },
+      },
+      now,
+      ordering: "priority",
+    });
+    expect(priorityPage?.visibleIssueIds).toEqual(["triage-work"]);
+    expect(priorityPage?.reviewSet.count).toBe(10);
+    expect(priorityPage?.reviewSet.boundaryAfterIssueId).toBeUndefined();
+    expect(priorityPage?.reviewSet.needsGlobalQualifier).toBe(true);
+
+    const emptyPage = selectTrailTriagePageReadModel(store.getState(), {
+      filter: {
+        priority: {
+          kind: "discrete",
+          values: [{ kind: "value", value: "urgent" }],
+        },
+      },
+      now,
+      ordering: "review-due",
+    });
+    expect(emptyPage?.filteredEmpty).toBe(true);
   });
 
   it("keeps every seven-day horizon entry and tops up short horizons in normal order", () => {

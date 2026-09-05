@@ -141,10 +141,10 @@ export function selectTrailReadableUnassignedProjectIds(
  * Triage ordering is presentation-only: earliest Review Due first, then explicit
  * Priority, then stable identity. Absence of Priority sorts after Low.
  */
-export function selectTrailReadableTriageIssueIds(
-  state: TrailRuntimeState,
+export function selectTrailTriageIssueIdsFromReadableSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
 ): readonly string[] {
-  return [...selectTrailReadableRuntimeSnapshot(state).authoritative.domain.issuesById.values()]
+  return [...readable.authoritative.domain.issuesById.values()]
     .filter((issue): issue is TrailTriageIssue => issue.context === "triage")
     .sort((left, right) => {
       const dueOrder = left.due - right.due;
@@ -153,6 +153,14 @@ export function selectTrailReadableTriageIssueIds(
       return priorityDelta !== 0 ? priorityDelta : left.id.localeCompare(right.id);
     })
     .map((issue) => issue.id);
+}
+
+export function selectTrailReadableTriageIssueIds(
+  state: TrailRuntimeState,
+): readonly string[] {
+  return selectTrailTriageIssueIdsFromReadableSnapshot(
+    selectTrailReadableRuntimeSnapshot(state),
+  );
 }
 
 export function selectTrailReadableProjectIdsByInitiative(

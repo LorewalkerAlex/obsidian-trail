@@ -1,3 +1,7 @@
+import type {
+  TrailConfiguration,
+  TrailLabel,
+} from "../../domain/model/trail-configuration";
 import type { TrailTriageIssue } from "../../domain/model/trail-entities";
 import {
   TRAIL_PRIORITIES,
@@ -5,18 +9,20 @@ import {
   type TrailTimestamp,
 } from "../../domain/model/trail-values";
 import { addTrailCalendarDays } from "../../domain/rules/trail-temporal-rules";
+import type { TrailEffectiveRuntimeSnapshot } from "../../runtime/projection/trail-runtime-projection";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
 import {
   type TrailCollectionFilterClause,
   type TrailCollectionFilterState,
   type TrailDiscreteFilterClause,
+  isTrailCollectionFilterActive,
   matchesTrailDueFilter,
   matchesTrailOptionalDiscreteFilter,
   matchesTrailSetDiscreteFilter,
 } from "../shared/trail-collection-filter";
 import {
   selectTrailReadableRuntimeSnapshot,
-  selectTrailReadableTriageIssueIds,
+  selectTrailTriageIssueIdsFromReadableSnapshot,
 } from "../shared/trail-effective-query";
 
 const TRAIL_TRIAGE_REVIEW_HORIZON_DAYS = 7;
@@ -25,6 +31,32 @@ const TRAIL_TRIAGE_MIN_REVIEW_SET_SIZE = 10;
 export type TrailTriageFilterPropertyId = "due" | "labels" | "priority";
 export type TrailTriageFilterState = TrailCollectionFilterState<TrailTriageFilterPropertyId>;
 export type TrailTriageOrdering = "priority" | "review-due";
+
+export interface TrailTriagePageReadInput {
+  readonly filter: TrailTriageFilterState;
+  readonly now: TrailTimestamp;
+  readonly ordering: TrailTriageOrdering;
+}
+
+export interface TrailTriageQueueItemReadModel {
+  readonly due: TrailTimestamp;
+  readonly id: string;
+  readonly labels: readonly TrailLabel[];
+  readonly priority: TrailPriority | undefined;
+  readonly title: string;
+}
+
+export interface TrailTriagePageReadModel {
+  readonly configuration: TrailConfiguration;
+  readonly filteredEmpty: boolean;
+  readonly queue: readonly TrailTriageQueueItemReadModel[];
+  readonly reviewSet: {
+    readonly boundaryAfterIssueId?: string;
+    readonly count: number;
+    readonly needsGlobalQualifier: boolean;
+  };
+  readonly visibleIssueIds: readonly string[];
+}
 
 function priorityOrder(priority: TrailPriority | undefined): number {
   if (priority === undefined) return TRAIL_PRIORITIES.length;
@@ -62,24 +94,15 @@ function matchesTriageFilter(
   return matchesTrailSetDiscreteFilter(issue.labelIds, labelClause);
 }
 
-/**
- * Returns the visible Triage queue for the current transient collection controls.
- * Canonical Review Set derivation remains separate and always uses the unfiltered
- * default queue.
- */
-export function selectTrailTriageVisibleIssueIds(
-  state: TrailRuntimeState,
-  input: {
-    readonly filter: TrailTriageFilterState;
-    readonly now: TrailTimestamp;
-    readonly ordering: TrailTriageOrdering;
-  },
-): readonly string[] {
-  const readable = selectTrailReadableRuntimeSnapshot(state);
+function visibleTriageIssuesFromSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
+  orderedIssueIds: readonly string[],
+  input: TrailTriagePageReadInput,
+): TrailTriageIssue[] {
   const configuration = readable.authoritative.configuration;
   if (configuration === null) return [];
 
-  const visible = selectTrailReadableTriageIssueIds(state)
+  const visible = orderedIssueIds
     .map((issueId) => readable.authoritative.domain.issuesById.get(issueId))
     .filter((issue): issue is TrailTriageIssue => (
       issue?.context === "triage"
@@ -100,22 +123,17 @@ export function selectTrailTriageVisibleIssueIds(
     });
   }
 
-  return visible.map((issue) => issue.id);
+  return visible;
 }
 
-/**
- * Review Set is a derived focus suggestion over the full active Triage queue.
- * It never changes collection membership, ordering, or persisted entity facts.
- */
-export function selectTrailTriageReviewSetIssueIds(
-  state: TrailRuntimeState,
+function reviewSetIssueIdsFromSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
+  orderedIssueIds: readonly string[],
   now: TrailTimestamp,
 ): readonly string[] {
-  const readable = selectTrailReadableRuntimeSnapshot(state);
   const configuration = readable.authoritative.configuration;
   if (configuration === null) return [];
 
-  const orderedIssueIds = selectTrailReadableTriageIssueIds(state);
   const horizonEnd = addTrailCalendarDays(
     now,
     configuration.temporal.timezone,
@@ -142,4 +160,75 @@ export function selectTrailTriageReviewSetIssueIds(
   }
 
   return reviewSet;
+}
+
+/**
+ * Returns the visible Triage queue for the current transient collection controls.
+ * Canonical Review Set derivation remains separate and always uses the unfiltered
+ * default queue.
+ */
+export function selectTrailTriageVisibleIssueIds(
+  state: TrailRuntimeState,
+  input: TrailTriagePageReadInput,
+): readonly string[] {
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  const orderedIssueIds = selectTrailTriageIssueIdsFromReadableSnapshot(readable);
+  return visibleTriageIssuesFromSnapshot(readable, orderedIssueIds, input)
+    .map((issue) => issue.id);
+}
+
+/**
+ * Review Set is a derived focus suggestion over the full active Triage queue.
+ * It never changes collection membership, ordering, or persisted entity facts.
+ */
+export function selectTrailTriageReviewSetIssueIds(
+  state: TrailRuntimeState,
+  now: TrailTimestamp,
+): readonly string[] {
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  const orderedIssueIds = selectTrailTriageIssueIdsFromReadableSnapshot(readable);
+  return reviewSetIssueIdsFromSnapshot(readable, orderedIssueIds, now);
+}
+
+/**
+ * Builds the complete Page-facing Triage projection from one coherent readable
+ * Runtime snapshot. Transient Filter/Order inputs remain explicit UI state.
+ */
+export function selectTrailTriagePageReadModel(
+  state: TrailRuntimeState,
+  input: TrailTriagePageReadInput,
+): TrailTriagePageReadModel | null {
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  const configuration = readable.authoritative.configuration;
+  if (configuration === null) return null;
+
+  const orderedIssueIds = selectTrailTriageIssueIdsFromReadableSnapshot(readable);
+  const visibleIssues = visibleTriageIssuesFromSnapshot(readable, orderedIssueIds, input);
+  const visibleIssueIds = visibleIssues.map((issue) => issue.id);
+  const reviewSetIssueIds = reviewSetIssueIdsFromSnapshot(readable, orderedIssueIds, input.now);
+  const filterActive = isTrailCollectionFilterActive(input.filter);
+  const showReviewBoundary = !filterActive && input.ordering === "review-due";
+  const labelsById = new Map(configuration.labels.map((label) => [label.id, label] as const));
+
+  return {
+    configuration,
+    filteredEmpty: filterActive && orderedIssueIds.length > 0 && visibleIssueIds.length === 0,
+    queue: visibleIssues.map((issue) => ({
+      due: issue.due,
+      id: issue.id,
+      labels: issue.labelIds
+        .map((labelId) => labelsById.get(labelId))
+        .filter((label): label is TrailLabel => label !== undefined),
+      priority: issue.priority,
+      title: issue.title,
+    })),
+    reviewSet: {
+      boundaryAfterIssueId: showReviewBoundary && reviewSetIssueIds.length < orderedIssueIds.length
+        ? reviewSetIssueIds[reviewSetIssueIds.length - 1]
+        : undefined,
+      count: reviewSetIssueIds.length,
+      needsGlobalQualifier: filterActive || input.ordering !== "review-due",
+    },
+    visibleIssueIds,
+  };
 }
