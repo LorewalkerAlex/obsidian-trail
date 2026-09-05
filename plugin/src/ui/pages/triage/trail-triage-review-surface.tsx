@@ -3,6 +3,7 @@ import type { TrailTriageIssue } from "../../../domain/model/trail-entities";
 import { TrailDuePropertySelect } from "../../entities/trail-due-property-select";
 import { TrailLabelPropertySelect } from "../../entities/trail-label-property-select";
 import { TrailPriorityPropertySelect } from "../../entities/trail-priority-property-select";
+import { TrailConfirmation } from "../../patterns/trail-confirmation";
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import { TrailInput } from "../../primitives/trail-input";
@@ -155,15 +156,23 @@ export function TrailTriageReviewSurface({
             <TrailClockIcon />
             <span className="trail-triage-review__action-label">Defer</span>
           </TrailButton>
-          <TrailButton
-            aria-label="Delete Triage entry"
-            data-action="delete"
-            disabled={mutationLocked}
-            onClick={onDelete}
-          >
-            <TrailTrashIcon />
-            <span className="trail-triage-review__action-label">Delete</span>
-          </TrailButton>
+          <TrailConfirmation
+            confirmLabel="Delete"
+            description="This permanently removes the Triage entry. Trail does not provide undo."
+            onConfirm={onDelete}
+            title="Delete this Triage entry?"
+            tone="danger"
+            trigger={(
+              <TrailButton
+                aria-label="Delete Triage entry"
+                data-action="delete"
+                disabled={mutationLocked}
+              >
+                <TrailTrashIcon />
+                <span className="trail-triage-review__action-label">Delete</span>
+              </TrailButton>
+            )}
+          />
         </div>
       </header>
 

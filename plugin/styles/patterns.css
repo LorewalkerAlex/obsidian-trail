@@ -471,3 +471,69 @@ body button.trail-filter-chip__clear:focus-visible {
   background: transparent;
   color: var(--trail-text-primary);
 }
+
+.trail-confirmation__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal, 1100);
+  background: var(--trail-overlay-scrim);
+}
+
+.trail-confirmation__content {
+  box-sizing: border-box;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: calc(var(--layer-modal, 1100) + 1);
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: var(--trail-space-11);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-md);
+  outline: 0;
+  background: var(--trail-surface-overlay);
+  box-shadow: var(--trail-shadow-overlay);
+  color: var(--trail-text-secondary);
+  transform: translate(-50%, -50%);
+}
+
+.trail-confirmation__title {
+  margin: 0;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-strong);
+  line-height: 1.3;
+}
+
+.trail-confirmation__description {
+  margin: var(--trail-space-5) 0 0;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-body);
+  line-height: 1.45;
+}
+
+.trail-confirmation__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--trail-space-4);
+  margin-top: var(--trail-space-11);
+}
+
+body .trail-confirmation__actions button.trail-button[data-confirmation-tone="danger"] {
+  border-color: transparent;
+  background: var(--trail-danger);
+  color: var(--trail-text-on-accent);
+}
+
+body .trail-confirmation__actions button.trail-button[data-confirmation-tone="danger"]:hover:not(:disabled),
+body .trail-confirmation__actions button.trail-button[data-confirmation-tone="danger"]:active:not(:disabled),
+body .trail-confirmation__actions button.trail-button[data-confirmation-tone="danger"]:focus-visible {
+  border-color: var(--trail-border-default);
+  background: var(--trail-danger);
+  color: var(--trail-text-on-accent);
+}
+
+body .trail-confirmation__actions button.trail-button[data-confirmation-tone="danger"]:focus-visible {
+  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+}

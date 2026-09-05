@@ -5,6 +5,7 @@ import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-co
 import { TrailPriorityPropertySelect } from "../entities/trail-priority-property-select";
 import { TrailTriageRow } from "../entities/trail-triage-row";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
+import { TrailConfirmation } from "../patterns/trail-confirmation";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
 import {
   TrailViewBar,
@@ -141,6 +142,7 @@ function CollectionRowContent({
 }
 
 export function TrailFoundationLab({ control, revision }: TrailFoundationLabProps) {
+  const [confirmationActions, setConfirmationActions] = useState(0);
   const [layout, setLayout] = useState<"board" | "list">("list");
   const [priority, setPriority] = useState<TrailPriority | undefined>("high");
   const [propertyActions, setPropertyActions] = useState(0);
@@ -383,10 +385,31 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
       </LabSection>
 
       <LabSection
-        description="Only interaction behavior already owned by production components is shown. Action Registry, Peek, Confirmation, and standard Composer remain absent until their production owners exist."
+        description="Only interaction behavior already owned by production components is shown. Action Registry, Peek, and standard Composer remain absent until their production owners exist."
         id="interactions"
         title="Interactions"
       >
+        <LabSpecimenRow
+          description="Shared guarded-action mechanics keep safe focus, cancellation, concrete consequence copy, and explicit confirmation in one production owner."
+          kind="live-interaction"
+          owner="TrailConfirmation"
+          title="Confirmation"
+        >
+          <LabControlGroup label="Delete confirmation">
+            <TrailConfirmation
+              confirmLabel="Delete specimen"
+              description="Permanently remove this specimen. Trail does not provide undo."
+              onConfirm={() => setConfirmationActions((count) => count + 1)}
+              title="Delete specimen?"
+              tone="danger"
+              trigger={<TrailButton>Open delete confirmation</TrailButton>}
+            />
+            <span aria-live="polite" className="trail-lab-type-muted">
+              Confirmed actions: {confirmationActions}
+            </span>
+          </LabControlGroup>
+        </LabSpecimenRow>
+
         <LabSpecimenRow kind="live-interaction" owner="TrailCollectionRow + TrailCheckbox" title="Selection feedback">
           <div className="trail-lab-list">
             <TrailCollectionRow

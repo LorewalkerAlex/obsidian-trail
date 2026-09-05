@@ -596,6 +596,9 @@ describe("TrailTriagePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Priority" }));
     fireEvent.click(screen.getByRole("button", { name: "Entry C" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete Triage entry" }));
+    expect(screen.getByRole("dialog", { name: "Delete this Triage entry?" })).toBeInTheDocument();
+    expect(remove).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
     expect(await screen.findByText("Deleting...")).toBeInTheDocument();
     act(() => {
@@ -633,6 +636,8 @@ describe("TrailTriagePage", () => {
     render(<TrailTriagePage actions={actions} runtimeStore={readyTriageStore([issue])} />);
     fireEvent.click(screen.getByRole("button", { name: "Keep on failure" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete Triage entry" }));
+    expect(screen.getByRole("dialog", { name: "Delete this Triage entry?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
     expect(await screen.findByText("Deleting...")).toBeInTheDocument();
 
     await act(async () => {
