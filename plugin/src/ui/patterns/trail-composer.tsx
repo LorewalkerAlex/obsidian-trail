@@ -21,6 +21,7 @@ export interface TrailComposerSurfaceProps {
   readonly canSubmit: boolean;
   readonly children: ReactNode;
   readonly context: ReactNode;
+  readonly contextAccessory?: ReactNode;
   readonly feedback?: ReactNode;
   readonly onDismiss?: () => void;
   readonly onSubmit: () => void;
@@ -33,6 +34,7 @@ export function TrailComposerSurface({
   canSubmit,
   children,
   context,
+  contextAccessory,
   feedback,
   onDismiss,
   onSubmit,
@@ -42,7 +44,15 @@ export function TrailComposerSurface({
   return (
     <div className="trail-composer__surface">
       <header className="trail-composer__header">
-        <div className="trail-composer__context">{context}</div>
+        <div className="trail-composer__context-group">
+          <div className="trail-composer__context">{context}</div>
+          {contextAccessory === undefined ? null : (
+            <>
+              <span aria-hidden="true" className="trail-composer__context-separator">›</span>
+              <div className="trail-composer__context-accessory">{contextAccessory}</div>
+            </>
+          )}
+        </div>
         {onDismiss === undefined ? null : (
           <TrailIconButton
             disabled={pending}
@@ -57,7 +67,6 @@ export function TrailComposerSurface({
         <div className="trail-composer__feedback" role="alert">{feedback}</div>
       )}
       <footer className="trail-composer__footer">
-        <span className="trail-composer__shortcut">Ctrl/Cmd+Enter</span>
         <TrailButton
           disabled={!canSubmit || pending}
           onClick={onSubmit}
@@ -71,6 +80,7 @@ export function TrailComposerSurface({
 }
 
 export interface TrailComposerProps extends TrailComposerSurfaceProps {
+  readonly dialogTitle?: ReactNode;
   readonly dirty: boolean;
   readonly initialFocusRef?: RefObject<HTMLElement | null>;
   readonly onDismiss: () => void;
@@ -82,6 +92,8 @@ export function TrailComposer({
   canSubmit,
   children,
   context,
+  contextAccessory,
+  dialogTitle,
   dirty,
   feedback,
   initialFocusRef,
@@ -134,10 +146,11 @@ export function TrailComposer({
               dismiss.requestDismiss();
             }}
           >
-            <Dialog.Title className="trail-composer__dialog-title">{context}</Dialog.Title>
+            <Dialog.Title className="trail-composer__dialog-title">{dialogTitle ?? context}</Dialog.Title>
             <TrailComposerSurface
               canSubmit={canSubmit}
               context={context}
+              contextAccessory={contextAccessory}
               feedback={feedback}
               onDismiss={dismiss.requestDismiss}
               onSubmit={onSubmit}

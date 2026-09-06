@@ -25,7 +25,9 @@ function ComposerHarness({
   return (
     <TrailComposer
       canSubmit={title.trim().length > 0}
-      context="Issue · Project A"
+      context="Issue"
+      contextAccessory={<span>Project A</span>}
+      dialogTitle="Issue · Project A"
       dirty={title !== ""}
       initialFocusRef={titleRef}
       onDismiss={() => setOpen(false)}
@@ -52,6 +54,7 @@ describe("TrailComposer", () => {
       <TrailComposerSurface
         canSubmit
         context="Project"
+        contextAccessory={<span>Initiative A</span>}
         onSubmit={onSubmit}
         submitLabel="Create"
       >
@@ -62,8 +65,17 @@ describe("TrailComposer", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(container.querySelector(".trail-composer__surface")).toBeInTheDocument();
     expect(screen.getByText("Project")).toBeInTheDocument();
+    expect(screen.getByText("Initiative A")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps accessible dialog identity separate from visual creation context", () => {
+    render(<ComposerHarness />);
+
+    expect(screen.getByRole("dialog", { name: "Issue · Project A" })).toBeInTheDocument();
+    expect(document.querySelector(".trail-composer__context")).toHaveTextContent("Issue");
+    expect(document.querySelector(".trail-composer__context-accessory")).toHaveTextContent("Project A");
   });
 
   it("focuses the requested field and reserves Ctrl/Cmd+Enter for submit", async () => {

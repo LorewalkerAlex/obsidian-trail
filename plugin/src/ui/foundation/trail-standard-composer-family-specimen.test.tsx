@@ -14,7 +14,7 @@ describe("TrailStandardComposerFamilySpecimen", () => {
     const project = screen.getByRole("region", { name: "project composer preview" });
 
     expect(within(triage).getByText("Triage")).toBeInTheDocument();
-    expect(within(issue).getByText("Issue · Standalone")).toBeInTheDocument();
+    expect(within(issue).getByText("Issue")).toBeInTheDocument();
     expect(within(project).getByText("Project")).toBeInTheDocument();
 
     expect(within(issue).queryByText("Required")).not.toBeInTheDocument();
@@ -22,6 +22,7 @@ describe("TrailStandardComposerFamilySpecimen", () => {
     expect(projectRelation).toBeInTheDocument();
     expect(projectRelation.closest(".trail-standard-composer-form__relation"))
       .toHaveAttribute("data-required", "true");
+    expect(projectRelation.closest(".trail-composer__context-accessory")).not.toBeNull();
     expect(within(issue).getByRole("combobox", { name: "Priority: Medium" })).toBeInTheDocument();
     expect(within(project).getByRole("button", { name: "Initiative: No initiative" })).toBeInTheDocument();
   });

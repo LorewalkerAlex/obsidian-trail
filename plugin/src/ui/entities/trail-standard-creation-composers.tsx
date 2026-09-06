@@ -446,7 +446,30 @@ export function TrailWorkflowIssueComposer({
   return (
     <TrailComposer
       canSubmit={canSubmit}
-      context={`Issue · ${selectedProject?.title ?? "Choose project"}`}
+      context="Issue"
+      contextAccessory={(
+        <TrailStandardComposerRelation label="Project" required>
+          <TrailRelationPropertySelect
+            disabled={pending}
+            label="Project"
+            onValueChange={(projectId) => {
+              const milestones = projects.find(({ id }) => id === projectId)?.milestones ?? [];
+              updateDraft({
+                milestoneId: milestones.some(({ id }) => id === draft.milestoneId)
+                  ? draft.milestoneId
+                  : undefined,
+                projectId,
+              });
+            }}
+            options={projects}
+            placeholder="Choose project"
+            required
+            triggerRef={projectRef}
+            value={draft.projectId}
+          />
+        </TrailStandardComposerRelation>
+      )}
+      dialogTitle={`Issue · ${selectedProject?.title ?? "Choose project"}`}
       dirty={!sameIssueDraft(draft, baseline)}
       feedback={feedback}
       initialFocusRef={selectedProject === undefined ? projectRef : titleRef}
@@ -477,26 +500,6 @@ export function TrailWorkflowIssueComposer({
             value={draft.description}
           />
         </TrailStandardComposerEditor>
-        <TrailStandardComposerRelation label="Project" required>
-          <TrailRelationPropertySelect
-            disabled={pending}
-            label="Project"
-            onValueChange={(projectId) => {
-              const milestones = projects.find(({ id }) => id === projectId)?.milestones ?? [];
-              updateDraft({
-                milestoneId: milestones.some(({ id }) => id === draft.milestoneId)
-                  ? draft.milestoneId
-                  : undefined,
-                projectId,
-              });
-            }}
-            options={projects}
-            placeholder="Choose project"
-            required
-            triggerRef={projectRef}
-            value={draft.projectId}
-          />
-        </TrailStandardComposerRelation>
         <TrailStandardComposerProperties label="Issue properties">
           <TrailPriorityPropertySelect
             disabled={pending}
@@ -622,6 +625,18 @@ export function TrailProjectComposer({
     <TrailComposer
       canSubmit={canSubmit}
       context="Project"
+      contextAccessory={(
+        <TrailStandardComposerRelation label="Initiative">
+          <TrailRelationPropertySelect
+            disabled={pending}
+            label="Initiative"
+            onValueChange={(initiativeId) => updateDraft({ initiativeId })}
+            options={initiatives}
+            placeholder="No initiative"
+            value={draft.initiativeId}
+          />
+        </TrailStandardComposerRelation>
+      )}
       dirty={!sameProjectDraft(draft, baseline)}
       feedback={feedback}
       initialFocusRef={titleRef}
@@ -652,16 +667,6 @@ export function TrailProjectComposer({
             value={draft.description}
           />
         </TrailStandardComposerEditor>
-        <TrailStandardComposerRelation label="Initiative">
-          <TrailRelationPropertySelect
-            disabled={pending}
-            label="Initiative"
-            onValueChange={(initiativeId) => updateDraft({ initiativeId })}
-            options={initiatives}
-            placeholder="No initiative"
-            value={draft.initiativeId}
-          />
-        </TrailStandardComposerRelation>
         <TrailStandardComposerProperties label="Project properties">
           <TrailPriorityPropertySelect
             disabled={pending}

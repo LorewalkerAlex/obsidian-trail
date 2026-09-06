@@ -17,7 +17,7 @@ type ComposerKind = "issue" | "project" | "triage";
 
 const SPECIMENS = {
   issue: {
-    context: "Issue · Standalone",
+    context: "Issue",
     description: "Follow up on the captured request and turn it into planned work.",
     title: "Polish the creation flow",
   },
@@ -45,6 +45,26 @@ function FixedProperty({
   );
 }
 
+function ComposerContextAccessory({ kind }: { readonly kind: ComposerKind }) {
+  if (kind === "issue") {
+    return (
+      <TrailStandardComposerRelation label="Project" required>
+        <TrailPropertyControl aria-label="Project: Standalone">Standalone</TrailPropertyControl>
+      </TrailStandardComposerRelation>
+    );
+  }
+
+  if (kind === "project") {
+    return (
+      <TrailStandardComposerRelation label="Initiative">
+        <TrailPropertyControl aria-label="Initiative: No initiative">No initiative</TrailPropertyControl>
+      </TrailStandardComposerRelation>
+    );
+  }
+
+  return null;
+}
+
 function ComposerPreview({ kind }: { readonly kind: ComposerKind }) {
   const [priority, setPriority] = useState<TrailPriority | undefined>("medium");
   const specimen = SPECIMENS[kind];
@@ -54,6 +74,7 @@ function ComposerPreview({ kind }: { readonly kind: ComposerKind }) {
       <TrailComposerSurface
         canSubmit
         context={specimen.context}
+        contextAccessory={kind === "triage" ? undefined : <ComposerContextAccessory kind={kind} />}
         onDismiss={() => { /* visual calibration only */ }}
         onSubmit={() => { /* visual calibration only */ }}
         submitLabel="Create"
@@ -73,27 +94,16 @@ function ComposerPreview({ kind }: { readonly kind: ComposerKind }) {
             />
           </TrailStandardComposerEditor>
 
-          {kind === "issue" ? (
-            <TrailStandardComposerRelation label="Project" required>
-              <TrailPropertyControl aria-label="Project: Standalone">Standalone</TrailPropertyControl>
-            </TrailStandardComposerRelation>
-          ) : null}
-
-          {kind === "project" ? (
-            <TrailStandardComposerRelation label="Initiative">
-              <TrailPropertyControl aria-label="Initiative: No initiative">No initiative</TrailPropertyControl>
-            </TrailStandardComposerRelation>
-          ) : null}
-
           <TrailStandardComposerProperties label={`${specimen.context} properties`}>
             <TrailPriorityPropertySelect
+              layer="modal-child"
               onValueChange={setPriority}
               value={priority}
             />
             <FixedProperty label="Labels" />
             {kind === "issue" ? <FixedProperty label="Milestone" /> : null}
             {kind === "issue" ? <FixedProperty label="Estimate" /> : null}
-            <FixedProperty label={kind === "triage" ? "Review · Sep 12" : "Due"} />
+            <FixedProperty label={kind === "triage" ? "Review Sep 12" : "Due"} />
           </TrailStandardComposerProperties>
         </TrailStandardComposerForm>
       </TrailComposerSurface>

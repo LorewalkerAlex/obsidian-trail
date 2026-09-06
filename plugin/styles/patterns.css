@@ -564,7 +564,7 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
   top: 50%;
   left: 50%;
   z-index: calc(var(--layer-modal, 1100) + 1);
-  width: min(560px, calc(100vw - 32px));
+  width: min(720px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   outline: 0;
   transform: translate(-50%, -50%);
@@ -583,11 +583,11 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
 .trail-composer__surface {
   box-sizing: border-box;
   display: flex;
-  width: min(560px, 100%);
+  width: min(720px, 100%);
   max-height: inherit;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--trail-border-default);
+  border: 1px solid var(--trail-control-border-hover);
   border-radius: var(--trail-radius-lg);
   background: var(--trail-surface-overlay);
   box-shadow: var(--trail-shadow-overlay);
@@ -601,24 +601,67 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
   min-width: 0;
   flex: 0 0 auto;
   align-items: center;
-  gap: var(--trail-space-6);
-  padding: var(--trail-space-6) var(--trail-space-8);
 }
 
 .trail-composer__header {
+  min-height: 50px;
   justify-content: space-between;
-  padding-bottom: var(--trail-space-3);
+  gap: var(--trail-space-6);
+  padding: var(--trail-space-10) var(--trail-space-13) var(--trail-space-6);
+}
+
+.trail-composer__context-group {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--trail-space-3);
+  overflow: hidden;
+}
+
+.trail-composer__context,
+.trail-composer__context-accessory {
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--trail-control-height-lg);
+  align-items: center;
 }
 
 .trail-composer__context {
-  min-width: 0;
+  flex: 0 1 auto;
   margin: 0;
+  padding: 0 var(--trail-space-7);
   overflow: hidden;
-  color: var(--trail-text-muted);
-  font-size: var(--trail-font-size-supporting);
+  border: 1px solid var(--trail-control-border-hover);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-control-surface-pressed);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-section);
   font-weight: var(--trail-weight-medium);
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.trail-composer__context-separator {
+  flex: 0 0 auto;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-section);
+  line-height: 1;
+}
+
+.trail-composer__context-accessory {
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
+.trail-composer__header > .trail-icon-button {
+  width: var(--trail-control-height-lg);
+  min-width: var(--trail-control-height-lg);
+  height: var(--trail-control-height-lg);
+  padding: var(--trail-space-5);
+  border-radius: var(--trail-radius-xs);
+  color: var(--trail-text-muted);
 }
 
 .trail-composer__close-icon {
@@ -627,15 +670,15 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
-  stroke-width: 1.4;
+  stroke-width: 1.6;
 }
 
 .trail-composer__body {
   min-width: 0;
   min-height: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   overflow-y: auto;
-  padding: var(--trail-space-11);
+  padding: var(--trail-space-6) var(--trail-space-13) var(--trail-space-13);
 }
 
 .trail-composer__fields {
@@ -670,7 +713,7 @@ body .trail-composer__fields textarea.trail-textarea {
 }
 
 .trail-composer__feedback {
-  margin: 0 var(--trail-space-11) var(--trail-space-6);
+  margin: 0 var(--trail-space-11) var(--trail-space-7);
   padding: var(--trail-space-6) var(--trail-space-7);
   border: 1px solid var(--trail-border-default);
   border-radius: var(--trail-radius-sm);
@@ -680,28 +723,32 @@ body .trail-composer__fields textarea.trail-textarea {
 }
 
 .trail-composer__footer {
+  min-height: 58px;
   justify-content: flex-end;
-  border-top: 1px solid var(--trail-border-subtle);
+  gap: var(--trail-space-6);
+  padding: var(--trail-space-8) var(--trail-space-13);
+  border-top: 1px solid var(--trail-border-default);
 }
 
-.trail-composer__shortcut {
-  margin-right: auto;
-  color: var(--trail-text-faint);
-  font-size: var(--trail-font-size-caption);
+.trail-composer__footer .trail-button--primary {
+  height: 34px;
+  padding: 0 var(--trail-space-10);
+  border-radius: var(--trail-radius-sm);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-emphasis);
 }
 
 /* Standard Composer family visual hierarchy. */
 .trail-standard-composer-form {
   display: grid;
   min-width: 0;
-  gap: var(--trail-space-10);
+  gap: var(--trail-space-11);
 }
 
 .trail-standard-composer-form__editor {
   display: grid;
   min-width: 0;
-  gap: var(--trail-space-3);
-  padding: 0 var(--trail-space-2) var(--trail-space-4);
+  gap: var(--trail-space-2);
 }
 
 body .trail-standard-composer-form__editor input.trail-input,
@@ -710,24 +757,26 @@ body .trail-standard-composer-form__editor textarea.trail-textarea {
   padding-right: 0;
   padding-left: 0;
   border-color: transparent;
-  border-radius: 0;
+  border-radius: var(--trail-radius-xs);
   background: transparent;
   box-shadow: none;
 }
 
 body .trail-standard-composer-form__editor input.trail-input {
-  min-height: 32px;
+  min-height: 34px;
   color: var(--trail-text-primary);
-  font-size: 15px;
+  font-size: var(--trail-font-size-page);
   font-weight: var(--trail-weight-strong);
-  letter-spacing: -0.012em;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
 }
 
 body .trail-standard-composer-form__editor textarea.trail-textarea {
-  min-height: 64px;
+  min-height: 44px;
   padding-top: var(--trail-space-2);
-  padding-bottom: var(--trail-space-4);
+  padding-bottom: var(--trail-space-3);
   color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-subtitle);
   line-height: 1.5;
   resize: none;
 }
@@ -741,18 +790,17 @@ body .trail-standard-composer-form__editor textarea.trail-textarea:hover:not(:di
 body .trail-standard-composer-form__editor input.trail-input:focus,
 body .trail-standard-composer-form__editor textarea.trail-textarea:focus {
   border-color: transparent;
-  background: var(--trail-surface-very-quiet);
-  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+  background: transparent;
+  box-shadow: inset 0 -1px 0 var(--trail-focus-ring-quiet);
 }
 
 .trail-standard-composer-form__relation {
   display: flex;
   min-width: 0;
-  min-height: var(--trail-control-height-md);
+  min-height: var(--trail-control-height-lg);
   flex-wrap: wrap;
   align-items: center;
   gap: var(--trail-space-4);
-  padding: var(--trail-space-1) var(--trail-space-2);
 }
 
 .trail-standard-composer-form__relation-label {
@@ -773,13 +821,13 @@ body .trail-standard-composer-form__editor textarea.trail-textarea:focus {
 
 body .trail-standard-composer-form__relation button.trail-property-control {
   max-width: 100%;
-  height: var(--trail-control-height-md);
-  padding: 0 var(--trail-space-6);
+  height: var(--trail-control-height-lg);
+  padding: 0 var(--trail-space-7);
   border-color: var(--trail-control-border-hover);
   border-radius: var(--trail-radius-sm);
-  background: var(--trail-control-surface-hover);
-  color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-control);
+  background: var(--trail-control-surface-pressed);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-section);
   font-weight: var(--trail-weight-medium);
 }
 
@@ -790,27 +838,80 @@ body .trail-standard-composer-form__relation button.trail-property-control:focus
   color: var(--trail-text-primary);
 }
 
+.trail-composer__context-accessory .trail-standard-composer-form__relation {
+  min-height: var(--trail-control-height-lg);
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.trail-composer__context-accessory .trail-standard-composer-form__relation-label {
+  display: none;
+}
+
+.trail-composer__context-accessory .trail-standard-composer-form__relation-control {
+  max-width: min(280px, 42vw);
+  overflow: hidden;
+}
+
+body .trail-composer__context-accessory .trail-standard-composer-form__relation button.trail-property-control {
+  max-width: 100%;
+  height: var(--trail-control-height-lg);
+  padding: 0 var(--trail-space-7);
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-pressed);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-section);
+}
+
+body .trail-composer__context-accessory .trail-standard-composer-form__relation button.trail-property-control:hover:not(:disabled),
+body .trail-composer__context-accessory .trail-standard-composer-form__relation button.trail-property-control:focus-visible {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-pressed);
+  color: var(--trail-text-primary);
+}
+
 .trail-standard-composer-form__properties {
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trail-space-4);
-  padding: var(--trail-space-2);
+  gap: var(--trail-space-3);
+  padding: 0;
 }
 
 body .trail-standard-composer-form__properties button.trail-property-control {
-  height: var(--trail-control-height-md);
-  padding: 0 var(--trail-space-6);
-  border-color: var(--trail-control-border);
+  height: var(--trail-control-height-lg);
+  padding: 0 var(--trail-space-7);
+  border-color: var(--trail-control-border-hover);
   border-radius: var(--trail-radius-sm);
-  background: var(--trail-control-surface);
+  background: var(--trail-control-surface-pressed);
   color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-section);
 }
 
 body .trail-standard-composer-form__properties button.trail-property-control:hover:not(:disabled),
 body .trail-standard-composer-form__properties button.trail-property-control:focus-visible {
   border-color: var(--trail-control-border-hover);
-  background: var(--trail-control-surface-hover);
+  background: var(--trail-control-surface-pressed);
+  color: var(--trail-text-primary);
+}
+
+body [data-trail-transient-layer="modal-child"].trail-view-popover,
+body [data-trail-transient-layer="modal-child"].trail-priority-select,
+body [data-trail-transient-layer="modal-child"].trail-label-select,
+body [data-trail-transient-layer="modal-child"].trail-due-select {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-surface-overlay);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.035);
+  font-size: var(--trail-font-size-body);
+}
+
+body [data-trail-transient-layer="modal-child"].trail-priority-select .trail-priority-select__item {
+  height: var(--trail-control-height-lg);
+  color: var(--trail-text-secondary);
+}
+
+body [data-trail-transient-layer="modal-child"].trail-priority-select .trail-priority-select__item[data-state="checked"] {
+  background: var(--trail-state-hover-strong);
   color: var(--trail-text-primary);
 }
