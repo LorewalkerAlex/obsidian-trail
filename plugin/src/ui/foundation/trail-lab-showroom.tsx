@@ -54,7 +54,15 @@ export function LabDescription({ children }: { readonly children: ReactNode }) {
 }
 
 export function LabStateGrid({ children }: { readonly children: ReactNode }) {
-  return <div className="trail-lab-grid trail-lab-grid--two">{children}</div>;
+  return (
+    <div className="trail-lab-grid trail-lab-grid--two trail-lab-state-grid">
+      {children}
+    </div>
+  );
+}
+
+export function LabTransientSurface({ children }: { readonly children: ReactNode }) {
+  return <div className="trail-lab-transient-surface">{children}</div>;
 }
 
 export function LabControlGroup({

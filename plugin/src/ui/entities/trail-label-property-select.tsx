@@ -53,6 +53,24 @@ export function nextTrailLabelSelection(input: {
   return [...selected];
 }
 
+export function TrailLabelSelectCheck({
+  visible,
+}: {
+  readonly visible: boolean;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className="trail-label-select__check"
+      data-visible={visible ? "true" : "false"}
+    >
+      <svg className="trail-label-select__check-icon" viewBox="0 0 16 16">
+        <path d="M3.5 8.25 6.5 11l6-6" />
+      </svg>
+    </span>
+  );
+}
+
 export interface TrailLabelPropertySelectProps {
   readonly disabled?: boolean;
   readonly entityType?: TrailLabelEntityType;
@@ -165,16 +183,9 @@ export function TrailLabelPropertySelect({
                       }))}
                       type="button"
                     >
+                      <TrailLabelSelectCheck visible={isSelected} />
                       <TrailLabelDots labels={[label]} />
                       <span className="trail-label-select__name">{label.name}</span>
-                      <svg
-                        aria-hidden="true"
-                        className="trail-label-select__check"
-                        data-visible={isSelected ? "true" : "false"}
-                        viewBox="0 0 16 16"
-                      >
-                        <path d="M3.5 8.25 6.5 11l6-6" />
-                      </svg>
                     </button>
                   );
                 })}

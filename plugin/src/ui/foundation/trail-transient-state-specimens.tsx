@@ -1,36 +1,25 @@
 import type { TrailLabel } from "../../domain/model/trail-configuration";
 import {
+  TrailLabelSelectCheck,
+} from "../entities/trail-label-property-select";
+import { TrailLabelDots } from "../entities/trail-label";
+import {
+  TrailPrioritySelectCheck,
+} from "../entities/trail-priority-property-select";
+import {
   getTrailPriorityPresentation,
   TRAIL_PRIORITY_PRESENTATION_VALUES,
   TrailPriorityGlyph,
 } from "../entities/trail-priority";
-import { TrailLabelDots } from "../entities/trail-label";
 import { TRAIL_FOUNDATION_CONFIGURATION } from "./trail-foundation-fixtures";
-
-function PriorityCheckIcon() {
-  return (
-    <svg aria-hidden="true" className="trail-priority-select__check" viewBox="0 0 16 16">
-      <path d="M3.5 8.25 6.5 11l6-6" />
-    </svg>
-  );
-}
-
-function LabelCheckIcon({ visible }: { readonly visible: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className="trail-label-select__check"
-      data-visible={visible ? "true" : "false"}
-      viewBox="0 0 16 16"
-    >
-      <path d="M3.5 8.25 6.5 11l6-6" />
-    </svg>
-  );
-}
+import {
+  LabStateGrid,
+  LabTransientSurface,
+} from "./trail-lab-showroom";
 
 export function TrailViewPopoverStateSpecimen() {
   return (
-    <div className="trail-lab-grid trail-lab-grid--two">
+    <LabStateGrid>
       <div
         aria-label="Compact menu visual states"
         className="trail-view-popover trail-view-popover--compact"
@@ -94,44 +83,46 @@ export function TrailViewPopoverStateSpecimen() {
           </div>
         </div>
       </div>
-    </div>
+    </LabStateGrid>
   );
 }
 
 export function TrailPriorityPickerStateSpecimen() {
   return (
-    <div
-      aria-label="Priority picker visual states"
-      className="trail-priority-select"
-      role="listbox"
-    >
-      <div className="trail-priority-select__viewport">
-        {TRAIL_PRIORITY_PRESENTATION_VALUES.map((priority) => {
-          const presentation = getTrailPriorityPresentation(priority);
-          const selected = priority === "high";
-          const highlighted = priority === "medium";
+    <LabTransientSurface>
+      <div
+        aria-label="Priority picker visual states"
+        className="trail-priority-select"
+        role="listbox"
+      >
+        <div className="trail-priority-select__viewport">
+          {TRAIL_PRIORITY_PRESENTATION_VALUES.map((priority) => {
+            const presentation = getTrailPriorityPresentation(priority);
+            const selected = priority === "high";
+            const highlighted = priority === "medium";
 
-          return (
-            <div
-              aria-selected={selected}
-              className="trail-priority-select__item"
-              data-highlighted={highlighted ? "" : undefined}
-              data-state={selected ? "checked" : "unchecked"}
-              key={priority ?? "none"}
-              role="option"
-            >
-              <span className="trail-priority-select__glyph">
-                <TrailPriorityGlyph decorative priority={priority} />
-              </span>
-              <span>{presentation.label}</span>
-              <span className="trail-priority-select__indicator">
-                {selected ? <PriorityCheckIcon /> : null}
-              </span>
-            </div>
-          );
-        })}
+            return (
+              <div
+                aria-selected={selected}
+                className="trail-priority-select__item"
+                data-highlighted={highlighted ? "" : undefined}
+                data-state={selected ? "checked" : "unchecked"}
+                key={priority ?? "none"}
+                role="option"
+              >
+                <span aria-hidden="true" className="trail-priority-select__indicator">
+                  {selected ? <TrailPrioritySelectCheck /> : null}
+                </span>
+                <span className="trail-priority-select__glyph">
+                  <TrailPriorityGlyph decorative priority={priority} />
+                </span>
+                <span>{presentation.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </LabTransientSurface>
   );
 }
 
@@ -144,7 +135,7 @@ export function TrailLabelPickerStateSpecimen() {
   );
 
   return (
-    <div className="trail-lab-grid trail-lab-grid--two">
+    <LabStateGrid>
       <div aria-label="Label picker selected states" className="trail-label-select" role="group">
         <input
           aria-label="Static label search"
@@ -165,9 +156,9 @@ export function TrailLabelPickerStateSpecimen() {
                 key={label.id}
                 type="button"
               >
+                <TrailLabelSelectCheck visible={selected} />
                 <TrailLabelDots labels={[label]} />
                 <span className="trail-label-select__name">{label.name}</span>
-                <LabelCheckIcon visible={selected} />
               </button>
             );
           })}
@@ -187,23 +178,25 @@ export function TrailLabelPickerStateSpecimen() {
           <div className="trail-label-select__empty">No labels found.</div>
         </div>
       </div>
-    </div>
+    </LabStateGrid>
   );
 }
 
 export function TrailDuePickerStateSpecimen() {
   return (
-    <div aria-label="Due picker visual state" className="trail-due-select" role="group">
-      <div className="trail-due-select__title">Review due</div>
-      <label className="trail-due-select__field">
-        <span>Date</span>
-        <input
-          aria-label="Static review due date"
-          readOnly
-          type="date"
-          value="2026-09-12"
-        />
-      </label>
-    </div>
+    <LabTransientSurface>
+      <div aria-label="Due picker visual state" className="trail-due-select" role="group">
+        <div className="trail-due-select__title">Review due</div>
+        <label className="trail-due-select__field">
+          <span>Date</span>
+          <input
+            aria-label="Static review due date"
+            readOnly
+            type="date"
+            value="2026-09-12"
+          />
+        </label>
+      </div>
+    </LabTransientSurface>
   );
 }

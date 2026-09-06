@@ -40,7 +40,7 @@ export interface TrailPriorityPropertySelectProps {
   readonly value: TrailPriority | undefined;
 }
 
-function TrailPrioritySelectCheck() {
+export function TrailPrioritySelectCheck() {
   return (
     <svg
       aria-hidden="true"
@@ -92,13 +92,15 @@ export function TrailPriorityPropertySelect({
                   textValue={option.label}
                   value={selectValue}
                 >
+                  <span aria-hidden="true" className="trail-priority-select__indicator">
+                    <Select.ItemIndicator className="trail-priority-select__indicator-content">
+                      <TrailPrioritySelectCheck />
+                    </Select.ItemIndicator>
+                  </span>
                   <span className="trail-priority-select__glyph">
                     <TrailPriorityGlyph decorative priority={priority} />
                   </span>
                   <Select.ItemText>{option.label}</Select.ItemText>
-                  <Select.ItemIndicator className="trail-priority-select__indicator">
-                    <TrailPrioritySelectCheck />
-                  </Select.ItemIndicator>
                 </Select.Item>
               );
             })}
