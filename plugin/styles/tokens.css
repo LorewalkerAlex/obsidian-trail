@@ -46,14 +46,14 @@ body {
   /* Semantic lines and states. */
   --trail-border-subtle: rgba(255, 255, 255, 0.045);
   --trail-border-default: rgba(255, 255, 255, 0.075);
-  --trail-state-hover: rgba(255, 255, 255, 0.038);
-  --trail-state-hover-strong: rgba(255, 255, 255, 0.05);
-  --trail-state-pressed: rgba(255, 255, 255, 0.062);
-  --trail-state-selected: rgba(255, 255, 255, 0.04);
-  --trail-state-accent-soft: rgba(94, 106, 210, 0.15);
+  --trail-state-hover: rgba(255, 255, 255, 0.045);
+  --trail-state-hover-strong: rgba(255, 255, 255, 0.065);
+  --trail-state-pressed: rgba(255, 255, 255, 0.08);
+  --trail-state-selected: rgba(255, 255, 255, 0.05);
+  --trail-state-accent-soft: rgba(94, 106, 210, 0.1);
   --trail-focus-border: rgba(130, 143, 255, 0.45);
   --trail-focus-ring: rgba(94, 106, 210, 0.35);
-  --trail-focus-ring-quiet: rgba(94, 106, 210, 0.28);
+  --trail-focus-ring-quiet: rgba(94, 106, 210, 0.24);
   --trail-host-focus-border: rgba(94, 106, 210, 0.5);
   --trail-metadata-focus-border: rgba(94, 106, 210, 0.42);
   --trail-metadata-focus-ring: rgba(94, 106, 210, 0.22);
@@ -75,11 +75,11 @@ body {
   --trail-navigation-mark-fill: rgba(255, 255, 255, 0.075);
 
   /* Shared neutral-control contract. */
-  --trail-control-surface: rgba(255, 255, 255, 0.018);
-  --trail-control-surface-hover: rgba(255, 255, 255, 0.038);
-  --trail-control-surface-pressed: rgba(255, 255, 255, 0.062);
-  --trail-control-border: rgba(255, 255, 255, 0.065);
-  --trail-control-border-hover: rgba(255, 255, 255, 0.095);
+  --trail-control-surface: rgba(255, 255, 255, 0.022);
+  --trail-control-surface-hover: rgba(255, 255, 255, 0.05);
+  --trail-control-surface-pressed: rgba(255, 255, 255, 0.075);
+  --trail-control-border: rgba(255, 255, 255, 0.055);
+  --trail-control-border-hover: rgba(255, 255, 255, 0.085);
   --trail-control-disabled-surface: rgba(255, 255, 255, 0.012);
 
   /* Semantic colors. */
@@ -100,14 +100,14 @@ body {
 
   /* Typography. */
   --trail-font-ui: Inter, var(--font-interface), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --trail-font-size-meta: 9.5px;
-  --trail-font-size-caption: 10px;
-  --trail-font-size-supporting: 11px;
-  --trail-font-size-control: 11.5px;
-  --trail-font-size-body: 12px;
-  --trail-font-size-section: 13px;
-  --trail-font-size-subtitle: 14px;
-  --trail-font-size-page: 18px;
+  --trail-font-size-meta: 10px;
+  --trail-font-size-caption: 10.5px;
+  --trail-font-size-supporting: 11.5px;
+  --trail-font-size-control: 12px;
+  --trail-font-size-body: 12.5px;
+  --trail-font-size-section: 13.5px;
+  --trail-font-size-subtitle: 15px;
+  --trail-font-size-page: 19px;
   --trail-weight-regular: 450;
   --trail-weight-medium: 500;
   --trail-weight-emphasis: 560;
@@ -138,7 +138,7 @@ body {
   --trail-radius-pill: 999px;
   --trail-control-height-sm: 24px;
   --trail-control-height-md: 28px;
-  --trail-control-height-lg: 30px;
+  --trail-control-height-lg: 32px;
   --trail-icon-size-sm: 12px;
   --trail-icon-size-md: 14px;
   --trail-icon-size-lg: 16px;

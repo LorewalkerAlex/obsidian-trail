@@ -180,6 +180,7 @@ export function TrailTriageReviewSurface({
                 <TrailChevronIcon />
               </TrailButton>
             )}
+            width="compact"
           >
             <div className="trail-view-popover__stack">
               <div className="trail-view-popover__title">Accept as</div>

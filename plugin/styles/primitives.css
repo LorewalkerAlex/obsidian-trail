@@ -6,6 +6,9 @@
  * Foundation Lab selectors or page-local styling.
  * -------------------------------------------------------------------------- */
 
+/* Foundation can force pseudo-states through this data attribute for deterministic
+ * visual comparison. The forced state shares the production declaration itself. */
+
 body button.trail-button {
   appearance: none;
   box-sizing: border-box;
@@ -32,19 +35,22 @@ body button.trail-button {
   transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), color var(--trail-motion-fast);
 }
 
-body button.trail-button:hover:not(:disabled) {
+body button.trail-button:hover:not(:disabled),
+body button.trail-button[data-trail-visual-state="hover"]:not(:disabled) {
   border-color: var(--trail-control-border-hover);
   background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
 }
 
-body button.trail-button:active:not(:disabled) {
+body button.trail-button:active:not(:disabled),
+body button.trail-button[data-trail-visual-state="pressed"]:not(:disabled) {
   border-color: var(--trail-control-border-hover);
   background: var(--trail-control-surface-pressed);
   color: var(--trail-text-primary);
 }
 
-body button.trail-button:focus-visible {
+body button.trail-button:focus-visible,
+body button.trail-button[data-trail-visual-state="focus"] {
   border-color: var(--trail-control-border-hover);
   background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
@@ -65,13 +71,16 @@ body button.trail-button--primary {
 }
 
 body button.trail-button--primary:hover:not(:disabled),
-body button.trail-button--primary:focus-visible {
+body button.trail-button--primary:focus-visible,
+body button.trail-button--primary[data-trail-visual-state="hover"]:not(:disabled),
+body button.trail-button--primary[data-trail-visual-state="focus"] {
   border-color: var(--trail-accent-border-hover);
   background: var(--trail-accent-hover);
   color: var(--trail-text-on-accent);
 }
 
-body button.trail-button--primary:active:not(:disabled) {
+body button.trail-button--primary:active:not(:disabled),
+body button.trail-button--primary[data-trail-visual-state="pressed"]:not(:disabled) {
   border-color: var(--trail-accent-border-hover);
   background: var(--trail-accent-hover);
   color: var(--trail-text-on-accent);
@@ -98,23 +107,26 @@ body button.trail-icon-button {
   transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), color var(--trail-motion-fast);
 }
 
-body button.trail-icon-button:hover:not(:disabled) {
-  border-color: var(--trail-border-subtle);
+body button.trail-icon-button:hover:not(:disabled),
+body button.trail-icon-button[data-trail-visual-state="hover"]:not(:disabled) {
+  border-color: transparent;
   background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
 }
 
-body button.trail-icon-button:active:not(:disabled) {
-  border-color: var(--trail-control-border);
+body button.trail-icon-button:active:not(:disabled),
+body button.trail-icon-button[data-trail-visual-state="pressed"]:not(:disabled) {
+  border-color: transparent;
   background: var(--trail-control-surface-pressed);
   color: var(--trail-text-primary);
 }
 
-body button.trail-icon-button:focus-visible {
-  border-color: var(--trail-control-border);
+body button.trail-icon-button:focus-visible,
+body button.trail-icon-button[data-trail-visual-state="focus"] {
+  border-color: transparent;
   background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
-  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+  box-shadow: 0 0 0 2px var(--trail-focus-ring-quiet);
 }
 
 body button.trail-icon-button:disabled {
@@ -147,13 +159,17 @@ body textarea.trail-textarea {
 }
 
 body input.trail-input:hover:not(:disabled),
-body textarea.trail-textarea:hover:not(:disabled) {
+body textarea.trail-textarea:hover:not(:disabled),
+body input.trail-input[data-trail-visual-state="hover"]:not(:disabled),
+body textarea.trail-textarea[data-trail-visual-state="hover"]:not(:disabled) {
   border-color: var(--trail-control-border-hover);
-  background: var(--trail-control-surface);
+  background: var(--trail-surface-canvas);
 }
 
 body input.trail-input:focus,
-body textarea.trail-textarea:focus {
+body textarea.trail-textarea:focus,
+body input.trail-input[data-trail-visual-state="focus"],
+body textarea.trail-textarea[data-trail-visual-state="focus"] {
   border-color: var(--trail-focus-border);
   background: var(--trail-surface-canvas);
   box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);

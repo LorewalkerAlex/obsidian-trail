@@ -21,11 +21,11 @@ feat: checkpoint triage review and navigation
 The current published implementation checkpoint is:
 
 ```text
-67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1
-refactor: align shared ui contracts
+f71cccb0d595a7ccdd1482699400cfd518ed2bd8
+refactor: checkpoint composer visual calibration
 ```
 
-Current code is intentionally behind the frozen Product/UI target. Existing executable code is reusable evidence, not authority over the final architecture, UI composition, or implementation order.
+The Stage 5 functional path is green through Triage Accept. Current work is a visual-calibration continuation over that working vertical, not a new Product/Domain slice. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -44,16 +44,15 @@ product.md / domain.md / data.md
 
 Do not reopen already-closed Product/UI decisions because older code or tests express a stale contract.
 
-Known published alignment debt includes:
+Known alignment debt now centers on:
 
-1. normal-flow layout containment / spatial ownership is only partially consistent across current compositions. Constrained host evidence has exposed cases where trailing content can escape or compete with sibling regions instead of staying inside parent-allocated space.
-2. remaining production primitive and semantic-identity focus, disabled, responsive, and visual states still need alignment where real or imminent Product consumers require them.
-3. shared Filter exists, while Selection/Action Registry/Bulk/Peek/transient stack/Confirmation/standard Creation Composer are incomplete shared production owners.
-4. Triage Page currently subscribes broadly to Runtime and composes multiple focused selectors itself. Target: surface Read Model consumption plus explicit Page-local interaction state.
-5. nested Query selectors can reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
-6. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
+1. Stage 5 visual acceptance remains open even though the Triage functional chain is green; shared creation, picker, confirmation, and Review composition must be calibrated as one coherent Linear-faithful system rather than page-local patches.
+2. the shared transient family now has representative production-owner coverage in Foundation, but picker/popover intrinsic geometry, selected/check grammar, search chrome, and related visual states still need calibration against the current Linear reference.
+3. the Triage Review surface is functionally complete but still needs composition-level hierarchy, density, alignment, and whitespace calibration independent of its workflow mechanics.
+4. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
+5. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
 
-These are implementation gaps, not design questions.
+These are implementation gaps, not design questions. Selection / Action Registry / Bulk / Peek remain deliberately deferred until a later Product consumer proves the need; that deferral is not Stage 5 debt.
 
 ## 3. Established Foundations
 
@@ -330,10 +329,11 @@ Visual Foundations
 Primitives
 Patterns
 Semantic Entities
-Interactions
+Compositions
+Interaction Mechanics
 ```
 
-Sections are organizational shelves, not ownership layers inside Foundation.
+Sections are organizational shelves, not ownership layers inside Foundation. The showroom may grow as real production owners appear, but adding a specimen shelf does not reopen a closed Product/UI stage.
 
 Foundation-only code may include:
 
@@ -350,48 +350,51 @@ Those wrappers never become dependencies of production Pages.
 
 ### 6.4 Specimen convention
 
-A reusable capability should expose two complementary specimen forms where useful.
+Foundation separates three verification dimensions. They may consume the same production owner, but they must not be conflated.
 
-**State Gallery** freezes representative visual states, for example:
+**State Gallery** freezes every visual endpoint that needs aesthetic comparison. Dynamic interaction is never required merely to reveal a visual state.
+
+Representative state matrices include:
 
 ```text
-Button
-- primary
-- secondary
-- ghost
-- danger
-- disabled
+Button / Icon Button / Property Control
+- rest
+- hover
+- pressed
 - focus-visible
+- disabled
 
-Progress
-- normal
-- compact
-- micro
-- unavailable
-- 0 / partial / 100%
+Picker / Popover / Menu
+- closed trigger
+- open surface
+- rest item
+- hover item
+- selected / checked item
+- search / focused search
+- empty state
 
-Collection Row
-- normal
-- hover/focus
-- highlighted
-- selected
-- long title
-- constrained width
+Confirmation
+- default
+- destructive
 ```
 
-**Live Interaction** demonstrates behavior that needs actual manipulation, for example:
+Foundation may force pseudo-states for deterministic comparison only when the specimen hook reuses the same production declaration as the real selector. It must not create a parallel Foundation-only visual language.
+
+**Composition Gallery** assembles production owners with fixture data so hierarchy, density, spacing, alignment, containment, and transient placement can be judged independently from workflow outcomes. Representative compositions include a Triage property family, Queue slice, Review surface, Standard Composer family, and Confirmation family.
+
+**Interaction Mechanics** exercises shared state-transition/event-routing behavior once per mechanical responsibility, for example:
 
 ```text
-Priority selection
-Picker keyboard/Esc/focus return
-Context Menu
-Selection + Bulk
-Confirmation
-Peek retarget/dismissal
-Composer + nested Picker
+action activation feedback
+selection toggle
+popover open -> choose -> close
+keyboard / Esc / outside-dismiss / focus return
+modal focus and guarded dismissal
 ```
 
-Not every specimen requires both forms; use the smallest demonstration that proves the component contract.
+A Product workflow transition remains a Product integration responsibility. For example, `Accept -> Issue Composer` and post-create Review progression are not reimplemented in Foundation merely to prove button or popover mechanics.
+
+Not every owner requires all three forms; use the smallest combination that proves its visual states, shared mechanics, and representative composition without duplicate testing.
 
 ### 6.5 Warehouse rule
 
@@ -439,10 +442,11 @@ Current key status:
 | Collection Controls | Accepted / Consumer-proven / Host-proven | consume the aligned leading/trailing composition; Page-specific control choices remain Page-owned |
 | Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
 | Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Project/Issue/Cycle Inspector Read Models and content remain Stage 7/8/10 |
-| Foundation Lab | Accepted / Host-proven | consume as the development showroom; reusable ownership remains outside Foundation |
+| Foundation Lab | Accepted / Lab-proven / Host-proven | use State Gallery, Composition Gallery, and Interaction Mechanics as separate verification dimensions; reusable ownership remains outside Foundation |
 | Progress | Lab-proven / Host-proven | normal/compact/micro/unavailable contract aligned; consume in later Project/Cycle/Home surfaces |
 | Normal-flow layout containment | Accepted / Host-proven | preserve direct-child ownership and explicit overflow responsibility in later Pages |
-| Selection / Action Registry / Peek / Confirmation / Composer | Mapped / partial or pending | create production owners just in time from real Page needs |
+| Picker / Popover / Confirmation / Composer | Implemented / Lab-proven / Consumer-proven / Host-proven / Alignment Required | finish Stage 5 transient-family and composition calibration without moving Page workflow into shared owners |
+| Selection / Action Registry / Bulk / Peek | Mapped / deferred | create production owners just in time when a later Product consumer proves the need |
 
 Update this ledger as the active execution snapshot; do not turn it into historical release notes.
 
@@ -508,9 +512,9 @@ Exit: existing production warehouse owners can be found, compared, and calibrate
 
 Current status:
 
-- **Stage 3 complete / Lab-proven** — Foundation is organized under the frozen five-shelf hierarchy with Foundation-owned specimen wrappers and explicit State Gallery / Live Interaction presentation.
+- **Stage 3 complete / Lab-proven** — Foundation established the production-owner showroom, Foundation-owned specimen wrappers, and explicit visual-versus-mechanical verification boundary.
 - **Stage 3 Host-proven** — the showroom remains usable inside the shared Page chassis across representative Obsidian pane sizes, and structural specimen groups use visible labeling without redundant host hover labels.
-- **Stage 3 closed** — shown capabilities remain production owners consumed by Foundation; unimplemented future owners such as Action Registry, Peek, Confirmation, and the standard Composer remain omitted rather than being replaced by Lab-only substitutes.
+- **Stage 3 closed** — later Stage 5 work may add new production specimens or refine the showroom into State Gallery / Composition Gallery / Interaction Mechanics, but that extension does not reopen the Stage 3 ownership/chassis decision and must not introduce Lab-only Product UI.
 
 ### Stage 4 — Align existing production warehouse
 
@@ -534,7 +538,7 @@ Current status:
 - **Remaining proven containment defects are repaired** — `f195a6247bf0a7b38a027d3106ba7a1e980b202b` makes shared popover item labels absorb width pressure without invading trailing meta/check regions, and `741848e2bbaec41c81ac7b5cc793be6a3f2821cc` gives dynamic Label Property summaries their own shrink/truncate region.
 - **Final host visual leak is repaired** — `1fc8fc3fc4025c743c064abbb58df07640eded48` prevents Obsidian's generic button chrome from leaking onto Triage row titles without changing row geometry or visual tokens.
 - **Representative host evidence is green** — real Obsidian inspection covers Foundation in the full shell, Triage wide Queue + Review, constrained single-column Review, Collection Row / Property Control containment, and the Label picker top layer; normal-flow siblings remain contained and the final presentation is visually coherent at the supported desktop calibration boundary.
-- **Stage 4 complete / Host-proven and closed** — the existing production warehouse is aligned to the frozen shared contracts, the current owner graph has no remaining proven Stage 4 containment contradiction, and the Linear-faithful visual calibration pass is accepted. Stage 5 Triage is now the active slice.
+- **Stage 4 complete / Host-proven and closed** — the existing production warehouse is aligned to the frozen shared ownership/layout contracts and the current owner graph has no remaining proven Stage 4 containment contradiction. Later consumer-driven pixel/token calibration may refine presentation without reopening Stage 4 unless new repository evidence contradicts the frozen contract. Stage 5 Triage is the active slice.
 
 ### Stage 5 — Finish Triage
 
@@ -642,46 +646,60 @@ Stage 4 is closed. Its implementation/host exit checkpoint ends at `1fc8fc3fc402
 
 ### Stage 5 active — Finish Triage vertical
 
-Stage 5 is now the active implementation slice. The repository already contains a partial Triage Queue/Review surface that served as Stage 2/4 proving evidence; Stage 5 owns finishing that vertical against the frozen V1 behavior rather than treating the partial implementation as final.
+Stage 5 is the active implementation slice. Its functional path is green through Triage Accept: the Triage Page Read Model, direct Filter + Order controls, Review draft/progression semantics, explicit Review exit, shared Confirmation, standard Triage Creation Composer, and destination-first Accept into standard Issue or Project creation are implemented and covered by focused automated checks plus representative real-Obsidian interaction evidence.
 
-The Stage 5 functional path is now green through Triage Accept. The implemented behavior includes the Triage Page Read Model, direct Filter + Order controls, Review draft/progression semantics, explicit Review exit, shared Confirmation, the standard Triage Creation Composer, and destination-first Accept into standard Issue or Project creation. Focused automated checks, diagnostics build/typecheck, and representative real-Obsidian interaction checks establish that the current behavior is functionally usable.
+Published checkpoints for that chain include:
 
-This is a **functional checkpoint, not visual acceptance of the Standard Composer family**. Real-host review found that the shared Triage / Issue / Project Composer composition still needs visual hierarchy and density calibration before Stage 5 can close. In particular, structural relations such as Project / Initiative must read more clearly than optional metadata, and nested picker presentation must be calibrated as part of the same shared owner rather than patched page by page.
+```text
+6e9514d91cd3661b092aa4deb2ac760e6e935044  feat: checkpoint triage accept flow
+eb003e33e9b69efc858f3f8c5f462f53e1f806a4  refactor: share composer presentation
+f71cccb0d595a7ccdd1482699400cfd518ed2bd8  refactor: checkpoint composer visual calibration
+```
+
+`TrailComposerSurface` is the reusable production presentation owner; `TrailComposer` continues to own modal mechanics such as Portal/overlay/focus/Esc/dirty-dismiss/submit feedback. Foundation consumes the same production surfaces as Triage/Issue/Project creation and must not create Lab-only Product UI.
+
+The current calibration work extends Foundation coverage without reopening Stage 3 or Stage 4 contracts:
+
+- real Priority / Labels / Due property owners, Triage collection controls, Review surface, Confirmation, and the Standard Composer family are visible from Foundation fixture data;
+- reusable confirmation content is separated from modal mechanics so its default/destructive visual states can be compared without opening a Dialog;
+- shared popover width supports compact/default presentation instead of forcing short action menus into picker-sized panels;
+- Foundation verification is split into State Gallery, Composition Gallery, and Interaction Mechanics so visual endpoints, assembled layout, and shared state-transition feedback are not tested as the same thing;
+- representative transient surfaces expose static open/hover/selected-check/search/empty states, while one live interaction proves the shared open -> choose -> close mechanism;
+- the first Linear visual-baseline pass refines shared tokens/primitives/pattern presentation, but it is calibration evidence rather than visual acceptance.
+
+Current host review still shows unresolved visual work. Priority/Label/Due/Popover/Confirmation static specimens need intrinsic transient geometry rather than being stretched by showroom flow; Priority/Label selected/check and search grammar need closer Linear alignment; and the Triage Review composition remains too spatially loose even though its workflow is green. The Standard Composer family must be judged again in this synchronized context rather than polished in isolation.
 
 The next implementation sequence is:
 
 ```text
-publish the green Triage functional checkpoint on main
--> run a dedicated Composer visual-calibration subtask while remaining on main
--> expose representative Standard Triage / Issue / Project Composer production owners in Foundation
--> calibrate shared information hierarchy, property density, picker geometry, and modal-child presentation in Foundation
--> keep Triage Creation and Triage Accept consuming the same calibrated production owners; do not copy Foundation-only UI into Product Pages
--> run one representative real-Obsidian visual verification against the calibrated owner family
--> publish the calibrated production-owner checkpoint on main and calibrate factual implementation status
+publish the Foundation/calibration checkpoint on main
+-> calibrate the transient family against current Linear: intrinsic widths, selected/check placement, search chrome, hover/selected grammar
+-> calibrate Triage Review composition hierarchy, density, alignment, and whitespace without changing workflow semantics
+-> re-evaluate Standard Triage / Issue / Project Composer composition in the synchronized showroom
+-> run one representative diagnostics-build real-Obsidian visual verification
+-> publish the accepted Stage 5 visual checkpoint and calibrate factual implementation status
 -> Stage 5 close
 ```
 
-Selection / Action Registry / Bulk / Peek remain deferred because the completed Triage workflow has not proven a need to pull them forward. Foundation remains the calibration consumer of production owners, not an alternate component library or a source of Lab-only Product UI.
+Selection / Action Registry / Bulk / Peek remain deferred because the completed Triage workflow has not proven a need to pull them forward. Their deferral must not be used as a reason to create Foundation-only substitutes.
 
-Scope:
+Remaining Stage 5 scope:
 
-1. consume the existing Domain, Query, mutation, host-history, and Stage 4 layout contracts rather than remodeling them;
-2. define one Page-facing Triage Read Model from current proven Query semantics before completing presentation logic;
-3. make the Queue control boundary directly `Filter + Order`; the aligned Collection Controls pattern supplies mechanics but does not force a generic Display control;
-4. complete Review draft save/progression semantics and preserve visible-order Previous/Next behavior without turning Review identity into host history;
-5. provide an explicit Review exit back to the full Triage List in both wide and constrained compositions;
-6. add shared Confirmation, Esc/focus handling, Composer, Selection, or Action owners only where the completed Triage workflow proves a real reusable responsibility;
-7. preserve Stage 4 direct-child spatial ownership and supported-desktop containment instead of solving workflow work with new global layout machinery;
-8. keep navigation-as-save and parallel Review history out of the design.
+1. preserve the already-green Triage Domain/Query/Application/workflow semantics while calibrating presentation;
+2. keep all reusable visual and transient mechanics in production owners consumed by both Foundation and real Product surfaces;
+3. finish transient-family calibration without page-local CSS or duplicated picker/menu implementations;
+4. finish Review composition calibration independently from button/popover mechanics and independently from business progression;
+5. preserve the closed Stage 4 direct-child spatial ownership and explicit overflow contract; pixel/token refinement is allowed, layout-contract reinvention is not;
+6. verify the final accepted owner family in a diagnostics/development Obsidian build before Stage 5 close.
 
 Exit evidence:
 
-- Triage has one explicit Page Read Model and no Page-local duplicate Domain/Query semantics;
-- Queue exposes the frozen direct Filter + Order control grammar;
-- Review editing, save/defer/delete/progression, and explicit exit behavior match the resolved V1 contract;
-- required Confirmation / transient focus / Composer mechanics are owned at the correct shared layer and are not Triage-only duplicates;
+- Triage retains one explicit Page Read Model and no Page-local duplicate Domain/Query semantics;
+- Queue exposes the frozen direct Filter + Order grammar and Review behavior remains functionally green;
+- Confirmation / Picker / transient focus / Composer responsibilities are shared at the correct production layer and Foundation only consumes them;
+- State Gallery exposes representative visual endpoints, Composition Gallery proves assembled hierarchy/spacing, and Interaction Mechanics proves each shared transition once rather than duplicating workflow tests;
 - wide and constrained desktop compositions preserve the Stage 4 containment contract;
-- focused automated checks plus representative real-Obsidian verification establish the first complete final V1 vertical;
+- representative real-Obsidian visual verification establishes accepted transient, Review, and Composer presentation;
 - factual documentation and the public `main` checkpoint are updated before Stage 5 is called closed.
 
 ## 10. Slice Definition of Done
@@ -717,6 +735,8 @@ Do not run source lint/test/typecheck/build for pure Markdown by default.
 ### Local UI/query/application changes
 
 Run Level 1 plus focused owner/direct-consumer tests. Add typecheck/build when changed contracts affect compilation/bundling. Use real Obsidian only for host behavior that jsdom/pure tests cannot establish.
+
+For Foundation host calibration, use `npm run build:diagnostics`. The production `npm run build` intentionally compiles development UI out and therefore hides the Foundation location; a production build is not a valid Foundation visual-validation build.
 
 ### Shared contracts / Domain / schema / tooling / broad refactor
 

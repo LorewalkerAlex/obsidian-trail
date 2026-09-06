@@ -1,6 +1,8 @@
 import { Popover } from "radix-ui";
 import type { ReactElement, ReactNode } from "react";
 
+export type TrailViewPopoverWidth = "compact" | "default";
+
 export interface TrailViewPopoverProps {
   readonly align?: "center" | "end" | "start";
   readonly children: ReactNode;
@@ -9,6 +11,7 @@ export interface TrailViewPopoverProps {
   readonly onOpenChange?: (open: boolean) => void;
   readonly open?: boolean;
   readonly trigger: ReactElement;
+  readonly width?: TrailViewPopoverWidth;
 }
 
 export function TrailViewPopover({
@@ -19,6 +22,7 @@ export function TrailViewPopover({
   onOpenChange,
   open,
   trigger,
+  width = "default",
 }: TrailViewPopoverProps) {
   return (
     <Popover.Root onOpenChange={onOpenChange} open={open}>
@@ -27,9 +31,10 @@ export function TrailViewPopover({
         <Popover.Content
           align={align}
           aria-label={label}
-          className="trail-view-popover"
+          className={`trail-view-popover trail-view-popover--${width}`}
           collisionPadding={8}
           data-trail-transient-layer={layer}
+          data-width={width}
           sideOffset={4}
         >
           {children}

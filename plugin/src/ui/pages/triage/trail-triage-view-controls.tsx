@@ -94,6 +94,7 @@ function TrailTriageOrder({
       trigger={(
         <TrailViewBarAction label={`Order: ${selectedLabel}`} />
       )}
+      width="compact"
     >
       <div className="trail-view-popover__stack">
         <div className="trail-view-popover__title">Order by</div>

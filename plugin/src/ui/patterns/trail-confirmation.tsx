@@ -11,6 +11,27 @@ import { TrailButton } from "../primitives/trail-button";
 
 export type TrailConfirmationTone = "danger" | "default";
 
+export interface TrailConfirmationSurfaceProps {
+  readonly actions: ReactNode;
+  readonly description: ReactNode;
+  readonly title: ReactNode;
+}
+
+/** Presentational confirmation surface. Dialog/focus mechanics stay in TrailConfirmation. */
+export function TrailConfirmationSurface({
+  actions,
+  description,
+  title,
+}: TrailConfirmationSurfaceProps) {
+  return (
+    <div className="trail-confirmation__surface">
+      <div className="trail-confirmation__title">{title}</div>
+      <div className="trail-confirmation__description">{description}</div>
+      <div className="trail-confirmation__actions">{actions}</div>
+    </div>
+  );
+}
+
 export interface TrailConfirmationProps {
   readonly cancelLabel?: string;
   readonly confirmLabel: string;
@@ -24,7 +45,7 @@ export interface TrailConfirmationProps {
   readonly trigger?: ReactElement;
 }
 
-/** Shared guarded-action surface. Semantic consequence copy stays with the consumer. */
+/** Shared guarded-action behavior around the reusable confirmation surface. */
 export function TrailConfirmation({
   cancelLabel = "Cancel",
   confirmLabel,
@@ -69,24 +90,26 @@ export function TrailConfirmation({
             cancelRef.current?.focus();
           }}
         >
-          <Dialog.Title className="trail-confirmation__title">{title}</Dialog.Title>
-          <Dialog.Description className="trail-confirmation__description">
-            {description}
-          </Dialog.Description>
-          <div className="trail-confirmation__actions">
-            <Dialog.Close asChild>
-              <TrailButton ref={cancelRef}>{cancelLabel}</TrailButton>
-            </Dialog.Close>
-            <Dialog.Close asChild>
-              <TrailButton
-                data-confirmation-tone={tone}
-                onClick={onConfirm}
-                variant={tone === "default" ? "primary" : undefined}
-              >
-                {confirmLabel}
-              </TrailButton>
-            </Dialog.Close>
-          </div>
+          <TrailConfirmationSurface
+            actions={(
+              <>
+                <Dialog.Close asChild>
+                  <TrailButton ref={cancelRef}>{cancelLabel}</TrailButton>
+                </Dialog.Close>
+                <Dialog.Close asChild>
+                  <TrailButton
+                    data-confirmation-tone={tone}
+                    onClick={onConfirm}
+                    variant={tone === "default" ? "primary" : undefined}
+                  >
+                    {confirmLabel}
+                  </TrailButton>
+                </Dialog.Close>
+              </>
+            )}
+            description={<Dialog.Description>{description}</Dialog.Description>}
+            title={<Dialog.Title>{title}</Dialog.Title>}
+          />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

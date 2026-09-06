@@ -1,3 +1,6 @@
+/* Foundation can force pseudo-states through data-trail-visual-state for deterministic
+ * visual comparison. Forced states always share the production selector declaration. */
+
 .trail-collection-row {
   box-sizing: border-box;
   display: flex;
@@ -13,6 +16,7 @@
 }
 
 .trail-collection-row:hover,
+.trail-collection-row[data-trail-visual-state="hover"],
 .trail-collection-row[data-highlighted="true"],
 .trail-collection-row:focus-visible,
 .trail-collection-row:focus-within {
@@ -64,7 +68,7 @@ body button.trail-property-control {
   gap: var(--trail-space-3);
   margin: 0;
   padding: 0 var(--trail-space-4);
-  border: 1px solid var(--trail-control-border);
+  border: 1px solid transparent;
   border-radius: var(--trail-radius-xs);
   outline: 0;
   background: var(--trail-control-surface);
@@ -78,23 +82,26 @@ body button.trail-property-control {
   transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), color var(--trail-motion-fast);
 }
 
-body button.trail-property-control:hover:not(:disabled) {
-  border-color: var(--trail-control-border-hover);
+body button.trail-property-control:hover:not(:disabled),
+body button.trail-property-control[data-trail-visual-state="hover"]:not(:disabled) {
+  border-color: var(--trail-control-border);
   background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
 }
 
-body button.trail-property-control:active:not(:disabled) {
+body button.trail-property-control:active:not(:disabled),
+body button.trail-property-control[data-trail-visual-state="pressed"]:not(:disabled) {
   border-color: var(--trail-control-border-hover);
   background: var(--trail-control-surface-pressed);
   color: var(--trail-text-primary);
 }
 
-body button.trail-property-control:focus-visible {
-  border-color: var(--trail-control-border-hover);
+body button.trail-property-control:focus-visible,
+body button.trail-property-control[data-trail-visual-state="focus"] {
+  border-color: transparent;
   background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
-  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+  box-shadow: 0 0 0 2px var(--trail-focus-ring-quiet);
 }
 
 body button.trail-property-control:disabled {
@@ -179,8 +186,9 @@ body button.trail-view-bar__action {
   transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), color var(--trail-motion-fast);
 }
 
-body button.trail-view-bar__action:hover:not(:disabled) {
-  border-color: var(--trail-control-border);
+body button.trail-view-bar__action:hover:not(:disabled),
+body button.trail-view-bar__action[data-trail-visual-state="hover"]:not(:disabled) {
+  border-color: transparent;
   background: var(--trail-control-surface-hover);
   color: var(--trail-text-secondary);
 }
@@ -190,17 +198,19 @@ body button.trail-view-bar__action[data-active="true"] {
   color: var(--trail-text-secondary);
 }
 
-body button.trail-view-bar__action:active:not(:disabled) {
-  border-color: var(--trail-control-border-hover);
+body button.trail-view-bar__action:active:not(:disabled),
+body button.trail-view-bar__action[data-trail-visual-state="pressed"]:not(:disabled) {
+  border-color: transparent;
   background: var(--trail-control-surface-pressed);
   color: var(--trail-text-primary);
 }
 
-body button.trail-view-bar__action:focus-visible {
-  border-color: var(--trail-control-border-hover);
+body button.trail-view-bar__action:focus-visible,
+body button.trail-view-bar__action[data-trail-visual-state="focus"] {
+  border-color: transparent;
   background: var(--trail-control-surface-hover);
   color: var(--trail-text-primary);
-  box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
+  box-shadow: 0 0 0 2px var(--trail-focus-ring-quiet);
 }
 
 body button.trail-view-bar__action:disabled {
@@ -284,6 +294,10 @@ body button.trail-view-bar__action:disabled {
   font-size: var(--trail-menu-font-size);
 }
 
+.trail-view-popover--compact {
+  width: min(200px, calc(100vw - 16px));
+}
+
 .trail-view-popover__stack,
 .trail-view-popover__options {
   display: grid;
@@ -334,6 +348,8 @@ body button.trail-view-popover__item > span:first-child {
 
 body button.trail-view-popover__item:hover,
 body button.trail-view-popover__back:hover,
+body button.trail-view-popover__item[data-trail-visual-state="hover"],
+body button.trail-view-popover__back[data-trail-visual-state="hover"],
 body button.trail-view-popover__item:focus-visible,
 body button.trail-view-popover__back:focus-visible {
   background: var(--trail-menu-hover);
@@ -391,9 +407,10 @@ body input.trail-view-popover__search {
   font-size: var(--trail-font-size-control);
 }
 
-body input.trail-view-popover__search:focus {
-  border-color: var(--trail-border-default);
-  box-shadow: 0 0 0 1px var(--trail-surface-quiet);
+body input.trail-view-popover__search:focus,
+body input.trail-view-popover__search[data-trail-visual-state="focus"] {
+  border-color: var(--trail-focus-border);
+  box-shadow: 0 0 0 2px var(--trail-focus-ring-quiet);
 }
 
 .trail-view-popover__date-field {
@@ -493,34 +510,50 @@ body [data-trail-transient-layer="modal-child"] {
 }
 
 .trail-confirmation__content {
-  box-sizing: border-box;
   position: fixed;
   top: 50%;
   left: 50%;
   z-index: calc(var(--layer-modal, 1100) + 3);
   width: min(360px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
+  outline: 0;
+  transform: translate(-50%, -50%);
+}
+
+.trail-confirmation__surface {
+  box-sizing: border-box;
+  width: min(360px, 100%);
+  max-height: inherit;
   overflow-y: auto;
   padding: var(--trail-space-11);
   border: 1px solid var(--trail-border-default);
   border-radius: var(--trail-radius-md);
-  outline: 0;
   background: var(--trail-surface-overlay);
   box-shadow: var(--trail-shadow-overlay);
   color: var(--trail-text-secondary);
-  transform: translate(-50%, -50%);
+}
+
+.trail-confirmation__content > .trail-confirmation__surface {
+  width: 100%;
 }
 
 .trail-confirmation__title {
-  margin: 0;
   color: var(--trail-text-primary);
   font-size: var(--trail-font-size-section);
   font-weight: var(--trail-weight-strong);
   line-height: 1.3;
 }
 
+.trail-confirmation__title > *,
+.trail-confirmation__description > * {
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+}
+
 .trail-confirmation__description {
-  margin: var(--trail-space-5) 0 0;
+  margin-top: var(--trail-space-5);
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-body);
   line-height: 1.45;

@@ -7,7 +7,10 @@ import {
 import { describe, expect, it, vi } from "vitest";
 
 import { TrailButton } from "../primitives/trail-button";
-import { TrailConfirmation } from "./trail-confirmation";
+import {
+  TrailConfirmation,
+  TrailConfirmationSurface,
+} from "./trail-confirmation";
 
 function renderConfirmation(onConfirm = vi.fn()) {
   render(
@@ -24,13 +27,38 @@ function renderConfirmation(onConfirm = vi.fn()) {
 }
 
 describe("TrailConfirmation", () => {
+  it("exposes the production confirmation content as an embeddable surface", () => {
+    const { container } = render(
+      <TrailConfirmationSurface
+        actions={(
+          <>
+            <TrailButton>Cancel</TrailButton>
+            <TrailButton data-confirmation-tone="danger">Delete</TrailButton>
+          </>
+        )}
+        description="This permanently removes the entry. Trail does not provide undo."
+        title="Delete this entry?"
+      />,
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Delete this entry?").closest(".trail-confirmation__surface")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toHaveAttribute(
+      "data-confirmation-tone",
+      "danger",
+    );
+    expect(container.querySelector(".trail-confirmation__actions")).not.toBeNull();
+  });
+
   it("opens with the safe Cancel action focused and confirms only by explicit activation", async () => {
     const onConfirm = renderConfirmation();
     const trigger = screen.getByRole("button", { name: "Open confirmation" });
 
     fireEvent.click(trigger);
 
-    expect(screen.getByRole("dialog", { name: "Delete this entry?" })).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Delete this entry?" });
+    expect(dialog.querySelector(".trail-confirmation__surface")).not.toBeNull();
     await waitFor(() => expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus());
     expect(onConfirm).not.toHaveBeenCalled();
 

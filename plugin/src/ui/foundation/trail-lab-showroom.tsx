@@ -5,7 +5,21 @@ export type LabSectionId =
   | "primitives"
   | "patterns"
   | "semantic-entities"
-  | "interactions";
+  | "compositions"
+  | "interaction-mechanics";
+
+export type LabSpecimenKind =
+  | "state-gallery"
+  | "composition-gallery"
+  | "live-mechanics";
+
+function specimenKindLabel(kind: LabSpecimenKind): string {
+  switch (kind) {
+    case "state-gallery": return "State Gallery";
+    case "composition-gallery": return "Composition Gallery";
+    case "live-mechanics": return "Live Mechanics";
+  }
+}
 
 export function LabSection({
   children,
@@ -67,11 +81,11 @@ export function LabSpecimenRow({
 }: {
   readonly children: ReactNode;
   readonly description?: string;
-  readonly kind: "live-interaction" | "state-gallery";
+  readonly kind: LabSpecimenKind;
   readonly owner: string;
   readonly title: string;
 }) {
-  const kindLabel = kind === "state-gallery" ? "State Gallery" : "Live Interaction";
+  const kindLabel = specimenKindLabel(kind);
   const titleId = useId();
   const kindId = `${titleId}-kind`;
 
