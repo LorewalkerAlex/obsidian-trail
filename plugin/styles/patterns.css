@@ -893,3 +893,143 @@ body [data-trail-transient-layer="modal-child"].trail-due-select {
   background: var(--trail-surface-overlay);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.035);
 }
+
+/* Grouped collection headers keep disclosure separate from entity navigation. */
+.trail-group-header {
+  box-sizing: border-box;
+  display: grid;
+  min-width: 0;
+  min-height: var(--trail-control-height-lg);
+  grid-template-columns: var(--trail-control-height-sm) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--trail-space-2);
+  padding: 0 var(--trail-space-6);
+  border-bottom: 1px solid var(--trail-row-divider);
+  color: var(--trail-text-secondary);
+}
+
+body button.trail-group-header__disclosure,
+body button.trail-group-header__identity--action {
+  appearance: none;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  font: inherit;
+}
+
+body button.trail-group-header__disclosure {
+  display: inline-grid;
+  width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
+  padding: 0;
+  border-radius: var(--trail-radius-xs);
+  color: var(--trail-text-muted);
+  place-items: center;
+}
+
+body button.trail-group-header__disclosure:hover,
+body button.trail-group-header__disclosure:focus-visible {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+}
+
+body button.trail-group-header__disclosure:focus-visible,
+body button.trail-group-header__identity--action:focus-visible {
+  box-shadow: 0 0 0 2px var(--trail-focus-ring-quiet);
+}
+
+.trail-group-header__disclosure-icon {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  transition: transform var(--trail-motion-fast);
+}
+
+.trail-group-header[data-expanded="false"] .trail-group-header__disclosure-icon {
+  transform: rotate(-90deg);
+}
+
+.trail-group-header__identity {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body button.trail-group-header__identity--action {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border-radius: 2px;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1.2;
+  text-align: left;
+}
+
+body button.trail-group-header__identity--action:hover,
+body button.trail-group-header__identity--action:focus-visible {
+  color: var(--trail-text-primary);
+}
+
+.trail-group-header__count {
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--trail-weight-regular);
+}
+
+/* Empty-state geometry is shared; Page/Query own why the collection is empty and what recovery means. */
+.trail-empty-state {
+  box-sizing: border-box;
+  display: flex;
+  min-width: 0;
+  min-height: 132px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--trail-space-8);
+  padding: var(--trail-space-14);
+  text-align: center;
+}
+
+.trail-empty-state__content {
+  display: grid;
+  max-width: 44ch;
+  gap: var(--trail-space-2);
+}
+
+.trail-empty-state__title {
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1.4;
+}
+
+.trail-empty-state__description {
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  line-height: 1.45;
+}
+
+.trail-empty-state__action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--trail-space-4);
+}

@@ -21,6 +21,10 @@ describe("TrailProjectProductionSpecimens", () => {
     expect(container.querySelectorAll("[data-workflow-status-row='true']")).toHaveLength(5);
 
     const projectGallery = within(screen.getByRole("group", { name: "Project summary rows" }));
+    expect(projectGallery.getByRole("button", { name: "Collapse Initiative Alpha" }))
+      .toHaveAttribute("aria-expanded", "true");
+    expect(projectGallery.getByRole("button", { name: "Initiative Alpha" })).toBeInTheDocument();
+    expect(projectGallery.queryByRole("group", { name: "Group header" })).not.toBeInTheDocument();
     expect(projectGallery.getByRole("img", { name: "Planned status" }))
       .toHaveAttribute("data-status-entity-type", "project");
     expect(projectGallery.getByRole("img", { name: "In Progress status" }))

@@ -5,6 +5,7 @@ import type {
 import { TrailProjectSummaryRow } from "../entities/trail-project-summary-row";
 import { TrailStatusGlyph } from "../entities/trail-status";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
+import { TrailGroupHeader } from "../patterns/trail-group-header";
 import {
   TRAIL_FOUNDATION_CONFIGURATION,
   TRAIL_FOUNDATION_REFERENCE_TIMESTAMP,
@@ -140,16 +141,19 @@ export function TrailProjectProductionSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="The production Projects scanning row is also the Project Status state gallery: all four Project lifecycle states are shown in the real row owner alongside Priority, Progress, and Due rather than repeated as detached glyph samples."
+        description="The production Projects scanning row is also the Project Status state gallery: all four Project lifecycle states are shown beneath the real grouped-collection context alongside Priority, Progress, and Due rather than repeated as detached glyph samples."
         kind="composition-gallery"
         owner="TrailProjectSummaryRow"
         title="Project summary rows"
       >
         <div className="trail-lab-list">
-          <div className="trail-lab-list__header">
-            <span>Initiative Alpha</span>
-            <span>4 projects</span>
-          </div>
+          <TrailGroupHeader
+            count={PROJECT_ROWS.length}
+            expanded
+            label="Initiative Alpha"
+            onExpandedChange={() => { /* static composition */ }}
+            onIdentityActivate={() => { /* static composition */ }}
+          />
           {PROJECT_ROWS.map((project) => (
             <TrailProjectSummaryRow
               due={project.due}

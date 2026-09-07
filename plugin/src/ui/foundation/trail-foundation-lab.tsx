@@ -36,6 +36,7 @@ import {
   LabSpecimenRow,
   LabStateGrid,
 } from "./trail-lab-showroom";
+import { TrailProjectPatternSpecimens } from "./trail-project-pattern-specimens";
 import { TrailProjectProductionSpecimens } from "./trail-project-production-specimens";
 import { TrailStandardComposerFamilySpecimen } from "./trail-standard-composer-family-specimen";
 import {
@@ -360,6 +361,8 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
             </TrailCollectionRow>
           </div>
         </LabSpecimenRow>
+
+        <TrailProjectPatternSpecimens />
 
         <LabSpecimenRow
           description="Value density and interaction pseudo-states are visible together; semantic picker behavior stays with the entity owner."
