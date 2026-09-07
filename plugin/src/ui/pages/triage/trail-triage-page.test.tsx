@@ -310,13 +310,15 @@ describe("TrailTriagePage", () => {
       kind: "unchanged" as const,
     }));
     const { unmount } = render(
-      <TrailTriagePage
-        actions={triageActions({ edit })}
-        runtimeStore={readyTriageStore([issue])}
-      />,
+      <>
+        <TrailTriagePage
+          actions={triageActions({ edit })}
+          runtimeStore={readyTriageStore([issue])}
+        />
+        <button type="button">Outside Triage Page</button>
+      </>,
     );
-    const outside = document.createElement("button");
-    document.body.append(outside);
+    const outside = screen.getByRole("button", { name: "Outside Triage Page" });
 
     fireEvent.click(screen.getByRole("button", { name: "Leave target" }));
     const title = screen.getByRole("textbox", { name: "Triage title" });
@@ -326,7 +328,6 @@ describe("TrailTriagePage", () => {
     unmount();
 
     expect(edit).not.toHaveBeenCalled();
-    outside.remove();
   });
 
   it("keeps needs-input feedback local for an explicit field commit", async () => {

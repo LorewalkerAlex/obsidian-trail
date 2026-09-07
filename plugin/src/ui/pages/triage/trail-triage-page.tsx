@@ -43,10 +43,15 @@ type TrailTriagePageActions = Pick<
   "acceptFromDraft" | "convertToProjectFromDraft" | "defer" | "delete" | "edit"
 >;
 
-type TrailTriageAcceptInput =
-  | Parameters<TrailTriagePageActions["acceptFromDraft"]>[1]
-  | Parameters<TrailTriagePageActions["convertToProjectFromDraft"]>[1];
-
+type TrailTriageAcceptSubmission =
+  | {
+      readonly input: Parameters<TrailTriagePageActions["acceptFromDraft"]>[1];
+      readonly kind: "issue";
+    }
+  | {
+      readonly input: Parameters<TrailTriagePageActions["convertToProjectFromDraft"]>[1];
+      readonly kind: "project";
+    };
 
 interface TrailTriageAcceptComposerSession {
   readonly description: string;
@@ -514,8 +519,7 @@ export function TrailTriagePage({
   };
 
   const submitAccept = async (
-    kind: TrailTriageAcceptTarget,
-    input: TrailTriageAcceptInput,
+    submission: TrailTriageAcceptSubmission,
   ): Promise<void> => {
     await settleRequestedReviewEdit();
     const session = reviewSessionRef.current;
@@ -524,15 +528,9 @@ export function TrailTriagePage({
     if (current === undefined) throw new Error("This Triage entry is no longer available.");
     const sourceSlot = currentReviewSlot(visibleIssueIdsNow(), session);
 
-    const receipt = kind === "issue"
-      ? actions.acceptFromDraft(
-          current,
-          input as Parameters<TrailTriagePageActions["acceptFromDraft"]>[1],
-        )
-      : actions.convertToProjectFromDraft(
-          current,
-          input as Parameters<TrailTriagePageActions["convertToProjectFromDraft"]>[1],
-        );
+    const receipt = submission.kind === "issue"
+      ? actions.acceptFromDraft(current, submission.input)
+      : actions.convertToProjectFromDraft(current, submission.input);
     await receipt.completion;
     progressAfterDisposition(current.id, sourceSlot);
   };
@@ -648,7 +646,7 @@ export function TrailTriagePage({
         <TrailWorkflowIssueComposer
           configuration={configuration}
           initialProjectId={readModel.accept.issue.defaultProjectId}
-          onCreate={(input) => submitAccept("issue", input)}
+          onCreate={(input) => submitAccept({ input, kind: "issue" })}
           onOpenChange={(open) => {
             if (!open) setAcceptSession(null);
           }}
@@ -664,7 +662,7 @@ export function TrailTriagePage({
         <TrailProjectComposer
           configuration={configuration}
           initiatives={readModel.accept.project.initiatives}
-          onCreate={(input) => submitAccept("project", input)}
+          onCreate={(input) => submitAccept({ input, kind: "project" })}
           onOpenChange={(open) => {
             if (!open) setAcceptSession(null);
           }}
