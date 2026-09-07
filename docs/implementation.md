@@ -97,7 +97,7 @@ Stage 7  Project Workspace + Inspectors
          ↓
 Stage 8  Issue interaction/detail chain
          ↓
-Stage 9  Board / Timeline / Sidebar Search
+Stage 9  Board / Sidebar Search
          ↓
 Stage 10 Cycles
          ↓
@@ -115,13 +115,14 @@ Every code slice follows the same loop:
 1. **Contract** — identify the already-resolved Product/Architecture/UI behavior being implemented.
 2. **Owner** — identify the production code owner from `design-to-code-map.md`.
 3. **Consumer graph** — trace Query/Application/Page/tests/host consumers before editing.
-4. **Production implementation** — implement the smallest complete owner; do not put reusable behavior in Foundation-only code.
-5. **Foundation specimen** — when the owner is visual/reusable, display representative states and live behavior in Foundation before Product-Page installation.
-6. **Real consumer** — install the owner in the real Page/surface that proves the need; Page-specific workflow stays Page-local.
-7. **Verification** — run the smallest sufficient owner/direct-consumer tests and representative host checks only when host behavior cannot be established automatically.
-8. **Checkpoint** — publish a coherent GitHub checkpoint only after the slice exit condition is satisfied.
+4. **Semantic presentation shape** — for a visual/reusable owner, identify the semantic props or projection shape it consumes and the representative fixture data needed to exercise that shape without creating new Domain/Query truth.
+5. **Production implementation** — implement the smallest complete owner; do not put reusable behavior in Foundation-only code.
+6. **Foundation coverage** — exercise the production owner with representative semantic fixtures, using orthogonal coverage rather than a Cartesian state matrix.
+7. **Real consumer** — connect the same owner to the real Query/Application/Page path; Page-specific workflow stays Page-local.
+8. **Verification** — run the smallest sufficient owner/direct-consumer tests and representative host checks only when host behavior cannot be established automatically.
+9. **Checkpoint** — publish a coherent GitHub checkpoint only after the slice exit condition is satisfied.
 
-Foundation is not required for a pure Domain/Runtime/Query owner that has no independent visual contract. Conversely, a reusable visual/interaction owner is not accepted merely because a Page happens to render it once.
+Foundation is not required for a pure Domain/Runtime/Query owner that has no independent visual contract. A reusable visual owner may become Implemented/Lab-proven from semantic fixtures before its real Read Model wiring exists, but it is not Consumer-proven or Accepted until the real Product path consumes that same owner.
 
 ### 4.3 Just-in-time shared ownership
 
@@ -134,12 +135,30 @@ Page needs capability X
 → production warehouse already has X?
    ├─ yes: verify Foundation coverage is adequate, then consume it
    └─ no: implement production X
-          → expose representative Foundation specimens
-          → calibrate states/interactions
-          → install into the Product Page
+          → exercise it from semantic fixture data in Foundation
+          → calibrate states/composition/mechanics
+          → install the same owner into the Product Page
 ```
 
 This is layer-aware, but demand-driven. Shared owners are created before the Page uses them, while their contract is proved by a real Product need.
+
+### 4.4 Fixture-first visual development
+
+Visual development does not need to wait for the final Runtime/Query wiring when the consumed semantic contract is already resolved. Foundation and tests may construct synthetic fixture data directly at the production owner's semantic input boundary.
+
+Target flow:
+
+```text
+resolved Product/UI/query semantics
+        ↓
+semantic projection fixture ───────→ production UI owner ───────→ Foundation calibration
+        ↓ later
+real Query Read Model ─────────────→ same production UI owner ──→ Product Page
+```
+
+Fixture data may encode already-resolved outcomes such as Status presentation, Project progress, terminal state, resolved Timeline spans/markers, long-content pressure, or missing optional values. It must not become a second implementation of eligibility, ordering, Progress, lifecycle legality, temporal derivation, or other Query/Application/Domain rules. When a surface such as Timeline depends on derived geometry inputs, Foundation receives the resolved projection values needed to render that geometry rather than recomputing them from raw entities.
+
+This enables UI owners to be designed and visually accepted early while preserving one eventual data authority. Real Product completion still requires the corresponding Query/Application integration.
 
 ## 5. Stage 0 — Read Architecture
 
@@ -394,6 +413,22 @@ A Product workflow transition remains a Product integration responsibility. For 
 
 Not every owner requires all three forms; use the smallest combination that proves its visual states, shared mechanics, and representative composition without duplicate testing.
 
+Foundation coverage is **orthogonal, not Cartesian**. Treat independent visual dimensions as additive coverage:
+
+```text
+A = interaction state
+B = semantic/content variant
+C = content pressure / capacity
+D = density / responsive condition
+
+Foundation default: A + B + C + D
+not:                A × B × C × D
+```
+
+Show a cross-dimension combination only when the combination itself creates a materially different visual, layout, or behavior contract. Examples that may justify an explicit combined specimen include long content under constrained width, selected + highlighted precedence, search + empty results, or one modal + child picker layer interaction. If two cases differ only in copy while using the same visual form, keep one representative form and add a dedicated content-pressure case only when the text difference exercises a real layout boundary.
+
+The goal is a minimum complete visual basis: every materially different UI form and independent boundary is inspectable, without multiplying all possible combinations.
+
 ### 6.5 Warehouse rule
 
 Nothing reusable shown in Foundation belongs to Foundation.
@@ -410,6 +445,14 @@ Foundation Page
 ```
 
 A Product Page uses the same production owner and may customize only supported semantic props, slots, and composition.
+
+### 6.6 Showroom composition and file organization
+
+Foundation is optimized for coverage clarity, not for specimen count or file-size symmetry. Duplicate specimens that prove the same visual form/state responsibility should be merged. Distinct text/content scenarios stay separate only when they exercise a different content-pressure, truncation, hierarchy, or accessibility boundary.
+
+Do not split `trail-foundation-lab.tsx` merely because it becomes large. Extract a Foundation-only specimen module when it has a coherent independent responsibility such as substantial fixture construction, geometry scenarios, dedicated mechanics, or focused tests. Simple shelves may remain assembled directly in the Lab.
+
+Complex future surfaces such as Project Timeline may therefore use dedicated Foundation fixture/specimen modules when that keeps their semantic cases understandable. Those modules remain verification consumers only; the rendered component and all reusable presentation/mechanics stay in the production warehouse.
 
 ## 7. Shared-owner Maturity
 
@@ -439,8 +482,9 @@ Current key status:
 | Workspace Frame / Page Surface | Consumer-proven / Host-proven | consume as the stable shared Main View chassis |
 | Collection Controls | Accepted / Consumer-proven / Host-proven | consume the aligned leading/trailing composition; Page-specific control choices remain Page-owned |
 | Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
-| Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Project/Issue/Cycle Inspector Read Models and content remain Stage 7/8/10 |
-| Foundation Lab | Accepted / Lab-proven / Host-proven | use State Gallery, Composition Gallery, and Interaction Mechanics as separate verification dimensions; reusable ownership remains outside Foundation |
+| Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Initiative/Project/Issue/Cycle Inspector Read Models and content remain Stage 6/7/8/10 |
+| Foundation Lab | Accepted / Lab-proven / Host-proven | use State Gallery, Composition Gallery, and Interaction Mechanics as separate verification dimensions with orthogonal coverage; reusable ownership remains outside Foundation |
+| Status presentation | Mapped; shared status-definition query evidence exists | Stage 6 implements the semantic visual owner required by Project Summary/Inspector consumers and proves it from Foundation fixtures before real Page wiring |
 | Progress | Lab-proven / Host-proven | normal/compact/micro/unavailable contract aligned; consume in later Project/Cycle/Home surfaces |
 | Normal-flow layout containment | Accepted / Host-proven | preserve direct-child ownership and explicit overflow responsibility in later Pages |
 | Picker / Popover / Confirmation / Composer | Accepted / Lab-proven / Consumer-proven / Host-proven | consume the accepted shared grammar in later Pages; do not reintroduce Page-local geometry or density overrides |
@@ -564,14 +608,17 @@ Current status:
 
 Implement in dependency order:
 
-- shared Project Summary projection/row;
-- Projects Root Read Model;
+- shared Status Presentation plus Project Summary projection/row;
 - Group Header / Empty State where missing;
-- Projects Root List + Timeline control boundary;
+- Project Timeline production presentation owner and semantic geometry input contract, first calibrated in Foundation from representative projection fixtures;
+- Projects Root Read Model and real List/Timeline composition over the same filtered Project collection;
 - Initiative Focus Read Model reusing the Project collection owner;
+- Initiative Inspector Read Model/content using the established Right Sidebar carrier;
 - Project/Initiative creation through shared Composer when required.
 
-### Stage 7 — Project Workspace + Inspectors
+Fixture-first ordering is allowed inside Stage 6: the Timeline and other reusable visual owners may be implemented and Lab-proven from semantic fixtures before their real Query wiring is complete. Stage 6 exit still requires the real Projects Root/Initiative Focus paths to consume those same owners; fixture logic must not duplicate Timeline eligibility/span derivation or other Query-owned facts.
+
+### Stage 7 — Project Workspace + Project Inspector
 
 Implement:
 
@@ -601,10 +648,11 @@ Introduce/complete shared Selection, Action Registry, Context Menu/overflow, Bul
 After Issue collection/interaction owners are stable:
 
 - Project Board and Status drag mutation;
-- Projects Timeline geometry/query projection;
 - Project deletion/settings integration;
 - final Sidebar Search mode using only Initiative/Project/Workflow Issue Read Models and normal navigation.
 
+
+Projects Timeline is no longer deferred to Stage 9. Its presentation owner, derived Query projection, and real Projects Root integration belong to Stage 6 so the Projects Root List/Timeline contract is completed as one Product surface.
 ### Stage 10 — Cycles
 
 Reuse mature Issue/collection/interaction owners for:
@@ -681,9 +729,11 @@ The next implementation sequence is:
 
 ```text
 begin Stage 6 from the accepted shared owners
--> implement the shared Project Summary projection/row
--> implement the Projects Root Read Model and List/Timeline composition
+-> define the Stage 6 UI coverage plan and semantic fixture shapes
+-> implement/Lab-prove Status, Project Summary, Group/Empty, and Timeline production owners
+-> implement the Projects Root Read Model and wire the same owners into real List/Timeline composition
 -> implement Initiative Focus by reusing the Project collection owner
+-> implement Initiative Inspector content through the established Right Sidebar carrier
 -> add Project/Initiative creation through the shared Composer only when the Product surface requires it
 ```
 
@@ -711,17 +761,20 @@ Recorded exit evidence:
 
 Stage 6 is now the active implementation slice. It starts from the accepted Stage 5 production owners rather than introducing a second visual, collection, filter, or creation system.
 
+Before Page wiring, establish the Stage 6 UI coverage plan. New reusable visual owners are exercised from semantic fixture data first, with each independent visual dimension covered once and only materially meaningful cross-dimension combinations added. This keeps Foundation as a minimum complete visual basis rather than a Cartesian catalogue.
+
 Implementation order:
 
-1. implement the shared Project Summary projection/row needed by the first real collection consumer;
-2. implement the Projects Root Read Model with one readable/effective snapshot per top-level evaluation;
-3. compose Projects Root List + Timeline controls using existing shared collection/control owners;
+1. define the semantic presentation inputs and minimal Foundation coverage for Status, Project Summary Row, Group Header, Empty State, and Project Timeline;
+2. implement those production owners and Lab-prove them from fixture projections, including a representative Timeline set that covers execution, planning/lifecycle, closed, Due-marker, and constrained-viewport cases without multiplying every combination;
+3. implement the Projects Root Read Model with one readable/effective snapshot per top-level evaluation, including the real Timeline projection, then wire List/Timeline to the same filtered Project collection;
 4. implement Initiative Focus by reusing the Project collection owner and Initiative-scoped Query projection;
-5. use the accepted shared Composer for Project/Initiative creation when the Product surface requires creation.
+5. implement Initiative Inspector Read Model/content through the existing Right Sidebar carrier;
+6. use the accepted shared Composer for Project/Initiative creation when the Product surface requires creation.
 
-Stage 6 must preserve the accepted shared visual grammar, Foundation production-owner rule, and Stage 4 containment contract. Do not pull Selection / Action Registry / Bulk / Peek forward unless a Stage 6 Product consumer proves the need.
+Stage 6 must preserve the accepted shared visual grammar, Foundation production-owner rule, orthogonal coverage rule, and Stage 4 containment contract. Fixture builders may provide resolved semantic presentation values but must not become alternate Query owners. Do not pull Selection / Action Registry / Bulk / Peek forward unless a Stage 6 Product consumer proves the need.
 
-Exit: Projects Root and Initiative Focus are backed by explicit Query Read Models, reuse one Project collection owner, expose required Foundation coverage for any new reusable visual owner, and pass focused plus representative host verification without creating Page-local substitutes for accepted shared infrastructure.
+Exit: Projects Root and Initiative Focus are backed by explicit Query Read Models, real Projects Root List/Timeline uses the fixture-proven production owners, Initiative Focus reuses the Project collection owner and exposes its matching Inspector content, new reusable owners have minimum-complete Foundation coverage, and focused plus representative host verification passes without Page-local substitutes for accepted shared infrastructure.
 
 ## 10. Slice Definition of Done
 
@@ -731,7 +784,7 @@ A code slice is complete only when:
 - production ownership is correct;
 - changed public contracts have their consumer graph closed;
 - reusable visual owners have representative Foundation coverage when applicable;
-- at least one real Product consumer exists or the slice is explicitly Host/Chassis infrastructure required before Product composition;
+- an explicit fixture-first visual checkpoint may stop at Implemented/Lab-proven, but Accepted/stage-exit status requires at least one real Product consumer unless the slice is explicitly Host/Chassis infrastructure required before Product composition;
 - no Page-local duplicate mechanism bypasses Domain/Query/Application ownership;
 - focused tests prove new behavior at the correct layer;
 - host-only behavior has representative Obsidian evidence when required;
