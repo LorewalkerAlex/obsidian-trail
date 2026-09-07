@@ -320,3 +320,228 @@ body .trail-triage-review__description textarea.trail-textarea:focus {
     padding-left: var(--trail-space-8);
   }
 }
+
+/* Projects Timeline is a read-oriented temporal projection. Query supplies resolved evidence; this Page owner maps it to scale geometry only. */
+.trail-project-timeline {
+  min-width: 0;
+}
+
+.trail-project-timeline__scroller {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-top: 1px solid var(--trail-border-subtle);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  outline: 0;
+  background: var(--trail-surface-canvas);
+  overscroll-behavior-x: contain;
+}
+
+.trail-project-timeline__scroller:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--trail-focus-ring-quiet);
+}
+
+.trail-project-timeline__canvas {
+  position: relative;
+  min-width: 100%;
+  background: var(--trail-surface-canvas);
+}
+
+.trail-project-timeline__grid {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+}
+
+.trail-project-timeline__grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed var(--trail-border-subtle);
+  opacity: 0.65;
+}
+
+.trail-project-timeline__grid-line--month {
+  border-left-style: solid;
+  border-left-color: var(--trail-border-default);
+  opacity: 0.72;
+}
+
+.trail-project-timeline__axis {
+  position: relative;
+  z-index: 1;
+  height: 48px;
+  border-bottom: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-faint);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.trail-project-timeline__month-labels,
+.trail-project-timeline__week-labels {
+  position: absolute;
+  inset: 0;
+}
+
+.trail-project-timeline__month-label {
+  position: absolute;
+  top: 6px;
+  padding-left: var(--trail-space-3);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-emphasis);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.trail-project-timeline__week-label {
+  position: absolute;
+  top: 27px;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  line-height: 1;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.trail-project-timeline__rows {
+  position: relative;
+  z-index: 1;
+}
+
+.trail-project-timeline__row {
+  position: relative;
+  box-sizing: border-box;
+  height: 64px;
+  min-width: 0;
+  box-shadow: inset 0 -1px var(--trail-row-divider);
+}
+
+.trail-project-timeline__project-label {
+  position: absolute;
+  z-index: 3;
+  top: 7px;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-3);
+  padding-right: var(--trail-space-5);
+  color: var(--trail-text-secondary);
+  transform: translateX(var(--trail-space-2));
+}
+
+.trail-project-timeline__project-label .trail-status-glyph {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+}
+
+.trail-project-timeline__project-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-control);
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body button.trail-project-timeline__project-title-button {
+  appearance: none;
+  display: block;
+  max-width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  outline: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+body button.trail-project-timeline__project-title-button:hover,
+body button.trail-project-timeline__project-title-button:focus-visible {
+  color: var(--trail-text-primary);
+}
+
+body button.trail-project-timeline__project-title-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--trail-focus-ring-quiet);
+}
+
+.trail-project-timeline__span {
+  position: absolute;
+  z-index: 1;
+  top: 34px;
+  box-sizing: border-box;
+  height: 18px;
+  min-width: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.105);
+  border-radius: var(--trail-radius-xs);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.trail-project-timeline__span[data-span-kind="planning"] {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.trail-project-timeline__span--future {
+  z-index: 2;
+  border-color: rgba(255, 255, 255, 0.085);
+  border-style: dashed;
+  background: transparent;
+}
+
+.trail-project-timeline__due-marker {
+  position: absolute;
+  z-index: 4;
+  top: 39px;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  background: var(--trail-surface-canvas);
+  color: var(--trail-text-muted);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.trail-project-timeline__due-marker[data-overdue="true"] {
+  border-color: var(--trail-danger);
+  background: var(--trail-danger);
+  color: var(--trail-danger);
+}
+
+.trail-project-timeline__today {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--trail-accent);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.trail-project-timeline__today-label {
+  position: absolute;
+  top: 25px;
+  left: 0;
+  padding: 2px var(--trail-space-3);
+  border-radius: var(--trail-radius-xs);
+  background: var(--trail-accent);
+  color: var(--trail-text-on-accent);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}

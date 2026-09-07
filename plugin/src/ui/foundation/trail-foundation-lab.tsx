@@ -38,6 +38,7 @@ import {
 } from "./trail-lab-showroom";
 import { TrailProjectPatternSpecimens } from "./trail-project-pattern-specimens";
 import { TrailProjectProductionSpecimens } from "./trail-project-production-specimens";
+import { TrailProjectTimelineSpecimen } from "./trail-project-timeline-specimen";
 import { TrailStandardComposerFamilySpecimen } from "./trail-standard-composer-family-specimen";
 import {
   TrailTriagePropertyFamilySpecimen,
@@ -550,6 +551,8 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
         >
           <TrailTriageReviewSpecimen />
         </LabSpecimenRow>
+
+        <TrailProjectTimelineSpecimen />
 
         <LabSpecimenRow
           description="Triage, Issue, and Project use the same production Composer surface family so their hierarchy can be compared directly without invoking modal mechanics."
