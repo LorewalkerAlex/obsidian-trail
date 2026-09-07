@@ -8,6 +8,7 @@ import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-co
 import { TrailDueDate } from "../entities/trail-due";
 import { TrailLabelDots } from "../entities/trail-label";
 import { TrailPriorityPropertySelect } from "../entities/trail-priority-property-select";
+import { TrailStatusGlyph } from "../entities/trail-status";
 import { TrailTriageRow } from "../entities/trail-triage-row";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import { TrailConfirmationSurface } from "../patterns/trail-confirmation";
@@ -35,6 +36,7 @@ import {
   LabSpecimenRow,
   LabStateGrid,
 } from "./trail-lab-showroom";
+import { TrailProjectProductionSpecimens } from "./trail-project-production-specimens";
 import { TrailStandardComposerFamilySpecimen } from "./trail-standard-composer-family-specimen";
 import {
   TrailTriagePropertyFamilySpecimen,
@@ -337,20 +339,20 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
               <span>Backlog</span>
               <span>4 states</span>
             </div>
-            <TrailCollectionRow leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />}>
+            <TrailCollectionRow leading={<TrailStatusGlyph category="unstarted" label="Todo" />}>
               <CollectionRowContent id="TRAIL-128" label="Design" size="M" title="Normal collection row" />
             </TrailCollectionRow>
             <TrailCollectionRow
               data-trail-visual-state="hover"
-              leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />}
+              leading={<TrailStatusGlyph category="unstarted" label="Todo" />}
             >
               <CollectionRowContent id="TRAIL-131" label="UI" size="M" title="Hover collection row" />
             </TrailCollectionRow>
-            <TrailCollectionRow highlighted leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />}>
+            <TrailCollectionRow highlighted leading={<TrailStatusGlyph category="unstarted" label="Todo" />}>
               <CollectionRowContent id="TRAIL-134" label="UI" size="L" title="Highlighted collection row" />
             </TrailCollectionRow>
             <TrailCollectionRow
-              leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--done" />}
+              leading={<TrailStatusGlyph category="completed" label="Done" />}
               selected
               selectionControl={<TrailCheckbox checked label="Select TRAIL-119" readOnly />}
             >
@@ -434,6 +436,8 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
         id="semantic-entities"
         title="Semantic Entities"
       >
+        <TrailProjectProductionSpecimens />
+
         <LabSpecimenRow
           description="All stable Priority trigger values are shown at once. Picker opening and value transition are validated separately as shared mechanics."
           kind="state-gallery"
@@ -657,7 +661,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
         <LabSpecimenRow kind="live-mechanics" owner="TrailCollectionRow + TrailCheckbox" title="Selection feedback">
           <div className="trail-lab-list">
             <TrailCollectionRow
-              leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />}
+              leading={<TrailStatusGlyph category="unstarted" label="Todo" />}
               selected={selectionSelected}
               selectionControl={(
                 <TrailCheckbox
@@ -685,7 +689,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
         >
           <div className="trail-lab-list">
             <TrailCollectionRow
-              leading={<span className="trail-lab-status-glyph trail-lab-status-glyph--todo" />}
+              leading={<TrailStatusGlyph category="unstarted" label="Todo" />}
               onClick={() => setRowActivations((count) => count + 1)}
             >
               <div className="trail-lab-list-row__content">
@@ -698,7 +702,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
                     aria-label="Change inline status"
                     onClick={() => setPropertyActions((count) => count + 1)}
                   >
-                    <span className="trail-lab-status-glyph trail-lab-status-glyph--progress" />
+                    <TrailStatusGlyph category="started" decorative />
                     In progress
                   </TrailPropertyControl>
                 </span>

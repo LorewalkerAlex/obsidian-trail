@@ -401,3 +401,162 @@ body button.trail-label-select__item:focus-visible {
   border-color: var(--trail-focus-border);
   box-shadow: 0 0 0 1px var(--trail-focus-ring-quiet);
 }
+
+/* Status presentation is category-owned; configured names remain external text. */
+.trail-status-glyph {
+  display: block;
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  flex: 0 0 auto;
+  overflow: visible;
+  color: var(--trail-text-muted);
+}
+
+.trail-status-glyph__ring,
+.trail-status-glyph__progress,
+.trail-status-glyph__check,
+.trail-status-glyph__cancel {
+  vector-effect: non-scaling-stroke;
+}
+
+.trail-status-glyph__ring,
+.trail-status-glyph__progress {
+  fill: none;
+  stroke: currentColor;
+}
+
+.trail-status-glyph__ring {
+  stroke-width: 1.45;
+}
+
+.trail-status-glyph[data-status-category="backlog"] {
+  color: var(--trail-text-faint);
+}
+
+.trail-status-glyph[data-status-category="backlog"] .trail-status-glyph__ring {
+  stroke-dasharray: 1.35 2.15;
+  stroke-linecap: round;
+}
+
+.trail-status-glyph[data-status-category="started"] {
+  color: var(--trail-progress);
+}
+
+.trail-status-glyph__progress {
+  stroke-dasharray: 17.6 35.2;
+  stroke-linecap: round;
+  stroke-width: 3.1;
+}
+
+.trail-status-glyph[data-status-category="completed"] {
+  color: var(--trail-success);
+}
+
+.trail-status-glyph[data-status-category="completed"] .trail-status-glyph__ring {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.trail-status-glyph__check {
+  fill: none;
+  stroke: var(--trail-surface-canvas);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.55;
+}
+
+.trail-status-glyph[data-status-category="canceled"] {
+  color: var(--trail-text-faint);
+}
+
+.trail-status-glyph__cancel {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.45;
+}
+
+.trail-project-summary-row__content {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 86px) 18px minmax(42px, 72px) minmax(0, 52px);
+  align-items: center;
+  gap: var(--trail-space-7);
+}
+
+.trail-project-summary-row__title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1.25;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body button.trail-project-summary-row__title-button {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+body button.trail-project-summary-row__title-button:focus-visible {
+  border-radius: var(--trail-radius-xs);
+  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
+}
+
+.trail-project-summary-row__status,
+.trail-project-summary-row__due {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-project-summary-row__priority {
+  display: inline-grid;
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  place-items: center;
+  color: var(--trail-text-muted);
+}
+
+.trail-project-summary-row__priority .trail-priority-glyph {
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+}
+
+.trail-project-summary-row__progress {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.trail-project-summary-row__due {
+  justify-self: start;
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] .trail-project-summary-row__title {
+  color: var(--trail-text-secondary);
+}
+
+.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] .trail-project-summary-row__content,
+.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] > .trail-collection-row__leading {
+  opacity: 0.68;
+}
