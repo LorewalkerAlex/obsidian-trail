@@ -158,74 +158,6 @@ export function TrailTriageReviewSurface({
           />
           <span className="trail-triage-review__position">{positionLabel}</span>
         </div>
-        <div
-          className="trail-triage-review__actions"
-          data-review-transition-region="true"
-        >
-          {pendingLabel === undefined ? null : (
-            <span className="trail-triage-review__pending">{pendingLabel}</span>
-          )}
-          <TrailViewPopover
-            align="end"
-            label="Accept Triage entry as"
-            onOpenChange={setAcceptOpen}
-            open={acceptOpen}
-            trigger={(
-              <TrailButton
-                aria-label="Accept Triage entry"
-                disabled={mutationLocked}
-                variant="primary"
-              >
-                <span className="trail-triage-review__action-label">Accept</span>
-                <TrailChevronIcon />
-              </TrailButton>
-            )}
-            width="compact"
-          >
-            <div className="trail-view-popover__stack">
-              <div className="trail-view-popover__title">Accept as</div>
-              {(["issue", "project"] as const).map((target) => (
-                <button
-                  className="trail-view-popover__item"
-                  key={target}
-                  onClick={() => {
-                    setAcceptOpen(false);
-                    onAccept(target);
-                  }}
-                  type="button"
-                >
-                  <span>{target === "issue" ? "Issue" : "Project"}</span>
-                </button>
-              ))}
-            </div>
-          </TrailViewPopover>
-          <TrailButton
-            aria-label="Defer Triage entry"
-            data-action="defer"
-            disabled={mutationLocked}
-            onClick={onDefer}
-          >
-            <TrailClockIcon />
-            <span className="trail-triage-review__action-label">Defer</span>
-          </TrailButton>
-          <TrailConfirmation
-            confirmLabel="Delete"
-            description="This permanently removes the Triage entry. Trail does not provide undo."
-            onConfirm={onDelete}
-            title="Delete this Triage entry?"
-            tone="danger"
-            trigger={(
-              <TrailButton
-                aria-label="Delete Triage entry"
-                data-action="delete"
-                disabled={mutationLocked}
-              >
-                <TrailTrashIcon />
-                <span className="trail-triage-review__action-label">Delete</span>
-              </TrailButton>
-            )}
-          />
-        </div>
       </header>
 
       <div className="trail-triage-review__content">
@@ -275,7 +207,7 @@ export function TrailTriageReviewSurface({
             }}
             onChange={(event) => onDescriptionChange(event.currentTarget.value)}
             placeholder="Add description..."
-            rows={10}
+            rows={4}
             value={draft.description}
           />
         </div>
@@ -283,6 +215,75 @@ export function TrailTriageReviewSurface({
         {feedback === undefined ? null : (
           <div className="trail-triage-review__feedback" role="alert">{feedback}</div>
         )}
+
+        <div
+          className="trail-triage-review__actions"
+          data-review-transition-region="true"
+        >
+          {pendingLabel === undefined ? null : (
+            <span className="trail-triage-review__pending">{pendingLabel}</span>
+          )}
+          <TrailViewPopover
+            align="start"
+            label="Accept Triage entry as"
+            onOpenChange={setAcceptOpen}
+            open={acceptOpen}
+            trigger={(
+              <TrailButton
+                aria-label="Accept Triage entry"
+                disabled={mutationLocked}
+                variant="primary"
+              >
+                <span className="trail-triage-review__action-label">Accept</span>
+                <TrailChevronIcon />
+              </TrailButton>
+            )}
+            sideOffset={8}
+            width="compact"
+          >
+            <div className="trail-view-popover__stack">
+              {(["issue", "project"] as const).map((target) => (
+                <button
+                  className="trail-view-popover__item"
+                  key={target}
+                  onClick={() => {
+                    setAcceptOpen(false);
+                    onAccept(target);
+                  }}
+                  type="button"
+                >
+                  <span>{target === "issue" ? "Issue" : "Project"}</span>
+                </button>
+              ))}
+            </div>
+          </TrailViewPopover>
+          <TrailButton
+            aria-label="Defer Triage entry"
+            data-action="defer"
+            disabled={mutationLocked}
+            onClick={onDefer}
+          >
+            <TrailClockIcon />
+            <span className="trail-triage-review__action-label">Defer</span>
+          </TrailButton>
+          <TrailConfirmation
+            confirmLabel="Delete"
+            description="This permanently removes the Triage entry. Trail does not provide undo."
+            onConfirm={onDelete}
+            title="Delete this Triage entry?"
+            tone="danger"
+            trigger={(
+              <TrailButton
+                aria-label="Delete Triage entry"
+                data-action="delete"
+                disabled={mutationLocked}
+              >
+                <TrailTrashIcon />
+                <span className="trail-triage-review__action-label">Delete</span>
+              </TrailButton>
+            )}
+          />
+        </div>
       </div>
     </section>
   );

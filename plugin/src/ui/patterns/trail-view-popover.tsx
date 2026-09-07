@@ -10,6 +10,7 @@ export interface TrailViewPopoverProps {
   readonly layer?: "menu" | "modal-child";
   readonly onOpenChange?: (open: boolean) => void;
   readonly open?: boolean;
+  readonly sideOffset?: number;
   readonly trigger: ReactElement;
   readonly width?: TrailViewPopoverWidth;
 }
@@ -21,6 +22,7 @@ export function TrailViewPopover({
   layer = "menu",
   onOpenChange,
   open,
+  sideOffset = 4,
   trigger,
   width = "default",
 }: TrailViewPopoverProps) {
@@ -35,7 +37,7 @@ export function TrailViewPopover({
           collisionPadding={8}
           data-trail-transient-layer={layer}
           data-width={width}
-          sideOffset={4}
+          sideOffset={sideOffset}
         >
           {children}
         </Popover.Content>

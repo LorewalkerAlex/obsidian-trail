@@ -295,7 +295,9 @@ body button.trail-view-bar__action:disabled {
 }
 
 .trail-view-popover--compact {
-  width: min(200px, calc(100vw - 16px));
+  width: max-content;
+  min-width: var(--radix-popover-trigger-width, 0px);
+  max-width: calc(100vw - 16px);
 }
 
 .trail-view-popover__stack,

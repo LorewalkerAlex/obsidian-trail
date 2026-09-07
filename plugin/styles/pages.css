@@ -117,7 +117,9 @@
 }
 
 .trail-triage-review {
+  display: flex;
   min-height: 100%;
+  flex-direction: column;
   background: var(--trail-surface-canvas);
 }
 
@@ -127,17 +129,16 @@
   top: 0;
   display: flex;
   min-width: 0;
-  min-height: 40px;
+  min-height: 36px;
+  flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--trail-space-6);
+  gap: var(--trail-space-3);
   padding: var(--trail-space-2) var(--trail-space-7);
   border-bottom: 1px solid var(--trail-border-subtle);
   background: var(--trail-surface-canvas);
 }
 
-.trail-triage-review__navigation,
-.trail-triage-review__actions {
+.trail-triage-review__navigation {
   display: inline-flex;
   min-width: 0;
   align-items: center;
@@ -145,7 +146,7 @@
 }
 
 .trail-triage-review__back {
-  display: none;
+  display: inline-flex;
 }
 
 .trail-triage-review__position,
@@ -154,6 +155,10 @@
   font-size: var(--trail-font-size-caption);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.trail-triage-review__position {
+  margin-left: var(--trail-space-2);
 }
 
 .trail-triage-review__pending {
@@ -192,17 +197,17 @@
   box-sizing: border-box;
   width: min(100%, 760px);
   margin: 0 auto;
-  padding: var(--trail-space-15) var(--trail-space-14) var(--trail-space-16);
+  padding: var(--trail-space-11) var(--trail-space-14) var(--trail-space-14);
 }
 
 .trail-triage-review__title {
-  margin-bottom: var(--trail-space-8);
+  margin-bottom: var(--trail-space-4);
 }
 
 body .trail-triage-review__title input.trail-input {
   width: 100%;
   height: auto;
-  min-height: 36px;
+  min-height: var(--trail-control-height-lg);
   padding: 0;
   border-color: transparent;
   border-radius: var(--trail-radius-xs);
@@ -210,7 +215,7 @@ body .trail-triage-review__title input.trail-input {
   color: var(--trail-text-primary);
   font-size: var(--trail-font-size-page);
   font-weight: var(--trail-weight-emphasis);
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 body .trail-triage-review__title input.trail-input:hover:not(:disabled) {
@@ -229,8 +234,8 @@ body .trail-triage-review__title input.trail-input:focus {
   min-width: 0;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trail-space-3);
-  margin-bottom: var(--trail-space-13);
+  gap: var(--trail-space-2);
+  margin-bottom: var(--trail-space-9);
 }
 
 .trail-triage-review__description {
@@ -239,13 +244,13 @@ body .trail-triage-review__title input.trail-input:focus {
 
 body .trail-triage-review__description textarea.trail-textarea {
   width: 100%;
-  min-height: 240px;
-  padding: var(--trail-space-6) 0;
+  min-height: 96px;
+  padding: var(--trail-space-4) 0;
   border-color: transparent;
   background: transparent;
   color: var(--trail-text-secondary);
-  line-height: 1.55;
-  resize: vertical;
+  line-height: 1.5;
+  resize: none;
 }
 
 body .trail-triage-review__description textarea.trail-textarea:hover:not(:disabled) {
@@ -260,13 +265,22 @@ body .trail-triage-review__description textarea.trail-textarea:focus {
 }
 
 .trail-triage-review__feedback {
-  margin-top: var(--trail-space-8);
+  margin-top: var(--trail-space-6);
   padding: var(--trail-space-6) var(--trail-space-7);
   border: 1px solid var(--trail-border-default);
   border-radius: var(--trail-radius-sm);
   background: var(--trail-surface-quiet);
   color: var(--trail-danger);
   font-size: var(--trail-font-size-supporting);
+}
+
+.trail-triage-review__actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-2);
+  margin-top: var(--trail-space-9);
 }
 
 @container (max-width: 720px) {
@@ -276,10 +290,6 @@ body .trail-triage-review__description textarea.trail-textarea:focus {
 
   .trail-triage-page[data-review-open="true"] .trail-triage-page__queue-pane {
     display: none;
-  }
-
-  .trail-triage-review__back {
-    display: inline-flex;
   }
 
   .trail-triage-review__content {
@@ -300,18 +310,12 @@ body .trail-triage-review__description textarea.trail-textarea:focus {
     gap: var(--trail-space-1);
   }
 
-  .trail-triage-review__action-label,
   .trail-triage-review__pending {
-    display: none;
-  }
-
-  .trail-triage-review__actions .trail-button {
-    width: var(--trail-control-height-md);
-    padding: 0;
+    margin-right: var(--trail-space-2);
   }
 
   .trail-triage-review__content {
-    padding-top: var(--trail-space-13);
+    padding-top: var(--trail-space-10);
     padding-right: var(--trail-space-8);
     padding-left: var(--trail-space-8);
   }
