@@ -18,14 +18,14 @@ da1a84f86a5d3a1e234335839f0fde1eff92e341
 feat: checkpoint triage review and navigation
 ```
 
-The published implementation checkpoint immediately preceding the current Shared Visual Grammar slice is:
+The accepted Stage 5 executable checkpoint immediately preceding this closure documentation update is:
 
 ```text
-3cc7b4ac54ceea0a40dc88519893875c0132f2b6
-refactor: calibrate triage review presentation
+5049156861edd0b357efb70053797726c3877b71
+refactor: align shared visual grammar
 ```
 
-The Stage 5 functional path is green through Triage Accept. Current work is a visual-calibration continuation over that working vertical, not a new Product/Domain slice. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+Stage 5 is closed after functional and visual acceptance of the Triage vertical, including the shared transient family, Review composition, row rhythm, Standard Composer density, and a real modal Composer with its child Priority picker open. Stage 6 is now the active Product slice. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -46,10 +46,8 @@ Do not reopen already-closed Product/UI decisions because older code or tests ex
 
 Known alignment debt now centers on:
 
-1. Stage 5 visual acceptance is near closure: picker/popover geometry and search/selection grammar, Triage Review composition, shared row rhythm, and Standard Composer typography/density are calibrated through production owners and synchronized Foundation/real-Triage consumers. Final Stage 5 acceptance still needs one representative real modal Composer check with its child picker open, plus only evidence-driven repair if that host check contradicts the shared grammar.
-2. shared visual grammar must remain centralized through existing production token/pattern/entity owners: later Pages should consume the established row rhythm, transient sizing/search chrome, and application-level control density rather than reintroducing page-local numeric calibration.
-3. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
-4. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
+1. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
+2. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
 
 These are implementation gaps, not design questions. Selection / Action Registry / Bulk / Peek remain deliberately deferred until a later Product consumer proves the need; that deferral is not Stage 5 debt.
 
@@ -69,7 +67,8 @@ The following lower layers are already established and should be consumed rather
 - explicit Cycle Start/Close/Start-next semantics;
 - canonical Project/Milestone/Cycle Progress semantics;
 - modular stylesheet ownership and deterministic Obsidian stylesheet assembly;
-- existing production primitives/patterns/entities already proven through current consumers and Foundation Lab.
+- existing production primitives/patterns/entities already proven through current consumers and Foundation Lab;
+- accepted shared visual grammar for Collection Row rhythm, transient geometry/search/selection, and application-scale Standard Composer density.
 
 Do not add page-local Domain legality, persistence shortcuts, a second Runtime/ViewModel store, alternate query languages, or duplicate action/filter/confirmation systems merely to make UI implementation convenient.
 
@@ -278,7 +277,7 @@ The architectural contract is frozen by `architecture.md` + `design-to-code-map.
 
 Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
 
-**Stages 0, 1, 2, 3, and 4 are closed. Stage 5 is the active implementation stage.**
+**Stages 0, 1, 2, 3, 4, and 5 are closed. Stage 6 is the active implementation stage.**
 
 ## 6. Foundation Lab Contract
 
@@ -444,7 +443,7 @@ Current key status:
 | Foundation Lab | Accepted / Lab-proven / Host-proven | use State Gallery, Composition Gallery, and Interaction Mechanics as separate verification dimensions; reusable ownership remains outside Foundation |
 | Progress | Lab-proven / Host-proven | normal/compact/micro/unavailable contract aligned; consume in later Project/Cycle/Home surfaces |
 | Normal-flow layout containment | Accepted / Host-proven | preserve direct-child ownership and explicit overflow responsibility in later Pages |
-| Picker / Popover / Confirmation / Composer | Implemented / Lab-proven / Consumer-proven / Host-proven | shared visual grammar is aligned; finish final real modal Composer + child-picker acceptance before Stage 5 close |
+| Picker / Popover / Confirmation / Composer | Accepted / Lab-proven / Consumer-proven / Host-proven | consume the accepted shared grammar in later Pages; do not reintroduce Page-local geometry or density overrides |
 | Selection / Action Registry / Bulk / Peek | Mapped / deferred | create production owners just in time when a later Product consumer proves the need |
 
 Update this ledger as the active execution snapshot; do not turn it into historical release notes.
@@ -537,7 +536,7 @@ Current status:
 - **Remaining proven containment defects are repaired** — `f195a6247bf0a7b38a027d3106ba7a1e980b202b` makes shared popover item labels absorb width pressure without invading trailing meta/check regions, and `741848e2bbaec41c81ac7b5cc793be6a3f2821cc` gives dynamic Label Property summaries their own shrink/truncate region.
 - **Final host visual leak is repaired** — `1fc8fc3fc4025c743c064abbb58df07640eded48` prevents Obsidian's generic button chrome from leaking onto Triage row titles without changing row geometry or visual tokens.
 - **Representative host evidence is green** — real Obsidian inspection covers Foundation in the full shell, Triage wide Queue + Review, constrained single-column Review, Collection Row / Property Control containment, and the Label picker top layer; normal-flow siblings remain contained and the final presentation is visually coherent at the supported desktop calibration boundary.
-- **Stage 4 complete / Host-proven and closed** — the existing production warehouse is aligned to the frozen shared ownership/layout contracts and the current owner graph has no remaining proven Stage 4 containment contradiction. Later consumer-driven pixel/token calibration may refine presentation without reopening Stage 4 unless new repository evidence contradicts the frozen contract. Stage 5 Triage is the active slice.
+- **Stage 4 complete / Host-proven and closed** — the existing production warehouse is aligned to the frozen shared ownership/layout contracts and the current owner graph has no remaining proven Stage 4 containment contradiction. Later consumer-driven pixel/token calibration may refine presentation without reopening Stage 4 unless new repository evidence contradicts the frozen contract. Stage 5 is closed and Stage 6 is the active slice.
 
 ### Stage 5 — Finish Triage
 
@@ -555,6 +554,11 @@ Then finish:
 - no navigation-as-save and no Review history node.
 
 Exit: Triage is the first complete final V1 vertical rather than another partial phase checkpoint.
+
+Current status:
+
+- **Stage 5 complete / Host-proven** — the Triage functional chain, shared picker/popover/confirmation/composer ownership, Review composition, and shared visual grammar are green through focused/full automated validation and representative real-Obsidian checks.
+- **Stage 5 closed** — the final host acceptance used a real Standard Composer modal with its Priority picker open and found no host-specific contradiction in typography, density, transient geometry, layering, or selected/check grammar. Later Pages consume these accepted owners rather than reopening Stage 5 calibration.
 
 ### Stage 6 — Projects Root + Initiative Focus
 
@@ -641,11 +645,11 @@ Complete:
 
 ## 9. Active Slice
 
-Stage 4 is closed. Its implementation/host exit checkpoint ends at `1fc8fc3fc4025c743c064abbb58df07640eded48`, after the shared-contract alignment, Layout Contract audit, proven containment repairs, and final real-Obsidian visual check were published and verified. Do not reopen Stage 4 unless later repository evidence creates a concrete contradiction with the frozen ownership/layout contracts.
+Stages 0 through 5 are closed. The accepted Stage 5 executable checkpoint is `5049156861edd0b357efb70053797726c3877b71` (`refactor: align shared visual grammar`). Do not reopen Stage 5 unless later repository evidence creates a concrete contradiction with its frozen Product/UI/ownership contracts.
 
-### Stage 5 active — Finish Triage vertical
+### Stage 5 closed — Triage vertical
 
-Stage 5 is the active implementation slice. Its functional path is green through Triage Accept: the Triage Page Read Model, direct Filter + Order controls, Review draft/progression semantics, explicit Review exit, shared Confirmation, standard Triage Creation Composer, and destination-first Accept into standard Issue or Project creation are implemented and covered by focused automated checks plus representative real-Obsidian interaction evidence.
+Stage 5 is complete. The Triage Page Read Model, direct Filter + Order controls, Review draft/progression semantics, explicit Review exit, shared Confirmation, standard Triage Creation Composer, destination-first Accept into standard Issue or Project creation, and final shared visual grammar are implemented and accepted through automated and representative host evidence.
 
 Published checkpoints for that chain include:
 
@@ -655,11 +659,12 @@ eb003e33e9b69efc858f3f8c5f462f53e1f806a4  refactor: share composer presentation
 f71cccb0d595a7ccdd1482699400cfd518ed2bd8  refactor: checkpoint composer visual calibration
 0398b8e1d8073cedd7215d1866046b2b579d1cb1  refactor: calibrate picker surface visuals
 3cc7b4ac54ceea0a40dc88519893875c0132f2b6  refactor: calibrate triage review presentation
+5049156861edd0b357efb70053797726c3877b71  refactor: align shared visual grammar
 ```
 
 `TrailComposerSurface` is the reusable production presentation owner; `TrailComposer` continues to own modal mechanics such as Portal/overlay/focus/Esc/dirty-dismiss/submit feedback. Foundation consumes the same production surfaces as Triage/Issue/Project creation and must not create Lab-only Product UI.
 
-The current calibration work extends Foundation coverage without reopening Stage 3 or Stage 4 contracts:
+The accepted Stage 5 calibration extends Foundation coverage without reopening Stage 3 or Stage 4 contracts:
 
 - real Priority / Labels / Due property owners, Triage collection controls, Review surface, Confirmation, and the Standard Composer family are visible from Foundation fixture data;
 - reusable confirmation content remains separated from modal mechanics so default/destructive visual states can be compared without opening a Dialog;
@@ -670,29 +675,29 @@ The current calibration work extends Foundation coverage without reopening Stage
 - Standard Composer typography/density is brought back to the shared application scale: title is the only clearly elevated text role, body uses normal reading scale, controls/buttons reuse shared density, and modal-child picker layers change elevation rather than inventing a larger menu scale;
 - Foundation verification remains split into State Gallery, Composition Gallery, and Interaction Mechanics so visual endpoints, assembled layout, and shared state-transition feedback are not tested as the same thing.
 
-Automated evidence is green for the shared grammar candidate: the repository-wide suite passed 123 test files / 445 tests with diagnostics typecheck/build, and the final Composer-density refinement passed its focused Composer/Foundation suite plus diagnostics build. Representative Foundation and real-Triage host screenshots confirm the row, transient, Review, and Composer direction.
+Automated evidence is green for the shared grammar checkpoint: the repository-wide suite passed 123 test files / 445 tests with diagnostics typecheck/build, and the final Composer-density refinement passed its focused Composer/Foundation suite plus diagnostics build. Representative Foundation and real-Triage host screenshots confirm the row, transient, Review, and Composer presentation. Final host acceptance additionally verified a real Standard Composer modal with its Priority picker open; modal typography/density and child-picker geometry/layering remained consistent with the accepted shared grammar.
 
 The next implementation sequence is:
 
 ```text
-publish this Shared Visual Grammar checkpoint on main
--> verify one representative real Standard Composer with a modal-child picker open in the diagnostics host
--> repair only if that host evidence contradicts the shared grammar
--> calibrate final Stage 5 status and close Stage 5
--> begin Stage 6 from the accepted shared owners
+begin Stage 6 from the accepted shared owners
+-> implement the shared Project Summary projection/row
+-> implement the Projects Root Read Model and List/Timeline composition
+-> implement Initiative Focus by reusing the Project collection owner
+-> add Project/Initiative creation through the shared Composer only when the Product surface requires it
 ```
 
 Selection / Action Registry / Bulk / Peek remain deferred because the completed Triage workflow has not proven a need to pull them forward. Their deferral must not be used as a reason to create Foundation-only substitutes.
 
-Remaining Stage 5 scope:
+Stage 5 closure conditions are satisfied:
 
-1. preserve the already-green Triage Domain/Query/Application/workflow semantics;
-2. preserve the shared production-owner grammar for row rhythm, transient geometry/search, Review composition, and Composer density without page-local CSS or duplicated picker/menu implementations;
-3. verify one real Standard Composer with a modal-child picker open in the diagnostics/development Obsidian host;
-4. repair only evidence-backed host contradictions, then publish the final accepted Stage 5 checkpoint and close the stage;
-5. preserve the closed Stage 4 direct-child spatial ownership and explicit overflow contract; pixel/token refinement is allowed, layout-contract reinvention is not.
+1. Triage Domain/Query/Application/workflow semantics remain green;
+2. shared production owners carry row rhythm, transient geometry/search/selection, Review composition support, and Composer density without Page-local duplicate mechanisms;
+3. wide and constrained Triage compositions preserve the closed Stage 4 containment contract;
+4. a real Standard Composer plus modal-child Priority picker is Host-proven in Obsidian;
+5. shared visual owners are accepted for reuse by later Product stages.
 
-Exit evidence:
+Recorded exit evidence:
 
 - Triage retains one explicit Page Read Model and no Page-local duplicate Domain/Query semantics;
 - Queue exposes the frozen direct Filter + Order grammar and Review behavior remains functionally green;
@@ -700,7 +705,23 @@ Exit evidence:
 - State Gallery exposes representative visual endpoints, Composition Gallery proves assembled hierarchy/spacing, and Interaction Mechanics proves each shared transition once rather than duplicating workflow tests;
 - wide and constrained desktop compositions preserve the Stage 4 containment contract;
 - representative real-Obsidian visual verification establishes accepted transient, Review, and Composer presentation;
-- factual documentation and the public `main` checkpoint are updated before Stage 5 is called closed.
+- factual documentation records the closed Stage 5 state before Stage 6 implementation proceeds.
+
+### Stage 6 active - Projects Root + Initiative Focus
+
+Stage 6 is now the active implementation slice. It starts from the accepted Stage 5 production owners rather than introducing a second visual, collection, filter, or creation system.
+
+Implementation order:
+
+1. implement the shared Project Summary projection/row needed by the first real collection consumer;
+2. implement the Projects Root Read Model with one readable/effective snapshot per top-level evaluation;
+3. compose Projects Root List + Timeline controls using existing shared collection/control owners;
+4. implement Initiative Focus by reusing the Project collection owner and Initiative-scoped Query projection;
+5. use the accepted shared Composer for Project/Initiative creation when the Product surface requires creation.
+
+Stage 6 must preserve the accepted shared visual grammar, Foundation production-owner rule, and Stage 4 containment contract. Do not pull Selection / Action Registry / Bulk / Peek forward unless a Stage 6 Product consumer proves the need.
+
+Exit: Projects Root and Initiative Focus are backed by explicit Query Read Models, reuse one Project collection owner, expose required Foundation coverage for any new reusable visual owner, and pass focused plus representative host verification without creating Page-local substitutes for accepted shared infrastructure.
 
 ## 10. Slice Definition of Done
 
