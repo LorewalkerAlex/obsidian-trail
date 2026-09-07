@@ -143,6 +143,9 @@ body {
   --trail-icon-size-md: 14px;
   --trail-icon-size-lg: 16px;
 
+  /* Shared scanning-row grammar. */
+  --trail-collection-row-gap: var(--trail-space-7);
+
   /* Elevation and motion. */
   --trail-shadow-overlay: 0 14px 38px rgba(0, 0, 0, 0.44), 0 0 0 1px rgba(255, 255, 255, 0.045);
   --trail-shadow-tooltip: 0 7px 20px rgba(0, 0, 0, 0.28);
@@ -154,7 +157,11 @@ body {
   --trail-menu-shadow: 0 12px 32px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.025);
   --trail-menu-radius: var(--trail-radius-md);
   --trail-menu-padding: var(--trail-space-2);
-  --trail-menu-min-width: 220px;
+  --trail-menu-content-max-width: 36ch;
+  --trail-menu-readable-min-width: 24ch;
+  --trail-menu-min-width: var(--trail-menu-readable-min-width);
+  --trail-menu-readable-max-width: 36ch;
+  --trail-menu-viewport-inset: 16px;
   --trail-menu-item-height: var(--trail-control-height-md);
   --trail-menu-item-radius: 5px;
   --trail-menu-item-padding-x: var(--trail-space-6);
@@ -164,6 +171,7 @@ body {
   --trail-menu-shortcut-size: var(--trail-font-size-caption);
   --trail-menu-hover: var(--trail-state-hover-strong);
   --trail-menu-separator: var(--trail-border-subtle);
+  --trail-menu-search-height: var(--trail-control-height-md);
 
   /* Document/editor calibration contract. */
   --trail-document-inline-title-size: 24px;

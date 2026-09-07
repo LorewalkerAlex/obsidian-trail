@@ -7,7 +7,7 @@
   min-width: 0;
   min-height: var(--trail-control-height-lg);
   align-items: center;
-  gap: var(--trail-space-4);
+  gap: var(--trail-collection-row-gap);
   padding: 0 var(--trail-space-6);
   border-bottom: 1px solid var(--trail-row-divider);
   color: var(--trail-text-secondary);
@@ -281,7 +281,10 @@ body button.trail-view-bar__action:disabled {
 
 .trail-view-popover {
   z-index: var(--layer-menu, 1000);
-  width: min(280px, calc(100vw - 16px));
+  box-sizing: border-box;
+  width: max-content;
+  min-width: min(var(--trail-menu-readable-min-width), calc(100vw - var(--trail-menu-viewport-inset)));
+  max-width: min(var(--trail-menu-readable-max-width), calc(100vw - var(--trail-menu-viewport-inset)));
   max-height: var(--radix-popover-content-available-height);
   overflow: auto;
   padding: var(--trail-menu-padding);
@@ -295,9 +298,8 @@ body button.trail-view-bar__action:disabled {
 }
 
 .trail-view-popover--compact {
-  width: max-content;
   min-width: var(--radix-popover-trigger-width, 0px);
-  max-width: calc(100vw - 16px);
+  max-width: min(var(--trail-menu-content-max-width), calc(100vw - var(--trail-menu-viewport-inset)));
 }
 
 .trail-view-popover__stack,
@@ -392,27 +394,35 @@ body button.trail-view-popover__item--muted {
   color: var(--trail-text-muted);
 }
 
+/* Shared menu-search chrome. Semantic pickers reuse this visual class without sharing search mechanics. */
 body input.trail-view-popover__search {
+  appearance: none;
   box-sizing: border-box;
-  width: calc(100% - (2 * var(--trail-space-4)));
-  height: 26px;
+  width: 100%;
+  height: var(--trail-menu-search-height);
   min-height: 0;
-  margin: var(--trail-space-2) var(--trail-space-4) var(--trail-space-3);
-  padding: 0 var(--trail-space-5);
-  border: 1px solid var(--trail-border-subtle);
-  border-radius: var(--trail-radius-xs);
+  margin: 0 0 var(--trail-space-2);
+  padding: 0 var(--trail-menu-item-padding-x);
+  border: 0;
+  border-bottom: 1px solid var(--trail-menu-separator);
+  border-radius: 0;
   outline: 0;
-  background: var(--trail-surface-canvas);
+  background: transparent;
   color: var(--trail-text-secondary);
   box-shadow: none;
   font: inherit;
   font-size: var(--trail-font-size-control);
 }
 
+body input.trail-view-popover__search::placeholder {
+  color: var(--trail-text-faint);
+}
+
 body input.trail-view-popover__search:focus,
 body input.trail-view-popover__search[data-trail-visual-state="focus"] {
-  border-color: var(--trail-focus-border);
-  box-shadow: 0 0 0 2px var(--trail-focus-ring-quiet);
+  border-color: var(--trail-menu-separator);
+  background: transparent;
+  box-shadow: none;
 }
 
 .trail-view-popover__date-field {
@@ -639,10 +649,10 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
 }
 
 .trail-composer__header {
-  min-height: 50px;
+  min-height: calc(var(--trail-control-height-sm) + (2 * var(--trail-space-6)));
   justify-content: space-between;
   gap: var(--trail-space-6);
-  padding: var(--trail-space-10) var(--trail-space-13) var(--trail-space-6);
+  padding: var(--trail-space-6) var(--trail-space-13);
 }
 
 .trail-composer__context-group {
@@ -658,20 +668,20 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
 .trail-composer__context-accessory {
   display: inline-flex;
   min-width: 0;
-  min-height: var(--trail-control-height-lg);
+  min-height: var(--trail-control-height-sm);
   align-items: center;
 }
 
 .trail-composer__context {
   flex: 0 1 auto;
   margin: 0;
-  padding: 0 var(--trail-space-7);
+  padding: 0 var(--trail-space-6);
   overflow: hidden;
-  border: 1px solid var(--trail-control-border-hover);
-  border-radius: var(--trail-radius-sm);
-  background: var(--trail-control-surface-pressed);
+  border: 1px solid var(--trail-control-border);
+  border-radius: var(--trail-radius-xs);
+  background: var(--trail-control-surface);
   color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-section);
+  font-size: var(--trail-font-size-control);
   font-weight: var(--trail-weight-medium);
   line-height: 1;
   text-overflow: ellipsis;
@@ -681,7 +691,7 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
 .trail-composer__context-separator {
   flex: 0 0 auto;
   color: var(--trail-text-faint);
-  font-size: var(--trail-font-size-section);
+  font-size: var(--trail-font-size-control);
   line-height: 1;
 }
 
@@ -691,11 +701,6 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
 }
 
 .trail-composer__header > .trail-icon-button {
-  width: var(--trail-control-height-lg);
-  min-width: var(--trail-control-height-lg);
-  height: var(--trail-control-height-lg);
-  padding: var(--trail-space-5);
-  border-radius: var(--trail-radius-xs);
   color: var(--trail-text-muted);
 }
 
@@ -713,7 +718,7 @@ body .trail-confirmation__actions button.trail-button[data-confirmation-tone="da
   min-height: 0;
   flex: 0 1 auto;
   overflow-y: auto;
-  padding: var(--trail-space-6) var(--trail-space-13) var(--trail-space-13);
+  padding: var(--trail-space-4) var(--trail-space-13) var(--trail-space-11);
 }
 
 .trail-composer__fields {
@@ -758,26 +763,18 @@ body .trail-composer__fields textarea.trail-textarea {
 }
 
 .trail-composer__footer {
-  min-height: 58px;
+  min-height: calc(var(--trail-control-height-md) + (2 * var(--trail-space-6)));
   justify-content: flex-end;
-  gap: var(--trail-space-6);
-  padding: var(--trail-space-8) var(--trail-space-13);
+  gap: var(--trail-space-4);
+  padding: var(--trail-space-6) var(--trail-space-13);
   border-top: 1px solid var(--trail-border-default);
-}
-
-.trail-composer__footer .trail-button--primary {
-  height: 34px;
-  padding: 0 var(--trail-space-10);
-  border-radius: var(--trail-radius-sm);
-  font-size: var(--trail-font-size-section);
-  font-weight: var(--trail-weight-emphasis);
 }
 
 /* Standard Composer family visual hierarchy. */
 .trail-standard-composer-form {
   display: grid;
   min-width: 0;
-  gap: var(--trail-space-11);
+  gap: var(--trail-space-9);
 }
 
 .trail-standard-composer-form__editor {
@@ -798,12 +795,12 @@ body .trail-standard-composer-form__editor textarea.trail-textarea {
 }
 
 body .trail-standard-composer-form__editor input.trail-input {
-  min-height: 34px;
+  min-height: var(--trail-control-height-md);
   color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-page);
+  font-size: var(--trail-font-size-subtitle);
   font-weight: var(--trail-weight-strong);
-  letter-spacing: -0.015em;
-  line-height: 1.25;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 body .trail-standard-composer-form__editor textarea.trail-textarea {
@@ -811,7 +808,7 @@ body .trail-standard-composer-form__editor textarea.trail-textarea {
   padding-top: var(--trail-space-2);
   padding-bottom: var(--trail-space-3);
   color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-subtitle);
+  font-size: var(--trail-font-size-body);
   line-height: 1.5;
   resize: none;
 }
@@ -832,7 +829,7 @@ body .trail-standard-composer-form__editor textarea.trail-textarea:focus {
 .trail-standard-composer-form__relation {
   display: flex;
   min-width: 0;
-  min-height: var(--trail-control-height-lg);
+  min-height: var(--trail-control-height-sm);
   flex-wrap: wrap;
   align-items: center;
   gap: var(--trail-space-4);
@@ -856,25 +853,10 @@ body .trail-standard-composer-form__editor textarea.trail-textarea:focus {
 
 body .trail-standard-composer-form__relation button.trail-property-control {
   max-width: 100%;
-  height: var(--trail-control-height-lg);
-  padding: 0 var(--trail-space-7);
-  border-color: var(--trail-control-border-hover);
-  border-radius: var(--trail-radius-sm);
-  background: var(--trail-control-surface-pressed);
-  color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-section);
-  font-weight: var(--trail-weight-medium);
-}
-
-body .trail-standard-composer-form__relation button.trail-property-control:hover:not(:disabled),
-body .trail-standard-composer-form__relation button.trail-property-control:focus-visible {
-  border-color: var(--trail-control-border-hover);
-  background: var(--trail-control-surface-pressed);
-  color: var(--trail-text-primary);
 }
 
 .trail-composer__context-accessory .trail-standard-composer-form__relation {
-  min-height: var(--trail-control-height-lg);
+  min-height: var(--trail-control-height-sm);
   flex-wrap: nowrap;
   gap: 0;
 }
@@ -890,19 +872,6 @@ body .trail-standard-composer-form__relation button.trail-property-control:focus
 
 body .trail-composer__context-accessory .trail-standard-composer-form__relation button.trail-property-control {
   max-width: 100%;
-  height: var(--trail-control-height-lg);
-  padding: 0 var(--trail-space-7);
-  border-color: var(--trail-control-border-hover);
-  background: var(--trail-control-surface-pressed);
-  color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-section);
-}
-
-body .trail-composer__context-accessory .trail-standard-composer-form__relation button.trail-property-control:hover:not(:disabled),
-body .trail-composer__context-accessory .trail-standard-composer-form__relation button.trail-property-control:focus-visible {
-  border-color: var(--trail-control-border-hover);
-  background: var(--trail-control-surface-pressed);
-  color: var(--trail-text-primary);
 }
 
 .trail-standard-composer-form__properties {
@@ -914,23 +883,8 @@ body .trail-composer__context-accessory .trail-standard-composer-form__relation 
   padding: 0;
 }
 
-body .trail-standard-composer-form__properties button.trail-property-control {
-  height: var(--trail-control-height-lg);
-  padding: 0 var(--trail-space-7);
-  border-color: var(--trail-control-border-hover);
-  border-radius: var(--trail-radius-sm);
-  background: var(--trail-control-surface-pressed);
-  color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-section);
-}
 
-body .trail-standard-composer-form__properties button.trail-property-control:hover:not(:disabled),
-body .trail-standard-composer-form__properties button.trail-property-control:focus-visible {
-  border-color: var(--trail-control-border-hover);
-  background: var(--trail-control-surface-pressed);
-  color: var(--trail-text-primary);
-}
-
+/* Modal-child surfaces change layer/elevation only; shared menu typography, density, and state grammar stay authoritative. */
 body [data-trail-transient-layer="modal-child"].trail-view-popover,
 body [data-trail-transient-layer="modal-child"].trail-priority-select,
 body [data-trail-transient-layer="modal-child"].trail-label-select,
@@ -938,15 +892,4 @@ body [data-trail-transient-layer="modal-child"].trail-due-select {
   border-color: var(--trail-control-border-hover);
   background: var(--trail-surface-overlay);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.035);
-  font-size: var(--trail-font-size-body);
-}
-
-body [data-trail-transient-layer="modal-child"].trail-priority-select .trail-priority-select__item {
-  height: var(--trail-control-height-lg);
-  color: var(--trail-text-secondary);
-}
-
-body [data-trail-transient-layer="modal-child"].trail-priority-select .trail-priority-select__item[data-state="checked"] {
-  background: var(--trail-state-hover-strong);
-  color: var(--trail-text-primary);
 }

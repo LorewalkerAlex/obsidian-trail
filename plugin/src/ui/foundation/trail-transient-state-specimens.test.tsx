@@ -49,7 +49,9 @@ describe("Trail transient state specimens", () => {
     }));
     const onboarding = picker.getByRole("button", { name: /Onboarding/ });
     const design = picker.getByRole("button", { name: /Design/ });
+    const search = picker.getByRole("searchbox", { name: "Static label search" });
 
+    expect(search).toHaveClass("trail-view-popover__search");
     expect(onboarding.children[0]).toHaveClass("trail-label-select__check");
     expect(onboarding.children[0]).toHaveAttribute("data-visible", "true");
     expect(onboarding.children[1]).toHaveClass("trail-label-dots");

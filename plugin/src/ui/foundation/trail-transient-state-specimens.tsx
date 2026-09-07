@@ -139,7 +139,7 @@ export function TrailLabelPickerStateSpecimen() {
       <div aria-label="Label picker selected states" className="trail-label-select" role="group">
         <input
           aria-label="Static label search"
-          className="trail-label-select__search"
+          className="trail-label-select__search trail-view-popover__search"
           placeholder="Search labels"
           readOnly
           type="search"
@@ -168,7 +168,7 @@ export function TrailLabelPickerStateSpecimen() {
       <div aria-label="Label picker empty state" className="trail-label-select" role="group">
         <input
           aria-label="Static empty label search"
-          className="trail-label-select__search"
+          className="trail-label-select__search trail-view-popover__search"
           placeholder="Search labels"
           readOnly
           type="search"

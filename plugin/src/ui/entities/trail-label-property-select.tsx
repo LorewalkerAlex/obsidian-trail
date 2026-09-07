@@ -158,7 +158,7 @@ export function TrailLabelPropertySelect({
           <input
             aria-label="Search labels"
             autoFocus
-            className="trail-label-select__search"
+            className="trail-label-select__search trail-view-popover__search"
             onChange={(event) => setSearch(event.currentTarget.value)}
             placeholder="Search labels"
             type="search"

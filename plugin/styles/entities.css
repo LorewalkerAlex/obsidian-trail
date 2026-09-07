@@ -37,7 +37,9 @@
 
 .trail-priority-select {
   z-index: var(--layer-menu, 1000);
-  min-width: max(var(--radix-select-trigger-width, 0px), var(--trail-menu-min-width));
+  width: max-content;
+  min-width: var(--radix-select-trigger-width, 0px);
+  max-width: min(var(--trail-menu-content-max-width), calc(100vw - var(--trail-menu-viewport-inset)));
   max-height: var(--radix-select-content-available-height);
   padding: var(--trail-menu-padding);
   border: 1px solid var(--trail-menu-border);
@@ -166,10 +168,6 @@
   background: var(--trail-label-color-6);
 }
 
-.trail-collection-row[data-triage-row="true"] {
-  gap: var(--trail-space-7);
-}
-
 .trail-triage-row__priority {
   display: inline-grid;
   width: var(--trail-icon-size-md);
@@ -258,38 +256,14 @@ body button.trail-triage-row__title-button:focus-visible {
 }
 
 .trail-label-select {
-  width: min(280px, calc(100vw - 16px));
+  width: max-content;
+  min-width: max(
+    var(--radix-popover-trigger-width, 0px),
+    min(var(--trail-menu-readable-min-width), calc(100vw - var(--trail-menu-viewport-inset)))
+  );
+  max-width: min(var(--trail-menu-readable-max-width), calc(100vw - var(--trail-menu-viewport-inset)));
   max-height: var(--radix-popover-content-available-height);
   overflow: auto;
-}
-
-body input.trail-label-select__search {
-  appearance: none;
-  box-sizing: border-box;
-  width: 100%;
-  height: 28px;
-  min-height: 0;
-  margin: 0 0 var(--trail-space-2);
-  padding: 0 var(--trail-menu-item-padding-x);
-  border: 0;
-  border-bottom: 1px solid var(--trail-menu-separator);
-  border-radius: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--trail-text-secondary);
-  box-shadow: none;
-  font: inherit;
-  font-size: var(--trail-font-size-control);
-}
-
-body input.trail-label-select__search::placeholder {
-  color: var(--trail-text-faint);
-}
-
-body input.trail-label-select__search:focus {
-  border-color: var(--trail-menu-separator);
-  background: transparent;
-  box-shadow: none;
 }
 
 .trail-label-select__options {
@@ -380,7 +354,9 @@ body button.trail-label-select__item:focus-visible {
 }
 
 .trail-due-select {
-  min-width: 220px;
+  width: max-content;
+  min-width: var(--radix-popover-trigger-width, 0px);
+  max-width: min(var(--trail-menu-content-max-width), calc(100vw - var(--trail-menu-viewport-inset)));
 }
 
 .trail-due-select__icon {
