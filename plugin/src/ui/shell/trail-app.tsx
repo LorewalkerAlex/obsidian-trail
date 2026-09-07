@@ -3,6 +3,7 @@ import { useStore } from "zustand";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TRAIL_DEVELOPMENT_UI_ENABLED } from "../../trail-build-flags";
 import { TrailFoundationLab } from "../foundation/trail-foundation-lab";
+import { TrailProjectsPage } from "../pages/projects/trail-projects-page";
 import { TrailTriagePageFrame } from "../pages/triage/trail-triage-page-frame";
 import type {
   TrailLocation,
@@ -61,11 +62,13 @@ function visibleLocation(
 export function TrailApp({
   actions,
   navigationStore,
+  onNavigate,
   runtimeStore,
   showDevelopment = TRAIL_DEVELOPMENT_UI_ENABLED,
 }: {
   readonly actions: TrailUiActions;
   readonly navigationStore: TrailNavigationStore;
+  readonly onNavigate: (location: TrailLocation) => void;
   readonly runtimeStore: TrailRuntimeStore;
   readonly showDevelopment?: boolean;
 }) {
@@ -91,6 +94,19 @@ export function TrailApp({
           <TrailPageSurface>
             <TrailTriagePageFrame
               actions={actions.triage}
+              runtimeStore={runtimeStore}
+            />
+          </TrailPageSurface>
+        ) : currentLocation.kind === "projects" ? (
+          <TrailPageSurface>
+            <TrailProjectsPage
+              actions={actions.projects}
+              onInitiativeActivate={(initiativeId) => {
+                onNavigate({ initiativeId, kind: "initiative" });
+              }}
+              onProjectActivate={(projectId) => {
+                onNavigate({ kind: "project", projectId });
+              }}
               runtimeStore={runtimeStore}
             />
           </TrailPageSurface>

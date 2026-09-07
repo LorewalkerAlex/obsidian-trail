@@ -21,7 +21,7 @@ export interface TrailUiActions {
   >;
   readonly projects: Pick<
     TrailApplicationSession["projects"],
-    "changeInitiative" | "changeStatus" | "create" | "editProperties"
+    "changeInitiative" | "changeStatus" | "create" | "createFromDraft" | "editProperties"
   >;
   readonly triage: Pick<
     TrailApplicationSession["triage"],

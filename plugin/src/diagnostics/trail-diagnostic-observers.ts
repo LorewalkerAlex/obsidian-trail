@@ -102,7 +102,7 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly projects: Pick<
     TrailApplicationSession["projects"],
-    "changeInitiative" | "changeStatus" | "create" | "editProperties"
+    "changeInitiative" | "changeStatus" | "create" | "createFromDraft" | "editProperties"
   >;
   readonly triage: Pick<
     TrailApplicationSession["triage"],
@@ -384,6 +384,26 @@ export function createDiagnosticTrailUiActions(
             diagnostics,
             "ui.project.create",
             session.projects.create(title),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.project.create", error, data);
+        }
+      },
+      createFromDraft(input): TrailEntityMutationReceipt {
+        const data = {
+          descriptionProvided: input.description !== undefined && input.description.trim() !== "",
+          due: input.due ?? null,
+          initiativeId: input.initiativeId ?? null,
+          labelCount: input.labelIds.length,
+          priority: input.priority ?? null,
+          titleLength: input.title.length,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.project.create",
+            session.projects.createFromDraft(input),
             data,
           );
         } catch (error: unknown) {

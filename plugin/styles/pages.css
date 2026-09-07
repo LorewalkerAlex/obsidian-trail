@@ -463,7 +463,7 @@ body button.trail-project-timeline__project-title-button {
   background-image: none;
   box-shadow: none;
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
   text-align: left;
 }
 
@@ -544,4 +544,72 @@ body button.trail-project-timeline__project-title-button:focus-visible {
   line-height: 1;
   transform: translate(-50%, -50%);
   white-space: nowrap;
+}
+
+/* Projects Root composes the Foundation-approved grouped List and Timeline owners without adding a second collection surface. */
+.trail-projects-page {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--trail-surface-canvas);
+  color: var(--trail-text-primary);
+}
+
+.trail-projects-page__header {
+  box-sizing: border-box;
+  display: flex;
+  min-height: var(--trail-control-height-lg);
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--trail-space-4);
+  padding: 0 var(--trail-space-7);
+  border-bottom: 1px solid var(--trail-border-subtle);
+}
+
+.trail-projects-page__title {
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  overflow: hidden;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-projects-page__add-icon {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.4;
+}
+
+.trail-projects-page__content {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.trail-projects-page__groups,
+.trail-projects-page__group,
+.trail-projects-page__timeline {
+  min-width: 0;
+}
+
+.trail-projects-page__group + .trail-projects-page__group {
+  margin-top: var(--trail-space-4);
+}
+
+.trail-projects-page__timeline .trail-project-timeline__scroller {
+  border-top: 0;
 }

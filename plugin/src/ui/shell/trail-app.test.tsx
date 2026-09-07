@@ -23,6 +23,7 @@ import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
+import { createTrailTestRuntimeStore } from "../../test/trail-runtime-test-harness";
 import { TrailApp } from "./trail-app";
 import { createTrailNavigationStore } from "./trail-navigation-state";
 import type { TrailUiActions } from "./trail-ui-actions";
@@ -73,6 +74,9 @@ function readyTriageStore() {
 
 function uiActions(edit = vi.fn()): TrailUiActions {
   return {
+    projects: {
+      createFromDraft: vi.fn(),
+    },
     triage: {
       defer: vi.fn(),
       delete: vi.fn(),
@@ -105,6 +109,7 @@ describe("TrailApp", () => {
       <TrailApp
         actions={uiActions()}
         navigationStore={navigationStore}
+        onNavigate={vi.fn()}
         runtimeStore={createTrailRuntimeStore()}
         showDevelopment={false}
       />,
@@ -125,6 +130,7 @@ describe("TrailApp", () => {
       <TrailApp
         actions={uiActions()}
         navigationStore={navigationStore}
+        onNavigate={vi.fn()}
         runtimeStore={runtimeStore}
         showDevelopment
       />,
@@ -137,6 +143,7 @@ describe("TrailApp", () => {
       <TrailApp
         actions={uiActions()}
         navigationStore={navigationStore}
+        onNavigate={vi.fn()}
         runtimeStore={runtimeStore}
         showDevelopment={false}
       />,
@@ -158,6 +165,7 @@ describe("TrailApp", () => {
       <TrailApp
         actions={uiActions(edit)}
         navigationStore={navigationStore}
+        onNavigate={vi.fn()}
         runtimeStore={runtimeStore}
         showDevelopment={false}
       />,
@@ -182,5 +190,32 @@ describe("TrailApp", () => {
       title: "Edited through TrailApp",
     }));
     expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
+  });
+
+  it("emits host navigation intent from Projects Root without mutating location directly", () => {
+    const navigationStore = createTrailNavigationStore({ kind: "projects" });
+    const runtimeStore = createTrailTestRuntimeStore();
+    const onNavigate = vi.fn();
+    const { container } = render(
+      <TrailApp
+        actions={uiActions()}
+        navigationStore={navigationStore}
+        onNavigate={onNavigate}
+        runtimeStore={runtimeStore}
+        showDevelopment={false}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 1, name: "Projects" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Project A" })).toBeInTheDocument();
+    expectSharedChassis(container, { inset: "none", scroll: "nested" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Project A" }));
+    expect(onNavigate).toHaveBeenCalledWith({
+      kind: "project",
+      projectId: "project-a",
+    });
+    expect(navigationStore.getState().location).toEqual({ kind: "projects" });
+    expect(screen.getByRole("heading", { level: 1, name: "Projects" })).toBeInTheDocument();
   });
 });

@@ -10,6 +10,7 @@ import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store"
 import { TrailApp } from "../../ui/shell/trail-app";
 import {
   trailLocationsEqual,
+  type TrailLocation,
   type TrailNavigationStore,
 } from "../../ui/shell/trail-navigation-state";
 import type { TrailUiActions } from "../../ui/shell/trail-ui-actions";
@@ -61,6 +62,19 @@ export class TrailView extends ItemView {
     await super.setState(state, result);
   }
 
+  private async navigate(location: TrailLocation): Promise<void> {
+    const currentViewState = this.leaf.getViewState();
+    const currentLocation = readTrailViewState(currentViewState.state).location;
+    if (trailLocationsEqual(currentLocation, location)) return;
+
+    await this.leaf.setViewState({
+      ...currentViewState,
+      active: true,
+      state: createTrailViewState(location),
+      type: TRAIL_VIEW_TYPE,
+    });
+  }
+
   public async onOpen(): Promise<void> {
     this.contentEl.empty();
     this.contentEl.addClass("trail-view");
@@ -71,6 +85,9 @@ export class TrailView extends ItemView {
         <TrailApp
           actions={this.actions}
           navigationStore={this.navigationStore}
+          onNavigate={(location) => {
+            void this.navigate(location);
+          }}
           runtimeStore={this.runtimeStore}
         />
       </StrictMode>,

@@ -12,6 +12,8 @@ describe("TrailProjectTimelineSpecimen", () => {
     expect(specimen.getByText("Constrained viewport · Timeline scroll owner"))
       .toBeInTheDocument();
     expect(specimen.getAllByText("Ship the Projects workspace")).toHaveLength(2);
+    expect(specimen.getAllByRole("button", { name: "Ship the Projects workspace" }))
+      .toHaveLength(2);
     expect(specimen.getAllByRole("img", { name: "Issue due Aug 28 · overdue" }))
       .toHaveLength(2);
     expect(container.querySelectorAll("[data-span-kind='execution']")).toHaveLength(2);

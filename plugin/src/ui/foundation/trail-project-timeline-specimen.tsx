@@ -84,6 +84,7 @@ function TimelineFixture({ label }: { readonly label: string }) {
   return (
     <TrailProjectTimeline
       label={label}
+      onProjectActivate={() => undefined}
       rangeEnd={TODAY + (64 * DAY_MS)}
       rangeStart={TODAY - (73 * DAY_MS)}
       rows={TIMELINE_ROWS}
