@@ -23,6 +23,8 @@ describe("TrailProjectSummaryRow", () => {
     expect(row).toHaveClass("trail-collection-row");
     expect(screen.getByRole("img", { name: "In Progress status" }))
       .toHaveAttribute("data-status-category", "started");
+    expect(screen.getByRole("img", { name: "In Progress status" }))
+      .toHaveAttribute("data-status-entity-type", "project");
     expect(screen.getByText("In Progress")).toHaveClass("trail-project-summary-row__status");
     expect(screen.getByRole("img", { name: "High priority" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Foundation visual system progress" }))

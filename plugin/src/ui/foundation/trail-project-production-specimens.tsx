@@ -4,22 +4,52 @@ import type {
 } from "../../domain/model/trail-values";
 import { TrailProjectSummaryRow } from "../entities/trail-project-summary-row";
 import { TrailStatusGlyph } from "../entities/trail-status";
+import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import {
   TRAIL_FOUNDATION_CONFIGURATION,
   TRAIL_FOUNDATION_REFERENCE_TIMESTAMP,
 } from "./trail-foundation-fixtures";
-import {
-  LabControlGroup,
-  LabSpecimenRow,
-} from "./trail-lab-showroom";
+import { LabSpecimenRow } from "./trail-lab-showroom";
 
-const STATUS_CASES = [
-  ["backlog", "Backlog"],
-  ["unstarted", "Todo"],
-  ["started", "In Progress"],
-  ["completed", "Done"],
-  ["canceled", "Canceled"],
-] as const satisfies readonly (readonly [TrailStatusCategory, string])[];
+interface TrailWorkflowStatusRowFixture {
+  readonly category: TrailStatusCategory;
+  readonly id: string;
+  readonly label: string;
+  readonly title: string;
+}
+
+const WORKFLOW_STATUS_ROWS: readonly TrailWorkflowStatusRowFixture[] = [
+  {
+    category: "backlog",
+    id: "TRAIL-241",
+    label: "Backlog",
+    title: "Capture a rough planning idea",
+  },
+  {
+    category: "unstarted",
+    id: "TRAIL-242",
+    label: "Todo",
+    title: "Prepare the next implementation slice",
+  },
+  {
+    category: "started",
+    id: "TRAIL-243",
+    label: "In Progress",
+    title: "Calibrate the Projects scanning hierarchy",
+  },
+  {
+    category: "completed",
+    id: "TRAIL-244",
+    label: "Done",
+    title: "Close an accepted visual pass",
+  },
+  {
+    category: "canceled",
+    id: "TRAIL-245",
+    label: "Canceled",
+    title: "Drop a superseded experiment",
+  },
+];
 
 interface TrailProjectRowFixture {
   readonly due?: number;
@@ -65,27 +95,55 @@ const PROJECT_ROWS: readonly TrailProjectRowFixture[] = [
   },
 ];
 
+function TrailWorkflowStatusRow({
+  category,
+  id,
+  label,
+  title,
+}: TrailWorkflowStatusRowFixture) {
+  return (
+    <TrailCollectionRow
+      data-workflow-status-row="true"
+      leading={<TrailStatusGlyph category={category} label={label} />}
+    >
+      <div className="trail-lab-list-row__content">
+        <span className="trail-lab-list-row__id">{id}</span>
+        <span className="trail-lab-list-row__primary">
+          <span className="trail-lab-list-row__title">{title}</span>
+        </span>
+        <span className="trail-lab-list-row__trailing">
+          <span className="trail-lab-list-row__meta">{label}</span>
+        </span>
+      </div>
+    </TrailCollectionRow>
+  );
+}
+
 export function TrailProjectProductionSpecimens() {
   return (
     <>
       <LabSpecimenRow
-        description="Status Category owns the glyph identity while configured names remain explicit presentation input. The five lifecycle categories are visible together without inventing a Status picker."
+        description="Workflow Status is shown inside real Collection Row geometry so lifecycle glyph weight, leading alignment, row rhythm, and scanning can be judged in product-like context instead of as detached icon swatches."
         kind="state-gallery"
-        owner="TrailStatusGlyph"
-        title="Status presentation"
+        owner="TrailStatusGlyph + TrailCollectionRow"
+        title="Workflow status rows"
       >
-        {STATUS_CASES.map(([category, label]) => (
-          <LabControlGroup key={category} label={label}>
-            <TrailStatusGlyph category={category} label={label} />
-          </LabControlGroup>
-        ))}
+        <div className="trail-lab-list">
+          <div className="trail-lab-list__header">
+            <span>Issue workflow</span>
+            <span>5 states</span>
+          </div>
+          {WORKFLOW_STATUS_ROWS.map((issue) => (
+            <TrailWorkflowStatusRow key={issue.category} {...issue} />
+          ))}
+        </div>
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="The production Projects scanning row keeps title strongest and reuses Status, Priority, Progress, and Due owners. Representative actionable, planned, completed, canceled, and unavailable states are fixture-driven only."
+        description="The production Projects scanning row is also the Project Status state gallery: all four Project lifecycle states are shown in the real row owner alongside Priority, Progress, and Due rather than repeated as detached glyph samples."
         kind="composition-gallery"
         owner="TrailProjectSummaryRow"
-        title="Project summary row"
+        title="Project summary rows"
       >
         <div className="trail-lab-list">
           <div className="trail-lab-list__header">

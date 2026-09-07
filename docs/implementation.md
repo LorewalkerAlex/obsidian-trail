@@ -397,6 +397,8 @@ Confirmation
 
 Foundation may force pseudo-states for deterministic comparison only when the specimen hook reuses the same production declaration as the real selector. It must not create a parallel Foundation-only visual language.
 
+A State Gallery may place a production owner inside the smallest realistic production composition when detached swatches would obscure its actual weight, alignment, or scanning rhythm. For example, Status glyph variants may be frozen inside real Collection Row geometry. This remains State Gallery coverage so long as Foundation only supplies fixtures/composition and does not redefine the owner.
+
 **Composition Gallery** assembles production owners with fixture data so hierarchy, density, spacing, alignment, containment, and transient placement can be judged independently from workflow outcomes. Representative compositions include a Triage property family, Queue slice, Review surface, Standard Composer family, and Confirmation family.
 
 **Interaction Mechanics** exercises shared state-transition/event-routing behavior once per mechanical responsibility, for example:
@@ -444,6 +446,8 @@ Foundation Page
 └─ imports and displays those production owners
 ```
 
+Foundation may be the first fixture consumer of a production owner created just in time for a resolved Product need; later Product Page wiring consumes the exact same owner. "Nothing reusable shown in Foundation belongs to Foundation" prohibits duplicate ownership, not fixture-first production development.
+
 A Product Page uses the same production owner and may customize only supported semantic props, slots, and composition.
 
 ### 6.6 Showroom composition and file organization
@@ -484,7 +488,8 @@ Current key status:
 | Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
 | Right Sidebar Inspector carrier | Host-proven | consume as host carrier; Initiative/Project/Issue/Cycle Inspector Read Models and content remain Stage 6/7/8/10 |
 | Foundation Lab | Accepted / Lab-proven / Host-proven | use State Gallery, Composition Gallery, and Interaction Mechanics as separate verification dimensions with orthogonal coverage; reusable ownership remains outside Foundation |
-| Status presentation | Mapped; shared status-definition query evidence exists | Stage 6 implements the semantic visual owner required by Project Summary/Inspector consumers and proves it from Foundation fixtures before real Page wiring |
+| Status presentation | Implemented / Lab-proven / Host-proven; Product consumer pending | keep Workflow Issue circular and Project hexagonal grammars stable; consume them from real Stage 6 Read Models without collapsing them into one universal glyph |
+| Project Summary Row | Implemented / Lab-proven / Host-proven; Product consumer pending | wire the compact Status / title / Status / Priority / Progress / Due owner into Projects Root and Initiative Focus from real Read Models |
 | Progress | Lab-proven / Host-proven | normal/compact/micro/unavailable contract aligned; consume in later Project/Cycle/Home surfaces |
 | Normal-flow layout containment | Accepted / Host-proven | preserve direct-child ownership and explicit overflow responsibility in later Pages |
 | Picker / Popover / Confirmation / Composer | Accepted / Lab-proven / Consumer-proven / Host-proven | consume the accepted shared grammar in later Pages; do not reintroduce Page-local geometry or density overrides |
@@ -763,10 +768,14 @@ Stage 6 is now the active implementation slice. It starts from the accepted Stag
 
 Before Page wiring, establish the Stage 6 UI coverage plan. New reusable visual owners are exercised from semantic fixture data first, with each independent visual dimension covered once and only materially meaningful cross-dimension combinations added. This keeps Foundation as a minimum complete visual basis rather than a Cartesian catalogue.
 
+Current fixture-first checkpoint: Status Presentation and Project Summary Row are implemented and Lab/host-proven in the Foundation showroom. Workflow Issue Status uses the circular lifecycle grammar; Project Status uses the Project-specific hexagonal grammar. The Project Summary Row reuses Project Status, Priority, Progress, and Due production owners in the compact scanning hierarchy. These owners remain pre-consumer maturity until Projects Root or Initiative Focus feeds the same components from real Read Models.
+
+Current evidence is green: the focused Status / Project Summary / Foundation suite passes 4 test files / 11 tests, diagnostics typecheck/build passes, and representative real-Obsidian Foundation inspection accepted the current fixture-first visual checkpoint.
+
 Implementation order:
 
-1. define the semantic presentation inputs and minimal Foundation coverage for Status, Project Summary Row, Group Header, Empty State, and Project Timeline;
-2. implement those production owners and Lab-prove them from fixture projections, including a representative Timeline set that covers execution, planning/lifecycle, closed, Due-marker, and constrained-viewport cases without multiplying every combination;
+1. implement and Lab-prove Group Header and Empty State from semantic fixture inputs without creating Page-local or Foundation-only substitutes;
+2. implement and Lab-prove Project Timeline from resolved geometry fixtures, including a representative set that covers execution, planning/lifecycle, closed, Due-marker, and constrained-viewport cases without multiplying every combination;
 3. implement the Projects Root Read Model with one readable/effective snapshot per top-level evaluation, including the real Timeline projection, then wire List/Timeline to the same filtered Project collection;
 4. implement Initiative Focus by reusing the Project collection owner and Initiative-scoped Query projection;
 5. implement Initiative Inspector Read Model/content through the existing Right Sidebar carrier;

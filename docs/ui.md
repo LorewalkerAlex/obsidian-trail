@@ -69,7 +69,7 @@ The same Domain concept uses the same visual identity everywhere. Density may va
 
 Examples:
 
-- Status keeps one glyph/shape + semantic-color grammar.
+- Status keeps one stable visual identity per semantic status family: Workflow Issue Status uses the circular lifecycle grammar, while Project Status uses the Project-specific hexagonal grammar. Different semantic families do not collapse into one universal Status glyph merely because both are named Status.
 - Priority keeps one compact priority glyph grammar.
 - Labels use deterministic stable-identity colors; dense surfaces may use dots while precise surfaces add names.
 - Due uses one temporal/calendar identity plus derived Today/Overdue emphasis.
@@ -115,7 +115,7 @@ Obsidian-native API/mechanic
 -> custom Trail mechanic only when required
 ```
 
-Context Menu is the canonical example: use Obsidian `Menu` mechanics where practical, styled through the shared Trail contract. Foundation Lab remains a verification consumer of production owners and never becomes a parallel production component library.
+Context Menu is the canonical example: use Obsidian `Menu` mechanics where practical, styled through the shared Trail contract. Foundation Lab is a verification consumer of production owners, but it may be the first consumer of a just-in-time owner whose Product need is already resolved; the same production owner is later consumed by real Product Pages. What is prohibited is a Foundation-only substitute or parallel production component library.
 
 ### 2.5 Layout containment and spatial ownership
 

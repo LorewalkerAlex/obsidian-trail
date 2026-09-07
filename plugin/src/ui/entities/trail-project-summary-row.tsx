@@ -56,7 +56,13 @@ export function TrailProjectSummaryRow({
       data-project-summary-row="true"
       data-terminal={terminal ? "true" : undefined}
       highlighted={highlighted}
-      leading={<TrailStatusGlyph category={statusCategory} label={statusLabel} />}
+      leading={(
+        <TrailStatusGlyph
+          category={statusCategory}
+          entityType="project"
+          label={statusLabel}
+        />
+      )}
       onClick={onActivate === undefined ? undefined : activate}
     >
       <div className="trail-project-summary-row__content">
