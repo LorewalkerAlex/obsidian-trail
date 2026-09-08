@@ -25,14 +25,16 @@ The accepted Stage 5 executable checkpoint immediately preceding this closure do
 refactor: align shared visual grammar
 ```
 
-The public baseline entering the Stage 6 closure round is:
+The accepted Stage 6 executable checkpoint entering Stage 7 is:
 
 ```text
-f1a684d79ed0641ce0f641bf3e86558b5d2731fb
-test: harden stage 6 regression boundaries
+30c57736fbc4b0fc064a77d643741a4fbde3496c
+feat: complete stage 6 initiative focus
 ```
 
-Stage 5 remains closed after functional and visual acceptance of the Triage vertical. Stage 6 is now complete through Projects Root, Initiative Focus, scoped Project creation, and Initiative Inspector host verification; this closure publication advances the active Product slice to Stage 7. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+The public baseline entering the Stage 7 closure round is the same published checkpoint.
+
+Stages 5 and 6 remain closed. Stage 7 is now complete through Project Workspace, scoped Issue creation, Project Inspector, Milestone quick-create, and Right Sidebar host verification; this closure publication advances the active Product slice to Stage 8. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -313,7 +315,7 @@ The architectural contract is frozen by `architecture.md` + `design-to-code-map.
 
 Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
 
-**Stages 0 through 6 are closed. Stage 7 is the active implementation stage.**
+**Stages 0 through 7 are closed. Stage 8 is the active implementation stage.**
 
 ## 6. Foundation Lab Contract
 
@@ -497,22 +499,24 @@ Current key status:
 | --- | --- | --- |
 | Domain/Persistence/Mutation Runtime core | Accepted | consume; do not remodel |
 | readable/effective Runtime snapshot | Implemented | use once per top-level Read Model evaluation; profile before caching |
-| Page/surface Read Model boundary | Consumer-proven through Triage, Projects Root, Initiative Focus, and Initiative Inspector | continue just in time with Stage 7 and later surfaces; no universal ViewModel layer |
+| Page/surface Read Model boundary | Consumer-proven through Triage, Projects Root, Initiative Focus, Project Workspace, Initiative Inspector, and Project Inspector | continue just in time with Stage 8 and later surfaces; no universal ViewModel layer |
 | Button/Input/Checkbox/basic primitives | Accepted / Lab-proven / Consumer-proven / Host-proven | consume; add semantic variants only from proven Product needs |
 | Collection Row / Property Control | Accepted / Lab-proven / Consumer-proven / Host-proven | consume; Stage 4 containment/state calibration is closed |
 | Workspace Frame / Page Surface | Consumer-proven / Host-proven | consume as the stable shared Main View chassis |
 | Collection Controls | Accepted / Consumer-proven / Host-proven | consume the aligned leading/trailing composition; Page-specific control choices remain Page-owned |
 | Host navigation / Sidebar Search boundary | Host-proven | consume as stable shell infrastructure; final Sidebar Search results remain Stage 9 |
-| Right Sidebar Inspector carrier | Host-proven; Initiative Inspector content is Consumer-proven / Host-proven | consume the same carrier for Project/Issue/Cycle Inspector content in Stages 7/8/10 |
+| Right Sidebar Inspector carrier | Host-proven; Initiative and Project Inspector content are Consumer-proven / Host-proven | consume the same carrier for Issue/Cycle Inspector content in Stages 8/10; preserve entry-time reveal without destructively closing unrelated host views |
 | Foundation Lab | Accepted / Lab-proven / Host-proven | use State Gallery, Composition Gallery, and Interaction Mechanics as separate verification dimensions with orthogonal coverage; reusable ownership remains outside Foundation |
 | Page Header | Implemented / Lab-proven / Consumer-proven / Host-proven | reuse shared geometry while each Page supplies identity/actions; do not reintroduce a universal Location Bar |
 | Group Header / Empty State | Implemented / Lab-proven / Consumer-proven | reuse the shared mechanics/presentation; Page/Query still own grouping and empty reason/recovery |
-| Status presentation | Project grammar Accepted / Consumer-proven / Host-proven; Workflow Issue glyph grammar Lab-proven | keep Project hexagonal and Workflow Issue circular identities stable; compact scanning rows use glyph-only visible Status identity without duplicating the configured label as row text |
+| Status presentation | Project and Workflow Issue grammars Accepted / Consumer-proven / Host-proven | keep Project hexagonal and Workflow Issue circular identities stable; compact scanning rows use glyph-only visible Status identity without duplicating the configured label as row text |
 | Project Summary Row | Accepted / Lab-proven / Consumer-proven / Host-proven | reused by Projects Root and Initiative Focus; consume the same owner in later Project collections where the semantic row fits |
 | Project Timeline | Accepted / Lab-proven / Consumer-proven / Host-proven | preserve Timeline-owned horizontal overflow, resolved geometry inputs, and accepted typography/contrast while later Pages reuse only the owned presentation contract |
 | Projects Root Read Model / Page | Accepted / Consumer-proven / Host-proven | preserve List/Timeline over one filtered Project collection as Stage 7 builds Project-local workspaces |
 | Initiative Focus Read Model / Page + Initiative Inspector | Accepted / Consumer-proven / Host-proven | preserve scoped flat Project collection, clean Initiative-prefilled Project creation, and compact structured Inspector properties |
-| Progress | Lab-proven / Host-proven | normal/compact/micro/unavailable contract aligned; consume in later Project/Cycle/Home surfaces |
+| Workflow Issue Row | Accepted / Lab-proven / Consumer-proven / Host-proven | reuse the Project Workspace scanning owner in later Issue collections; do not duplicate Status/Priority/Labels/Due/Estimate presentation |
+| Project Workspace Read Model / Page + Project Inspector | Accepted / Consumer-proven / Host-proven | preserve Status-first List composition, scoped filter/order semantics, clean Project-prefilled Issue creation, structured Inspector properties, derived Progress/Attention, and Milestones |
+| Progress | Accepted / Lab-proven / Consumer-proven / Host-proven | normal/compact/micro/unavailable contract aligned; reuse the same owner in later Cycle/Home surfaces |
 | Normal-flow layout containment | Accepted / Host-proven | preserve direct-child ownership and explicit overflow responsibility in later Pages |
 | Picker / Popover / Confirmation / Composer | Accepted / Lab-proven / Consumer-proven / Host-proven | consume the accepted shared grammar in later Pages; do not reintroduce Page-local geometry or density overrides |
 | Selection / Action Registry / Bulk / Peek | Mapped / deferred | create production owners just in time when a later Product consumer proves the need |
@@ -607,7 +611,7 @@ Current status:
 - **Remaining proven containment defects are repaired** — `f195a6247bf0a7b38a027d3106ba7a1e980b202b` makes shared popover item labels absorb width pressure without invading trailing meta/check regions, and `741848e2bbaec41c81ac7b5cc793be6a3f2821cc` gives dynamic Label Property summaries their own shrink/truncate region.
 - **Final host visual leak is repaired** — `1fc8fc3fc4025c743c064abbb58df07640eded48` prevents Obsidian's generic button chrome from leaking onto Triage row titles without changing row geometry or visual tokens.
 - **Representative host evidence is green** — real Obsidian inspection covers Foundation in the full shell, Triage wide Queue + Review, constrained single-column Review, Collection Row / Property Control containment, and the Label picker top layer; normal-flow siblings remain contained and the final presentation is visually coherent at the supported desktop calibration boundary.
-- **Stage 4 complete / Host-proven and closed** — the existing production warehouse is aligned to the frozen shared ownership/layout contracts and the current owner graph has no remaining proven Stage 4 containment contradiction. Later consumer-driven pixel/token calibration may refine presentation without reopening Stage 4 unless new repository evidence contradicts the frozen contract. Stages 5 and 6 are closed and Stage 7 is the active slice.
+- **Stage 4 complete / Host-proven and closed** — the existing production warehouse is aligned to the frozen shared ownership/layout contracts and the current owner graph has no remaining proven Stage 4 containment contradiction. Later consumer-driven pixel/token calibration may refine presentation without reopening Stage 4 unless new repository evidence contradicts the frozen contract. Stages 5 through 7 are closed and Stage 8 is the active slice.
 
 ### Stage 5 — Finish Triage
 
@@ -667,6 +671,15 @@ Implement:
 - Project Inspector Read Model;
 - Progress / Temporal Attention / Milestones;
 - lifecycle capabilities and Page actions.
+
+Current status:
+
+- **Stage 7 complete / Host-proven and closed** — `ProjectWorkspaceReadModel` evaluates one readable Runtime snapshot, scopes Workflow Issues to the current Project, preserves the complete configured Status skeleton, applies Status/Priority/Milestone/Labels/Due/Estimate filters, and orders Issues deterministically inside Status sections without persisted manual rank.
+- **Project-local Issue scanning is complete** — the production Workflow Issue Row reuses shared Priority/Labels/Due/Estimate presentation, omits redundant Project/Status text where Page/section scope already carries it, exposes Current Cycle and Milestone context, and is exercised by Foundation as a production-owner consumer.
+- **Scoped Issue creation is complete** — Project Workspace uses the standard Issue Composer with the owning Project as clean prefill; terminal Project lifecycle states suppress creation instead of duplicating Domain legality in the Page.
+- **Project Inspector is complete** — the established Right Sidebar carrier hosts Status, Initiative, Priority, Labels, Due, derived Progress, Temporal Attention, and Milestones from an explicit Read Model; Milestone quick-create remains a small Inspector-owned invocation over existing Application semantics.
+- **Inspector host behavior is calibrated** — entering a stable Trail target reveals Trail Inspector when the Right Sidebar is already visible, while a collapsed Right Sidebar still uses the entry-time Main View width threshold; unrelated Obsidian Right Sidebar views are not destructively detached. Inspector text hierarchy and Milestone quick-create containment are host-verified.
+- **Validation is green for the implemented Stage 7 owners** — focused Project Workspace/Inspector, diagnostic-wrapper, host-carrier, and shared-owner suites pass with lint plus production and diagnostics typecheck/build. The closure publication uses repository-wide `npm run check` under the calibrated Vitest worker policy below.
 
 ### Stage 8 — Issue interaction/detail chain
 
@@ -807,6 +820,7 @@ b68d3848c39a55dfa625f8ecc8d78f40c4383f34  feat: establish stage 6 status and pro
 79c5660548f53482dc59db51a24960f8836b1214  feat: establish stage 6 project timeline
 64d377721ce9a9257b450a7741f6e8261c2371fa  feat: establish stage 6 projects root
 f1a684d79ed0641ce0f641bf3e86558b5d2731fb  test: harden stage 6 regression boundaries
+30c57736fbc4b0fc064a77d643741a4fbde3496c  feat: complete stage 6 initiative focus
 ```
 
 Closure facts:
@@ -822,19 +836,33 @@ Stage 6 release evidence is complete: the final focused Inspector suite passed 6
 
 Stage 6 is closed. Selection / Action Registry / Bulk / Peek remain deferred; no Stage 6 consumer proved a need to pull them forward.
 
-### Stage 7 active - Project Workspace + Project Inspector
+### Stage 7 closed - Project Workspace + Project Inspector
 
-Stage 7 now extends the accepted Project planning owners into one Project-local execution workspace. It must reuse the existing Page chassis, Project/Issue semantic owners, shared collection/filter grammar, Standard Composer, and Right Sidebar carrier rather than introducing parallel systems.
+Stage 7 is complete. Project Workspace and Project Inspector extend the accepted Project planning owners into one Project-local execution vertical without introducing parallel Runtime, Query, collection, creation, property, or Right Sidebar systems.
 
-Next implementation order:
+Closure facts:
 
-1. define `ProjectWorkspaceReadModel` over one readable/effective Runtime snapshot, including lifecycle capability and persistent Status-section inputs;
-2. establish the Project-local Issue List composition and Issue Row semantic projection/variants, reusing existing Status/Priority/Labels/Due/Estimate presentation owners;
-3. implement Project-scoped Filter/order behavior and lifecycle gating for planning, active execution, and terminal review without persisting manual rank;
-4. implement `ProjectInspectorReadModel` and content for Status, Initiative, Priority, Labels, Due, Progress, Temporal Attention, and Milestones through the existing Right Sidebar carrier;
-5. add Milestone quick-create and other Stage 7 actions only where the frozen Project Workspace/Inspector contract requires them, then run representative host verification.
+- `ProjectWorkspaceReadModel` owns Project-scoped Issue projection over one readable Runtime snapshot, the persistent complete Status skeleton, deterministic section-local ordering, Current Cycle/Milestone context, Filter options, true/filtered empty semantics, and lifecycle capabilities.
+- Project Workspace consumes the production Workflow Issue Row and shared collection/filter/property grammar. Standard Issue creation carries the current Project as clean editable context rather than creating a Page-local composer.
+- `ProjectInspectorReadModel` owns stable structured properties plus derived Progress, Temporal Attention, and Milestone projections; description remains Main View narrative instead of duplicated sidebar content.
+- Milestone quick-create is contained within the Project Inspector and reuses shared Due/property mechanics.
+- Right Sidebar entry behavior now distinguishes an already-visible host sidebar from a collapsed sidebar: visible sidebars switch to Trail Inspector on stable Trail targets, while collapsed sidebars retain the calibrated width-based auto-reveal policy. Unrelated Obsidian sidebar views remain intact.
+- Representative Obsidian validation covers Project Workspace scanning, Project-prefilled Issue Composer, Project Inspector data/contrast, Right Sidebar retargeting, and Milestone quick-create geometry.
 
-Do not pull Selection / Action Registry / Bulk / Peek forward unless a concrete Stage 7 Product interaction proves the need. Board remains Stage 9; Stage 7 establishes the list-first Project Workspace and Inspector foundation that later execution views reuse.
+Selection / Action Registry / Bulk / Peek remain deferred because Stage 7 did not require them. Board remains Stage 9.
+
+### Stage 8 active - Issue interaction/detail chain
+
+Stage 8 now owns the next coherent chain:
+
+```text
+Issue Row/Card
+-> read-only Peek
+-> Issue Full Item
+-> Issue Inspector
+```
+
+Implement the Issue-specific Read Models and interaction/detail ownership in that order, pulling Selection / Action Registry / Context Menu / Bulk / Peek mechanics forward only when the real Issue chain proves the need.
 
 ## 10. Slice Definition of Done
 
@@ -875,6 +903,12 @@ For Foundation host calibration, use `npm run build:diagnostics`. The production
 ### Shared contracts / Domain / schema / tooling / broad refactor
 
 Escalate to repository-wide `npm run check` when the consumer graph is cross-cutting, uncertain, or the change is a formal release gate.
+
+### Test-runner contention calibration
+
+Vitest keeps file parallelism enabled, but normal runs cap `maxWorkers` at `"50%"` so jsdom/React-heavy files do not compete for every available logical worker on faster and slower development machines. Ordinary tests retain Vitest's normal short timeout. Only the two whole-showroom `TrailFoundationLab` tests carry an explicit 30-second timeout because they render the full production-owner showroom and perform broad accessibility/interaction scans; this is contention margin, not permission for ordinary tests to become slow.
+
+If Foundation Lab still approaches that timeout under the capped worker policy, reduce the Lab smoke-test responsibility by moving component-specific assertions to the production owner/specimen tests rather than raising the global timeout again.
 
 A visual Foundation specimen does not replace owner tests, Product-consumer tests, or host validation. It is the stable visual/interaction showroom for reusable production parts.
 

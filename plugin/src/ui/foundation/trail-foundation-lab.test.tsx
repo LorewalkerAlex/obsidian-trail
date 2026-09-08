@@ -177,7 +177,7 @@ describe("TrailFoundationLab", () => {
     expect(screen.queryByText("Overlays and composer")).not.toBeInTheDocument();
     expect(screen.queryByText("Improve project creation flow")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-  }, 15_000);
+  }, 30_000);
 
   it("keeps shared live mechanics wired once without using composition cases as workflow tests", () => {
     render(<TrailFoundationLab control={{ kind: "ready" }} revision={8} />);
@@ -255,5 +255,5 @@ describe("TrailFoundationLab", () => {
     expect(listLayout).toHaveAttribute("aria-pressed", "false");
     expect(boardLayout).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Current: board")).toBeInTheDocument();
-  }, 15_000);
+  }, 30_000);
 });

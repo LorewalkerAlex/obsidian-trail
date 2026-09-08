@@ -94,7 +94,7 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],
-    "changeMilestone" | "changeStatus" | "create" | "editProperties" | "moveToProject"
+    "changeMilestone" | "changeStatus" | "create" | "createFromDraft" | "editProperties" | "moveToProject"
   >;
   readonly milestones: Pick<
     TrailApplicationSession["milestones"],
@@ -243,6 +243,28 @@ export function createDiagnosticTrailUiActions(
             diagnostics,
             "ui.workflow.issue-create",
             session.issues.create(projectId, title),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.workflow.issue-create", error, data);
+        }
+      },
+      createFromDraft(input): TrailEntityMutationReceipt {
+        const data = {
+          descriptionProvided: input.description !== undefined && input.description.trim() !== "",
+          due: input.due ?? null,
+          estimate: input.estimate ?? null,
+          labelCount: input.labelIds.length,
+          milestoneId: input.milestoneId ?? null,
+          priority: input.priority ?? null,
+          projectId: input.projectId,
+          titleLength: input.title.length,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.workflow.issue-create",
+            session.issues.createFromDraft(input),
             data,
           );
         } catch (error: unknown) {

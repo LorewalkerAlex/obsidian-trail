@@ -32,10 +32,10 @@ export function selectTrailReadableDefaultProject(
 }
 
 /**
- * Triage Accept creates a Backlog Workflow Issue, so only Projects that can
- * accept that non-terminal state are legal targets.
+ * Standard Workflow Issue creation always enters Backlog, so only Projects that
+ * can accept that non-terminal state are legal creation destinations.
  */
-export function selectTrailTriageAcceptProjectsFromReadableSnapshot(
+export function selectTrailWorkflowIssueCreationProjectsFromReadableSnapshot(
   readable: TrailEffectiveRuntimeSnapshot,
 ): readonly TrailProject[] {
   const configuration = readable.authoritative.configuration;
@@ -53,6 +53,16 @@ export function selectTrailTriageAcceptProjectsFromReadableSnapshot(
         && canTrailProjectAcceptWorkflowIssue(projectStatus, backlog);
     })
     .sort(compareProjects);
+}
+
+/**
+ * Triage Accept creates the same Backlog Workflow Issue as standard creation,
+ * so it reuses the canonical creation-destination projection.
+ */
+export function selectTrailTriageAcceptProjectsFromReadableSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
+): readonly TrailProject[] {
+  return selectTrailWorkflowIssueCreationProjectsFromReadableSnapshot(readable);
 }
 
 export function selectTrailTriageAcceptProjectIds(

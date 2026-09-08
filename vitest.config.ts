@@ -8,6 +8,7 @@ export default defineConfig({
       "plugin/src/**/*.test.ts",
       "plugin/src/**/*.test.tsx",
     ],
+    maxWorkers: "50%",
     clearMocks: true,
     restoreMocks: true,
   },

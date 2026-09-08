@@ -8,9 +8,14 @@ import {
   TRAIL_INSPECTOR_VIEW_TYPE,
 } from "./trail-inspector-host";
 
-type TestWorkspace = Pick<Workspace, "detachLeavesOfType" | "ensureSideLeaf">;
+type TestWorkspace = Pick<
+  Workspace,
+  "detachLeavesOfType" | "ensureSideLeaf" | "rightSplit"
+>;
 
-function createWorkspace(): {
+function createWorkspace(
+  { rightSidebarCollapsed = true }: { readonly rightSidebarCollapsed?: boolean } = {},
+): {
   readonly detachLeavesOfType: ReturnType<typeof vi.fn>;
   readonly ensureSideLeaf: ReturnType<typeof vi.fn>;
   readonly workspace: TestWorkspace;
@@ -23,6 +28,7 @@ function createWorkspace(): {
     workspace: {
       detachLeavesOfType,
       ensureSideLeaf,
+      rightSplit: { collapsed: rightSidebarCollapsed } as Workspace["rightSplit"],
     },
   };
 }
@@ -62,8 +68,8 @@ describe("TrailInspectorHost", () => {
     expect(detachLeavesOfType).not.toHaveBeenCalled();
   });
 
-  it("creates the carrier without revealing it when the main pane is narrow", async () => {
-    const { ensureSideLeaf, workspace } = createWorkspace();
+  it("creates the carrier without revealing it when the main pane is narrow and the sidebar is closed", async () => {
+    const { ensureSideLeaf, workspace } = createWorkspace({ rightSidebarCollapsed: true });
     const store = createTrailInspectorStore();
     const host = new TrailInspectorHost(workspace, store);
 
@@ -73,6 +79,20 @@ describe("TrailInspectorHost", () => {
       TRAIL_INSPECTOR_VIEW_TYPE,
       "right",
       { active: false, reveal: false },
+    );
+  });
+
+  it("reveals the Inspector on target entry when the right sidebar is already visible", async () => {
+    const { ensureSideLeaf, workspace } = createWorkspace({ rightSidebarCollapsed: false });
+    const store = createTrailInspectorStore();
+    const host = new TrailInspectorHost(workspace, store);
+
+    await host.enterLocation({ kind: "project", projectId: "project-a" }, 700);
+
+    expect(ensureSideLeaf).toHaveBeenCalledWith(
+      TRAIL_INSPECTOR_VIEW_TYPE,
+      "right",
+      { active: true, reveal: true },
     );
   });
 

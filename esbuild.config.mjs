@@ -20,6 +20,7 @@ const stylesheetSources = [
   "plugin/styles/patterns-page-chrome.css",
   "plugin/styles/entities.css",
   "plugin/styles/entities-project-summary.css",
+  "plugin/styles/entities-workflow.css",
   "plugin/styles/pages.css",
   "plugin/styles/pages-projects.css",
   "plugin/styles/shell.css",

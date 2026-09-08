@@ -2,6 +2,7 @@ import { useStore } from "zustand";
 
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TrailInitiativeInspector } from "../pages/projects/trail-initiative-inspector";
+import { TrailProjectInspector } from "../pages/projects/trail-project-inspector";
 import type { TrailInspectorStore, TrailInspectorTarget } from "./trail-inspector-state";
 import type { TrailUiActions } from "./trail-ui-actions";
 
@@ -57,6 +58,16 @@ export function TrailInspector({
         actions={actions.initiatives}
         initiativeId={target.initiativeId}
         key={target.initiativeId}
+        runtimeStore={runtimeStore}
+      />
+    );
+  }
+  if (target.kind === "project") {
+    return (
+      <TrailProjectInspector
+        actions={{ milestones: actions.milestones, projects: actions.projects }}
+        key={target.projectId}
+        projectId={target.projectId}
         runtimeStore={runtimeStore}
       />
     );

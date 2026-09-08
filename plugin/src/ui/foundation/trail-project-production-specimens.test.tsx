@@ -28,6 +28,18 @@ describe("TrailProjectProductionSpecimens", () => {
       expect(trailingRegion).toBeEmptyDOMElement();
     }
 
+    const issueGallery = within(screen.getByRole("group", { name: "Project workspace issue rows" }));
+    expect(issueGallery.getByRole("button", { name: "Collapse In progress" }))
+      .toHaveAttribute("aria-expanded", "true");
+    expect(issueGallery.getByText("Establish workspace page composition")).toBeInTheDocument();
+    expect(issueGallery.getByText("Workspace interaction pass")).toBeInTheDocument();
+    expect(issueGallery.getByLabelText("In current cycle")).toHaveTextContent("Current");
+    expect(issueGallery.getByLabelText("Large estimate")).toHaveTextContent("L");
+    expect(issueGallery.queryByText("In Progress", { selector: ".trail-workflow-issue-row__content *" }))
+      .not.toBeInTheDocument();
+    expect(container.querySelectorAll("[data-workflow-issue-row='true']"))
+      .toHaveLength(3);
+
     const projectGallery = within(screen.getByRole("group", { name: "Project summary rows" }));
     expect(projectGallery.getByRole("button", { name: "Collapse Initiative Alpha" }))
       .toHaveAttribute("aria-expanded", "true");

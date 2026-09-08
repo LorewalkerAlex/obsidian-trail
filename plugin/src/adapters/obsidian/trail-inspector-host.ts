@@ -17,12 +17,17 @@ export const TRAIL_INSPECTOR_AUTO_REVEAL_MAIN_WIDTH = 960;
 
 type TrailInspectorWorkspace = Pick<
   Workspace,
-  "detachLeavesOfType" | "ensureSideLeaf"
+  "detachLeavesOfType" | "ensureSideLeaf" | "rightSplit"
 >;
 
-function shouldRevealTrailInspector(mainViewWidth: number): boolean {
-  return Number.isFinite(mainViewWidth)
-    && mainViewWidth >= TRAIL_INSPECTOR_AUTO_REVEAL_MAIN_WIDTH;
+function shouldRevealTrailInspector(
+  mainViewWidth: number,
+  rightSidebarVisible: boolean,
+): boolean {
+  return rightSidebarVisible || (
+    Number.isFinite(mainViewWidth)
+    && mainViewWidth >= TRAIL_INSPECTOR_AUTO_REVEAL_MAIN_WIDTH
+  );
 }
 
 /**
@@ -91,7 +96,10 @@ export class TrailInspectorHost {
       return;
     }
 
-    const reveal = shouldRevealTrailInspector(mainViewWidth);
+    const reveal = shouldRevealTrailInspector(
+      mainViewWidth,
+      !this.workspace.rightSplit.collapsed,
+    );
     await this.workspace.ensureSideLeaf(
       TRAIL_INSPECTOR_VIEW_TYPE,
       "right",

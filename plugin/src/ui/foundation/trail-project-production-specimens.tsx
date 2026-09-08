@@ -4,6 +4,7 @@ import type {
 } from "../../domain/model/trail-values";
 import { TrailProjectSummaryRow } from "../entities/trail-project-summary-row";
 import { TrailStatusGlyph } from "../entities/trail-status";
+import { TrailWorkflowIssueRow } from "../entities/trail-workflow-issue-row";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import { TrailGroupHeader } from "../patterns/trail-group-header";
 import {
@@ -119,6 +120,10 @@ function TrailWorkflowStatusRow({
 }
 
 export function TrailProjectProductionSpecimens() {
+  const issueLabels = TRAIL_FOUNDATION_CONFIGURATION.labels.filter(({ id }) => (
+    id === "foundation-design" || id === "foundation-navigation"
+  ));
+
   return (
     <>
       <LabSpecimenRow
@@ -135,6 +140,45 @@ export function TrailProjectProductionSpecimens() {
           {WORKFLOW_STATUS_ROWS.map((issue) => (
             <TrailWorkflowStatusRow key={issue.category} {...issue} />
           ))}
+        </div>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="The Project Workspace keeps lifecycle identity in the persistent Status section, while the production Issue row scans Priority, title, Milestone, Labels, Current Cycle, Estimate, and Due without inventing a second Status column."
+        kind="composition-gallery"
+        owner="TrailGroupHeader + TrailWorkflowIssueRow"
+        title="Project workspace issue rows"
+      >
+        <div className="trail-lab-list">
+          <TrailGroupHeader
+            count={3}
+            expanded
+            label="In progress"
+            onExpandedChange={() => { /* static composition */ }}
+          />
+          <TrailWorkflowIssueRow
+            due={TRAIL_FOUNDATION_REFERENCE_TIMESTAMP + (2 * 24 * 60 * 60 * 1000)}
+            estimate="large"
+            inCurrentCycle
+            labels={issueLabels}
+            milestoneTitle="Workspace interaction pass"
+            priority="urgent"
+            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+            title="Establish workspace page composition"
+          />
+          <TrailWorkflowIssueRow
+            estimate="medium"
+            labels={issueLabels.slice(0, 1)}
+            priority="high"
+            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+            title="Validate interaction hierarchy under ordinary width pressure"
+          />
+          <TrailWorkflowIssueRow
+            labels={[]}
+            priority={undefined}
+            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+            title="Keep optional metadata quiet when absent"
+          />
         </div>
       </LabSpecimenRow>
 
