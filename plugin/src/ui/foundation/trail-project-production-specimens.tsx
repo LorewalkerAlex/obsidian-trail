@@ -112,9 +112,7 @@ function TrailWorkflowStatusRow({
         <span className="trail-lab-list-row__primary">
           <span className="trail-lab-list-row__title">{title}</span>
         </span>
-        <span className="trail-lab-list-row__trailing">
-          <span className="trail-lab-list-row__meta">{label}</span>
-        </span>
+        <span aria-hidden="true" className="trail-lab-list-row__trailing" />
       </div>
     </TrailCollectionRow>
   );
@@ -124,7 +122,7 @@ export function TrailProjectProductionSpecimens() {
   return (
     <>
       <LabSpecimenRow
-        description="Workflow Status is shown inside real Collection Row geometry so lifecycle glyph weight, leading alignment, row rhythm, and scanning can be judged in product-like context instead of as detached icon swatches."
+        description="Compact Workflow Issue rows use the Status glyph as the visible lifecycle identity without repeating its configured label as row text. The configured label remains the glyph's accessible name; Status-section text remains a separate structural responsibility."
         kind="state-gallery"
         owner="TrailStatusGlyph + TrailCollectionRow"
         title="Workflow status rows"
@@ -141,7 +139,7 @@ export function TrailProjectProductionSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="The production Projects scanning row is also the Project Status state gallery: all four Project lifecycle states are shown beneath the real grouped-collection context alongside Priority, Progress, and Due rather than repeated as detached glyph samples."
+        description="The production Projects scanning row is also the Project Status state gallery: the leading Project Status glyph carries lifecycle identity, while Priority, Progress, and Due remain separate scan metadata without a duplicate Status text column."
         kind="composition-gallery"
         owner="TrailProjectSummaryRow"
         title="Project summary rows"

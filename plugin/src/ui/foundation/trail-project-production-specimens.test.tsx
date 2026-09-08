@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { TrailProjectProductionSpecimens } from "./trail-project-production-specimens";
 
 describe("TrailProjectProductionSpecimens", () => {
-  it("shows workflow Status and Project Status inside realistic collection rows", () => {
+  it("shows Issue and Project lifecycle identity through glyph-only compact scanning rows", () => {
     const { container } = render(<TrailProjectProductionSpecimens />);
 
     const workflowGallery = within(screen.getByRole("group", { name: "Workflow status rows" }));
@@ -18,7 +18,15 @@ describe("TrailProjectProductionSpecimens", () => {
     expect(workflowGallery.getByRole("img", { name: "Canceled status" })).toBeInTheDocument();
     expect(workflowGallery.getByText("Calibrate the Projects scanning hierarchy"))
       .toBeInTheDocument();
-    expect(container.querySelectorAll("[data-workflow-status-row='true']")).toHaveLength(5);
+    expect(container.querySelectorAll("[data-workflow-status-row='true']"))
+      .toHaveLength(5);
+    const workflowTrailingRegions = Array.from(container.querySelectorAll(
+      "[data-workflow-status-row='true'] .trail-lab-list-row__trailing",
+    ));
+    expect(workflowTrailingRegions).toHaveLength(5);
+    for (const trailingRegion of workflowTrailingRegions) {
+      expect(trailingRegion).toBeEmptyDOMElement();
+    }
 
     const projectGallery = within(screen.getByRole("group", { name: "Project summary rows" }));
     expect(projectGallery.getByRole("button", { name: "Collapse Initiative Alpha" }))
@@ -40,6 +48,9 @@ describe("TrailProjectProductionSpecimens", () => {
     expect(projectGallery.getByRole("progressbar", {
       name: "Retired project with no current progress denominator progress",
     })).toHaveAttribute("aria-valuetext", "Unavailable");
-    expect(container.querySelectorAll("[data-project-summary-row='true']")).toHaveLength(4);
+    expect(container.querySelectorAll("[data-project-summary-row='true']"))
+      .toHaveLength(4);
+    expect(container.querySelectorAll(".trail-project-summary-row__status"))
+      .toHaveLength(0);
   });
 });

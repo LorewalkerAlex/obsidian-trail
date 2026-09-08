@@ -1,0 +1,13 @@
+/* Projects Root page rhythm: Page chrome is shared; this file owns only Projects composition spacing. */
+.trail-projects-page__groups {
+  padding-bottom: var(--trail-space-10);
+}
+
+.trail-projects-page__group + .trail-projects-page__group {
+  margin-top: var(--trail-space-8);
+}
+
+/* Timeline reads as an open temporal canvas; calendar grid carries the structure. */
+.trail-project-timeline__row {
+  box-shadow: none;
+}

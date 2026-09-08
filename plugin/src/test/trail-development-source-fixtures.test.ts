@@ -1,20 +1,20 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { validateTrailWorkspaceGraph } from "../../domain/validation/trail-workspace-validation";
+import { validateTrailWorkspaceGraph } from "../domain/validation/trail-workspace-validation";
 import {
   isTrailPluginDataSnapshot,
   parseTrailPluginData,
-} from "../../persistence/plugin-data/trail-plugin-data-codec";
-import { parseTrailTestYaml } from "../../test/trail-test-fixtures";
+} from "../persistence/plugin-data/trail-plugin-data-codec";
 import {
   parseInitiativeMarkdown,
   type TrailInitiativeSourceDocument,
-} from "./trail-initiative-codec";
+} from "../markdown/codecs/trail-initiative-codec";
 import {
   parseProjectMarkdown,
   type TrailProjectSourceDocument,
-} from "./trail-project-codec";
+} from "../markdown/codecs/trail-project-codec";
+import { parseTrailTestYaml } from "./trail-test-fixtures";
 
 function markdownPaths(directory: string): readonly string[] {
   return readdirSync(directory)
@@ -46,9 +46,22 @@ function readProjectSource(sourcePath: string): TrailProjectSourceDocument {
 }
 
 function readPluginData() {
-  const parsed = parseTrailPluginData(JSON.parse(
-    readFileSync(".obsidian/plugins/trail/data.json", "utf8"),
-  ));
+  const manifest = JSON.parse(readFileSync("manifest.json", "utf8")) as { readonly id?: unknown };
+  if (typeof manifest.id !== "string" || manifest.id.length === 0) {
+    throw new Error("Checked-in manifest is missing the plugin id");
+  }
+  const pluginId = manifest.id;
+
+  const pluginDataPath = readdirSync(".", { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `${entry.name}/plugins/${pluginId}/data.json`)
+    .find((candidate) => existsSync(candidate));
+
+  if (pluginDataPath === undefined) {
+    throw new Error("Checked-in development Vault plugin data was not found");
+  }
+
+  const parsed = parseTrailPluginData(JSON.parse(readFileSync(pluginDataPath, "utf8")));
   expect(parsed.ok).toBe(true);
   if (!parsed.ok) {
     throw new Error(parsed.issues.map((issue) => issue.message).join("; "));

@@ -77,9 +77,6 @@ export function TrailProjectSummaryRow({
             {title}
           </button>
         )}
-        <span className="trail-project-summary-row__status" title={statusLabel}>
-          {statusLabel}
-        </span>
         <span
           className="trail-project-summary-row__priority"
           title={priorityPresentation.label}

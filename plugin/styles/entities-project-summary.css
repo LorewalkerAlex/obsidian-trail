@@ -1,0 +1,34 @@
+/* Project Summary rows keep one lifecycle glyph and stable scan columns without duplicate Status text. */
+.trail-project-summary-row__content {
+  grid-template-columns:
+    minmax(240px, 2.7fr)
+    24px
+    minmax(96px, 0.75fr)
+    minmax(72px, 0.55fr);
+}
+
+@container (max-width: 760px) {
+  .trail-project-summary-row__content {
+    grid-template-columns: minmax(0, 1fr) 24px minmax(72px, 92px) minmax(64px, 72px);
+  }
+}
+
+@container (max-width: 620px) {
+  .trail-project-summary-row__content {
+    grid-template-columns: minmax(0, 1fr) 24px minmax(64px, 72px);
+  }
+
+  .trail-project-summary-row__progress {
+    display: none;
+  }
+}
+
+@container (max-width: 480px) {
+  .trail-project-summary-row__content {
+    grid-template-columns: minmax(0, 1fr) 24px;
+  }
+
+  .trail-project-summary-row__due {
+    display: none;
+  }
+}

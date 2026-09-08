@@ -523,13 +523,14 @@ Current Cycle List:
 Historical Cycle:
 
 ```text
-[Selection] [Priority] Title   Project   Status   Milestone   Labels   Estimate   Due
+[Selection] [Priority] Title   Project   [Status]   Milestone   Labels   Estimate   Due
 ```
 
 Rules:
 
 - Title is strongest and flexible.
 - Status is omitted when the enclosing Status section already expresses it.
+- When Status must remain visible inside a compact scanning row, its visible identity is the semantic Status glyph. The configured Status label stays available to accessibility, tooltip, picker, section-header, or detail contexts and is not repeated as a parallel row-text column.
 - Project is omitted when Page/lane scope already expresses it.
 - Current Cycle marker is omitted when Cycle Page scope already expresses membership.
 - Description/body stays out of Row.
@@ -570,7 +571,7 @@ Cards do not become mini Full Item views. Description and rarely scanned fields 
 Projects Root / Initiative Focus:
 
 ```text
-[Status] Project title      Status      Priority      Progress      Due
+[Status] Project title      Priority      Progress      Due
 ```
 
 Priority order for constrained width:
@@ -581,6 +582,8 @@ Project identity
 -> meaningful Attention / Priority
 -> Progress / Due / other secondary metadata
 ```
+
+Project Status is glyph-only in this compact scanning row. The configured Status label remains the accessible meaning of the glyph and belongs in section/detail/picker contexts rather than a duplicate visible text column.
 
 Progress remains compact; Projects Root does not turn every row into a large progress card.
 
@@ -1162,16 +1165,16 @@ List groups by Initiative:
 ```text
 v  Initiative Alpha                                      2
 
-   [Status] Project A      In Progress   [Priority] 65%   Sep 08
-   [Status] Project B      Planned                  20%   Sep 20
+   [Status] Project A      [Priority] 65%   Sep 08
+   [Status] Project B                 20%   Sep 20
 
 v  Initiative Beta                                       1
 
-   [Status] Project C      In Progress              40%
+   [Status] Project C                 40%
 
 v  No Initiative                                         1
 
-   [Status] Standalone     Planned
+   [Status] Standalone
 ```
 
 - Initiative identity navigates to Initiative Focus;
@@ -1211,11 +1214,11 @@ Projects / Initiative Alpha                          +     Initiative Inspector
 Filter
 --------------------------------------------------------
 
-[Status] Project A      In Progress   [Priority] 65%   Sep 08
-[Status] Project B      Planned                  20%   Sep 20
-[Status] Project C      In Progress              40%
-[Status] Project D      Completed                100%
-[Status] Project E      Canceled
+[Status] Project A      [Priority] 65%   Sep 08
+[Status] Project B                 20%   Sep 20
+[Status] Project C                 40%
+[Status] Project D                100%
+[Status] Project E
 ```
 
 Rules:
@@ -1368,7 +1371,7 @@ Project lane identity may navigate, but lanes are not Project drop targets. Hori
 | Filter                                                       |
 |--------------------------------------------------------------|
 | [ ] [Priority] Issue title                                   |
-|                  Project Trail        In Progress     Sep 08 |
+|                  Project Trail        [Status]        Sep 08 |
 | ...                                                          |
 |--------------------------------------------------------------|
 | 3 selected                              Cancel   Add 3 issues |
@@ -1382,7 +1385,7 @@ Selection
 Priority
 Title
 Project
-Status
+Status glyph
 Due
 ```
 
@@ -1448,7 +1451,7 @@ History is a chronological compact browser; Historical Cycle is flat List-only, 
 Historical Row:
 
 ```text
-[Selection] [Priority] Title   Project   Status   Milestone   Labels   Estimate   Due
+[Selection] [Priority] Title   Project   [Status]   Milestone   Labels   Estimate   Due
 ```
 
 ### 7.7 Triage
@@ -1781,7 +1784,7 @@ A surface may recompose, wrap, truncate, or omit secondary information as capaci
 | --- | --- | --- |
 | Home | multiple modules share width; Work Trend + Weekly Notes may sit side by side | reflow vertically in semantic order; keep historical horizon |
 | Triage | Queue + Review split | focused Review; preserve Queue/Filter/Order session state |
-| Projects / Initiative List | more project metadata | remove secondary metadata; keep title + Status longest |
+| Projects / Initiative List | more project metadata | remove secondary metadata; keep title + Status glyph longest |
 | Project / Cycle List | more Issue metadata | reduce secondary metadata; preserve Title and necessary scope identity |
 | Project / Cycle Board | multiple useful-width columns; Cycle has Project swimlanes | preserve useful card/column width and scroll Board horizontally |
 | Projects Timeline | wide time axis | Timeline owns horizontal navigation/scroll; Page does not |

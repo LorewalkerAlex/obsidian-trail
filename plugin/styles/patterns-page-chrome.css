@@ -1,0 +1,77 @@
+/* Shared Page chrome: identity/action geometry plus readable active view controls. */
+.trail-page-header {
+  box-sizing: border-box;
+  display: grid;
+  min-width: 0;
+  min-height: 40px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--trail-space-8);
+  padding: 0 var(--trail-space-7);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  background: var(--trail-surface-canvas);
+}
+
+.trail-page-header[data-has-breadcrumb="true"] {
+  min-height: 50px;
+  padding-top: var(--trail-space-4);
+  padding-bottom: var(--trail-space-4);
+}
+
+.trail-page-header__identity {
+  display: grid;
+  min-width: 0;
+  gap: var(--trail-space-1);
+}
+
+.trail-page-header__breadcrumb {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-3);
+  overflow: hidden;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  line-height: 1.2;
+}
+
+.trail-page-header__title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-strong);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-page-header__actions {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--trail-space-2);
+}
+
+.trail-view-layout-switch .trail-icon-button[aria-pressed="true"] {
+  background: var(--trail-state-hover-strong);
+  box-shadow: inset 0 0 0 1px var(--trail-control-border);
+  color: var(--trail-text-secondary);
+}
+
+.trail-view-layout-switch .trail-icon-button[aria-pressed="true"]:hover {
+  background: var(--trail-control-surface-pressed);
+  box-shadow: inset 0 0 0 1px var(--trail-control-border-hover);
+  color: var(--trail-text-primary);
+}
+
+.trail-view-layout-switch .trail-icon-button[aria-pressed="true"]:focus-visible {
+  background: var(--trail-control-surface-hover);
+  box-shadow:
+    inset 0 0 0 1px var(--trail-control-border),
+    0 0 0 1px var(--trail-surface-canvas),
+    0 0 0 2px var(--trail-accent);
+  color: var(--trail-text-primary);
+}

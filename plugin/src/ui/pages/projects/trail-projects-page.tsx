@@ -14,6 +14,7 @@ import { TrailProjectComposer } from "../../entities/trail-standard-creation-com
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
 import { TrailEmptyState } from "../../patterns/trail-empty-state";
 import { TrailGroupHeader } from "../../patterns/trail-group-header";
+import { TrailPageHeader } from "../../patterns/trail-page-header";
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
@@ -202,15 +203,17 @@ export function TrailProjectsPage({
 
   return (
     <section className="trail-projects-page" aria-label="Projects">
-      <header className="trail-projects-page__header">
-        <h1 className="trail-projects-page__title">Projects</h1>
-        <TrailIconButton
-          disabled={!writable}
-          icon={<TrailAddIcon />}
-          label="Add project"
-          onClick={openComposer}
-        />
-      </header>
+      <TrailPageHeader
+        actions={(
+          <TrailIconButton
+            disabled={!writable}
+            icon={<TrailAddIcon />}
+            label="Add project"
+            onClick={openComposer}
+          />
+        )}
+        title="Projects"
+      />
 
       {readModel === null ? null : (
         <>

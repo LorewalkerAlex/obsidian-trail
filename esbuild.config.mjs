@@ -17,8 +17,11 @@ const stylesheetSources = [
   "plugin/styles/obsidian-native.css",
   "plugin/styles/primitives.css",
   "plugin/styles/patterns.css",
+  "plugin/styles/patterns-page-chrome.css",
   "plugin/styles/entities.css",
+  "plugin/styles/entities-project-summary.css",
   "plugin/styles/pages.css",
+  "plugin/styles/pages-projects.css",
   "plugin/styles/shell.css",
   "plugin/styles/foundation.css",
 ];

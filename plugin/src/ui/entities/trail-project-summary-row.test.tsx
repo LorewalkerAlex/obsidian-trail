@@ -7,7 +7,7 @@ const REFERENCE_DUE = Date.UTC(2026, 8, 18, 9);
 
 describe("TrailProjectSummaryRow", () => {
   it("composes the compact Projects scanning hierarchy from explicit semantic props", () => {
-    render(
+    const { container } = render(
       <TrailProjectSummaryRow
         due={REFERENCE_DUE}
         priority="high"
@@ -25,7 +25,7 @@ describe("TrailProjectSummaryRow", () => {
       .toHaveAttribute("data-status-category", "started");
     expect(screen.getByRole("img", { name: "In Progress status" }))
       .toHaveAttribute("data-status-entity-type", "project");
-    expect(screen.getByText("In Progress")).toHaveClass("trail-project-summary-row__status");
+    expect(container.querySelector(".trail-project-summary-row__status")).toBeNull();
     expect(screen.getByRole("img", { name: "High priority" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Foundation visual system progress" }))
       .toHaveClass("trail-progress--micro");

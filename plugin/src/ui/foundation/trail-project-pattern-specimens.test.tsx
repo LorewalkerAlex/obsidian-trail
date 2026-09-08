@@ -4,8 +4,14 @@ import { describe, expect, it } from "vitest";
 import { TrailProjectPatternSpecimens } from "./trail-project-pattern-specimens";
 
 describe("TrailProjectPatternSpecimens", () => {
-  it("shows minimum-complete Group Header and Empty State project fixtures", () => {
+  it("shows minimum-complete Page Header, Group Header, and Empty State project fixtures", () => {
     const { container } = render(<TrailProjectPatternSpecimens />);
+
+    const pageHeaderGallery = within(screen.getByRole("group", { name: "Page header" }));
+    expect(pageHeaderGallery.getByRole("heading", { level: 1, name: "Projects" }))
+      .toHaveClass("trail-page-header__title");
+    expect(pageHeaderGallery.getByRole("button", { name: "Add project" }))
+      .toBeInTheDocument();
 
     const groupHeaderGallery = within(screen.getByRole("group", { name: "Group header" }));
     expect(groupHeaderGallery.getByRole("button", { name: "Collapse Initiative Alpha" }))
