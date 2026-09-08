@@ -167,6 +167,16 @@ Fixture data may encode already-resolved outcomes such as Status presentation, P
 
 This enables UI owners to be designed and visually accepted early while preserving one eventual data authority. Real Product completion still requires the corresponding Query/Application integration.
 
+### 4.5 Regression hardening gates
+
+Recurring calibration failures should become mechanically difficult to reintroduce when a narrow repository guard can express the boundary without creating a new framework.
+
+- **Foundation production-path parity** — when a supported production prop materially changes the rendered element, selector path, focus behavior, or interaction path, at least one representative Foundation specimen must exercise the same branch used by the real Product consumer. A passive rendering branch does not prove an interactive branch.
+- **Checked-in development-source gate** — changes to checked-in Trail sources or host/plugin-data fixtures used for calibration must pass the production codecs and workspace-graph validation before host calibration. Host screenshots are not the first validator of fixture legality.
+- **Stable Page navigation boundary** — Product Pages emit navigation intents through injected shell/host-aware callbacks. They do not import or mutate `TrailNavigationStore` directly; Obsidian ViewState/history remains the authority for stable Page navigation, while store restoration is host-state replay rather than a Page navigation mechanism.
+
+Current automated enforcement includes `plugin/src/test/trail-development-source-fixtures.test.ts` for checked-in source/graph validity and `plugin/src/test/trail-architecture-guard.test.ts` for the Product Page navigation import boundary. Foundation owner tests remain responsible for proving materially different production branches in the specimens that exercise them.
+
 ## 5. Stage 0 — Read Architecture
 
 ### 5.1 Frozen read chain

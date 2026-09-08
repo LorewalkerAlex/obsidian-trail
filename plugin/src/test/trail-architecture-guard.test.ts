@@ -11,6 +11,7 @@ import * as ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const SOURCE_ROOT = join(process.cwd(), "plugin", "src");
+const PAGE_ROOT = join(SOURCE_ROOT, "ui", "pages");
 const PATH_AUTHORITY = join(
   SOURCE_ROOT,
   "markdown",
@@ -18,6 +19,7 @@ const PATH_AUTHORITY = join(
   "trail-paths.ts",
 );
 const BUILD_CONFIG = join(process.cwd(), "esbuild.config.mjs");
+const HOST_NAVIGATION_MODULE = "trail-navigation-state";
 
 function collectTypeScriptFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true })
@@ -38,15 +40,30 @@ function repoRelative(path: string): string {
   return relative(process.cwd(), path).split(sep).join("/");
 }
 
-function syntaxTokens(path: string): string[] {
-  const source = readFileSync(path, "utf8");
-  const sourceFile = ts.createSourceFile(
+function parseSource(path: string): ts.SourceFile {
+  return ts.createSourceFile(
     path,
-    source,
+    readFileSync(path, "utf8"),
     ts.ScriptTarget.Latest,
     true,
     path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
+}
+
+function importSpecifiers(path: string): string[] {
+  return parseSource(path).statements.flatMap((statement) => {
+    if (
+      !ts.isImportDeclaration(statement)
+      || !ts.isStringLiteralLike(statement.moduleSpecifier)
+    ) {
+      return [];
+    }
+    return [statement.moduleSpecifier.text];
+  });
+}
+
+function syntaxTokens(path: string): string[] {
+  const sourceFile = parseSource(path);
   const tokens: string[] = [];
 
   function visit(node: ts.Node): void {
@@ -66,6 +83,8 @@ function syntaxTokens(path: string): string[] {
 describe("Trail architecture guards", () => {
   const allSourceFiles = collectTypeScriptFiles(SOURCE_ROOT);
   const productionFiles = allSourceFiles.filter((path) => !isTestFile(path));
+  const pageProductionFiles = collectTypeScriptFiles(PAGE_ROOT)
+    .filter((path) => !isTestFile(path));
 
   it("keeps migration-stage identity out of production symbols and runtime text", () => {
     const stageLanguage = [
@@ -96,6 +115,16 @@ describe("Trail architecture guards", () => {
       .filter((path) => path !== PATH_AUTHORITY)
       .filter((path) => syntaxTokens(path).some((token) => token.includes("Trail/")))
       .map(repoRelative);
+
+    expect(violations).toEqual([]);
+  });
+
+  it("keeps stable Product Page navigation behind the host-aware shell bridge", () => {
+    const violations = pageProductionFiles.flatMap((path) =>
+      importSpecifiers(path)
+        .filter((specifier) => specifier.endsWith(HOST_NAVIGATION_MODULE))
+        .map((specifier) => `${repoRelative(path)} :: ${specifier}`),
+    );
 
     expect(violations).toEqual([]);
   });
