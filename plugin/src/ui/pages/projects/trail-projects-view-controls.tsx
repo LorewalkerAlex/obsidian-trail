@@ -4,6 +4,10 @@ import type { TrailConfiguration, TrailStatusDefinition } from "../../../domain/
 import { TRAIL_PROJECT_STATUS_CATEGORIES } from "../../../domain/model/trail-values";
 import { resolveTrailStatusDefinition } from "../../../domain/rules/trail-status-rules";
 import type {
+  TrailInitiativeFocusFilterPropertyId,
+  TrailInitiativeFocusFilterState,
+} from "../../../query/projects/trail-initiative-focus-query";
+import type {
   TrailProjectsRootFilterPropertyId,
   TrailProjectsRootFilterState,
 } from "../../../query/projects/trail-projects-root-query";
@@ -83,38 +87,75 @@ function initiativeOptions(
   ];
 }
 
-function filterProperties(
+function statusFilterProperty(
+  configuration: TrailConfiguration,
+): TrailCollectionFilterProperty<"status"> {
+  return {
+    id: "status",
+    kind: "discrete",
+    label: "Status",
+    options: statusOptions(configuration),
+  };
+}
+
+function priorityFilterProperty(): TrailCollectionFilterProperty<"priority"> {
+  return {
+    id: "priority",
+    kind: "discrete",
+    label: "Priority",
+    options: priorityOptions(),
+  };
+}
+
+function labelsFilterProperty(
+  configuration: TrailConfiguration,
+): TrailCollectionFilterProperty<"labels"> {
+  return {
+    id: "labels",
+    kind: "discrete",
+    label: "Labels",
+    options: labelOptions(configuration),
+    searchable: true,
+  };
+}
+
+function dueFilterProperty(): TrailCollectionFilterProperty<"due"> {
+  return { id: "due", kind: "due", label: "Due" };
+}
+
+function initiativeFilterProperty(
+  initiatives: readonly { readonly id: string; readonly title: string }[],
+): TrailCollectionFilterProperty<"initiative"> {
+  return {
+    id: "initiative",
+    kind: "discrete",
+    label: "Initiative",
+    options: initiativeOptions(initiatives),
+    searchable: true,
+  };
+}
+
+function projectsRootFilterProperties(
   configuration: TrailConfiguration,
   initiatives: readonly { readonly id: string; readonly title: string }[],
 ): readonly TrailCollectionFilterProperty<TrailProjectsRootFilterPropertyId>[] {
   return [
-    {
-      id: "status",
-      kind: "discrete",
-      label: "Status",
-      options: statusOptions(configuration),
-    },
-    {
-      id: "initiative",
-      kind: "discrete",
-      label: "Initiative",
-      options: initiativeOptions(initiatives),
-      searchable: true,
-    },
-    {
-      id: "priority",
-      kind: "discrete",
-      label: "Priority",
-      options: priorityOptions(),
-    },
-    {
-      id: "labels",
-      kind: "discrete",
-      label: "Labels",
-      options: labelOptions(configuration),
-      searchable: true,
-    },
-    { id: "due", kind: "due", label: "Due" },
+    statusFilterProperty(configuration),
+    initiativeFilterProperty(initiatives),
+    priorityFilterProperty(),
+    labelsFilterProperty(configuration),
+    dueFilterProperty(),
+  ];
+}
+
+function initiativeFocusFilterProperties(
+  configuration: TrailConfiguration,
+): readonly TrailCollectionFilterProperty<TrailInitiativeFocusFilterPropertyId>[] {
+  return [
+    statusFilterProperty(configuration),
+    priorityFilterProperty(),
+    labelsFilterProperty(configuration),
+    dueFilterProperty(),
   ];
 }
 
@@ -162,7 +203,7 @@ export function TrailProjectsViewControls({
   ) => void;
 }) {
   const properties = useMemo(
-    () => filterProperties(configuration, initiatives),
+    () => projectsRootFilterProperties(configuration, initiatives),
     [configuration, initiatives],
   );
 
@@ -188,6 +229,49 @@ export function TrailProjectsViewControls({
             { icon: <TrailTimelineLayoutIcon />, label: "Timeline", value: "timeline" },
           ]}
           value={layout}
+        />
+      )}
+    />
+  );
+}
+
+export function TrailInitiativeViewControls({
+  configuration,
+  filter,
+  onClearAllFilters,
+  onClearFilterClause,
+  onSetDueFilter,
+  onToggleDiscreteFilter,
+}: {
+  readonly configuration: TrailConfiguration;
+  readonly filter: TrailInitiativeFocusFilterState;
+  readonly onClearAllFilters: () => void;
+  readonly onClearFilterClause: (propertyId: TrailInitiativeFocusFilterPropertyId) => void;
+  readonly onSetDueFilter: (
+    propertyId: TrailInitiativeFocusFilterPropertyId,
+    value: TrailDueFilterValue,
+  ) => void;
+  readonly onToggleDiscreteFilter: (
+    propertyId: TrailInitiativeFocusFilterPropertyId,
+    value: TrailFilterDiscreteValue,
+  ) => void;
+}) {
+  const properties = useMemo(
+    () => initiativeFocusFilterProperties(configuration),
+    [configuration],
+  );
+
+  return (
+    <TrailViewBar
+      label="Initiative project view controls"
+      leading={(
+        <TrailCollectionFilter
+          onClearAll={onClearAllFilters}
+          onClearClause={onClearFilterClause}
+          onSetDueValue={onSetDueFilter}
+          onToggleDiscreteValue={onToggleDiscreteFilter}
+          properties={properties}
+          state={filter}
         />
       )}
     />

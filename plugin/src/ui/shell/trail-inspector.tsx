@@ -1,9 +1,14 @@
 import { useStore } from "zustand";
 
+import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import { TrailInitiativeInspector } from "../pages/projects/trail-initiative-inspector";
 import type { TrailInspectorStore, TrailInspectorTarget } from "./trail-inspector-state";
+import type { TrailUiActions } from "./trail-ui-actions";
 
 export interface TrailInspectorProps {
+  readonly actions: TrailUiActions;
   readonly inspectorStore: TrailInspectorStore;
+  readonly runtimeStore: TrailRuntimeStore;
 }
 
 function targetKindLabel(target: TrailInspectorTarget): string {
@@ -19,13 +24,8 @@ function targetKindLabel(target: TrailInspectorTarget): string {
   }
 }
 
-export function TrailInspector({ inspectorStore }: TrailInspectorProps) {
-  const target = useStore(inspectorStore, (state) => state.target);
-
-  if (target === null) return null;
-
+function TrailPendingInspector({ target }: { readonly target: TrailInspectorTarget }) {
   const kindLabel = targetKindLabel(target);
-
   return (
     <aside
       aria-label="Trail inspector"
@@ -41,4 +41,26 @@ export function TrailInspector({ inspectorStore }: TrailInspectorProps) {
       </p>
     </aside>
   );
+}
+
+export function TrailInspector({
+  actions,
+  inspectorStore,
+  runtimeStore,
+}: TrailInspectorProps) {
+  const target = useStore(inspectorStore, (state) => state.target);
+
+  if (target === null) return null;
+  if (target.kind === "initiative") {
+    return (
+      <TrailInitiativeInspector
+        actions={actions.initiatives}
+        initiativeId={target.initiativeId}
+        key={target.initiativeId}
+        runtimeStore={runtimeStore}
+      />
+    );
+  }
+
+  return <TrailPendingInspector target={target} />;
 }

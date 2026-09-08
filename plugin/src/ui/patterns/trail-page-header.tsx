@@ -8,11 +8,31 @@ type NativePageHeaderProps = Omit<
   "children" | "className" | "style"
 >;
 
+type NativeBreadcrumbButtonProps = Omit<
+  ComponentPropsWithRef<"button">,
+  "className" | "style" | "type"
+>;
+
 export type TrailPageHeaderProps = NativePageHeaderProps & {
   readonly actions?: ReactNode;
   readonly breadcrumb?: ReactNode;
   readonly title: ReactNode;
 };
+
+export function TrailPageBreadcrumbButton({
+  children,
+  ...props
+}: NativeBreadcrumbButtonProps) {
+  return (
+    <button
+      {...props}
+      className="trail-page-header__breadcrumb-button"
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
 
 export function TrailPageHeader({
   actions,

@@ -1,4 +1,4 @@
-/* Projects Root page rhythm: Page chrome is shared; this file owns only Projects composition spacing. */
+/* Projects area page rhythm: shared chrome/rows stay shared; this file owns only Page composition spacing. */
 .trail-projects-page__groups {
   padding-bottom: var(--trail-space-10);
 }
@@ -7,7 +7,62 @@
   margin-top: var(--trail-space-8);
 }
 
+.trail-initiative-page__content {
+  padding-bottom: var(--trail-space-10);
+}
+
 /* Timeline reads as an open temporal canvas; calendar grid carries the structure. */
 .trail-project-timeline__row {
   box-shadow: none;
+}
+
+/* Initiative Inspector owns only Initiative-specific composition over shared property controls. */
+.trail-initiative-inspector__section {
+  margin-top: var(--trail-space-12);
+}
+
+.trail-initiative-inspector__section-title {
+  margin: 0 0 var(--trail-space-4);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1.2;
+}
+
+.trail-initiative-inspector__properties {
+  display: grid;
+}
+
+.trail-initiative-inspector__property-row {
+  display: grid;
+  min-width: 0;
+  min-height: var(--trail-control-height-lg);
+  grid-template-columns: minmax(64px, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: var(--trail-space-6);
+  border-bottom: 1px solid var(--trail-row-divider);
+}
+
+.trail-initiative-inspector__property-label {
+  min-width: 0;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+}
+
+.trail-initiative-inspector__property-control {
+  display: flex;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.trail-initiative-inspector__property-control > .trail-property-control {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.trail-initiative-inspector__feedback {
+  margin-top: var(--trail-space-8);
+  color: var(--trail-danger);
+  font-size: var(--trail-font-size-supporting);
+  line-height: 1.4;
 }

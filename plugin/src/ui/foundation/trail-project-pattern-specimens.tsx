@@ -1,12 +1,33 @@
 import { TrailEmptyState } from "../patterns/trail-empty-state";
 import { TrailGroupHeader } from "../patterns/trail-group-header";
-import { TrailPageHeader } from "../patterns/trail-page-header";
+import {
+  TrailPageNarrative,
+  type TrailMarkdownRender,
+} from "../patterns/trail-page-narrative";
+import {
+  TrailPageBreadcrumbButton,
+  TrailPageHeader,
+} from "../patterns/trail-page-header";
 import { TrailButton } from "../primitives/trail-button";
 import { TrailIconButton } from "../primitives/trail-icon-button";
 import {
   LabSpecimenRow,
   LabStateGrid,
 } from "./trail-lab-showroom";
+
+const renderNarrativeFixture: TrailMarkdownRender = (_markdown, container) => {
+  const paragraph = container.ownerDocument.createElement("p");
+  paragraph.append("Keep the Initiative focused around ");
+  const link = container.ownerDocument.createElement("a");
+  link.href = "#";
+  link.append("shared context");
+  paragraph.append(link, ".");
+  container.replaceChildren(paragraph);
+  return {
+    completion: Promise.resolve(),
+    dispose: () => container.replaceChildren(),
+  };
+};
 
 function TrailAddIcon() {
   return (
@@ -20,20 +41,52 @@ export function TrailProjectPatternSpecimens() {
   return (
     <>
       <LabSpecimenRow
-        description="Shared page identity and action geometry stays visually above collection controls without turning every page into a universal shell. Projects supplies the title and action; the production pattern owns alignment and constrained hierarchy."
+        description="Shared page identity and action geometry stays visually above collection controls without turning every page into a universal shell. Projects proves the root form; Initiative Alpha proves the same production breadcrumb branch used by scoped Project Pages."
         kind="composition-gallery"
         owner="TrailPageHeader"
         title="Page header"
       >
+        <LabStateGrid>
+          <div style={{ width: "100%" }}>
+            <TrailPageHeader
+              actions={(
+                <TrailIconButton
+                  icon={<TrailAddIcon />}
+                  label="Add project"
+                />
+              )}
+              title="Projects"
+            />
+          </div>
+          <div style={{ width: "100%" }}>
+            <TrailPageHeader
+              actions={(
+                <TrailIconButton
+                  icon={<TrailAddIcon />}
+                  label="Add initiative project"
+                />
+              )}
+              breadcrumb={(
+                <TrailPageBreadcrumbButton>
+                  Projects
+                </TrailPageBreadcrumbButton>
+              )}
+              title="Initiative Alpha"
+            />
+          </div>
+        </LabStateGrid>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="Initiative and Project descriptions share one lightweight Page narrative owner. Foundation supplies resolved host-rendered fixture content while the production Page injects Obsidian Markdown rendering, so visual rhythm stays shared without a Lab Markdown parser."
+        kind="composition-gallery"
+        owner="TrailPageNarrative"
+        title="Page narrative"
+      >
         <div style={{ width: "100%" }}>
-          <TrailPageHeader
-            actions={(
-              <TrailIconButton
-                icon={<TrailAddIcon />}
-                label="Add project"
-              />
-            )}
-            title="Projects"
+          <TrailPageNarrative
+            markdown="Keep the Initiative focused around [[shared context]]."
+            renderMarkdown={renderNarrativeFixture}
           />
         </div>
       </LabSpecimenRow>

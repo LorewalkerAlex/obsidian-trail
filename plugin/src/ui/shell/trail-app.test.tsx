@@ -24,9 +24,18 @@ import {
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
 import { createTrailTestRuntimeStore } from "../../test/trail-runtime-test-harness";
+import type { TrailMarkdownRender } from "../patterns/trail-page-narrative";
 import { TrailApp } from "./trail-app";
 import { createTrailNavigationStore } from "./trail-navigation-state";
 import type { TrailUiActions } from "./trail-ui-actions";
+
+const renderMarkdown: TrailMarkdownRender = (markdown, container) => {
+  container.textContent = markdown;
+  return {
+    completion: Promise.resolve(),
+    dispose: () => container.replaceChildren(),
+  };
+};
 
 function readyTriageStore() {
   const configuration = createTrailTestConfiguration();
@@ -110,6 +119,7 @@ describe("TrailApp", () => {
         actions={uiActions()}
         navigationStore={navigationStore}
         onNavigate={vi.fn()}
+        renderMarkdown={renderMarkdown}
         runtimeStore={createTrailRuntimeStore()}
         showDevelopment={false}
       />,
@@ -131,6 +141,7 @@ describe("TrailApp", () => {
         actions={uiActions()}
         navigationStore={navigationStore}
         onNavigate={vi.fn()}
+        renderMarkdown={renderMarkdown}
         runtimeStore={runtimeStore}
         showDevelopment
       />,
@@ -144,6 +155,7 @@ describe("TrailApp", () => {
         actions={uiActions()}
         navigationStore={navigationStore}
         onNavigate={vi.fn()}
+        renderMarkdown={renderMarkdown}
         runtimeStore={runtimeStore}
         showDevelopment={false}
       />,
@@ -166,6 +178,7 @@ describe("TrailApp", () => {
         actions={uiActions(edit)}
         navigationStore={navigationStore}
         onNavigate={vi.fn()}
+        renderMarkdown={renderMarkdown}
         runtimeStore={runtimeStore}
         showDevelopment={false}
       />,
@@ -201,6 +214,7 @@ describe("TrailApp", () => {
         actions={uiActions()}
         navigationStore={navigationStore}
         onNavigate={onNavigate}
+        renderMarkdown={renderMarkdown}
         runtimeStore={runtimeStore}
         showDevelopment={false}
       />,

@@ -249,7 +249,12 @@ export default class TrailPlugin extends Plugin {
     );
     this.registerView(
       TRAIL_INSPECTOR_VIEW_TYPE,
-      (leaf: WorkspaceLeaf) => new TrailInspectorView(leaf, inspectorStore),
+      (leaf: WorkspaceLeaf) => new TrailInspectorView(
+        leaf,
+        runtimeStore,
+        actions,
+        inspectorStore,
+      ),
     );
 
     const inspectorHost = new TrailInspectorHost(this.app.workspace, inspectorStore);

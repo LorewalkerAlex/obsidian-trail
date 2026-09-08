@@ -1,27 +1,59 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-import { createTrailInspectorStore } from "./trail-inspector-state";
+import { createTrailTestRuntimeStore } from "../../test/trail-runtime-test-harness";
 import { TrailInspector } from "./trail-inspector";
+import { createTrailInspectorStore } from "./trail-inspector-state";
+import type { TrailUiActions } from "./trail-ui-actions";
+
+function actions(): TrailUiActions {
+  return {
+    initiatives: {
+      create: vi.fn(),
+      editProperties: vi.fn(),
+    },
+  } as unknown as TrailUiActions;
+}
 
 describe("TrailInspector", () => {
-  it("renders no product content without a stable target", () => {
-    const store = createTrailInspectorStore();
+  it("dispatches an Initiative target into real Initiative Inspector content", () => {
+    const inspectorStore = createTrailInspectorStore();
+    act(() => inspectorStore.getState().restore({
+      initiativeId: "initiative-a",
+      kind: "initiative",
+    }));
 
-    render(<TrailInspector inspectorStore={store} />);
+    render(
+      <TrailInspector
+        actions={actions()}
+        inspectorStore={inspectorStore}
+        runtimeStore={createTrailTestRuntimeStore()}
+      />,
+    );
 
-    expect(screen.queryByRole("complementary", { name: "Trail inspector" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Initiative A" }))
+      .toBeInTheDocument();
+    expect(screen.queryByText("Inspector content has not been implemented yet."))
+      .not.toBeInTheDocument();
   });
 
-  it("renders only the carrier placeholder for the current target kind", () => {
-    const store = createTrailInspectorStore();
-    store.getState().restore({ kind: "project", projectId: "project-a" });
+  it("keeps later-stage Inspector targets on the existing placeholder", () => {
+    const inspectorStore = createTrailInspectorStore();
+    act(() => inspectorStore.getState().restore({
+      kind: "project",
+      projectId: "project-a",
+    }));
 
-    render(<TrailInspector inspectorStore={store} />);
+    render(
+      <TrailInspector
+        actions={actions()}
+        inspectorStore={inspectorStore}
+        runtimeStore={createTrailTestRuntimeStore()}
+      />,
+    );
 
-    const inspector = screen.getByRole("complementary", { name: "Trail inspector" });
-    expect(inspector).toHaveAttribute("data-target-kind", "project");
-    expect(screen.getByRole("heading", { name: "Project" })).toBeInTheDocument();
-    expect(screen.getByText("Inspector content has not been implemented yet.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Project" })).toBeInTheDocument();
+    expect(screen.getByText("Inspector content has not been implemented yet."))
+      .toBeInTheDocument();
   });
 });

@@ -35,6 +35,34 @@
   line-height: 1.2;
 }
 
+.trail-page-header__breadcrumb-button {
+  appearance: none;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--trail-radius-xs);
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  line-height: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-page-header__breadcrumb-button:hover {
+  background: transparent;
+  box-shadow: none;
+  color: var(--trail-text-secondary);
+}
+
+.trail-page-header__breadcrumb-button:focus-visible {
+  outline: 1px solid var(--trail-accent);
+  outline-offset: 2px;
+}
+
 .trail-page-header__title {
   min-width: 0;
   margin: 0;
@@ -53,6 +81,52 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--trail-space-2);
+}
+
+/* Lightweight Markdown narrative shared by scoped entity Pages. */
+.trail-page-narrative {
+  min-width: 0;
+  padding: var(--trail-space-8) var(--trail-space-7);
+  border-bottom: 1px solid var(--trail-border-subtle);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-body);
+  line-height: 1.45;
+}
+
+.trail-page-narrative__content > :first-child {
+  margin-top: 0;
+}
+
+.trail-page-narrative__content > :last-child {
+  margin-bottom: 0;
+}
+
+.trail-page-narrative p,
+.trail-page-narrative ul,
+.trail-page-narrative ol,
+.trail-page-narrative blockquote {
+  margin-top: 0;
+  margin-bottom: var(--trail-space-4);
+}
+
+.trail-page-narrative h1,
+.trail-page-narrative h2,
+.trail-page-narrative h3,
+.trail-page-narrative h4,
+.trail-page-narrative h5,
+.trail-page-narrative h6 {
+  margin-top: var(--trail-space-6);
+  margin-bottom: var(--trail-space-3);
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-strong);
+  line-height: 1.35;
+}
+
+.trail-page-narrative a {
+  color: var(--trail-text-primary);
+  text-decoration-color: var(--trail-border-default);
+  text-underline-offset: 2px;
 }
 
 .trail-view-layout-switch .trail-icon-button[aria-pressed="true"] {

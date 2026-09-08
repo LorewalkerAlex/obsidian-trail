@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { TrailProjectPatternSpecimens } from "./trail-project-pattern-specimens";
 
 describe("TrailProjectPatternSpecimens", () => {
-  it("shows minimum-complete Page Header, Group Header, and Empty State project fixtures", () => {
+  it("shows minimum-complete Page Header, Page Narrative, Group Header, and Empty State project fixtures", async () => {
     const { container } = render(<TrailProjectPatternSpecimens />);
 
     const pageHeaderGallery = within(screen.getByRole("group", { name: "Page header" }));
@@ -12,6 +12,20 @@ describe("TrailProjectPatternSpecimens", () => {
       .toHaveClass("trail-page-header__title");
     expect(pageHeaderGallery.getByRole("button", { name: "Add project" }))
       .toBeInTheDocument();
+    expect(pageHeaderGallery.getByRole("heading", { level: 1, name: "Initiative Alpha" }))
+      .toHaveClass("trail-page-header__title");
+    expect(pageHeaderGallery.getByRole("button", { name: "Projects" }))
+      .toHaveClass("trail-page-header__breadcrumb-button");
+    expect(pageHeaderGallery.getByRole("button", { name: "Add initiative project" }))
+      .toBeInTheDocument();
+
+    const narrativeGallery = within(screen.getByRole("group", { name: "Page narrative" }));
+    expect(await narrativeGallery.findByText("shared context"))
+      .toHaveAttribute("href", "#");
+    expect(narrativeGallery.getByText(/Keep the Initiative focused around/))
+      .toBeInTheDocument();
+    expect(container.querySelectorAll("[data-trail-page-narrative='true']"))
+      .toHaveLength(1);
 
     const groupHeaderGallery = within(screen.getByRole("group", { name: "Group header" }));
     expect(groupHeaderGallery.getByRole("button", { name: "Collapse Initiative Alpha" }))

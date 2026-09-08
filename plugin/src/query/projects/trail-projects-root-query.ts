@@ -1,19 +1,13 @@
 import type { TrailConfiguration, TrailStatusDefinition } from "../../domain/model/trail-configuration";
 import type {
-  TrailInitiative,
   TrailMilestone,
   TrailProject,
-  TrailWorkflowIssue,
 } from "../../domain/model/trail-entities";
 import {
-  TRAIL_PRIORITIES,
-  TRAIL_PROJECT_STATUS_CATEGORIES,
-  type TrailPriority,
   type TrailProjectId,
   type TrailProjectStatusCategory,
   type TrailTimestamp,
 } from "../../domain/model/trail-values";
-import { resolveTrailStatusDefinition } from "../../domain/rules/trail-status-rules";
 import type { TrailEffectiveRuntimeSnapshot } from "../../runtime/projection/trail-runtime-projection";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
 import {
@@ -21,54 +15,36 @@ import {
   type TrailCollectionFilterState,
   type TrailDiscreteFilterClause,
   isTrailCollectionFilterActive,
-  matchesTrailDueFilter,
   matchesTrailOptionalDiscreteFilter,
-  matchesTrailSetDiscreteFilter,
 } from "../shared/trail-collection-filter";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
+import {
+  compareTrailProjectOrder,
+  createTrailProjectSummaryReadModel,
+  matchesTrailProjectCollectionFilter,
+  requireTrailIssueStatus,
+  requireTrailProjectStatus,
+  selectTrailInitiativeTargets,
+  selectTrailWorkflowIssuesForProject,
+  type TrailProjectCollectionFilterPropertyId,
+  type TrailProjectSummaryReadModel,
+  type TrailProjectWorkflowIssueProjection,
+} from "./trail-project-collection-query";
 
-const PRIORITY_ORDER = new Map<TrailPriority, number>(
-  TRAIL_PRIORITIES.map((priority, index) => [priority, index]),
-);
-const PROJECT_CATEGORY_ORDER = new Map<TrailProjectStatusCategory, number>(
-  TRAIL_PROJECT_STATUS_CATEGORIES.map((category, index) => [category, index]),
-);
+export type {
+  TrailProjectProgressReadModel,
+  TrailProjectSummaryReadModel,
+} from "./trail-project-collection-query";
 
 export type TrailProjectsRootFilterPropertyId =
-  | "due"
-  | "initiative"
-  | "labels"
-  | "priority"
-  | "status";
+  | TrailProjectCollectionFilterPropertyId
+  | "initiative";
 export type TrailProjectsRootFilterState = TrailCollectionFilterState<TrailProjectsRootFilterPropertyId>;
 export type TrailProjectsRootEmptyKind = "filtered" | "projection" | "true";
 
 export interface TrailProjectsRootReadInput {
   readonly filter: TrailProjectsRootFilterState;
   readonly now: TrailTimestamp;
-}
-
-export type TrailProjectProgressReadModel =
-  | {
-      readonly max: number;
-      readonly unavailable?: false;
-      readonly value: number;
-    }
-  | {
-      readonly max?: never;
-      readonly unavailable: true;
-      readonly value?: never;
-    };
-
-export interface TrailProjectSummaryReadModel {
-  readonly due?: TrailTimestamp;
-  readonly id: TrailProjectId;
-  readonly initiativeId?: string;
-  readonly priority: TrailPriority | undefined;
-  readonly progress: TrailProjectProgressReadModel;
-  readonly statusCategory: TrailProjectStatusCategory;
-  readonly statusLabel: string;
-  readonly title: string;
 }
 
 export interface TrailProjectsRootGroupReadModel {
@@ -125,105 +101,14 @@ export interface TrailProjectsRootReadModel {
   readonly visibleProjectIds: readonly TrailProjectId[];
 }
 
-interface TrailWorkflowIssueProjection {
-  readonly issue: TrailWorkflowIssue;
-  readonly status: TrailStatusDefinition;
-}
-
-function priorityOrder(priority: TrailPriority | undefined): number {
-  return priority === undefined
-    ? TRAIL_PRIORITIES.length
-    : PRIORITY_ORDER.get(priority) ?? TRAIL_PRIORITIES.length;
-}
-
-function requireDiscreteClause(
+function requireInitiativeClause(
   clause: TrailCollectionFilterClause | undefined,
-  property: "Initiative" | "Labels" | "Priority" | "Status",
 ): TrailDiscreteFilterClause | undefined {
   if (clause === undefined) return undefined;
   if (clause.kind !== "discrete") {
-    throw new Error(`${property} filter must be a discrete clause`);
+    throw new Error("Initiative filter must be a discrete clause");
   }
   return clause;
-}
-
-function requireProjectStatus(
-  configuration: TrailConfiguration,
-  project: TrailProject,
-): TrailStatusDefinition & { readonly category: TrailProjectStatusCategory } {
-  const status = resolveTrailStatusDefinition(
-    configuration,
-    "project",
-    project.statusDefinitionId,
-  );
-  if (
-    status === undefined
-    || !TRAIL_PROJECT_STATUS_CATEGORIES.includes(status.category as TrailProjectStatusCategory)
-  ) {
-    throw new Error(`Project ${project.id} has no readable Project StatusDefinition`);
-  }
-  return status as TrailStatusDefinition & { readonly category: TrailProjectStatusCategory };
-}
-
-function requireIssueStatus(
-  configuration: TrailConfiguration,
-  issue: TrailWorkflowIssue,
-): TrailStatusDefinition {
-  const status = resolveTrailStatusDefinition(
-    configuration,
-    "issue",
-    issue.statusDefinitionId,
-  );
-  if (status === undefined) {
-    throw new Error(`Issue ${issue.id} has no readable Issue StatusDefinition`);
-  }
-  return status;
-}
-
-function projectStatusOrder(
-  configuration: TrailConfiguration,
-  status: TrailStatusDefinition & { readonly category: TrailProjectStatusCategory },
-): readonly [number, number] {
-  const categoryOrder = PROJECT_CATEGORY_ORDER.get(status.category)
-    ?? TRAIL_PROJECT_STATUS_CATEGORIES.length;
-  const definitionIds = configuration.workflowStatuses.project[status.category].definitionIds;
-  const definitionOrder = definitionIds.indexOf(status.id);
-  return [
-    categoryOrder,
-    definitionOrder < 0 ? definitionIds.length : definitionOrder,
-  ];
-}
-
-function compareOptionalDue(left: TrailTimestamp | undefined, right: TrailTimestamp | undefined): number {
-  if (left === right) return 0;
-  if (left === undefined) return 1;
-  if (right === undefined) return -1;
-  return left - right;
-}
-
-function compareProjectOrder(
-  configuration: TrailConfiguration,
-  left: TrailProject,
-  right: TrailProject,
-): number {
-  const leftStatus = requireProjectStatus(configuration, left);
-  const rightStatus = requireProjectStatus(configuration, right);
-  const leftTerminal = leftStatus.category === "completed" || leftStatus.category === "canceled";
-  const rightTerminal = rightStatus.category === "completed" || rightStatus.category === "canceled";
-  if (leftTerminal !== rightTerminal) return leftTerminal ? 1 : -1;
-
-  const dueOrder = compareOptionalDue(left.due, right.due);
-  if (dueOrder !== 0) return dueOrder;
-
-  const leftStatusOrder = projectStatusOrder(configuration, leftStatus);
-  const rightStatusOrder = projectStatusOrder(configuration, rightStatus);
-  const categoryOrder = leftStatusOrder[0] - rightStatusOrder[0];
-  if (categoryOrder !== 0) return categoryOrder;
-  const definitionOrder = leftStatusOrder[1] - rightStatusOrder[1];
-  if (definitionOrder !== 0) return definitionOrder;
-
-  const priorityDelta = priorityOrder(left.priority) - priorityOrder(right.priority);
-  return priorityDelta !== 0 ? priorityDelta : left.id.localeCompare(right.id);
 }
 
 function matchesProjectFilter(
@@ -232,73 +117,22 @@ function matchesProjectFilter(
   input: TrailProjectsRootReadInput,
   configuration: TrailConfiguration,
 ): boolean {
-  const statusClause = requireDiscreteClause(input.filter.status, "Status");
-  if (statusClause === undefined) {
-    if (status.category === "completed" || status.category === "canceled") return false;
-  } else if (!matchesTrailOptionalDiscreteFilter(project.statusDefinitionId, statusClause)) {
+  if (
+    input.filter.status === undefined
+    && (status.category === "completed" || status.category === "canceled")
+  ) {
     return false;
   }
 
-  const initiativeClause = requireDiscreteClause(input.filter.initiative, "Initiative");
+  const initiativeClause = requireInitiativeClause(input.filter.initiative);
   if (!matchesTrailOptionalDiscreteFilter(project.initiativeId, initiativeClause)) return false;
 
-  const priorityClause = requireDiscreteClause(input.filter.priority, "Priority");
-  if (!matchesTrailOptionalDiscreteFilter(project.priority, priorityClause)) return false;
-
-  const labelClause = requireDiscreteClause(input.filter.labels, "Labels");
-  if (!matchesTrailSetDiscreteFilter(project.labelIds, labelClause)) return false;
-
-  const dueClause = input.filter.due;
-  if (dueClause !== undefined) {
-    if (dueClause.kind !== "due") throw new Error("Due filter must be a Due clause");
-    if (
-      project.due === undefined
-      || !matchesTrailDueFilter(
-        project.due,
-        dueClause.value,
-        input.now,
-        configuration.temporal.timezone,
-      )
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function workflowIssuesForProject(
-  readable: TrailEffectiveRuntimeSnapshot,
-  configuration: TrailConfiguration,
-  projectId: TrailProjectId,
-): readonly TrailWorkflowIssueProjection[] {
-  return (readable.indexes.issuesByProjectId.get(projectId) ?? []).map((issueId) => {
-    const issue = readable.authoritative.domain.issuesById.get(issueId);
-    if (issue?.context !== "workflow") {
-      throw new Error(`Project ${projectId} has an unreadable child Issue ${issueId}`);
-    }
-    return {
-      issue,
-      status: requireIssueStatus(configuration, issue),
-    };
-  });
-}
-
-function projectProgress(
-  issues: readonly TrailWorkflowIssueProjection[],
-): TrailProjectProgressReadModel {
-  let completed = 0;
-  let effective = 0;
-
-  for (const { status } of issues) {
-    if (status.category === "canceled") continue;
-    effective += 1;
-    if (status.category === "completed") completed += 1;
-  }
-
-  return effective === 0
-    ? { unavailable: true }
-    : { max: effective, value: completed };
+  return matchesTrailProjectCollectionFilter(
+    project,
+    status,
+    { filter: input.filter, now: input.now },
+    configuration,
+  );
 }
 
 function milestoneDerivedComplete(
@@ -315,7 +149,7 @@ function milestoneDerivedComplete(
     if (issue?.context !== "workflow") {
       throw new Error(`Milestone ${milestone.id} has an unreadable child Issue ${issueId}`);
     }
-    const status = requireIssueStatus(configuration, issue);
+    const status = requireTrailIssueStatus(configuration, issue);
     if (status.category === "canceled") continue;
     effective += 1;
     if (status.category === "completed") completed += 1;
@@ -345,7 +179,7 @@ function eligibleDueMarkers(
   configuration: TrailConfiguration,
   project: TrailProject,
   projectStatus: TrailStatusDefinition & { readonly category: TrailProjectStatusCategory },
-  issues: readonly TrailWorkflowIssueProjection[],
+  issues: readonly TrailProjectWorkflowIssueProjection[],
   now: TrailTimestamp,
 ): readonly TrailProjectTimelineDueReadModel[] {
   const markers: TrailProjectTimelineDueReadModel[] = [];
@@ -419,7 +253,7 @@ function earliestTimestamp(values: readonly TrailTimestamp[]): TrailTimestamp {
 
 function historicalTimelineSpan(
   projectStatus: TrailStatusDefinition & { readonly category: TrailProjectStatusCategory },
-  issues: readonly TrailWorkflowIssueProjection[],
+  issues: readonly TrailProjectWorkflowIssueProjection[],
   dueMarkers: readonly TrailProjectTimelineDueReadModel[],
   now: TrailTimestamp,
 ): TrailProjectTimelineHistoricalReadModel | undefined {
@@ -463,7 +297,7 @@ function timelineRow(
   configuration: TrailConfiguration,
   project: TrailProject,
   projectStatus: TrailStatusDefinition & { readonly category: TrailProjectStatusCategory },
-  issues: readonly TrailWorkflowIssueProjection[],
+  issues: readonly TrailProjectWorkflowIssueProjection[],
   now: TrailTimestamp,
 ): TrailProjectTimelineRowReadModel | undefined {
   if (issues.length === 0) return undefined;
@@ -505,11 +339,6 @@ function timelineRow(
   };
 }
 
-function initiativeOrder(left: TrailInitiative, right: TrailInitiative): number {
-  const titleOrder = left.title.localeCompare(right.title);
-  return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
-}
-
 /**
  * Builds the Projects Root projection from one coherent readable Runtime snapshot.
  * Filter state and `now` remain explicit transient UI inputs. List grouping/order,
@@ -523,34 +352,23 @@ export function selectTrailProjectsRootReadModel(
   const configuration = readable.authoritative.configuration;
   if (configuration === null) return null;
 
-  const initiatives = [...readable.authoritative.domain.initiativesById.values()]
-    .sort(initiativeOrder)
-    .map(({ id, title }) => ({ id, title }));
+  const initiatives = selectTrailInitiativeTargets(readable);
   const allProjects = [...readable.authoritative.domain.projectsById.values()];
   const visibleProjects = allProjects
     .filter((project) => matchesProjectFilter(
       project,
-      requireProjectStatus(configuration, project),
+      requireTrailProjectStatus(configuration, project),
       input,
       configuration,
     ))
-    .sort((left, right) => compareProjectOrder(configuration, left, right));
+    .sort((left, right) => compareTrailProjectOrder(configuration, left, right));
 
   const summariesById = new Map<TrailProjectId, TrailProjectSummaryReadModel>();
   const timelineRowsById = new Map<TrailProjectId, TrailProjectTimelineRowReadModel>();
   for (const project of visibleProjects) {
-    const status = requireProjectStatus(configuration, project);
-    const issues = workflowIssuesForProject(readable, configuration, project.id);
-    summariesById.set(project.id, {
-      due: project.due,
-      id: project.id,
-      initiativeId: project.initiativeId,
-      priority: project.priority,
-      progress: projectProgress(issues),
-      statusCategory: status.category,
-      statusLabel: status.name,
-      title: project.title,
-    });
+    const status = requireTrailProjectStatus(configuration, project);
+    const issues = selectTrailWorkflowIssuesForProject(readable, configuration, project.id);
+    summariesById.set(project.id, createTrailProjectSummaryReadModel(project, status, issues));
     const timeline = timelineRow(
       readable,
       configuration,

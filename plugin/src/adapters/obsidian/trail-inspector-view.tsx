@@ -2,8 +2,10 @@ import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 
+import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TrailInspector } from "../../ui/shell/trail-inspector";
 import type { TrailInspectorStore } from "../../ui/shell/trail-inspector-state";
+import type { TrailUiActions } from "../../ui/shell/trail-ui-actions";
 import { TRAIL_INSPECTOR_VIEW_TYPE } from "./trail-inspector-host";
 
 /** Host-owned right-sidebar carrier for Trail's persistent Inspector composition. */
@@ -12,6 +14,8 @@ export class TrailInspectorView extends ItemView {
 
   public constructor(
     leaf: WorkspaceLeaf,
+    private readonly runtimeStore: TrailRuntimeStore,
+    private readonly actions: TrailUiActions,
     private readonly inspectorStore: TrailInspectorStore,
   ) {
     super(leaf);
@@ -36,7 +40,11 @@ export class TrailInspectorView extends ItemView {
     this.root = createRoot(mountElement);
     this.root.render(
       <StrictMode>
-        <TrailInspector inspectorStore={this.inspectorStore} />
+        <TrailInspector
+          actions={this.actions}
+          inspectorStore={this.inspectorStore}
+          runtimeStore={this.runtimeStore}
+        />
       </StrictMode>,
     );
   }

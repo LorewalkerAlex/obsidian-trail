@@ -1,12 +1,15 @@
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
+  Component,
   ItemView,
+  MarkdownRenderer,
   type ViewStateResult,
   type WorkspaceLeaf,
 } from "obsidian";
 
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import type { TrailMarkdownRender } from "../../ui/patterns/trail-page-narrative";
 import { TrailApp } from "../../ui/shell/trail-app";
 import {
   trailLocationsEqual,
@@ -75,6 +78,28 @@ export class TrailView extends ItemView {
     });
   }
 
+  private readonly renderMarkdown: TrailMarkdownRender = (markdown, container) => {
+    const renderOwner = this.addChild(new Component());
+    let active = true;
+    const dispose = () => {
+      if (!active) return;
+      active = false;
+      this.removeChild(renderOwner);
+    };
+    const completion = MarkdownRenderer.render(
+      this.app,
+      markdown,
+      container,
+      "",
+      renderOwner,
+    ).catch((error: unknown) => {
+      dispose();
+      throw error;
+    });
+
+    return { completion, dispose };
+  };
+
   public async onOpen(): Promise<void> {
     this.contentEl.empty();
     this.contentEl.addClass("trail-view");
@@ -88,6 +113,7 @@ export class TrailView extends ItemView {
           onNavigate={(location) => {
             void this.navigate(location);
           }}
+          renderMarkdown={this.renderMarkdown}
           runtimeStore={this.runtimeStore}
         />
       </StrictMode>,
