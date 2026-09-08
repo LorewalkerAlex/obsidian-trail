@@ -75,22 +75,99 @@
   line-height: 1.4;
 }
 
-/* Project Workspace owns status-first Page composition; row geometry remains an entity responsibility. */
+/* Project Workspace owns status-first Page composition and its transient Peek placement. */
+.trail-project-workspace-page {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trail-project-workspace-page__scroll {
+  box-sizing: border-box;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.trail-project-workspace-page .trail-view-bar {
+  min-height: var(--trail-control-height-lg);
+  padding-right: var(--trail-space-8);
+  padding-left: var(--trail-space-8);
+  border-bottom-color: var(--trail-row-divider);
+}
+
 .trail-project-workspace-page__content {
-  padding-bottom: var(--trail-space-10);
+  padding: var(--trail-space-3) 0 var(--trail-space-10);
 }
 
 .trail-project-workspace-page__sections {
   display: grid;
-  gap: var(--trail-space-8);
+  gap: var(--trail-space-2);
 }
 
 .trail-project-workspace-page__status-section {
   min-width: 0;
 }
 
+.trail-project-workspace-page__status-section > .trail-group-header {
+  min-height: 30px;
+  padding-right: var(--trail-space-8);
+  padding-left: var(--trail-space-7);
+  border-bottom: 0;
+}
+
+.trail-project-workspace-page__status-section > .trail-group-header .trail-group-header__identity {
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+  font-weight: var(--trail-weight-medium);
+}
+
+.trail-project-workspace-page__status-section[data-empty="true"] > .trail-group-header .trail-group-header__identity,
+.trail-project-workspace-page__status-section[data-empty="true"] > .trail-group-header .trail-group-header__disclosure {
+  color: var(--trail-text-muted);
+}
+
+.trail-project-workspace-page__status-section[data-empty="true"] > .trail-group-header .trail-group-header__count {
+  color: var(--trail-text-faint);
+}
+
 .trail-project-workspace-page__sections + .trail-empty-state {
   margin-top: var(--trail-space-10);
+}
+
+.trail-project-workspace-page__peek-layer {
+  position: absolute;
+  z-index: calc(var(--layer-menu, 1000) - 1);
+  top: var(--trail-space-8);
+  right: var(--trail-space-8);
+  bottom: var(--trail-space-8);
+  display: flex;
+  width: clamp(360px, 42%, 440px);
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.trail-project-workspace-page__peek-layer > .trail-issue-peek {
+  width: 100%;
+  height: auto;
+  max-height: min(520px, 100%);
+  pointer-events: auto;
+}
+
+@container (max-width: 720px) {
+  .trail-project-workspace-page__peek-layer {
+    left: var(--trail-space-8);
+    width: auto;
+  }
+
+  .trail-project-workspace-page__peek-layer > .trail-issue-peek {
+    max-height: min(480px, 100%);
+  }
 }
 
 /* Project Inspector composes shared property controls with Project-derived insight blocks. */

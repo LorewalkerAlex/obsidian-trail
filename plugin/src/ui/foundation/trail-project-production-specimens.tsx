@@ -1,3 +1,4 @@
+import type { TrailWorkflowIssuePresentationReadModel } from "../../query/shared/trail-workflow-issue-presentation-query";
 import type {
   TrailProjectStatusCategory,
   TrailStatusCategory,
@@ -7,11 +8,16 @@ import { TrailStatusGlyph } from "../entities/trail-status";
 import { TrailWorkflowIssueRow } from "../entities/trail-workflow-issue-row";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import { TrailGroupHeader } from "../patterns/trail-group-header";
+import { TrailIssuePeek } from "../patterns/trail-issue-peek";
+import type { TrailMarkdownRender } from "../patterns/trail-page-narrative";
 import {
   TRAIL_FOUNDATION_CONFIGURATION,
   TRAIL_FOUNDATION_REFERENCE_TIMESTAMP,
 } from "./trail-foundation-fixtures";
-import { LabSpecimenRow } from "./trail-lab-showroom";
+import {
+  LabSpecimenRow,
+  LabStateGrid,
+} from "./trail-lab-showroom";
 
 interface TrailWorkflowStatusRowFixture {
   readonly category: TrailStatusCategory;
@@ -97,6 +103,14 @@ const PROJECT_ROWS: readonly TrailProjectRowFixture[] = [
   },
 ];
 
+const renderFoundationMarkdown: TrailMarkdownRender = (markdown, container) => {
+  container.textContent = markdown;
+  return {
+    completion: Promise.resolve(),
+    dispose: () => container.replaceChildren(),
+  };
+};
+
 function TrailWorkflowStatusRow({
   category,
   id,
@@ -123,6 +137,35 @@ export function TrailProjectProductionSpecimens() {
   const issueLabels = TRAIL_FOUNDATION_CONFIGURATION.labels.filter(({ id }) => (
     id === "foundation-design" || id === "foundation-navigation"
   ));
+  const richPeek: TrailWorkflowIssuePresentationReadModel = {
+    description: "Review the complete lightweight Issue body without leaving the Project collection. Keep the preview calm even when this content spans several lines and includes [[ordinary Obsidian links]].",
+    due: TRAIL_FOUNDATION_REFERENCE_TIMESTAMP + (2 * 24 * 60 * 60 * 1000),
+    estimate: "large",
+    id: "foundation-peek-rich",
+    inCurrentCycle: true,
+    labels: issueLabels,
+    milestone: { id: "milestone-peek", title: "Workspace interaction pass" },
+    priority: "urgent",
+    project: { id: "project-peek", title: "Polish visual foundation" },
+    status: {
+      category: "started",
+      id: "foundation-status-started",
+      label: "In Progress",
+    },
+    title: "Calibrate the read-only Issue Peek surface",
+  };
+  const sparsePeek: TrailWorkflowIssuePresentationReadModel = {
+    id: "foundation-peek-sparse",
+    inCurrentCycle: false,
+    labels: [],
+    project: { id: "project-peek", title: "Polish visual foundation" },
+    status: {
+      category: "backlog",
+      id: "foundation-status-backlog",
+      label: "Backlog",
+    },
+    title: "Keep absent optional detail quiet",
+  };
 
   return (
     <>
@@ -144,42 +187,72 @@ export function TrailProjectProductionSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="The Project Workspace keeps lifecycle identity in the persistent Status section, while the production Issue row scans Priority, title, Milestone, Labels, Current Cycle, Estimate, and Due without inventing a second Status column."
+        description="The Project Workspace keeps the complete Status skeleton but makes empty sections quiet. Production Issue rows collapse absent optional metadata instead of reserving blank columns, so the collection scans as content rather than a spreadsheet."
         kind="composition-gallery"
-        owner="TrailGroupHeader + TrailWorkflowIssueRow"
+        owner="TrailGroupHeader + TrailWorkflowIssueRow + Project Workspace composition"
         title="Project workspace issue rows"
       >
-        <div className="trail-lab-list">
-          <TrailGroupHeader
-            count={3}
-            expanded
-            label="In progress"
-            onExpandedChange={() => { /* static composition */ }}
-          />
-          <TrailWorkflowIssueRow
-            due={TRAIL_FOUNDATION_REFERENCE_TIMESTAMP + (2 * 24 * 60 * 60 * 1000)}
-            estimate="large"
-            inCurrentCycle
-            labels={issueLabels}
-            milestoneTitle="Workspace interaction pass"
-            priority="urgent"
-            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
-            title="Establish workspace page composition"
-          />
-          <TrailWorkflowIssueRow
-            estimate="medium"
-            labels={issueLabels.slice(0, 1)}
-            priority="high"
-            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
-            title="Validate interaction hierarchy under ordinary width pressure"
-          />
-          <TrailWorkflowIssueRow
-            labels={[]}
-            priority={undefined}
-            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
-            title="Keep optional metadata quiet when absent"
-          />
+        <div className="trail-lab-list trail-project-workspace-page__sections">
+          <section className="trail-project-workspace-page__status-section">
+            <TrailGroupHeader
+              count={3}
+              expanded
+              label="In progress"
+              onExpandedChange={() => { /* static composition */ }}
+            />
+            <TrailWorkflowIssueRow
+              due={TRAIL_FOUNDATION_REFERENCE_TIMESTAMP + (2 * 24 * 60 * 60 * 1000)}
+              estimate="large"
+              inCurrentCycle
+              labels={issueLabels}
+              milestoneTitle="Workspace interaction pass"
+              priority="urgent"
+              timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+              title="Establish workspace page composition"
+            />
+            <TrailWorkflowIssueRow
+              estimate="medium"
+              labels={issueLabels.slice(0, 1)}
+              priority="high"
+              timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+              title="Validate interaction hierarchy under ordinary width pressure"
+            />
+            <TrailWorkflowIssueRow
+              labels={[]}
+              priority={undefined}
+              timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+              title="Keep optional metadata quiet when absent"
+            />
+          </section>
+          <section className="trail-project-workspace-page__status-section" data-empty="true">
+            <TrailGroupHeader
+              count={0}
+              expanded
+              label="Todo"
+              onExpandedChange={() => { /* static composition */ }}
+            />
+          </section>
         </div>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="The same production read-only Peek surface is shown with rich and sparse Issue presentations. Project Workspace owns floating placement; this specimen calibrates the reusable surface itself."
+        kind="composition-gallery"
+        owner="TrailIssuePeek"
+        title="Workflow Issue Peek"
+      >
+        <LabStateGrid>
+          <TrailIssuePeek
+            issue={richPeek}
+            renderMarkdown={renderFoundationMarkdown}
+            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+          />
+          <TrailIssuePeek
+            issue={sparsePeek}
+            renderMarkdown={renderFoundationMarkdown}
+            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+          />
+        </LabStateGrid>
       </LabSpecimenRow>
 
       <LabSpecimenRow

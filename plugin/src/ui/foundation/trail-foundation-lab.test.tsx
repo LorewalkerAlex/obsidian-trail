@@ -10,7 +10,9 @@ describe("TrailFoundationLab", () => {
     );
 
     expect(screen.getByRole("heading", { level: 1, name: "Foundation lab" })).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+    expect(Array.from(
+      container.querySelectorAll(".trail-lab-section__header > h2"),
+    ).map((heading) => heading.textContent)).toEqual([
       "Visual Foundations",
       "Primitives",
       "Patterns",

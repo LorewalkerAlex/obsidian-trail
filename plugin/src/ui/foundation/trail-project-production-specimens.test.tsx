@@ -28,7 +28,8 @@ describe("TrailProjectProductionSpecimens", () => {
       expect(trailingRegion).toBeEmptyDOMElement();
     }
 
-    const issueGallery = within(screen.getByRole("group", { name: "Project workspace issue rows" }));
+    const issueGalleryElement = screen.getByRole("group", { name: "Project workspace issue rows" });
+    const issueGallery = within(issueGalleryElement);
     expect(issueGallery.getByRole("button", { name: "Collapse In progress" }))
       .toHaveAttribute("aria-expanded", "true");
     expect(issueGallery.getByText("Establish workspace page composition")).toBeInTheDocument();
@@ -39,6 +40,13 @@ describe("TrailProjectProductionSpecimens", () => {
       .not.toBeInTheDocument();
     expect(container.querySelectorAll("[data-workflow-issue-row='true']"))
       .toHaveLength(3);
+    expect(issueGallery.getByRole("button", { name: "Collapse Todo" }))
+      .toHaveAttribute("aria-expanded", "true");
+    expect(issueGallery.getByText("Todo")).toBeInTheDocument();
+    expect(issueGalleryElement.querySelectorAll(".trail-project-workspace-page__status-section"))
+      .toHaveLength(2);
+    expect(issueGalleryElement.querySelector(".trail-project-workspace-page__status-section[data-empty='true']"))
+      .not.toBeNull();
 
     const projectGallery = within(screen.getByRole("group", { name: "Project summary rows" }));
     expect(projectGallery.getByRole("button", { name: "Collapse Initiative Alpha" }))

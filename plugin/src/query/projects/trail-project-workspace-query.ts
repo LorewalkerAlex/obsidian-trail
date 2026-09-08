@@ -1,7 +1,4 @@
-import type {
-  TrailConfiguration,
-  TrailLabel,
-} from "../../domain/model/trail-configuration";
+import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import type {
   TrailInitiative,
   TrailMilestone,
@@ -9,7 +6,6 @@ import type {
 } from "../../domain/model/trail-entities";
 import {
   TRAIL_PRIORITIES,
-  type TrailEstimate,
   type TrailPriority,
   type TrailProjectStatusCategory,
   type TrailStatusCategory,
@@ -30,6 +26,10 @@ import {
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
 import { selectTrailWorkflowIssueCreationProjectsFromReadableSnapshot } from "../shared/trail-project-target-query";
 import { selectTrailStatusOptionGroups } from "../shared/trail-status-query";
+import {
+  createTrailWorkflowIssuePresentationProjector,
+  type TrailWorkflowIssuePresentationReadModel,
+} from "../shared/trail-workflow-issue-presentation-query";
 import { requireTrailProjectStatus } from "./trail-project-collection-query";
 
 export type TrailProjectWorkspaceFilterPropertyId =
@@ -60,16 +60,7 @@ export interface TrailProjectWorkspaceCreationTargetReadModel
   readonly milestones: readonly TrailProjectWorkspaceNamedTargetReadModel[];
 }
 
-export interface TrailWorkflowIssueSummaryReadModel {
-  readonly due?: TrailTimestamp;
-  readonly estimate?: TrailEstimate;
-  readonly id: string;
-  readonly inCurrentCycle: boolean;
-  readonly labels: readonly TrailLabel[];
-  readonly milestone?: TrailProjectWorkspaceNamedTargetReadModel;
-  readonly priority?: TrailPriority;
-  readonly title: string;
-}
+export type TrailWorkflowIssueSummaryReadModel = TrailWorkflowIssuePresentationReadModel;
 
 export interface TrailProjectWorkspaceStatusSectionReadModel {
   readonly category: TrailStatusCategory;
@@ -190,38 +181,6 @@ function creationTargets(
   }));
 }
 
-function labelProjection(
-  issue: TrailWorkflowIssue,
-  labelsById: ReadonlyMap<string, TrailLabel>,
-): readonly TrailLabel[] {
-  return issue.labelIds
-    .map((labelId) => labelsById.get(labelId))
-    .filter((label): label is TrailLabel => label !== undefined);
-}
-
-function issueProjection(
-  issue: TrailWorkflowIssue,
-  labelsById: ReadonlyMap<string, TrailLabel>,
-  milestonesById: ReadonlyMap<string, TrailMilestone>,
-  currentCycleId: string | undefined,
-  cyclesByIssueId: ReadonlyMap<string, readonly string[]>,
-): TrailWorkflowIssueSummaryReadModel {
-  const milestone = issue.milestoneId === undefined
-    ? undefined
-    : milestonesById.get(issue.milestoneId);
-  return {
-    due: issue.due,
-    estimate: issue.estimate,
-    id: issue.id,
-    inCurrentCycle: currentCycleId !== undefined
-      && (cyclesByIssueId.get(issue.id) ?? []).includes(currentCycleId),
-    labels: labelProjection(issue, labelsById),
-    milestone: milestone === undefined ? undefined : namedMilestone(milestone),
-    priority: issue.priority,
-    title: issue.title,
-  };
-}
-
 export function selectTrailProjectWorkspaceReadModel(
   state: TrailRuntimeState,
   input: TrailProjectWorkspaceReadInput,
@@ -247,7 +206,6 @@ export function selectTrailProjectWorkspaceReadModel(
   );
   if (allIssues.some((issue) => !statusIds.has(issue.statusDefinitionId))) return null;
 
-  const labelsById = new Map(configuration.labels.map((label) => [label.id, label] as const));
   const visibleIssues = allIssues
     .filter((issue) => matchesProjectWorkspaceFilter(
       issue,
@@ -256,18 +214,19 @@ export function selectTrailProjectWorkspaceReadModel(
       configuration.temporal.timezone,
     ))
     .sort(compareIssueOrder);
+  const projectIssuePresentation = createTrailWorkflowIssuePresentationProjector(readable);
+  if (projectIssuePresentation === null) return null;
+  const visiblePresentations: TrailWorkflowIssuePresentationReadModel[] = [];
+  for (const issue of visibleIssues) {
+    const presentation = projectIssuePresentation(issue);
+    if (presentation === null) return null;
+    visiblePresentations.push(presentation);
+  }
+
   const sections = statusOptionGroups.flatMap((group) => group.definitions.map((definition) => ({
     category: group.category,
     id: definition.id,
-    issues: visibleIssues
-      .filter((issue) => issue.statusDefinitionId === definition.id)
-      .map((issue) => issueProjection(
-        issue,
-        labelsById,
-        readable.authoritative.domain.milestonesById,
-        readable.indexes.currentCycleId,
-        readable.indexes.cyclesByIssueId,
-      )),
+    issues: visiblePresentations.filter((issue) => issue.status.id === definition.id),
     label: definition.name,
   })));
 

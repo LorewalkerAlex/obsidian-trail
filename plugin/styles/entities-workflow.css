@@ -1,10 +1,19 @@
 /* Workflow Issue scanning presentation. Status remains structural in enclosing sections. */
+.trail-collection-row[data-workflow-issue-row="true"] {
+  min-height: 30px;
+  border-bottom-color: transparent;
+}
+
+.trail-collection-row[data-workflow-issue-row="true"][data-peek-enabled="true"] {
+  cursor: pointer;
+}
+
 .trail-workflow-issue-row__priority {
   display: inline-grid;
   width: var(--trail-icon-size-md);
   height: var(--trail-icon-size-md);
   place-items: center;
-  color: var(--trail-text-secondary);
+  color: var(--trail-text-muted);
 }
 
 .trail-workflow-issue-row__priority .trail-priority-glyph {
@@ -13,17 +22,10 @@
 }
 
 .trail-workflow-issue-row__content {
-  display: grid;
+  display: flex;
   min-width: 0;
-  grid-template-columns:
-    minmax(0, 1fr)
-    minmax(0, 116px)
-    56px
-    58px
-    32px
-    minmax(0, 60px);
   align-items: center;
-  gap: var(--trail-space-7);
+  gap: var(--trail-space-8);
 }
 
 .trail-workflow-issue-row__title,
@@ -38,6 +40,8 @@
 }
 
 .trail-workflow-issue-row__title {
+  min-width: 0;
+  flex: 1 1 180px;
   color: var(--trail-text-primary);
   font-size: var(--trail-font-size-body);
   font-weight: var(--trail-weight-medium);
@@ -48,13 +52,21 @@
 .trail-workflow-issue-row__cycle,
 .trail-workflow-issue-row__estimate,
 .trail-workflow-issue-row__due {
+  flex: 0 0 auto;
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-caption);
+}
+
+.trail-workflow-issue-row__milestone {
+  max-width: 132px;
+  flex: 0 1 132px;
 }
 
 .trail-workflow-issue-row__labels {
   display: inline-flex;
   min-width: 0;
+  max-width: 72px;
+  flex: 0 1 auto;
   align-items: center;
   overflow: hidden;
 }
@@ -76,10 +88,6 @@
 }
 
 @container (max-width: 720px) {
-  .trail-workflow-issue-row__content {
-    grid-template-columns: minmax(0, 1fr) 56px 32px minmax(0, 60px);
-  }
-
   .trail-workflow-issue-row__milestone,
   .trail-workflow-issue-row__cycle {
     display: none;
@@ -87,10 +95,6 @@
 }
 
 @container (max-width: 520px) {
-  .trail-workflow-issue-row__content {
-    grid-template-columns: minmax(0, 1fr) 32px minmax(0, 60px);
-  }
-
   .trail-workflow-issue-row__labels {
     display: none;
   }

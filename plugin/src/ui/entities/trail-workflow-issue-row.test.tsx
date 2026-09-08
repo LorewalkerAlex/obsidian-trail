@@ -1,5 +1,9 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import {
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { TrailWorkflowIssueRow } from "./trail-workflow-issue-row";
 
@@ -42,10 +46,36 @@ describe("TrailWorkflowIssueRow", () => {
 
     expect(screen.getByText("Backlog planning note")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "No priority" })).toBeInTheDocument();
-    expect(container.querySelector(".trail-workflow-issue-row__milestone")).toBeEmptyDOMElement();
-    expect(container.querySelector(".trail-workflow-issue-row__labels")).toBeEmptyDOMElement();
-    expect(container.querySelector(".trail-workflow-issue-row__cycle")).toBeEmptyDOMElement();
-    expect(container.querySelector(".trail-workflow-issue-row__estimate")).toBeEmptyDOMElement();
-    expect(container.querySelector(".trail-workflow-issue-row__due")).toBeEmptyDOMElement();
+    expect(container.querySelector(".trail-workflow-issue-row__milestone")).not.toBeInTheDocument();
+    expect(container.querySelector(".trail-workflow-issue-row__labels")).not.toBeInTheDocument();
+    expect(container.querySelector(".trail-workflow-issue-row__cycle")).not.toBeInTheDocument();
+    expect(container.querySelector(".trail-workflow-issue-row__estimate")).not.toBeInTheDocument();
+    expect(container.querySelector(".trail-workflow-issue-row__due")).not.toBeInTheDocument();
+  });
+
+  it("separates ordinary activation from the explicit Space preview toggle", () => {
+    const onActivate = vi.fn();
+    const onPreviewToggle = vi.fn();
+    const { container } = render(
+      <TrailWorkflowIssueRow
+        highlighted
+        labels={[]}
+        onActivate={onActivate}
+        onPreviewToggle={onPreviewToggle}
+        timezone="UTC"
+        title="Preview this issue"
+      />,
+    );
+    const row = container.querySelector<HTMLDivElement>("[data-workflow-issue-row='true']");
+    expect(row).not.toBeNull();
+    if (row === null) return;
+
+    fireEvent.click(screen.getByText("Preview this issue"));
+    expect(onActivate).toHaveBeenCalledTimes(1);
+    expect(onPreviewToggle).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(row, { key: " " });
+    expect(onPreviewToggle).toHaveBeenCalledTimes(1);
+    expect(row).toHaveAttribute("data-highlighted", "true");
   });
 });
