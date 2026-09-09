@@ -9,7 +9,7 @@ function planningState() {
   const project = {
     id: "project-a",
     labelIds: [],
-    statusDefinitionId: "project-unstarted",
+    statusDefinitionId: "project-started",
     title: "Project A",
   };
   const milestone = {

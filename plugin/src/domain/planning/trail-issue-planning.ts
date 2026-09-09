@@ -1,10 +1,15 @@
-import type { TrailWorkflowIssue } from "../model/trail-entities";
+import type { TrailStatusDefinition } from "../model/trail-configuration";
+import type { TrailProject, TrailWorkflowIssue } from "../model/trail-entities";
 import type { TrailEstimate } from "../model/trail-values";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
 import { findTrailLabelSelectionViolations } from "../rules/trail-label-rules";
-import { canTrailProjectAcceptWorkflowIssue } from "../rules/trail-project-rules";
 import {
-  isTrailTerminalStatusDefinition,
+  canTrailProjectAcceptWorkflowIssue,
+  canTrailProjectAssignWorkflowIssueMilestone,
+  canTrailProjectChangeWorkflowIssueStatus,
+  canTrailProjectEditWorkflowIssuePlanningFields,
+} from "../rules/trail-project-rules";
+import {
   resolveTrailDefaultStatusDefinition,
   resolveTrailStatusDefinition,
 } from "../rules/trail-status-rules";
@@ -60,6 +65,30 @@ export interface ChangeTrailWorkflowIssueMilestoneCommand {
 export interface TrailWorkflowIssuePlan {
   readonly issue: TrailWorkflowIssue;
   readonly plan: TrailMutationPlan;
+}
+
+interface TrailWorkflowIssueProjectContext {
+  readonly project: TrailProject;
+  readonly status: TrailStatusDefinition;
+}
+
+function resolveTrailWorkflowIssueProjectContext(
+  state: TrailPlanningState,
+  issue: TrailWorkflowIssue,
+): TrailPlanResult<TrailWorkflowIssueProjectContext> {
+  const project = state.domain.projectsById.get(issue.projectId);
+  if (project === undefined) {
+    return rejectTrailPlan("project-missing", `Project does not exist: ${issue.projectId}`);
+  }
+  const status = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    project.statusDefinitionId,
+  );
+  if (status === undefined) {
+    return rejectTrailPlan("project-status-invalid", `Project status is invalid: ${project.id}`);
+  }
+  return readyTrailPlan({ project, status });
 }
 
 export function planCreateTrailWorkflowIssue(
@@ -146,6 +175,14 @@ export function planEditTrailWorkflowIssueProperties(
   if (status === undefined) {
     return rejectTrailPlan("status-reference-invalid", "Workflow Issue status reference is invalid");
   }
+  const projectContext = resolveTrailWorkflowIssueProjectContext(state, current);
+  if (projectContext.kind !== "ready") return projectContext;
+  if (!canTrailProjectEditWorkflowIssuePlanningFields(projectContext.plan.status, status)) {
+    return rejectTrailPlan(
+      "project-issue-planning-forbidden",
+      "Owning Project lifecycle does not allow planning edits for this Workflow Issue",
+    );
+  }
   if (status.category === "completed" && command.estimate === undefined) {
     return rejectTrailPlan(
       "estimate-required",
@@ -211,6 +248,10 @@ export function planEditTrailWorkflowIssueProperties(
         kind: "replace-entity",
       }],
       intent: "workflow.issue.edit-properties",
+      preconditions: [{
+        entity: { kind: "project", value: projectContext.plan.project },
+        kind: "entity-equals",
+      }],
     }),
   });
 }
@@ -259,32 +300,17 @@ export function planChangeTrailWorkflowIssueStatus(
     return rejectTrailPlan("status-reference-invalid", "Workflow Issue status reference is invalid");
   }
 
-  const reopensNonTerminalWork = isTrailTerminalStatusDefinition(currentStatus)
-    && !isTrailTerminalStatusDefinition(targetStatus);
-  const reopeningProject = reopensNonTerminalWork
-    ? state.domain.projectsById.get(current.projectId)
-    : undefined;
-  if (reopensNonTerminalWork && reopeningProject === undefined) {
-    return rejectTrailPlan("project-missing", `Project does not exist: ${current.projectId}`);
-  }
-  if (reopeningProject !== undefined) {
-    const projectStatus = resolveTrailStatusDefinition(
-      state.configuration,
-      "project",
-      reopeningProject.statusDefinitionId,
+  const projectContext = resolveTrailWorkflowIssueProjectContext(state, current);
+  if (projectContext.kind !== "ready") return projectContext;
+  if (!canTrailProjectChangeWorkflowIssueStatus(
+    projectContext.plan.status,
+    currentStatus,
+    targetStatus,
+  )) {
+    return rejectTrailPlan(
+      "project-issue-status-forbidden",
+      "Owning Project lifecycle does not allow this Workflow Issue Status change",
     );
-    if (projectStatus === undefined) {
-      return rejectTrailPlan(
-        "project-status-invalid",
-        `Project status is invalid: ${reopeningProject.id}`,
-      );
-    }
-    if (!canTrailProjectAcceptWorkflowIssue(projectStatus, targetStatus)) {
-      return rejectTrailPlan(
-        "project-terminal",
-        "A terminal Project must be reopened before reopening non-terminal work",
-      );
-    }
   }
 
   if (command.estimate !== undefined && targetStatus.category !== "completed") {
@@ -325,9 +351,10 @@ export function planChangeTrailWorkflowIssueStatus(
         kind: "replace-entity",
       }],
       intent: "workflow.issue.replace",
-      preconditions: reopeningProject === undefined
-        ? []
-        : [{ entity: { kind: "project", value: reopeningProject }, kind: "entity-equals" }],
+      preconditions: [{
+        entity: { kind: "project", value: projectContext.plan.project },
+        kind: "entity-equals",
+      }],
     }),
   });
 }
@@ -379,8 +406,8 @@ export function planMoveTrailWorkflowIssueProject(
     && !canTrailProjectAcceptWorkflowIssue(targetProjectStatus, issueStatus)
   ) {
     return rejectTrailPlan(
-      "project-terminal",
-      "A terminal Project must be reopened before receiving non-terminal work",
+      "project-target-not-eligible",
+      "Target Project cannot accept this Workflow Issue in its current Status",
     );
   }
 
@@ -425,6 +452,23 @@ export function planChangeTrailWorkflowIssueMilestone(
     );
   }
 
+  const issueStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "issue",
+    current.statusDefinitionId,
+  );
+  if (issueStatus === undefined) {
+    return rejectTrailPlan("status-reference-invalid", "Workflow Issue status reference is invalid");
+  }
+  const projectContext = resolveTrailWorkflowIssueProjectContext(state, current);
+  if (projectContext.kind !== "ready") return projectContext;
+  if (!canTrailProjectAssignWorkflowIssueMilestone(projectContext.plan.status, issueStatus)) {
+    return rejectTrailPlan(
+      "project-issue-milestone-forbidden",
+      "Owning Project lifecycle does not allow Milestone changes for this Workflow Issue",
+    );
+  }
+
   const targetMilestone = command.targetMilestoneId === undefined
     ? undefined
     : state.domain.milestonesById.get(command.targetMilestoneId);
@@ -457,8 +501,17 @@ export function planChangeTrailWorkflowIssueMilestone(
       }],
       intent: "workflow.issue.change-milestone",
       preconditions: targetMilestone === undefined
-        ? []
-        : [{ entity: { kind: "milestone", value: targetMilestone }, kind: "entity-equals" }],
+        ? [{
+            entity: { kind: "project", value: projectContext.plan.project },
+            kind: "entity-equals",
+          }]
+        : [
+            {
+              entity: { kind: "project", value: projectContext.plan.project },
+              kind: "entity-equals",
+            },
+            { entity: { kind: "milestone", value: targetMilestone }, kind: "entity-equals" },
+          ],
     }),
   });
 }

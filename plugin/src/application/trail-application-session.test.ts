@@ -28,6 +28,8 @@ import { createTrailApplicationSession } from "./trail-application-session";
 
 interface HarnessOptions {
   readonly includeOpenCycle?: boolean;
+  readonly projectStatusDefinitionId?: string;
+  readonly workflowStatusDefinitionId?: string;
 }
 
 function createHarness(options: HarnessOptions = {}) {
@@ -47,13 +49,13 @@ function createHarness(options: HarnessOptions = {}) {
     id: "project-a",
     initiativeId: initiative.id,
     labelIds: [],
-    statusDefinitionId: "project-unstarted",
+    statusDefinitionId: options.projectStatusDefinitionId ?? "project-unstarted",
     title: "Project A",
   };
   const projectB: TrailProject = {
     id: "project-b",
     labelIds: [],
-    statusDefinitionId: "project-unstarted",
+    statusDefinitionId: "project-started",
     title: "Project B",
   };
   const milestone: TrailMilestone = {
@@ -68,7 +70,7 @@ function createHarness(options: HarnessOptions = {}) {
     labelIds: [],
     milestoneId: milestone.id,
     projectId: project.id,
-    statusDefinitionId: "issue-unstarted",
+    statusDefinitionId: options.workflowStatusDefinitionId ?? "issue-unstarted",
     title: "Issue A",
   };
   const cycle: TrailCycle = {
@@ -219,7 +221,7 @@ describe("Trail Application session", () => {
   });
 
   it("returns NeedsInput before submitting Completed without an Estimate", () => {
-    const harness = createHarness();
+    const harness = createHarness({ projectStatusDefinitionId: "project-started" });
     const result = harness.session.issues.changeStatus(
       harness.workflow,
       "issue-completed",
@@ -258,7 +260,7 @@ describe("Trail Application session", () => {
   });
 
   it("requires explicit Project creation and keeps Project/Milestone relation changes explicit", async () => {
-    const harness = createHarness();
+    const harness = createHarness({ projectStatusDefinitionId: "project-started" });
     const issueReceipt = harness.session.issues.create(harness.projectB.id, " Routed Issue ");
     const milestoneResult = harness.session.issues.changeMilestone(harness.workflow, undefined);
     const projectResult = harness.session.issues.moveToProject(
@@ -286,7 +288,7 @@ describe("Trail Application session", () => {
   });
 
   it("exposes Project lifecycle, Initiative membership, and core delete intents", async () => {
-    const harness = createHarness();
+    const harness = createHarness({ workflowStatusDefinitionId: "issue-backlog" });
     const statusResult = harness.session.projects.changeStatus(
       harness.project,
       "project-started",

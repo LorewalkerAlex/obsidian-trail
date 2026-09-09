@@ -43,7 +43,7 @@ function state(): TrailPlanningState & {
     id: "project-b",
     initiativeId: initiativeA.id,
     labelIds: [],
-    statusDefinitionId: "project-unstarted",
+    statusDefinitionId: "project-started",
     title: "Project B",
   };
   const milestoneA: TrailMilestone = {
@@ -68,7 +68,7 @@ function state(): TrailPlanningState & {
     labelIds: [],
     milestoneId: milestoneA.id,
     projectId: projectA.id,
-    statusDefinitionId: "issue-unstarted",
+    statusDefinitionId: "issue-backlog",
     title: "Issue A",
   };
   const cycleOpen: TrailCycle = {
@@ -268,7 +268,28 @@ describe("Core delete planning", () => {
     });
   });
 
-  it("deletes a Workflow Issue and removes all open and historical Cycle memberships", () => {
+  it("rejects deleting later-lifecycle work while its Project is still Unstarted", () => {
+    const planning = state();
+    const executionIssue: TrailWorkflowIssue = {
+      ...planning.issueA,
+      statusDefinitionId: "issue-unstarted",
+    };
+    const issuesById = new Map(planning.domain.issuesById);
+    issuesById.set(executionIssue.id, executionIssue);
+    const withExecutionIssue: TrailPlanningState = {
+      ...planning,
+      domain: { ...planning.domain, issuesById },
+    };
+    expect(planDeleteTrailWorkflowIssue(withExecutionIssue, {
+      commandId: "delete-issue-blocked",
+      expectedIssue: executionIssue,
+    })).toMatchObject({
+      kind: "rejected",
+      reason: { code: "project-issue-delete-forbidden" },
+    });
+  });
+
+  it("deletes a Backlog Workflow Issue and removes all open and historical Cycle memberships", () => {
     const planning = state();
     const result = planDeleteTrailWorkflowIssue(planning, {
       commandId: "delete-issue",
@@ -282,6 +303,10 @@ describe("Core delete planning", () => {
     for (const effect of cycleReplacements) {
       expect(effect.after.value).toEqual(expect.objectContaining({ issueIds: [] }));
     }
+    expect(result.plan.plan.preconditions).toContainEqual({
+      entity: { kind: "project", value: planning.projectA },
+      kind: "entity-equals",
+    });
   });
 
   it("deletes a Cycle without rewriting its member Issues", () => {

@@ -6,7 +6,10 @@ import type {
   TrailWorkflowIssue,
 } from "../model/trail-entities";
 import { sameTrailDomainEntity } from "../rules/trail-domain-equality";
-import { canTrailProjectAcceptWorkflowIssue } from "../rules/trail-project-rules";
+import {
+  canTrailProjectAcceptWorkflowIssue,
+  canTrailProjectDeleteWorkflowIssue,
+} from "../rules/trail-project-rules";
 import { resolveTrailStatusDefinition } from "../rules/trail-status-rules";
 import {
   createTrailMutationPlan,
@@ -304,6 +307,33 @@ export function planDeleteTrailWorkflowIssue(
     return rejectTrailPlan("issue-changed", `Workflow Issue changed before action: ${current.id}`);
   }
 
+  const issueStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "issue",
+    current.statusDefinitionId,
+  );
+  if (issueStatus === undefined) {
+    return rejectTrailPlan("status-reference-invalid", "Workflow Issue status reference is invalid");
+  }
+  const project = state.domain.projectsById.get(current.projectId);
+  if (project === undefined) {
+    return rejectTrailPlan("project-missing", `Project does not exist: ${current.projectId}`);
+  }
+  const projectStatus = resolveTrailStatusDefinition(
+    state.configuration,
+    "project",
+    project.statusDefinitionId,
+  );
+  if (projectStatus === undefined) {
+    return rejectTrailPlan("project-status-invalid", `Project status is invalid: ${project.id}`);
+  }
+  if (!canTrailProjectDeleteWorkflowIssue(projectStatus, issueStatus)) {
+    return rejectTrailPlan(
+      "project-issue-delete-forbidden",
+      "Owning Project lifecycle does not allow deleting this Workflow Issue",
+    );
+  }
+
   const effects: TrailStateEffect[] = [];
   for (const cycle of state.domain.cyclesById.values()) {
     if (!cycle.issueIds.includes(current.id)) continue;
@@ -323,6 +353,7 @@ export function planDeleteTrailWorkflowIssue(
       commandId: command.commandId,
       effects,
       intent: "workflow.issue.delete",
+      preconditions: [{ entity: { kind: "project", value: project }, kind: "entity-equals" }],
     }),
   });
 }

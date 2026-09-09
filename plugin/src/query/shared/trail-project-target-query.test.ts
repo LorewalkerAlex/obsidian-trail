@@ -121,7 +121,29 @@ describe("Project target Query", () => {
     )).toEqual([startedTarget.projectB.id, startedTarget.projectA.id]);
   });
 
-  it("allows terminal Workflow Issue history to move into terminal Projects", () => {
+  it("offers an Unstarted Project only for Backlog Workflow Issue moves", () => {
+    const backlog = readyStore({
+      projectAStatus: "project-started",
+      projectBStatus: "project-unstarted",
+      workflowStatus: "issue-backlog",
+    });
+    expect(selectTrailWorkflowIssueMoveProjectIds(
+      backlog.store.getState(),
+      backlog.workflow.id,
+    )).toEqual([backlog.projectB.id, backlog.projectA.id]);
+
+    const execution = readyStore({
+      projectAStatus: "project-started",
+      projectBStatus: "project-unstarted",
+      workflowStatus: "issue-unstarted",
+    });
+    expect(selectTrailWorkflowIssueMoveProjectIds(
+      execution.store.getState(),
+      execution.workflow.id,
+    )).toEqual([execution.projectA.id]);
+  });
+
+  it("keeps the current Project visible without offering terminal Projects as new destinations", () => {
     const terminal = readyStore({
       projectAStatus: "project-completed",
       projectBStatus: "project-canceled",
@@ -130,6 +152,6 @@ describe("Project target Query", () => {
     expect(selectTrailWorkflowIssueMoveProjectIds(
       terminal.store.getState(),
       terminal.workflow.id,
-    )).toEqual([terminal.projectB.id, terminal.projectA.id]);
+    )).toEqual([terminal.projectA.id]);
   });
 });

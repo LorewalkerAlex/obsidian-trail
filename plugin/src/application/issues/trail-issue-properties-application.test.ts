@@ -21,7 +21,7 @@ function harness() {
   const project = {
     id: "project-a",
     labelIds: [],
-    statusDefinitionId: "project-unstarted",
+    statusDefinitionId: "project-started",
     title: "Project A",
   };
   const issue = {
@@ -62,7 +62,7 @@ function harness() {
     createId: () => `command-${nextId += 1}`,
     now: () => 1_000,
   });
-  return { application, issue, submitted };
+  return { application, issue, project, submitted };
 }
 
 describe("TrailIssueApplication planning properties", () => {
@@ -101,6 +101,10 @@ describe("TrailIssueApplication planning properties", () => {
         before: { kind: "issue", value: test.issue },
         kind: "replace-entity",
       }],
+    });
+    expect(test.submitted[0]?.preconditions).toContainEqual({
+      entity: { kind: "project", value: test.project },
+      kind: "entity-equals",
     });
   });
 
