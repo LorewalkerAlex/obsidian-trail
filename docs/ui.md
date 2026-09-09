@@ -426,31 +426,34 @@ Every Status header remains visible even when its current filter-visible count i
 Project Workspace row:
 
 ```text
-[Selection] [Status] Title   Priority   Milestone   Labels   Current Cycle   Estimate   Due
+[Selection] [Priority] [Status] Title   Milestone   Labels   Current Cycle   Estimate   Due
 ```
 
 Current Cycle List row:
 
 ```text
-[Selection] [Status] Title   Project   Priority   Milestone   Labels   Estimate   Due
+[Selection] [Priority] [Status] Title   Project   Milestone   Labels   Estimate   Due
 ```
 
 Historical Cycle row:
 
 ```text
-[Selection] [Status] Title   Project   Priority   Milestone   Labels   Estimate   Due
+[Selection] [Priority] [Status] Title   Project   Milestone   Labels   Estimate   Due
 ```
 
 Rules:
 
-- Title is strongest and flexible.
+- Selection occupies the shared collection gutter and remains a separate intent from Priority, Status, row activation, and Peek.
+- Priority is a narrow stable leading track before the primary Issue identity. When unset, the track stays aligned but renders no `No priority`, `---`, or other placeholder.
+- Status + Title form the primary Issue identity. Title is strongest and is the principal flexible region.
 - Workflow Issue Rows retain the semantic Status glyph even when an enclosing Status section already expresses lifecycle grouping. The configured Status label remains available to accessibility, tooltip, picker, section-header, and detail contexts rather than becoming a duplicate visible row-text column.
 - Project is omitted when Page/lane scope already expresses it.
 - Current Cycle marker is omitted when Cycle Page scope already expresses membership.
 - Description/body stays out of scanning Row/Card.
-- Priority is optional row metadata; when unset it disappears instead of rendering a no-priority placeholder.
-- absent optional values normally disappear rather than filling rows with placeholder dashes.
-- trailing row metadata remains a compact scanning cluster beside the primary Issue identity instead of stretching to the far edge of a wide Main View; constrained width removes lower-priority metadata before sacrificing Status and Title.
+- Milestone, Labels, Current Cycle, Estimate, and Due use stable soft semantic columns after the flexible identity region. Missing values leave their track visually empty rather than rendering placeholder text or causing later properties to shift into a different semantic position.
+- Soft columns provide repeated-property alignment without turning the Row into a rigid spreadsheet: bounded tracks may truncate and lower-priority tracks may disappear as capacity tightens, while Title absorbs ordinary width pressure first.
+- Labels remain compact stable-identity dots; ordinary future Due stays quiet while Today/Overdue may gain emphasis.
+- Trail does not introduce a human-readable Workflow Issue identifier merely to create visual spacing between Priority, Status, and Title. Layout solves that presentation problem without adding persisted business truth.
 - Board Cards do not become mini Full Item views; lane/column context may still suppress redundant Card metadata according to the Board composition.
 
 ### 4.7 Empty-state grammar
@@ -528,7 +531,20 @@ An action that does not belong in the context is absent. A temporarily unavailab
 
 Right-clicking a selected item may use the relevant current selection as action scope. Explicitly right-clicking an unselected item scopes that menu to the clicked item and must not execute against an unrelated stale selection. Right-clicking an unselected item does not need to destroy the existing selection merely to establish this one menu scope.
 
-Selection is transient UI state bounded by the current visible actionable projection. Filtering or switching presentation removes identities that are no longer visible/actionable. Page navigation clears collection selection.
+Selection is transient UI state bounded by the current visible actionable projection. Filtering, collapsing a group, or switching presentation removes identities that are no longer visible/actionable. Sorting preserves identities that remain visible; Page navigation clears collection selection.
+
+Selectable collection rows use the shared low-noise selection gutter: the checkbox may stay visually quiet at rest, appears for hover/focus, and remains visible while selected. The selection control changes selection only; it must not also open Peek, navigate, activate the row, or mutate a property.
+
+Keyboard/pointer mechanics for selectable production rows:
+
+```text
+checkbox click       -> toggle only that identity
+Shift + checkbox     -> extend from the current anchor through visible order
+X on eligible row    -> toggle that row selection
+Esc                  -> clear current collection selection only when no higher transient layer owns Esc
+```
+
+Text editing/input focus must not be hijacked by the `X` selection shortcut.
 
 A collection-level Bulk Bar shows count + useful common actions + overflow + clear. Do not create one Bulk Bar per Board column/swimlane.
 
@@ -796,10 +812,10 @@ For Projects, no canonical Product-level Created At ordering fact currently foll
 Project Summary Row remains compact:
 
 ```text
-[Status] Project title      Status      Priority      Progress      Due
+[Selection] [Status] Project title      Priority      Progress      Due
 ```
 
-Title is strongest. Project lifecycle Status remains visible because Projects Root groups by Initiative rather than Status. Progress is read-only. Labels are not part of the normal scanning row unless a future explicit design reopens that hierarchy.
+Selection uses the same shared collection gutter as other selectable rows and does not replace Project Status. Title is strongest. Project lifecycle Status remains visible as its semantic glyph because Projects Root groups by Initiative rather than Status; the configured Status label is not repeated as a parallel text column. Progress is read-only. Labels are not part of the normal scanning row unless a future explicit design reopens that hierarchy.
 
 Completed/Canceled Projects remain in their actual Initiative group with reduced visual weight when visible; they do not move to a separate Archive model. Canceled Projects with unresolved child work may retain an exception Attention signal.
 

@@ -4,37 +4,21 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The current durable documentation baseline before this implementation-plan rebaseline is:
+The current durable public implementation checkpoint is:
 
 ```text
-a3978382e1b7a08ca5662c70c085f298d9bf35de
-docs: finalize v1 ui rebaseline
+bbc59d00316f81e3c124125e403a5f036d23b175
+feat: align issue rows and collection selection
 ```
 
-The latest published executable UI checkpoint before the UI/document rebaseline remains:
+This checkpoint includes the accepted Stage 8 Workflow Issue Row geometry and shared Collection Selection integration over the previously published read-only Peek checkpoint:
 
 ```text
-da1a84f86a5d3a1e234335839f0fde1eff92e341
-feat: checkpoint triage review and navigation
+252f58a5ffa69f1277f98c5d050fb3c9d2c73ffc
+feat: checkpoint stage 8 issue peek and diagnostics
 ```
 
-The accepted Stage 5 executable checkpoint immediately preceding this closure documentation update is:
-
-```text
-5049156861edd0b357efb70053797726c3877b71
-refactor: align shared visual grammar
-```
-
-The accepted Stage 6 executable checkpoint entering Stage 7 is:
-
-```text
-30c57736fbc4b0fc064a77d643741a4fbde3496c
-feat: complete stage 6 initiative focus
-```
-
-The public baseline entering the Stage 7 closure round is the same published checkpoint.
-
-Stages 5 and 6 remain closed. Stage 7 is now complete through Project Workspace, scoped Issue creation, Project Inspector, Milestone quick-create, and Right Sidebar host verification; this closure publication advances the active Product slice to Stage 8. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+Stages 5 through 7 remain closed. Stage 8 is active: Workflow Issue Row, read-only Peek, and Collection Selection are now real production/host evidence; Action Registry / Context Menu / Bulk and the Full Item / Issue Inspector path remain ahead. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -58,7 +42,7 @@ Known alignment debt now centers on:
 1. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
 2. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
 
-These are implementation gaps, not design questions. Selection / Action Registry / Bulk / Peek remain deliberately deferred until a later Product consumer proves the need; that deferral is not Stage 5 debt.
+These are implementation gaps, not design questions. Stage 8 real consumers have now pulled shared Collection Selection and read-only Peek into production. Action Registry / Context Menu / Bulk remain the next shared-interaction gap; they must reuse Query capability/target facts and existing Application intents rather than create a parallel legality model. No human-readable Workflow Issue identifier is planned merely to support row spacing.
 
 ## 3. Established Foundations
 
@@ -510,16 +494,18 @@ Current key status:
 | Page Header | Implemented / Lab-proven / Consumer-proven / Host-proven | reuse shared geometry while each Page supplies identity/actions; do not reintroduce a universal Location Bar |
 | Group Header / Empty State | Implemented / Lab-proven / Consumer-proven | reuse the shared mechanics/presentation; Page/Query still own grouping and empty reason/recovery |
 | Status presentation | Project and Workflow Issue grammars Accepted / Consumer-proven / Host-proven | keep Project hexagonal and Workflow Issue circular identities stable; compact scanning rows use glyph-only visible Status identity without duplicating the configured label as row text |
-| Project Summary Row | Accepted / Lab-proven / Consumer-proven / Host-proven | reused by Projects Root and Initiative Focus; consume the same owner in later Project collections where the semantic row fits |
+| Project Summary Row | Accepted / Lab-proven / Consumer-proven / Host-proven | reused by Projects Root and Initiative Focus with the shared Selection gutter; consume the same owner in later Project collections where the semantic row fits |
 | Project Timeline | Accepted / Lab-proven / Consumer-proven / Host-proven | preserve Timeline-owned horizontal overflow, resolved geometry inputs, and accepted typography/contrast while later Pages reuse only the owned presentation contract |
 | Projects Root Read Model / Page | Accepted / Consumer-proven / Host-proven | preserve List/Timeline over one filtered Project collection as Stage 7 builds Project-local workspaces |
 | Initiative Focus Read Model / Page + Initiative Inspector | Accepted / Consumer-proven / Host-proven | preserve scoped flat Project collection, clean Initiative-prefilled Project creation, and compact structured Inspector properties |
-| Workflow Issue Row | Accepted / Lab-proven / Consumer-proven / Host-proven | reuse the Project Workspace scanning owner in later Issue collections; do not duplicate Status/Priority/Labels/Due/Estimate presentation |
+| Workflow Issue Row | Accepted / Lab-proven / Consumer-proven / Host-proven | preserve `Selection | Priority | Status + Title | soft semantic columns` and reuse the same production owner in later Issue collections |
 | Project Workspace Read Model / Page + Project Inspector | Accepted / Consumer-proven / Host-proven | preserve Status-first List composition, scoped filter/order semantics, clean Project-prefilled Issue creation, structured Inspector properties, derived Progress/Attention, and Milestones |
 | Progress | Accepted / Lab-proven / Consumer-proven / Host-proven | normal/compact/micro/unavailable contract aligned; reuse the same owner in later Cycle/Home surfaces |
 | Normal-flow layout containment | Accepted / Host-proven | preserve direct-child ownership and explicit overflow responsibility in later Pages |
 | Picker / Popover / Confirmation / Composer | Accepted / Lab-proven / Consumer-proven / Host-proven | consume the accepted shared grammar in later Pages; do not reintroduce Page-local geometry or density overrides |
-| Selection / Action Registry / Bulk / Peek | Mapped / deferred | create production owners just in time when a later Product consumer proves the need |
+| Collection Selection | Implemented / Consumer-proven / Host-proven | preserve visible-projection reconciliation, shared gutter, Shift range, `X` toggle, and top-layer-aware `Esc`; reuse in later selectable collections |
+| Workflow Issue Peek | Implemented / Lab-proven / Consumer-proven / Host-proven | preserve read-only preview/retarget behavior without navigation, selection side effects, or Inspector retargeting |
+| Action Registry / Context Menu / Bulk | Mapped / next Stage 8 interaction slice | implement one context/capability/action authority over existing Selection, Query legal targets, and Application intents; Bulk is a presentation/aggregation consumer, not a second legality system |
 
 Update this ledger as the active execution snapshot; do not turn it into historical release notes.
 
@@ -683,16 +669,21 @@ Current status:
 
 ### Stage 8 — Issue interaction/detail chain
 
-Build one coherent chain:
+Build one coherent detail chain while maturing shared interactions only from real consumers:
 
 ```text
-Issue Row/Card
-→ read-only Peek
-→ Issue Full Item
-→ Issue Inspector
+Issue Row/Card                         accepted
+→ read-only Peek                       implemented / accepted
+→ Issue Full Item                      next after shared action/bulk slice
+→ Issue Inspector                      follows Full Item
+
+Shared interaction track:
+Collection Selection                   implemented / accepted
+→ Action Registry + context resolution next
+→ Context Menu / overflow + Bulk Bar   next over the same registry
 ```
 
-Introduce/complete shared Selection, Action Registry, Context Menu/overflow, Bulk Bar, Picker mechanics, Confirmation, and transient stack only as the real chain proves them.
+Picker, Confirmation, and Composer mechanics already exist and should be reused. Do not create parallel Issue-only or Bulk-only action semantics.
 
 ### Stage 9 — Project execution views + Sidebar Search
 
@@ -849,20 +840,26 @@ Closure facts:
 - Right Sidebar entry behavior now distinguishes an already-visible host sidebar from a collapsed sidebar: visible sidebars switch to Trail Inspector on stable Trail targets, while collapsed sidebars retain the calibrated width-based auto-reveal policy. Unrelated Obsidian sidebar views remain intact.
 - Representative Obsidian validation covers Project Workspace scanning, Project-prefilled Issue Composer, Project Inspector data/contrast, Right Sidebar retargeting, and Milestone quick-create geometry.
 
-Selection / Action Registry / Bulk / Peek remain deferred because Stage 7 did not require them. Board remains Stage 9.
+At Stage 7 closure, Selection / Action Registry / Bulk / Peek were still deferred because that stage did not require them. Stage 8 has since implemented Selection and Peek; Board remains Stage 9.
 
 ### Stage 8 active - Issue interaction/detail chain
 
-Stage 8 now owns the next coherent chain:
+Published Stage 8 checkpoints now establish the first half of the chain:
 
 ```text
-Issue Row/Card
--> read-only Peek
--> Issue Full Item
--> Issue Inspector
+252f58a5ffa69f1277f98c5d050fb3c9d2c73ffc  feat: checkpoint stage 8 issue peek and diagnostics
+bbc59d00316f81e3c124125e403a5f036d23b175  feat: align issue rows and collection selection
 ```
 
-Implement the Issue-specific Read Models and interaction/detail ownership in that order, pulling Selection / Action Registry / Context Menu / Bulk / Peek mechanics forward only when the real Issue chain proves the need.
+Current accepted facts:
+
+- the production Workflow Issue Row is shared by Foundation and Project Workspace and uses `Selection | Priority | Status + Title | soft semantic columns`; unset Priority and missing trailing values render no placeholder text while their semantic tracks preserve scan alignment;
+- Status remains visible per Issue even inside a Status section; no human-readable Workflow Issue identifier is introduced merely to separate leading semantics;
+- shared Collection Selection is implemented through the existing Collection Row gutter and is Consumer-proven in Project Workspace, Projects Root, and Initiative Focus; checkbox selection is isolated from row activation/Peek, Shift extends through current visible order, `X` toggles eligible focused rows, and `Esc` clears selection only when no higher transient layer owns it;
+- read-only Workflow Issue Peek is implemented and accepted for Project Workspace: open/retarget/adjacent browsing remain transient, do not create host history, do not change selection, and do not retarget the persistent Inspector;
+- the final Stage 8 row/selection slice passed 9 focused test files / 30 tests plus diagnostics typecheck/build and representative real-Obsidian verification before publication at `bbc59d0`.
+
+The next coherent Stage 8 slice is **Action Registry + context resolution + Context Menu/overflow + Bulk Bar** over the already-accepted Selection owner and existing Query/Application legality. After that, continue the detail chain with Issue Full Item, then Issue Inspector.
 
 ## 10. Slice Definition of Done
 

@@ -511,36 +511,35 @@ The count means current filter-visible rows. A zero-count section does not grow 
 Project Workspace:
 
 ```text
-[Selection] [Status] Title   Priority   Milestone   Labels   Current Cycle   Estimate   Due
+[Selection] [Priority] [Status] Title   Milestone   Labels   Current Cycle   Estimate   Due
 ```
 
 Current Cycle List:
 
 ```text
-[Selection] [Status] Title   Project   Priority   Milestone   Labels   Estimate   Due
+[Selection] [Priority] [Status] Title   Project   Milestone   Labels   Estimate   Due
 ```
 
 Historical Cycle:
 
 ```text
-[Selection] [Status] Title   Project   Priority   Milestone   Labels   Estimate   Due
+[Selection] [Priority] [Status] Title   Project   Milestone   Labels   Estimate   Due
 ```
 
 Rules:
 
-- Title is strongest and flexible.
+- Selection is the shared collection gutter and remains mechanically separate from ordinary activation, Preview/Peek, and semantic properties.
+- Priority is a narrow stable leading track. Unset Priority renders no placeholder, but keeping the track preserves alignment of the primary identity across rows.
+- Status + Title form the primary Issue identity; Title is strongest and is the principal flexible track.
 - Every Workflow Issue Row retains the semantic Status glyph, including rows already grouped inside a Status section. Grouping communicates collection structure; the row glyph preserves fast Issue identity scanning.
 - The configured Status label stays available to accessibility, tooltip, picker, section-header, or detail contexts and is not repeated as a parallel row-text column.
 - Project is omitted when Page/lane scope already expresses it.
 - Current Cycle marker is omitted when Cycle Page scope already expresses membership.
 - Description/body stays out of Row.
-- Priority uses one stable semantic glyph when present; unset Priority disappears instead of reserving a placeholder slot.
-- Milestone keeps its meaningful name.
-- Labels use compact stable-identity color dots; full names belong in detail/picker/tooltip contexts.
-- Estimate uses S / M / L / XL.
-- ordinary future Due is quiet; Today/Overdue may gain emphasis.
-- absent optional values normally disappear rather than filling the row with placeholder dashes.
-- trailing metadata is one compact cluster immediately following the flexible primary identity region. Wide Main View space remains quiet rather than pushing metadata to the far edge; constrained width removes lower-priority metadata progressively while preserving Status and Title longest.
+- Milestone, Labels, Current Cycle, Estimate, and Due occupy stable soft semantic tracks after the flexible identity region. Missing values leave their own track visually empty instead of displaying dashes or causing later properties to slide into another semantic position.
+- Milestone keeps its meaningful name. Labels use compact stable-identity color dots; full names belong in detail/picker/tooltip contexts. Estimate uses S / M / L / XL. Ordinary future Due is quiet; Today/Overdue may gain emphasis.
+- The soft-column model provides approximate vertical alignment without spreadsheet rigidity: bounded metadata tracks may truncate or disappear progressively under width pressure, while Status + Title are preserved longest.
+- No human-readable Workflow Issue identifier is introduced merely as a visual separator between Priority, Status, and Title.
 
 ### 4.7 Workflow Issue Card
 
@@ -572,7 +571,7 @@ Cards do not become mini Full Item views. Description and rarely scanned fields 
 Projects Root / Initiative Focus:
 
 ```text
-[Status] Project title      Priority      Progress      Due
+[Selection] [Status] Project title      Priority      Progress      Due
 ```
 
 Priority order for constrained width:
@@ -584,7 +583,7 @@ Project identity
 -> Progress / Due / other secondary metadata
 ```
 
-Project Status is glyph-only in this compact scanning row. The configured Status label remains the accessible meaning of the glyph and belongs in section/detail/picker contexts rather than a duplicate visible text column.
+Selection uses the same shared collection gutter as other selectable rows and remains separate from Project Status and ordinary activation. Project Status is glyph-only in this compact scanning row. The configured Status label remains the accessible meaning of the glyph and belongs in section/detail/picker contexts rather than a duplicate visible text column.
 
 Progress remains compact; Projects Root does not turn every row into a large progress card.
 
@@ -792,6 +791,17 @@ Consequences:
 - List -> Board retains only items still visible/actionable in Board;
 - sorting does not clear identities that remain visible;
 - Page navigation clears collection selection.
+
+Selectable rows expose one shared low-noise selection gutter. At rest the checkbox may be visually quiet; hover/focus reveals it, and selected rows keep it visible. Selection never substitutes for Status or completion state.
+
+```text
+checkbox click       -> toggle only that identity
+Shift + checkbox     -> extend from the current anchor through visible order
+X on eligible row    -> toggle that row selection
+Esc                  -> clear current collection selection only when no higher transient layer owns Esc
+```
+
+The selection control must stop ordinary row activation/Peek/navigation. Keyboard selection shortcuts must not hijack text-entry/editing contexts.
 
 One collection-level Bulk Bar appears while selection exists:
 
@@ -1346,10 +1356,10 @@ Rules:
 Current Cycle List:
 
 ```text
-[Selection] [Priority] Title   Project   Milestone   Labels   Estimate   Due
+[Selection] [Priority] [Status] Title   Project   Milestone   Labels   Estimate   Due
 ```
 
-Status-first; Project is row metadata, not hidden same-Project clustering.
+Status remains visible in each row's primary identity even inside the Status-first section skeleton; Project is row metadata, not hidden same-Project clustering.
 
 Current Cycle Board:
 
@@ -1452,7 +1462,7 @@ History is a chronological compact browser; Historical Cycle is flat List-only, 
 Historical Row:
 
 ```text
-[Selection] [Priority] Title   Project   [Status]   Milestone   Labels   Estimate   Due
+[Selection] [Priority] [Status] Title   Project   Milestone   Labels   Estimate   Due
 ```
 
 ### 7.7 Triage
@@ -1912,20 +1922,21 @@ The published `TrailProgress` owner now covers normal/compact/micro density and 
 
 The current codebase already contains useful local evidence such as Page Surface capacity boundaries, `min-width: 0`/`minmax(0, 1fr)` in selected compositions, Collection Row regions, and component-owned Board/Timeline overflow rules. It does not yet apply the Section 3.3 containment contract consistently across every current composition. Remaining alignment must audit Page/pattern/entity direct-child allocation so constrained width cannot push essential controls outside their owned region or create accidental Page-level overflow.
 
-### 12.3 Missing shared interaction owners
+### 12.3 Shared interaction alignment status
 
-Current `ui/interactions` primarily contains the shared Filter implementation. The blueprint requires additional shared owners matured from real consumers:
+Published Product consumers now prove several shared-interaction owners that were previously only mapped:
 
-- transient interaction stack / focus ownership;
-- selection state and Bulk integration;
+- Collection Selection state is implemented in `ui/interactions` and consumed by Project Workspace, Projects Root, and Initiative Focus through the shared Collection Row selection gutter;
+- Workflow Issue Peek is implemented as the read-only Project Workspace preview and uses the shared Issue presentation path without navigation or Inspector retargeting;
+- picker-family, Confirmation, and Creation Composer mechanics are already established production owners from earlier stages.
+
+The next Stage 8 shared-interaction gap is narrower:
+
 - Action Registry and context resolution;
-- Context Menu / contextual Command Menu presentation adapters;
-- Peek;
-- picker-family shared mechanics where existing semantic controls benefit from consolidation;
-- shared confirmation mechanics;
-- Creation Composer infrastructure.
+- Context Menu / overflow presentation over that registry;
+- Bulk Bar composition over current Selection plus the same action/capability/target authority.
 
-These should be introduced through real product consumers, not as speculative framework work.
+Transient-stack/focus ownership should mature only as those real layers compose. Do not build a speculative parallel interaction framework or a Bulk-only legality model.
 
 ### 12.4 Page implementation packages
 
