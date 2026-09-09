@@ -4,9 +4,7 @@ import type {
   TrailStatusCategory,
 } from "../../domain/model/trail-values";
 import { TrailProjectSummaryRow } from "../entities/trail-project-summary-row";
-import { TrailStatusGlyph } from "../entities/trail-status";
 import { TrailWorkflowIssueRow } from "../entities/trail-workflow-issue-row";
-import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import { TrailGroupHeader } from "../patterns/trail-group-header";
 import { TrailIssuePeek } from "../patterns/trail-issue-peek";
 import type { TrailMarkdownRender } from "../patterns/trail-page-narrative";
@@ -21,7 +19,6 @@ import {
 
 interface TrailWorkflowStatusRowFixture {
   readonly category: TrailStatusCategory;
-  readonly id: string;
   readonly label: string;
   readonly title: string;
 }
@@ -29,31 +26,26 @@ interface TrailWorkflowStatusRowFixture {
 const WORKFLOW_STATUS_ROWS: readonly TrailWorkflowStatusRowFixture[] = [
   {
     category: "backlog",
-    id: "TRAIL-241",
     label: "Backlog",
     title: "Capture a rough planning idea",
   },
   {
     category: "unstarted",
-    id: "TRAIL-242",
     label: "Todo",
     title: "Prepare the next implementation slice",
   },
   {
     category: "started",
-    id: "TRAIL-243",
     label: "In Progress",
     title: "Calibrate the Projects scanning hierarchy",
   },
   {
     category: "completed",
-    id: "TRAIL-244",
     label: "Done",
     title: "Close an accepted visual pass",
   },
   {
     category: "canceled",
-    id: "TRAIL-245",
     label: "Canceled",
     title: "Drop a superseded experiment",
   },
@@ -113,23 +105,18 @@ const renderFoundationMarkdown: TrailMarkdownRender = (markdown, container) => {
 
 function TrailWorkflowStatusRow({
   category,
-  id,
   label,
   title,
 }: TrailWorkflowStatusRowFixture) {
   return (
-    <TrailCollectionRow
-      data-workflow-status-row="true"
-      leading={<TrailStatusGlyph category={category} label={label} />}
-    >
-      <div className="trail-lab-list-row__content">
-        <span className="trail-lab-list-row__id">{id}</span>
-        <span className="trail-lab-list-row__primary">
-          <span className="trail-lab-list-row__title">{title}</span>
-        </span>
-        <span aria-hidden="true" className="trail-lab-list-row__trailing" />
-      </div>
-    </TrailCollectionRow>
+    <TrailWorkflowIssueRow
+      labels={[]}
+      onSelectionChange={() => { /* static selection specimen */ }}
+      statusCategory={category}
+      statusLabel={label}
+      timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+      title={title}
+    />
   );
 }
 
@@ -170,9 +157,9 @@ export function TrailProjectProductionSpecimens() {
   return (
     <>
       <LabSpecimenRow
-        description="Compact Workflow Issue rows use the Status glyph as the visible lifecycle identity without repeating its configured label as row text. The configured label remains the glyph's accessible name; Status-section text remains a separate structural responsibility."
+        description="The production Workflow Issue Row keeps a selectable gutter, a distinct Priority track, then Status + Title as the primary identity. This state gallery isolates the five lifecycle Status identities through the same owner used by Product Pages."
         kind="state-gallery"
-        owner="TrailStatusGlyph + TrailCollectionRow"
+        owner="TrailWorkflowIssueRow"
         title="Workflow status rows"
       >
         <div className="trail-lab-list">
@@ -187,7 +174,7 @@ export function TrailProjectProductionSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="The Project Workspace keeps the complete Status skeleton but makes empty sections quiet. Production Issue rows collapse absent optional metadata instead of reserving blank columns, so the collection scans as content rather than a spreadsheet."
+        description="The Project Workspace keeps the complete Status skeleton while every production Issue row uses the same selectable leading grammar: Priority, then Status + Title, followed by stable soft metadata columns. Empty values stay visually blank without placeholder text."
         kind="composition-gallery"
         owner="TrailGroupHeader + TrailWorkflowIssueRow + Project Workspace composition"
         title="Project workspace issue rows"
@@ -206,20 +193,30 @@ export function TrailProjectProductionSpecimens() {
               inCurrentCycle
               labels={issueLabels}
               milestoneTitle="Workspace interaction pass"
+              onSelectionChange={() => { /* static selection specimen */ }}
               priority="urgent"
+              selected
+              statusCategory="started"
+              statusLabel="In Progress"
               timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
               title="Establish workspace page composition"
             />
             <TrailWorkflowIssueRow
               estimate="medium"
               labels={issueLabels.slice(0, 1)}
+              onSelectionChange={() => { /* static selection specimen */ }}
               priority="high"
+              statusCategory="started"
+              statusLabel="In Progress"
               timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
-              title="Validate interaction hierarchy under ordinary width pressure"
+              title="Verify a deliberately long Issue title keeps the soft metadata columns readable under ordinary width pressure"
             />
             <TrailWorkflowIssueRow
               labels={[]}
+              onSelectionChange={() => { /* static selection specimen */ }}
               priority={undefined}
+              statusCategory="started"
+              statusLabel="In Progress"
               timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
               title="Keep optional metadata quiet when absent"
             />
@@ -269,12 +266,14 @@ export function TrailProjectProductionSpecimens() {
             onExpandedChange={() => { /* static composition */ }}
             onIdentityActivate={() => { /* static composition */ }}
           />
-          {PROJECT_ROWS.map((project) => (
+          {PROJECT_ROWS.map((project, index) => (
             <TrailProjectSummaryRow
               due={project.due}
               key={project.title}
+              onSelectionChange={() => { /* static selection specimen */ }}
               priority={project.priority}
               progress={project.progress}
+              selected={index === 0}
               statusCategory={project.statusCategory}
               statusLabel={project.statusLabel}
               timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}

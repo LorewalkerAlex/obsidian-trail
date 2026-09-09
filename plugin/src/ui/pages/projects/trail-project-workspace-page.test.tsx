@@ -147,6 +147,12 @@ describe("TrailProjectWorkspacePage", () => {
     expect(screen.getByText("Workspace pass")).toBeInTheDocument();
     expect(screen.getByLabelText("Large estimate")).toHaveTextContent("L");
     expect(screen.getByText("Close the previous slice")).toBeInTheDocument();
+    const startedSection = screen.getByRole("region", { name: "started issues" });
+    expect(within(startedSection).getByRole("img", { name: "started status" }))
+      .toHaveAttribute("data-status-category", "started");
+    const completedSection = screen.getByRole("region", { name: "completed issues" });
+    expect(within(completedSection).getByRole("img", { name: "completed status" }))
+      .toHaveAttribute("data-status-category", "completed");
 
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     const filter = screen.getByRole("dialog", { name: "Filter" });
@@ -177,6 +183,43 @@ describe("TrailProjectWorkspacePage", () => {
     expect(container.querySelectorAll(".trail-project-workspace-page__status-section"))
       .toHaveLength(5);
     expect(screen.queryByText("Build the Project list")).not.toBeInTheDocument();
+  });
+
+  it("supports visible-range Issue selection without opening Peek and clears it with Escape", () => {
+    const { store } = readyStore();
+    const { container } = render(
+      <TrailProjectWorkspacePage
+        actions={actions()}
+        onInitiativeActivate={vi.fn()}
+        onProjectsActivate={vi.fn()}
+        projectId="project-a"
+        renderMarkdown={renderMarkdown}
+        runtimeStore={store}
+      />,
+    );
+
+    const first = screen.getByRole("checkbox", { name: "Select Build the Project list" });
+    fireEvent.click(first);
+    expect(screen.getByRole("checkbox", { name: "Deselect Build the Project list" }))
+      .toBeChecked();
+    expect(container.querySelector(".trail-issue-peek")).toBeNull();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Close the previous slice" }), {
+      shiftKey: true,
+    });
+    expect(screen.getByRole("checkbox", { name: "Deselect Close the previous slice" }))
+      .toBeChecked();
+
+    const completedRow = screen.getByText("Close the previous slice")
+      .closest<HTMLElement>("[data-workflow-issue-row='true']");
+    expect(completedRow).not.toBeNull();
+    if (completedRow === null) return;
+    fireEvent.keyDown(completedRow, { key: "Escape" });
+
+    expect(screen.getByRole("checkbox", { name: "Select Build the Project list" }))
+      .not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Select Close the previous slice" }))
+      .not.toBeChecked();
   });
 
   it("creates through the standard Issue Composer with the current Project as clean editable prefill", async () => {

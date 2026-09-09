@@ -80,11 +80,13 @@ describe("TrailProjectSummaryRow", () => {
       .not.toHaveAttribute("data-terminal");
   });
 
-  it("offers one explicit title activation target without double-firing row activation", () => {
+  it("keeps selection independent from explicit title activation and supports X on the focused title", () => {
     const onActivate = vi.fn();
+    const onSelectionChange = vi.fn();
     render(
       <TrailProjectSummaryRow
         onActivate={onActivate}
+        onSelectionChange={onSelectionChange}
         priority="urgent"
         progress={{ max: 10, value: 3 }}
         statusCategory="started"
@@ -94,7 +96,36 @@ describe("TrailProjectSummaryRow", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Interactive project" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Interactive project" }), {
+      shiftKey: true,
+    });
+    expect(onSelectionChange).toHaveBeenCalledWith(true, true);
+    expect(onActivate).not.toHaveBeenCalled();
+
+    const title = screen.getByRole("button", { name: "Interactive project" });
+    fireEvent.click(title);
     expect(onActivate).toHaveBeenCalledOnce();
+
+    fireEvent.keyDown(title, { key: "x" });
+    expect(onSelectionChange).toHaveBeenLastCalledWith(true, false);
+  });
+
+  it("keeps the selection gutter visible for a selected Project", () => {
+    const { container } = render(
+      <TrailProjectSummaryRow
+        onSelectionChange={vi.fn()}
+        priority="medium"
+        progress={{ max: 4, value: 1 }}
+        selected
+        statusCategory="started"
+        statusLabel="In Progress"
+        timezone="UTC"
+        title="Selected project"
+      />,
+    );
+
+    expect(screen.getByRole("checkbox", { name: "Deselect Selected project" })).toBeChecked();
+    expect(container.querySelector("[data-project-summary-row='true']"))
+      .toHaveAttribute("data-selected", "true");
   });
 });

@@ -1,3 +1,4 @@
+import type { KeyboardEventHandler } from "react";
 import { useState } from "react";
 import { useStore } from "zustand";
 
@@ -12,6 +13,10 @@ import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-sto
 import { TrailProjectSummaryRow } from "../../entities/trail-project-summary-row";
 import { TrailProjectComposer } from "../../entities/trail-standard-creation-composers";
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
+import {
+  isTrailCollectionSelectionKeyboardOriginEligible,
+  useTrailCollectionSelectionState,
+} from "../../interactions/trail-collection-selection-state";
 import { TrailEmptyState } from "../../patterns/trail-empty-state";
 import { TrailGroupHeader } from "../../patterns/trail-group-header";
 import { TrailPageHeader } from "../../patterns/trail-page-header";
@@ -81,6 +86,8 @@ function TrailProjectsList({
   onGroupExpandedChange,
   onInitiativeActivate,
   onProjectActivate,
+  onProjectSelectionChange,
+  selectedProjectIds,
   timezone,
 }: {
   readonly collapsedGroupKeys: ReadonlySet<string>;
@@ -88,6 +95,12 @@ function TrailProjectsList({
   readonly onGroupExpandedChange: (key: string, expanded: boolean) => void;
   readonly onInitiativeActivate: (initiativeId: string) => void;
   readonly onProjectActivate: (projectId: string) => void;
+  readonly onProjectSelectionChange: (
+    projectId: string,
+    selected: boolean,
+    extendRange: boolean,
+  ) => void;
+  readonly selectedProjectIds: ReadonlySet<string>;
   readonly timezone: string;
 }) {
   return (
@@ -120,8 +133,12 @@ function TrailProjectsList({
                 due={project.due}
                 key={project.id}
                 onActivate={() => onProjectActivate(project.id)}
+                onSelectionChange={(selected, extendRange) => {
+                  onProjectSelectionChange(project.id, selected, extendRange);
+                }}
                 priority={project.priority}
                 progress={project.progress}
+                selected={selectedProjectIds.has(project.id)}
                 statusCategory={project.statusCategory}
                 statusLabel={project.statusLabel}
                 timezone={timezone}
@@ -185,6 +202,14 @@ export function TrailProjectsPage({
     filter: filters.state,
     now,
   });
+  const visibleProjectIds = readModel === null || layout !== "list"
+    ? []
+    : readModel.groups.flatMap((group) => (
+        collapsedGroupKeys.has(groupKey(group))
+          ? []
+          : group.projects.map((project) => project.id)
+      ));
+  const selection = useTrailCollectionSelectionState(visibleProjectIds);
   const writable = readModel !== null && state.control.kind === "ready";
 
   const openComposer = () => {
@@ -201,8 +226,23 @@ export function TrailProjectsPage({
     });
   };
 
+  const handleSelectionKeyDown: KeyboardEventHandler<HTMLElement> = (event) => {
+    if (
+      event.defaultPrevented
+      || event.key !== "Escape"
+      || selection.selectedIds.size === 0
+      || composerReferenceTimestamp !== null
+      || !isTrailCollectionSelectionKeyboardOriginEligible(event.target)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    selection.clear();
+  };
+
   return (
-    <section className="trail-projects-page" aria-label="Projects">
+    <section className="trail-projects-page" aria-label="Projects" onKeyDown={handleSelectionKeyDown}>
       <TrailPageHeader
         actions={(
           <TrailIconButton
@@ -257,6 +297,8 @@ export function TrailProjectsPage({
                 onGroupExpandedChange={updateGroupExpanded}
                 onInitiativeActivate={onInitiativeActivate}
                 onProjectActivate={onProjectActivate}
+                onProjectSelectionChange={selection.setSelected}
+                selectedProjectIds={selection.selectedIds}
                 timezone={readModel.configuration.temporal.timezone}
               />
             ) : readModel.timeline.projectionEmpty ? (

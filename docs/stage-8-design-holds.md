@@ -63,18 +63,18 @@ Foundation fixtures + checked-in diagnostics sources + tests
 
 Do not introduce a temporary fake identifier field into checked-in diagnostics data or Foundation fixtures before this closure. Visual calibration may reserve conceptual space for a future identifier, but it must not invent identifier business truth.
 
-## 2. Issue Row visual correction discovered during Stage 8 calibration
+## 2. Issue Row visual correction migrated to canonical UI
 
-This is a separate UI correction that does **not** need to wait for the identifier design:
+The Stage 8 calibration established this separate UI correction without resolving the identifier design:
 
-- a Workflow Issue Row should retain the Issue Status glyph even when the collection is already grouped by Status;
+- a Workflow Issue Row retains the Issue Status glyph even when the collection is already grouped by Status;
 - Status remains part of fast Issue identity scanning rather than being replaced by the enclosing Status section;
-- Foundation and real Product Pages must consume the same production Workflow Issue Row owner and the same layout algorithm;
-- absent optional metadata should disappear without reserving empty columns;
-- trailing metadata should remain a compact scanning cluster rather than being stretched to the far edge of a wide Main View;
+- Foundation and real Product Pages consume the same production Workflow Issue Row owner and the same layout algorithm;
+- absent optional metadata disappears without reserving empty columns;
+- trailing metadata remains a compact scanning cluster rather than being stretched to the far edge of a wide Main View;
 - the future human-readable identifier, once designed, belongs in the primary Issue identity cluster rather than being simulated now.
 
-The current canonical UI text that omits Status from Status-grouped Project Workspace rows must be corrected together with the later Stage 8 documentation calibration. Until then, implementation calibration should not treat that stale omission as a reason to keep the production row visually inconsistent with the accepted Linear-derived grammar.
+This correction is now canonical in `docs/ui.md` and `docs/ui-blueprints.md`. The temporary hold remains authoritative only for the unresolved identifier questions in Section 1; implementation of the Issue Row correction must follow the canonical UI documents rather than treating this note as a competing design source.
 
 ## 3. Temporary Stage 8 sequencing
 

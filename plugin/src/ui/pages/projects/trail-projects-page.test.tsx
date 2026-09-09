@@ -166,6 +166,43 @@ describe("TrailProjectsPage", () => {
     expect(within(alphaGroup).queryByText("Build the Projects workspace")).not.toBeInTheDocument();
   });
 
+  it("keeps Project selection bounded to the visible List projection", () => {
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    renderProjectsPage();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Build the Projects workspace" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Unassigned planning project" }), {
+      shiftKey: true,
+    });
+    expect(screen.getByRole("checkbox", { name: "Deselect Build the Projects workspace" }))
+      .toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Deselect Unassigned planning project" }))
+      .toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: "Timeline" }));
+    expect(screen.queryByRole("checkbox", { name: /Build the Projects workspace/ }))
+      .not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "List" }));
+    expect(screen.getByRole("checkbox", { name: "Select Build the Projects workspace" }))
+      .not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Select Unassigned planning project" }))
+      .not.toBeChecked();
+  });
+
+  it("uses Escape to clear Project selection without triggering navigation", () => {
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const { onProjectActivate } = renderProjectsPage();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Build the Projects workspace" }));
+    const page = screen.getByRole("region", { name: "Projects" });
+    fireEvent.keyDown(page, { key: "Escape" });
+
+    expect(screen.getByRole("checkbox", { name: "Select Build the Projects workspace" }))
+      .not.toBeChecked();
+    expect(onProjectActivate).not.toHaveBeenCalled();
+  });
+
   it("uses the shared Filter state for filtered-empty recovery instead of a second collection model", () => {
     vi.spyOn(Date, "now").mockReturnValue(NOW);
     renderProjectsPage();

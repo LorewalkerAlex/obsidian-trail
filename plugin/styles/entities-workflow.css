@@ -1,4 +1,4 @@
-/* Workflow Issue scanning presentation. Status remains structural in enclosing sections. */
+/* Workflow Issue scanning presentation. Priority leads the Status + Title identity; Status stays visible even inside Status sections. */
 .trail-collection-row[data-workflow-issue-row="true"] {
   min-height: 30px;
   border-bottom-color: transparent;
@@ -8,24 +8,39 @@
   cursor: pointer;
 }
 
+.trail-workflow-issue-row__content {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--trail-space-9);
+  overflow: hidden;
+}
+
 .trail-workflow-issue-row__priority {
   display: inline-grid;
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
+  width: 14px;
+  height: var(--trail-icon-size-sm);
   place-items: center;
   color: var(--trail-text-muted);
 }
 
 .trail-workflow-issue-row__priority .trail-priority-glyph {
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
 }
 
-.trail-workflow-issue-row__content {
-  display: flex;
+.trail-workflow-issue-row__identity {
+  display: grid;
   min-width: 0;
+  grid-template-columns: var(--trail-icon-size-sm) minmax(0, 1fr);
   align-items: center;
-  gap: var(--trail-space-8);
+  column-gap: var(--trail-space-5);
+}
+
+.trail-workflow-issue-row__identity .trail-status-glyph {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
 }
 
 .trail-workflow-issue-row__title,
@@ -40,41 +55,55 @@
 }
 
 .trail-workflow-issue-row__title {
-  min-width: 0;
-  flex: 1 1 180px;
   color: var(--trail-text-primary);
   font-size: var(--trail-font-size-body);
   font-weight: var(--trail-weight-medium);
   line-height: 1.25;
 }
 
+.trail-workflow-issue-row__metadata {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(76px, 116px) 42px 60px 20px 54px;
+  align-items: center;
+  column-gap: var(--trail-space-7);
+}
+
+.trail-workflow-issue-row__labels,
+.trail-workflow-issue-row__cycle,
+.trail-workflow-issue-row__estimate,
+.trail-workflow-issue-row__due {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+}
+
 .trail-workflow-issue-row__milestone,
 .trail-workflow-issue-row__cycle,
 .trail-workflow-issue-row__estimate,
 .trail-workflow-issue-row__due {
-  flex: 0 0 auto;
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-caption);
 }
 
-.trail-workflow-issue-row__milestone {
-  max-width: 132px;
-  flex: 0 1 132px;
+.trail-workflow-issue-row__milestone,
+.trail-workflow-issue-row__labels,
+.trail-workflow-issue-row__cycle,
+.trail-workflow-issue-row__due {
+  width: 100%;
 }
 
 .trail-workflow-issue-row__labels {
-  display: inline-flex;
-  min-width: 0;
-  max-width: 72px;
-  flex: 0 1 auto;
-  align-items: center;
   overflow: hidden;
 }
 
-.trail-workflow-issue-row__cycle,
-.trail-workflow-issue-row__estimate,
+.trail-workflow-issue-row__estimate {
+  justify-content: center;
+}
+
 .trail-workflow-issue-row__due {
-  justify-self: start;
+  justify-content: flex-end;
+  text-align: right;
 }
 
 .trail-estimate-value {
@@ -87,15 +116,44 @@
   text-align: center;
 }
 
-@container (max-width: 720px) {
+@container (max-width: 840px) {
+  .trail-workflow-issue-row__metadata {
+    grid-template-columns: 42px 20px 54px;
+  }
+
   .trail-workflow-issue-row__milestone,
   .trail-workflow-issue-row__cycle {
     display: none;
   }
 }
 
-@container (max-width: 520px) {
+@container (max-width: 620px) {
+  .trail-workflow-issue-row__metadata {
+    grid-template-columns: 20px 54px;
+  }
+
   .trail-workflow-issue-row__labels {
+    display: none;
+  }
+}
+
+@container (max-width: 500px) {
+  .trail-workflow-issue-row__metadata {
+    grid-template-columns: 54px;
+  }
+
+  .trail-workflow-issue-row__estimate {
+    display: none;
+  }
+}
+
+@container (max-width: 420px) {
+  .trail-workflow-issue-row__content {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--trail-space-7);
+  }
+
+  .trail-workflow-issue-row__priority {
     display: none;
   }
 }

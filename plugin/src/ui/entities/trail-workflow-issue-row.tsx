@@ -7,9 +7,11 @@ import type { TrailLabel } from "../../domain/model/trail-configuration";
 import type {
   TrailEstimate,
   TrailPriority,
+  TrailStatusCategory,
   TrailTimestamp,
 } from "../../domain/model/trail-values";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
+import { TrailCheckbox } from "../primitives/trail-checkbox";
 import { TrailDueDate } from "./trail-due";
 import { TrailEstimateValue } from "./trail-estimate";
 import { TrailLabelDots } from "./trail-label";
@@ -17,6 +19,7 @@ import {
   getTrailPriorityPresentation,
   TrailPriorityGlyph,
 } from "./trail-priority";
+import { TrailStatusGlyph } from "./trail-status";
 
 export interface TrailWorkflowIssueRowProps {
   readonly due?: TrailTimestamp;
@@ -28,7 +31,11 @@ export interface TrailWorkflowIssueRowProps {
   readonly milestoneTitle?: string;
   readonly onActivate?: () => void;
   readonly onPreviewToggle?: () => void;
+  readonly onSelectionChange?: (selected: boolean, extendRange: boolean) => void;
   readonly priority?: TrailPriority;
+  readonly selected?: boolean;
+  readonly statusCategory: TrailStatusCategory;
+  readonly statusLabel: string;
   readonly timezone: string;
   readonly title: string;
 }
@@ -43,11 +50,14 @@ export function TrailWorkflowIssueRow({
   milestoneTitle,
   onActivate,
   onPreviewToggle,
+  onSelectionChange,
   priority,
+  selected = false,
+  statusCategory,
+  statusLabel,
   timezone,
   title,
 }: TrailWorkflowIssueRowProps) {
-  const priorityPresentation = getTrailPriorityPresentation(priority);
   const interactive = onActivate !== undefined || onPreviewToggle !== undefined;
   const handleActivate: MouseEventHandler<HTMLDivElement> = (event) => {
     event.currentTarget.focus({ preventScroll: true });
@@ -55,6 +65,18 @@ export function TrailWorkflowIssueRow({
   };
   const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = (event) => {
     if (event.defaultPrevented) return;
+    if (
+      event.key.toLowerCase() === "x"
+      && !event.altKey
+      && !event.ctrlKey
+      && !event.metaKey
+      && onSelectionChange !== undefined
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      onSelectionChange(!selected, false);
+      return;
+    }
     if (event.key === " " && onPreviewToggle !== undefined) {
       event.preventDefault();
       onPreviewToggle();
@@ -72,48 +94,58 @@ export function TrailWorkflowIssueRow({
       data-workflow-issue-id={issueId}
       data-workflow-issue-row="true"
       highlighted={highlighted}
-      leading={(
-        <span
-          className="trail-workflow-issue-row__priority"
-          title={priorityPresentation.label}
-        >
-          <TrailPriorityGlyph priority={priority} />
-        </span>
-      )}
       onClick={onActivate === undefined ? undefined : handleActivate}
-      onKeyDown={interactive ? handleKeyDown : undefined}
-      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive || onSelectionChange !== undefined ? handleKeyDown : undefined}
+      selected={selected}
+      selectionControl={onSelectionChange === undefined ? undefined : (
+        <TrailCheckbox
+          checked={selected}
+          label={selected ? `Deselect ${title}` : `Select ${title}`}
+          onClick={(event) => onSelectionChange(!selected, event.shiftKey)}
+          readOnly
+        />
+      )}
+      tabIndex={interactive || onSelectionChange !== undefined ? 0 : undefined}
     >
       <div className="trail-workflow-issue-row__content">
-        <span className="trail-workflow-issue-row__title">{title}</span>
-        {milestoneTitle === undefined ? null : (
+        <span
+          className="trail-workflow-issue-row__priority"
+          title={priority === undefined
+            ? undefined
+            : getTrailPriorityPresentation(priority).label}
+        >
+          {priority === undefined ? null : <TrailPriorityGlyph priority={priority} />}
+        </span>
+
+        <span className="trail-workflow-issue-row__identity">
+          <TrailStatusGlyph category={statusCategory} label={statusLabel} />
+          <span className="trail-workflow-issue-row__title" title={title}>{title}</span>
+        </span>
+
+        <span className="trail-workflow-issue-row__metadata">
           <span
             className="trail-workflow-issue-row__milestone"
             title={milestoneTitle}
           >
             {milestoneTitle}
           </span>
-        )}
-        {labels.length === 0 ? null : (
           <span className="trail-workflow-issue-row__labels">
-            <TrailLabelDots labels={labels} />
+            {labels.length === 0 ? null : <TrailLabelDots labels={labels} />}
           </span>
-        )}
-        {inCurrentCycle ? (
           <span className="trail-workflow-issue-row__cycle">
-            <span aria-label="In current cycle" title="In current cycle">Current</span>
+            {inCurrentCycle ? (
+              <span aria-label="In current cycle" title="In current cycle">Current</span>
+            ) : null}
           </span>
-        ) : null}
-        {estimate === undefined ? null : (
           <span className="trail-workflow-issue-row__estimate">
-            <TrailEstimateValue estimate={estimate} />
+            {estimate === undefined ? null : <TrailEstimateValue estimate={estimate} />}
           </span>
-        )}
-        {due === undefined ? null : (
           <span className="trail-workflow-issue-row__due">
-            <TrailDueDate timestamp={due} timezone={timezone} />
+            {due === undefined ? null : (
+              <TrailDueDate timestamp={due} timezone={timezone} />
+            )}
           </span>
-        )}
+        </span>
       </div>
     </TrailCollectionRow>
   );

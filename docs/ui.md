@@ -426,30 +426,32 @@ Every Status header remains visible even when its current filter-visible count i
 Project Workspace row:
 
 ```text
-[Selection] [Priority] Title   Milestone   Labels   Current Cycle   Estimate   Due
+[Selection] [Status] Title   Priority   Milestone   Labels   Current Cycle   Estimate   Due
 ```
 
 Current Cycle List row:
 
 ```text
-[Selection] [Priority] Title   Project   Milestone   Labels   Estimate   Due
+[Selection] [Status] Title   Project   Priority   Milestone   Labels   Estimate   Due
 ```
 
 Historical Cycle row:
 
 ```text
-[Selection] [Priority] Title   Project   Status   Milestone   Labels   Estimate   Due
+[Selection] [Status] Title   Project   Priority   Milestone   Labels   Estimate   Due
 ```
 
 Rules:
 
 - Title is strongest and flexible.
-- Status is omitted when enclosing Status section/column already expresses it.
+- Workflow Issue Rows retain the semantic Status glyph even when an enclosing Status section already expresses lifecycle grouping. The configured Status label remains available to accessibility, tooltip, picker, section-header, and detail contexts rather than becoming a duplicate visible row-text column.
 - Project is omitted when Page/lane scope already expresses it.
 - Current Cycle marker is omitted when Cycle Page scope already expresses membership.
 - Description/body stays out of scanning Row/Card.
+- Priority is optional row metadata; when unset it disappears instead of rendering a no-priority placeholder.
 - absent optional values normally disappear rather than filling rows with placeholder dashes.
-- Board Cards do not become mini Full Item views.
+- trailing row metadata remains a compact scanning cluster beside the primary Issue identity instead of stretching to the far edge of a wide Main View; constrained width removes lower-priority metadata before sacrificing Status and Title.
+- Board Cards do not become mini Full Item views; lane/column context may still suppress redundant Card metadata according to the Board composition.
 
 ### 4.7 Empty-state grammar
 

@@ -511,35 +511,36 @@ The count means current filter-visible rows. A zero-count section does not grow 
 Project Workspace:
 
 ```text
-[Selection] [Priority] Title   Milestone   Labels   Current Cycle   Estimate   Due
+[Selection] [Status] Title   Priority   Milestone   Labels   Current Cycle   Estimate   Due
 ```
 
 Current Cycle List:
 
 ```text
-[Selection] [Priority] Title   Project   Milestone   Labels   Estimate   Due
+[Selection] [Status] Title   Project   Priority   Milestone   Labels   Estimate   Due
 ```
 
 Historical Cycle:
 
 ```text
-[Selection] [Priority] Title   Project   [Status]   Milestone   Labels   Estimate   Due
+[Selection] [Status] Title   Project   Priority   Milestone   Labels   Estimate   Due
 ```
 
 Rules:
 
 - Title is strongest and flexible.
-- Status is omitted when the enclosing Status section already expresses it.
-- When Status must remain visible inside a compact scanning row, its visible identity is the semantic Status glyph. The configured Status label stays available to accessibility, tooltip, picker, section-header, or detail contexts and is not repeated as a parallel row-text column.
+- Every Workflow Issue Row retains the semantic Status glyph, including rows already grouped inside a Status section. Grouping communicates collection structure; the row glyph preserves fast Issue identity scanning.
+- The configured Status label stays available to accessibility, tooltip, picker, section-header, or detail contexts and is not repeated as a parallel row-text column.
 - Project is omitted when Page/lane scope already expresses it.
 - Current Cycle marker is omitted when Cycle Page scope already expresses membership.
 - Description/body stays out of Row.
-- Priority uses one stable semantic glyph.
+- Priority uses one stable semantic glyph when present; unset Priority disappears instead of reserving a placeholder slot.
 - Milestone keeps its meaningful name.
 - Labels use compact stable-identity color dots; full names belong in detail/picker/tooltip contexts.
 - Estimate uses S / M / L / XL.
 - ordinary future Due is quiet; Today/Overdue may gain emphasis.
 - absent optional values normally disappear rather than filling the row with placeholder dashes.
+- trailing metadata is one compact cluster immediately following the flexible primary identity region. Wide Main View space remains quiet rather than pushing metadata to the far edge; constrained width removes lower-priority metadata progressively while preserving Status and Title longest.
 
 ### 4.7 Workflow Issue Card
 

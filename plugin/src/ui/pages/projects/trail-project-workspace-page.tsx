@@ -15,6 +15,10 @@ import { TrailWorkflowIssueComposer } from "../../entities/trail-standard-creati
 import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
 import {
+  isTrailCollectionSelectionKeyboardOriginEligible,
+  useTrailCollectionSelectionState,
+} from "../../interactions/trail-collection-selection-state";
+import {
   getAdjacentTrailIssueId,
   isTrailIssuePeekKeyboardOriginEligible,
   useTrailIssuePeek,
@@ -57,16 +61,24 @@ function TrailProjectStatusSection({
   onExpandedChange,
   onIssuePeekOpen,
   onIssuePeekToggle,
+  onIssueSelectionChange,
   peekTargetId,
   section,
+  selectedIssueIds,
   timezone,
 }: {
   readonly collapsed: boolean;
   readonly onExpandedChange: (expanded: boolean) => void;
   readonly onIssuePeekOpen: (issueId: string) => void;
   readonly onIssuePeekToggle: (issueId: string) => void;
+  readonly onIssueSelectionChange: (
+    issueId: string,
+    selected: boolean,
+    extendRange: boolean,
+  ) => void;
   readonly peekTargetId: string | null;
   readonly section: TrailProjectWorkspaceStatusSectionReadModel;
+  readonly selectedIssueIds: ReadonlySet<string>;
   readonly timezone: string;
 }) {
   return (
@@ -93,7 +105,13 @@ function TrailProjectStatusSection({
           milestoneTitle={issue.milestone?.title}
           onActivate={() => onIssuePeekOpen(issue.id)}
           onPreviewToggle={() => onIssuePeekToggle(issue.id)}
+          onSelectionChange={(selected, extendRange) => {
+            onIssueSelectionChange(issue.id, selected, extendRange);
+          }}
           priority={issue.priority}
+          selected={selectedIssueIds.has(issue.id)}
+          statusCategory={issue.status.category}
+          statusLabel={issue.status.label}
           timezone={timezone}
           title={issue.title}
         />
@@ -137,6 +155,7 @@ export function TrailProjectWorkspacePage({
           : section.issues.map((issue) => issue.id)
       ));
   const peek = useTrailIssuePeek(peekVisibleIssueIds);
+  const selection = useTrailCollectionSelectionState(peekVisibleIssueIds);
   const peekIssue = peek.targetId === null || readModel === null
     ? undefined
     : readModel.sections
@@ -164,6 +183,22 @@ export function TrailProjectWorkspacePage({
     if (event.target.closest(".trail-issue-peek") !== null) return;
     if (event.target.closest("[data-workflow-issue-row='true']") !== null) return;
     peek.close();
+  };
+
+  const handleSelectionKeyDown: KeyboardEventHandler<HTMLElement> = (event) => {
+    if (
+      event.defaultPrevented
+      || event.key !== "Escape"
+      || selection.selectedIds.size === 0
+      || peek.targetId !== null
+      || composerReferenceTimestamp !== null
+      || !isTrailCollectionSelectionKeyboardOriginEligible(event.target)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    selection.clear();
   };
 
   const handleKeyDownCapture: KeyboardEventHandler<HTMLElement> = (event) => {
@@ -218,6 +253,7 @@ export function TrailProjectWorkspacePage({
       aria-label={`${readModel.project.title} project`}
       className="trail-project-workspace-page"
       data-project-status-category={readModel.project.statusCategory}
+      onKeyDown={handleSelectionKeyDown}
       onKeyDownCapture={handleKeyDownCapture}
       onPointerDownCapture={handlePointerDownCapture}
     >
@@ -275,8 +311,10 @@ export function TrailProjectWorkspacePage({
                 onExpandedChange={(expanded) => updateSectionExpanded(section.id, expanded)}
                 onIssuePeekOpen={peek.open}
                 onIssuePeekToggle={peek.toggle}
+                onIssueSelectionChange={selection.setSelected}
                 peekTargetId={peek.targetId}
                 section={section}
+                selectedIssueIds={selection.selectedIds}
                 timezone={readModel.configuration.temporal.timezone}
               />
             ))}

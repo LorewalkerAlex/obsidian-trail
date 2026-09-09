@@ -157,6 +157,24 @@ describe("TrailInitiativePage", () => {
     expect(screen.queryByRole("button", { name: "Initiative" })).not.toBeInTheDocument();
   });
 
+  it("shares Project selection mechanics and clears the scoped selection with Escape", () => {
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const { onNavigate } = renderInitiativePage();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Active Project" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Completed Project" }), {
+      shiftKey: true,
+    });
+    expect(screen.getByRole("checkbox", { name: "Deselect Active Project" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Deselect Completed Project" })).toBeChecked();
+
+    const page = screen.getByRole("region", { name: "Initiative Alpha initiative" });
+    fireEvent.keyDown(page, { key: "Escape" });
+    expect(screen.getByRole("checkbox", { name: "Select Active Project" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Select Completed Project" })).not.toBeChecked();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it("keeps stable navigation host-aware and treats the Initiative Composer prefill as clean context", async () => {
     vi.spyOn(Date, "now").mockReturnValue(NOW);
     const {

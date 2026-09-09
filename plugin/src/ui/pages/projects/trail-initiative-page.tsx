@@ -1,3 +1,4 @@
+import type { KeyboardEventHandler } from "react";
 import { useState } from "react";
 import { useStore } from "zustand";
 
@@ -9,6 +10,10 @@ import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-sto
 import { TrailProjectSummaryRow } from "../../entities/trail-project-summary-row";
 import { TrailProjectComposer } from "../../entities/trail-standard-creation-composers";
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
+import {
+  isTrailCollectionSelectionKeyboardOriginEligible,
+  useTrailCollectionSelectionState,
+} from "../../interactions/trail-collection-selection-state";
 import { TrailEmptyState } from "../../patterns/trail-empty-state";
 import {
   TrailPageNarrative,
@@ -60,11 +65,28 @@ export function TrailInitiativePage({
     initiativeId,
     now,
   });
+  const visibleProjectIds = readModel?.projects.map((project) => project.id) ?? [];
+  const selection = useTrailCollectionSelectionState(visibleProjectIds);
   const writable = readModel !== null && state.control.kind === "ready";
 
   const openComposer = () => {
     if (!writable) return;
     setComposerReferenceTimestamp(Date.now());
+  };
+
+  const handleSelectionKeyDown: KeyboardEventHandler<HTMLElement> = (event) => {
+    if (
+      event.defaultPrevented
+      || event.key !== "Escape"
+      || selection.selectedIds.size === 0
+      || composerReferenceTimestamp !== null
+      || !isTrailCollectionSelectionKeyboardOriginEligible(event.target)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    selection.clear();
   };
 
   if (readModel === null) {
@@ -77,6 +99,7 @@ export function TrailInitiativePage({
     <section
       aria-label={`${readModel.initiative.title} initiative`}
       className="trail-initiative-page"
+      onKeyDown={handleSelectionKeyDown}
     >
       <TrailPageHeader
         actions={(
@@ -134,8 +157,12 @@ export function TrailInitiativePage({
                 due={project.due}
                 key={project.id}
                 onActivate={() => onProjectActivate(project.id)}
+                onSelectionChange={(selected, extendRange) => {
+                  selection.setSelected(project.id, selected, extendRange);
+                }}
                 priority={project.priority}
                 progress={project.progress}
+                selected={selection.selectedIds.has(project.id)}
                 statusCategory={project.statusCategory}
                 statusLabel={project.statusLabel}
                 timezone={readModel.configuration.temporal.timezone}

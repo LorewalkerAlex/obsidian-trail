@@ -1,9 +1,12 @@
+import type { KeyboardEventHandler } from "react";
+
 import type {
   TrailPriority,
   TrailProjectStatusCategory,
   TrailTimestamp,
 } from "../../domain/model/trail-values";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
+import { TrailCheckbox } from "../primitives/trail-checkbox";
 import { TrailProgress } from "../primitives/trail-progress";
 import { TrailDueDate } from "./trail-due";
 import {
@@ -28,8 +31,10 @@ export interface TrailProjectSummaryRowProps {
   readonly due?: TrailTimestamp;
   readonly highlighted?: boolean;
   readonly onActivate?: () => void;
+  readonly onSelectionChange?: (selected: boolean, extendRange: boolean) => void;
   readonly priority: TrailPriority | undefined;
   readonly progress: TrailProjectSummaryProgress;
+  readonly selected?: boolean;
   readonly statusCategory: TrailProjectStatusCategory;
   readonly statusLabel: string;
   readonly timezone: string;
@@ -40,8 +45,10 @@ export function TrailProjectSummaryRow({
   due,
   highlighted = false,
   onActivate,
+  onSelectionChange,
   priority,
   progress,
+  selected = false,
   statusCategory,
   statusLabel,
   timezone,
@@ -50,6 +57,21 @@ export function TrailProjectSummaryRow({
   const priorityPresentation = getTrailPriorityPresentation(priority);
   const terminal = statusCategory === "completed" || statusCategory === "canceled";
   const activate = () => onActivate?.();
+  const handleKeyDownCapture: KeyboardEventHandler<HTMLDivElement> = (event) => {
+    if (
+      event.key.toLowerCase() !== "x"
+      || event.altKey
+      || event.ctrlKey
+      || event.metaKey
+      || onSelectionChange === undefined
+      || event.target instanceof HTMLInputElement
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    onSelectionChange(!selected, false);
+  };
 
   return (
     <TrailCollectionRow
@@ -64,6 +86,16 @@ export function TrailProjectSummaryRow({
         />
       )}
       onClick={onActivate === undefined ? undefined : activate}
+      onKeyDownCapture={onSelectionChange === undefined ? undefined : handleKeyDownCapture}
+      selected={selected}
+      selectionControl={onSelectionChange === undefined ? undefined : (
+        <TrailCheckbox
+          checked={selected}
+          label={selected ? `Deselect ${title}` : `Select ${title}`}
+          onClick={(event) => onSelectionChange(!selected, event.shiftKey)}
+          readOnly
+        />
+      )}
     >
       <div className="trail-project-summary-row__content">
         {onActivate === undefined ? (

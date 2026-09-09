@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { TrailProjectProductionSpecimens } from "./trail-project-production-specimens";
 
 describe("TrailProjectProductionSpecimens", () => {
-  it("shows Issue and Project lifecycle identity through glyph-only compact scanning rows", () => {
+  it("uses the production Workflow Issue Row for Status states and Project Workspace composition", () => {
     const { container } = render(<TrailProjectProductionSpecimens />);
 
-    const workflowGallery = within(screen.getByRole("group", { name: "Workflow status rows" }));
+    const workflowGalleryElement = screen.getByRole("group", { name: "Workflow status rows" });
+    const workflowGallery = within(workflowGalleryElement);
     expect(workflowGallery.getByText("Issue workflow")).toBeInTheDocument();
     expect(workflowGallery.getByText("5 states")).toBeInTheDocument();
     expect(workflowGallery.getByRole("img", { name: "Backlog status" }))
@@ -18,28 +19,36 @@ describe("TrailProjectProductionSpecimens", () => {
     expect(workflowGallery.getByRole("img", { name: "Canceled status" })).toBeInTheDocument();
     expect(workflowGallery.getByText("Calibrate the Projects scanning hierarchy"))
       .toBeInTheDocument();
-    expect(container.querySelectorAll("[data-workflow-status-row='true']"))
+    expect(workflowGalleryElement.querySelectorAll("[data-workflow-issue-row='true']"))
       .toHaveLength(5);
-    const workflowTrailingRegions = Array.from(container.querySelectorAll(
-      "[data-workflow-status-row='true'] .trail-lab-list-row__trailing",
-    ));
-    expect(workflowTrailingRegions).toHaveLength(5);
-    for (const trailingRegion of workflowTrailingRegions) {
-      expect(trailingRegion).toBeEmptyDOMElement();
-    }
+    expect(workflowGalleryElement.querySelector("[data-workflow-status-row='true']"))
+      .toBeNull();
+    expect(workflowGallery.queryByText(/TRAIL-\d+/)).not.toBeInTheDocument();
 
     const issueGalleryElement = screen.getByRole("group", { name: "Project workspace issue rows" });
     const issueGallery = within(issueGalleryElement);
     expect(issueGallery.getByRole("button", { name: "Collapse In progress" }))
       .toHaveAttribute("aria-expanded", "true");
     expect(issueGallery.getByText("Establish workspace page composition")).toBeInTheDocument();
+    expect(issueGallery.getByText("Verify a deliberately long Issue title keeps the soft metadata columns readable under ordinary width pressure")).toBeInTheDocument();
     expect(issueGallery.getByText("Workspace interaction pass")).toBeInTheDocument();
     expect(issueGallery.getByLabelText("In current cycle")).toHaveTextContent("Current");
     expect(issueGallery.getByLabelText("Large estimate")).toHaveTextContent("L");
+    expect(issueGallery.getAllByRole("img", { name: "In Progress status" }))
+      .toHaveLength(3);
     expect(issueGallery.queryByText("In Progress", { selector: ".trail-workflow-issue-row__content *" }))
       .not.toBeInTheDocument();
-    expect(container.querySelectorAll("[data-workflow-issue-row='true']"))
-      .toHaveLength(3);
+    const issueRows = Array.from(issueGalleryElement.querySelectorAll("[data-workflow-issue-row='true']"));
+    expect(issueRows).toHaveLength(3);
+    for (const issueRow of issueRows) {
+      expect(issueRow.querySelector(".trail-workflow-issue-row__content")?.children)
+        .toHaveLength(3);
+      expect(issueRow.querySelector(".trail-workflow-issue-row__metadata")?.children)
+        .toHaveLength(5);
+    }
+    expect(issueGallery.getByRole("checkbox", { name: "Deselect Establish workspace page composition" }))
+      .toBeChecked();
+    expect(issueGallery.queryByRole("img", { name: "No priority" })).not.toBeInTheDocument();
     expect(issueGallery.getByRole("button", { name: "Collapse Todo" }))
       .toHaveAttribute("aria-expanded", "true");
     expect(issueGallery.getByText("Todo")).toBeInTheDocument();
@@ -70,6 +79,8 @@ describe("TrailProjectProductionSpecimens", () => {
     })).toHaveAttribute("aria-valuetext", "Unavailable");
     expect(container.querySelectorAll("[data-project-summary-row='true']"))
       .toHaveLength(4);
+    expect(projectGallery.getByRole("checkbox", { name: "Deselect Rebuild the Projects scanning hierarchy" }))
+      .toBeChecked();
     expect(container.querySelectorAll(".trail-project-summary-row__status"))
       .toHaveLength(0);
   });
