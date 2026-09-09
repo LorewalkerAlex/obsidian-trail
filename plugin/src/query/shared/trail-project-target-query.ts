@@ -98,11 +98,10 @@ export function selectTrailDefaultTriageAcceptProjectId(
  * the Issue's current Status. The current Project remains visible as the selected
  * relationship even when moving into that lifecycle state would not be legal.
  */
-export function selectTrailWorkflowIssueMoveProjectIds(
-  state: TrailRuntimeState,
+export function selectTrailWorkflowIssueMoveProjectIdsFromReadableSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
   issueId: string,
 ): readonly string[] {
-  const readable = selectTrailReadableRuntimeSnapshot(state);
   const configuration = readable.authoritative.configuration;
   if (configuration === null) return [];
 
@@ -128,4 +127,14 @@ export function selectTrailWorkflowIssueMoveProjectIds(
     })
     .sort(compareProjects)
     .map((project) => project.id);
+}
+
+export function selectTrailWorkflowIssueMoveProjectIds(
+  state: TrailRuntimeState,
+  issueId: string,
+): readonly string[] {
+  return selectTrailWorkflowIssueMoveProjectIdsFromReadableSnapshot(
+    selectTrailReadableRuntimeSnapshot(state),
+    issueId,
+  );
 }
