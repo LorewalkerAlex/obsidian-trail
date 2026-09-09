@@ -18,8 +18,7 @@
 .trail-collection-row:hover,
 .trail-collection-row[data-trail-visual-state="hover"],
 .trail-collection-row[data-highlighted="true"],
-.trail-collection-row:focus-visible,
-.trail-collection-row:focus-within {
+.trail-collection-row:focus-visible {
   background: var(--trail-state-hover);
 }
 
@@ -46,7 +45,7 @@
 .trail-collection-row[data-selectable="true"][data-highlighted="true"] .trail-collection-row__selection,
 .trail-collection-row[data-selectable="true"][data-selected="true"] .trail-collection-row__selection,
 .trail-collection-row[data-selectable="true"]:focus-visible .trail-collection-row__selection,
-.trail-collection-row[data-selectable="true"]:focus-within .trail-collection-row__selection {
+.trail-collection-row[data-selectable="true"] .trail-collection-row__selection:has(:focus-visible) {
   opacity: 1;
   pointer-events: auto;
 }
