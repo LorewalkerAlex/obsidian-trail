@@ -18,11 +18,13 @@ const stylesheetSources = [
   "plugin/styles/primitives.css",
   "plugin/styles/patterns.css",
   "plugin/styles/patterns-page-chrome.css",
+  "plugin/styles/patterns-actions.css",
   "plugin/styles/entities.css",
   "plugin/styles/entities-project-summary.css",
   "plugin/styles/entities-workflow.css",
   "plugin/styles/pages.css",
   "plugin/styles/pages-projects.css",
+  "plugin/styles/pages-project-workspace-actions.css",
   "plugin/styles/shell.css",
   "plugin/styles/foundation.css",
 ];

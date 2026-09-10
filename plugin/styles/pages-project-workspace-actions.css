@@ -1,0 +1,33 @@
+/* Project Workspace owns placement of shared transient Issue action surfaces. */
+.trail-project-workspace-page__bulk-layer {
+  position: absolute;
+  z-index: calc(var(--layer-menu, 1000) - 2);
+  right: var(--trail-space-8);
+  bottom: var(--trail-space-8);
+  left: var(--trail-space-8);
+  display: flex;
+  min-width: 0;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.trail-project-workspace-page__bulk-layer > .trail-bulk-bar {
+  max-width: min(100%, 560px);
+  pointer-events: auto;
+}
+
+@container (max-width: 480px) {
+  .trail-project-workspace-page__bulk-layer {
+    right: var(--trail-space-4);
+    bottom: var(--trail-space-4);
+    left: var(--trail-space-4);
+  }
+
+  .trail-project-workspace-page__bulk-layer > .trail-bulk-bar {
+    width: 100%;
+  }
+
+  .trail-bulk-bar__count {
+    margin-right: auto;
+  }
+}

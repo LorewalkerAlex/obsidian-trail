@@ -9,6 +9,7 @@ import {
 } from "obsidian";
 
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import { TrailActionMenuProvider } from "../../ui/interactions/trail-action-menu-context";
 import type { TrailMarkdownRender } from "../../ui/patterns/trail-page-narrative";
 import { TrailApp } from "../../ui/shell/trail-app";
 import {
@@ -17,6 +18,7 @@ import {
   type TrailNavigationStore,
 } from "../../ui/shell/trail-navigation-state";
 import type { TrailUiActions } from "../../ui/shell/trail-ui-actions";
+import { createObsidianTrailActionMenuPresenter } from "./trail-action-menu-obsidian";
 import {
   createTrailViewState,
   readTrailViewState,
@@ -104,18 +106,21 @@ export class TrailView extends ItemView {
     this.contentEl.empty();
     this.contentEl.addClass("trail-view");
     const mountElement = this.contentEl.createDiv({ cls: "trail-view__root" });
+    const actionMenuPresenter = createObsidianTrailActionMenuPresenter(this.app);
     this.root = createRoot(mountElement);
     this.root.render(
       <StrictMode>
-        <TrailApp
-          actions={this.actions}
-          navigationStore={this.navigationStore}
-          onNavigate={(location) => {
-            void this.navigate(location);
-          }}
-          renderMarkdown={this.renderMarkdown}
-          runtimeStore={this.runtimeStore}
-        />
+        <TrailActionMenuProvider presenter={actionMenuPresenter}>
+          <TrailApp
+            actions={this.actions}
+            navigationStore={this.navigationStore}
+            onNavigate={(location) => {
+              void this.navigate(location);
+            }}
+            renderMarkdown={this.renderMarkdown}
+            runtimeStore={this.runtimeStore}
+          />
+        </TrailActionMenuProvider>
       </StrictMode>,
     );
   }

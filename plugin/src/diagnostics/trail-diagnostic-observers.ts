@@ -94,7 +94,7 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],
-    "changeMilestone" | "changeStatus" | "create" | "createFromDraft" | "editProperties" | "moveToProject"
+    "changeMilestone" | "changeStatus" | "create" | "createFromDraft" | "delete" | "editProperties" | "moveToProject"
   >;
   readonly milestones: Pick<
     TrailApplicationSession["milestones"],
@@ -269,6 +269,19 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.workflow.issue-create", error, data);
+        }
+      },
+      delete(expectedIssue): TrailEntityMutationReceipt {
+        const data = { issueId: expectedIssue.id };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.workflow.issue-delete",
+            session.issues.delete(expectedIssue),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.workflow.issue-delete", error, data);
         }
       },
       editProperties(expectedIssue, input): TrailMutationActionResult {

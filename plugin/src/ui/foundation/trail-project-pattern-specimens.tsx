@@ -1,5 +1,8 @@
+import type { TrailWorkflowIssuePresentationReadModel } from "../../query/shared/trail-workflow-issue-presentation-query";
+import { TrailBulkBar } from "../patterns/trail-bulk-bar";
 import { TrailEmptyState } from "../patterns/trail-empty-state";
 import { TrailGroupHeader } from "../patterns/trail-group-header";
+import { TrailIssuePeek } from "../patterns/trail-issue-peek";
 import {
   TrailPageNarrative,
   type TrailMarkdownRender,
@@ -36,6 +39,29 @@ function TrailAddIcon() {
     </svg>
   );
 }
+
+function TrailMoreIcon() {
+  return (
+    <svg aria-hidden="true" fill="currentColor" viewBox="0 0 16 16">
+      <circle cx="3.5" cy="8" r="1" />
+      <circle cx="8" cy="8" r="1" />
+      <circle cx="12.5" cy="8" r="1" />
+    </svg>
+  );
+}
+
+const ACTION_PEEK_FIXTURE: TrailWorkflowIssuePresentationReadModel = {
+  id: "foundation-action-peek",
+  inCurrentCycle: false,
+  labels: [],
+  project: { id: "project-a", title: "Project Alpha" },
+  status: {
+    category: "started",
+    id: "issue-started",
+    label: "In Progress",
+  },
+  title: "Inspect actions without turning Peek into an editor",
+};
 
 export function TrailProjectPatternSpecimens() {
   return (
@@ -138,6 +164,33 @@ export function TrailProjectPatternSpecimens() {
               title="No projects match the filters."
             />
           </div>
+        </LabStateGrid>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="Selection actions stay in one shared bulk bar, while the read-only peek exposes only an explicit entity-local overflow affordance. Action legality and scope are supplied by the action registry rather than these patterns."
+        kind="composition-gallery"
+        owner="TrailBulkBar + TrailIssuePeek action slot"
+        title="Issue action surfaces"
+      >
+        <LabStateGrid>
+          <TrailBulkBar
+            actions={<TrailButton>Cancel</TrailButton>}
+            count={3}
+            onClear={() => { /* static action specimen */ }}
+            onOverflow={() => { /* static action specimen */ }}
+          />
+          <TrailIssuePeek
+            actions={(
+              <TrailIconButton
+                icon={<TrailMoreIcon />}
+                label="More issue actions"
+              />
+            )}
+            issue={ACTION_PEEK_FIXTURE}
+            renderMarkdown={renderNarrativeFixture}
+            timezone="UTC"
+          />
         </LabStateGrid>
       </LabSpecimenRow>
     </>

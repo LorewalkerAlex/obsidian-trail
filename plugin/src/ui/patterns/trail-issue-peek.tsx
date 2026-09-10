@@ -32,11 +32,13 @@ function TrailIssuePeekMetadataItem({
 }
 
 export function TrailIssuePeek({
+  actions,
   issue,
   renderMarkdown,
   showProject = true,
   timezone,
 }: {
+  readonly actions?: ReactNode;
   readonly issue: TrailWorkflowIssuePresentationReadModel;
   readonly renderMarkdown: TrailMarkdownRender;
   readonly showProject?: boolean;
@@ -53,7 +55,12 @@ export function TrailIssuePeek({
       data-issue-id={issue.id}
     >
       <div className="trail-issue-peek__content">
-        <h2 className="trail-issue-peek__title">{issue.title}</h2>
+        <div className="trail-issue-peek__header">
+          <h2 className="trail-issue-peek__title">{issue.title}</h2>
+          {actions === undefined || actions === null ? null : (
+            <div className="trail-issue-peek__actions">{actions}</div>
+          )}
+        </div>
 
         <div aria-label="Issue metadata" className="trail-issue-peek__metadata" role="group">
           <TrailIssuePeekMetadataItem accessibleLabel={`Status: ${issue.status.label}`}>

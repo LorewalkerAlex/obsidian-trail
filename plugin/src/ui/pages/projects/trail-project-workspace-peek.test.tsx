@@ -1,7 +1,9 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -23,6 +25,12 @@ import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "../../../test/trail-test-fixtures";
+import type {
+  TrailActionMenuPosition,
+  TrailActionMenuPresenter,
+  TrailActionMenuRequest,
+} from "../../interactions/trail-action-menu";
+import { TrailActionMenuProvider } from "../../interactions/trail-action-menu-context";
 import type { TrailMarkdownRender } from "../../patterns/trail-page-narrative";
 import { TrailProjectWorkspacePage } from "./trail-project-workspace-page";
 
@@ -98,10 +106,23 @@ function readyStore() {
 
 function actions() {
   return {
+    changeStatus: vi.fn(() => ({
+      entityId: "issue-started",
+      kind: "unchanged" as const,
+    })),
     createFromDraft: vi.fn(() => ({
       commandId: "command-create",
       completion: Promise.resolve(),
       entityId: "new-issue",
+    })),
+    delete: vi.fn((expectedIssue: TrailWorkflowIssue) => ({
+      commandId: `delete-${expectedIssue.id}`,
+      completion: Promise.resolve(),
+      entityId: expectedIssue.id,
+    })),
+    moveToProject: vi.fn(() => ({
+      entityId: "issue-started",
+      kind: "unchanged" as const,
     })),
   };
 }
@@ -168,5 +189,64 @@ describe("Project Workspace Issue Peek", () => {
 
     fireEvent.pointerDown(screen.getByRole("button", { name: "Filter" }));
     expect(screen.queryByRole("complementary", { name: /Issue peek:/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps Peek overflow entity-local and lets confirmation own transient dismissal", async () => {
+    const store = readyStore();
+    let itemIds: readonly string[] = [];
+    let invokeDelete: (() => void | Promise<void>) | undefined;
+    const presenter: TrailActionMenuPresenter = {
+      showAtMouseEvent(): void {
+        // This consumer proves the explicit Peek overflow path only.
+      },
+      showAtPosition<TActionId extends string>(
+        _position: TrailActionMenuPosition,
+        request: TrailActionMenuRequest<TActionId>,
+      ): void {
+        itemIds = request.items.map(({ id }) => id);
+        const deleteAction = request.items.find(({ id }) => id === "issue.delete");
+        invokeDelete = deleteAction === undefined
+          ? undefined
+          : () => request.onSelect(deleteAction.id);
+      },
+    };
+
+    render(
+      <TrailActionMenuProvider presenter={presenter}>
+        <TrailProjectWorkspacePage
+          actions={actions()}
+          onInitiativeActivate={vi.fn()}
+          onProjectsActivate={vi.fn()}
+          projectId="project-a"
+          renderMarkdown={renderMarkdown}
+          runtimeStore={store}
+        />
+      </TrailActionMenuProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Build Issue Peek" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Close the previous slice" }));
+    fireEvent.click(screen.getByText("Build Issue Peek"));
+
+    fireEvent.click(screen.getByRole("button", { name: "More issue actions" }));
+
+    expect(itemIds).toEqual(["issue.cancel", "issue.delete"]);
+    expect(screen.getByRole("checkbox", { name: "Deselect Build Issue Peek" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Deselect Close the previous slice" })).toBeChecked();
+
+    expect(invokeDelete).toBeDefined();
+    act(() => {
+      void invokeDelete?.();
+    });
+    const dialog = screen.getByRole("dialog", { name: "Delete issue?" });
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Delete issue?" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("complementary", { name: "Issue peek: Build Issue Peek" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Deselect Build Issue Peek" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Deselect Close the previous slice" })).toBeChecked();
   });
 });

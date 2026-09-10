@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { TrailProjectPatternSpecimens } from "./trail-project-pattern-specimens";
 
 describe("TrailProjectPatternSpecimens", () => {
-  it("shows minimum-complete Page Header, Page Narrative, Group Header, and Empty State project fixtures", async () => {
+  it("shows minimum-complete Page, collection, and Issue action pattern fixtures", async () => {
     const { container } = render(<TrailProjectPatternSpecimens />);
 
     const pageHeaderGallery = within(screen.getByRole("group", { name: "Page header" }));
@@ -48,5 +48,16 @@ describe("TrailProjectPatternSpecimens", () => {
     expect(emptyStateGallery.getByRole("button", { name: "Clear filters" }))
       .toHaveClass("trail-button");
     expect(container.querySelectorAll(".trail-empty-state")).toHaveLength(2);
+
+    const actionGallery = within(screen.getByRole("group", { name: "Issue action surfaces" }));
+    expect(actionGallery.getByRole("toolbar", { name: "Selection actions" }))
+      .toHaveTextContent("3 selected");
+    expect(actionGallery.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    expect(actionGallery.getByRole("button", { name: "More selection actions" }))
+      .toBeInTheDocument();
+    expect(actionGallery.getByRole("button", { name: "Clear selection" }))
+      .toBeInTheDocument();
+    expect(actionGallery.getByRole("button", { name: "More issue actions" }))
+      .toBeInTheDocument();
   });
 });

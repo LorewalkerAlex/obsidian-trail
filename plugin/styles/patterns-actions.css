@@ -1,0 +1,120 @@
+/* Shared action surfaces. Registry/Selection own semantics; these rules own only presentation. */
+.trail-bulk-bar {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-width: 0;
+  min-height: 38px;
+  align-items: center;
+  gap: var(--trail-space-2);
+  padding: var(--trail-space-3) var(--trail-space-4) var(--trail-space-3) var(--trail-space-6);
+  border: 1px solid var(--trail-control-border-hover);
+  border-radius: var(--trail-radius-md);
+  background: var(--trail-surface-overlay);
+  box-shadow: var(--trail-menu-shadow);
+  color: var(--trail-text-secondary);
+}
+
+.trail-bulk-bar__count {
+  margin-right: var(--trail-space-3);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trail-bulk-bar__actions {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-2);
+}
+
+.trail-bulk-bar .trail-button {
+  min-height: var(--trail-control-height-sm);
+  padding-right: var(--trail-space-5);
+  padding-left: var(--trail-space-5);
+}
+
+.trail-bulk-bar .trail-icon-button,
+.trail-issue-peek__actions .trail-icon-button {
+  width: var(--trail-control-height-sm);
+  height: var(--trail-control-height-sm);
+  min-height: var(--trail-control-height-sm);
+}
+
+.trail-bulk-bar__icon,
+.trail-action-overflow-icon {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.45;
+}
+
+.trail-bulk-bar__icon path,
+.trail-action-overflow-icon path {
+  fill: none;
+}
+
+.trail-issue-peek__header {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--trail-space-5);
+}
+
+.trail-issue-peek__title {
+  min-width: 0;
+}
+
+.trail-issue-peek__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+
+/* Trail action menus keep Obsidian mechanics but size to their own content. */
+body .menu:has(.menu-item[data-section="trail-action"]) {
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 0;
+  max-width: min(var(--trail-menu-readable-max-width), calc(100vw - var(--trail-menu-viewport-inset)));
+}
+
+body .menu:has(.menu-item[data-section="trail-action"]) .menu-item {
+  min-width: 0;
+}
+
+body .menu:has(.menu-item[data-section="trail-action"]) .menu-item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Obsidian owns FuzzySuggestModal mechanics; Trail keeps action-target geometry intrinsic. */
+body .modal.trail-action-target-suggest {
+  --modal-width: max-content;
+  --modal-max-width: min(var(--trail-menu-readable-max-width), calc(100vw - var(--trail-menu-viewport-inset)));
+  box-sizing: border-box;
+  width: max-content;
+  min-width: min(var(--trail-menu-readable-min-width), calc(100vw - var(--trail-menu-viewport-inset)));
+  max-width: min(var(--trail-menu-readable-max-width), calc(100vw - var(--trail-menu-viewport-inset)));
+}
+
+body .modal.trail-action-target-suggest .modal-content,
+body .modal.trail-action-target-suggest .prompt {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+body .modal.trail-action-target-suggest .suggestion-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

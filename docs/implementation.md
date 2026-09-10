@@ -4,21 +4,16 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The current durable public implementation checkpoint is:
+The latest published prerequisite for the current Stage 8 interaction checkpoint is:
 
 ```text
-bbc59d00316f81e3c124125e403a5f036d23b175
-feat: align issue rows and collection selection
+f8cca74b972f5f8c3556cc4165fabd230500e1a3
+feat: expose effective issue capabilities
 ```
 
-This checkpoint includes the accepted Stage 8 Workflow Issue Row geometry and shared Collection Selection integration over the previously published read-only Peek checkpoint:
+That prerequisite establishes Query-owned Workflow Issue EffectiveCapabilities and legal Status/Project targets over the existing Domain lifecycle rules. The current interaction checkpoint builds on those facts rather than re-deriving legality in UI consumers.
 
-```text
-252f58a5ffa69f1277f98c5d050fb3c9d2c73ffc
-feat: checkpoint stage 8 issue peek and diagnostics
-```
-
-Stages 5 through 7 remain closed. Stage 8 is active: Workflow Issue Row, read-only Peek, and Collection Selection are now real production/host evidence; Action Registry / Context Menu / Bulk and the Full Item / Issue Inspector path remain ahead. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+Stages 5 through 7 remain closed. Stage 8 is active: Workflow Issue Row, read-only Peek, Collection Selection, and the shared Action Registry / Context Menu / Bulk track are now real production/host evidence; Issue Full Item and Issue Inspector remain ahead. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -42,7 +37,7 @@ Known alignment debt now centers on:
 1. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
 2. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
 
-These are implementation gaps, not design questions. Stage 8 real consumers have now pulled shared Collection Selection and read-only Peek into production. Action Registry / Context Menu / Bulk remain the next shared-interaction gap; they must reuse Query capability/target facts and existing Application intents rather than create a parallel legality model. No human-readable Workflow Issue identifier is planned merely to support row spacing.
+These are implementation gaps, not design questions. Stage 8 real consumers now use shared Collection Selection, read-only Peek, and one Action Registry/context-resolution path in production. Context Menu, Peek overflow, and Bulk Bar consume that same action authority over Query capability/legal-target facts and existing Application intents; Bulk target-bearing actions intersect per-item legal targets instead of creating a parallel legality model. No human-readable Workflow Issue identifier is planned merely to support row spacing.
 
 ## 3. Established Foundations
 
@@ -505,7 +500,7 @@ Current key status:
 | Picker / Popover / Confirmation / Composer | Accepted / Lab-proven / Consumer-proven / Host-proven | consume the accepted shared grammar in later Pages; do not reintroduce Page-local geometry or density overrides |
 | Collection Selection | Implemented / Consumer-proven / Host-proven | preserve visible-projection reconciliation, shared gutter, Shift range, `X` toggle, and top-layer-aware `Esc`; reuse in later selectable collections |
 | Workflow Issue Peek | Implemented / Lab-proven / Consumer-proven / Host-proven | preserve read-only preview/retarget behavior without navigation, selection side effects, or Inspector retargeting |
-| Action Registry / Context Menu / Bulk | Mapped / next Stage 8 interaction slice | implement one context/capability/action authority over existing Selection, Query legal targets, and Application intents; Bulk is a presentation/aggregation consumer, not a second legality system |
+| Action Registry / Context Menu / Bulk | Accepted / Lab-proven / Consumer-proven / Host-proven | reuse the same registry/context authority in later Issue collections and future contextual command/shortcut consumers; Bulk remains a presentation/aggregation consumer, not a second legality system |
 
 Update this ledger as the active execution snapshot; do not turn it into historical release notes.
 
@@ -673,14 +668,14 @@ Build one coherent detail chain while maturing shared interactions only from rea
 
 ```text
 Issue Row/Card                         accepted
-→ read-only Peek                       implemented / accepted
-→ Issue Full Item                      next after shared action/bulk slice
+→ read-only Peek                       accepted
+→ Issue Full Item                      next
 → Issue Inspector                      follows Full Item
 
 Shared interaction track:
-Collection Selection                   implemented / accepted
-→ Action Registry + context resolution next
-→ Context Menu / overflow + Bulk Bar   next over the same registry
+Collection Selection                   accepted
+→ Action Registry + context resolution accepted
+→ Context Menu / overflow + Bulk Bar   accepted over the same registry
 ```
 
 Picker, Confirmation, and Composer mechanics already exist and should be reused. Do not create parallel Issue-only or Bulk-only action semantics.
@@ -840,15 +835,17 @@ Closure facts:
 - Right Sidebar entry behavior now distinguishes an already-visible host sidebar from a collapsed sidebar: visible sidebars switch to Trail Inspector on stable Trail targets, while collapsed sidebars retain the calibrated width-based auto-reveal policy. Unrelated Obsidian sidebar views remain intact.
 - Representative Obsidian validation covers Project Workspace scanning, Project-prefilled Issue Composer, Project Inspector data/contrast, Right Sidebar retargeting, and Milestone quick-create geometry.
 
-At Stage 7 closure, Selection / Action Registry / Bulk / Peek were still deferred because that stage did not require them. Stage 8 has since implemented Selection and Peek; Board remains Stage 9.
+At Stage 7 closure, Selection / Action Registry / Bulk / Peek were still deferred because that stage did not require them. Stage 8 has since implemented and accepted Selection, Peek, Action Registry/context resolution, Context Menu/overflow, and Bulk Bar; Board remains Stage 9.
 
 ### Stage 8 active - Issue interaction/detail chain
 
-Published Stage 8 checkpoints now establish the first half of the chain:
+Published Stage 8 prerequisites leading into the current interaction checkpoint include:
 
 ```text
 252f58a5ffa69f1277f98c5d050fb3c9d2c73ffc  feat: checkpoint stage 8 issue peek and diagnostics
 bbc59d00316f81e3c124125e403a5f036d23b175  feat: align issue rows and collection selection
+966793133cf9eb17b301d4b4e1cca99e66acd567  fix: enforce project-scoped issue capabilities
+f8cca74b972f5f8c3556cc4165fabd230500e1a3  feat: expose effective issue capabilities
 ```
 
 Current accepted facts:
@@ -857,9 +854,15 @@ Current accepted facts:
 - Status remains visible per Issue even inside a Status section; no human-readable Workflow Issue identifier is introduced merely to separate leading semantics;
 - shared Collection Selection is implemented through the existing Collection Row gutter and is Consumer-proven in Project Workspace, Projects Root, and Initiative Focus; checkbox selection is isolated from row activation/Peek, Shift extends through current visible order, `X` toggles eligible focused rows, and `Esc` clears selection only when no higher transient layer owns it;
 - read-only Workflow Issue Peek is implemented and accepted for Project Workspace: open/retarget/adjacent browsing remain transient, do not create host history, do not change selection, and do not retarget the persistent Inspector;
-- the final Stage 8 row/selection slice passed 9 focused test files / 30 tests plus diagnostics typecheck/build and representative real-Obsidian verification before publication at `bbc59d0`.
+- Query exposes Workflow Issue EffectiveCapabilities plus legal Status and Project targets from one readable snapshot, reusing canonical Domain lifecycle rules and Project-target selection rather than moving legality into UI;
+- one Workflow Issue Action Registry owns stable action identities plus context resolution over explicit Issue and selection scopes. Right-click on a selected Issue may use the relevant selection; right-click on an unselected Issue and Peek overflow remain explicit-item scopes without destroying retained selection;
+- Project Workspace Context Menu, Peek overflow, and Bulk Bar consume the same registry. Bulk availability requires every selected Issue to support the action, and target-bearing actions intersect the ordinary per-Issue legal target sets;
+- Move-to-Project uses the Obsidian searchable picker over Query-owned legal destinations. Compact native Context Menus use intrinsic Trail action width with a bounded maximum, while searchable relation pickers retain a wider readable search surface;
+- Delete is exposed through the existing Issue Application intent and shared Confirmation. Confirmation remains the top transient layer; cancel/Esc restores focus to the surviving row/Peek/Bulk trigger so subsequent Esc handling returns to Peek or Collection Selection instead of being lost at the host boundary;
+- Foundation exercises the production Bulk Bar and Peek action affordance rather than owning a parallel specimen-only action system;
+- the release candidate passed repository-wide `npm run check` with 166 test files / 568 tests, production typecheck/build, and diagnostics typecheck/build. Representative real-Obsidian verification covered native right-click actions, legal searchable Move targets, Peek overflow, Bulk selection scope, destructive confirmation, layered Esc/focus restoration, retained selection for explicit unselected-row context, and final compact Context Menu geometry.
 
-The next coherent Stage 8 slice is **Action Registry + context resolution + Context Menu/overflow + Bulk Bar** over the already-accepted Selection owner and existing Query/Application legality. After that, continue the detail chain with Issue Full Item, then Issue Inspector.
+The next coherent Stage 8 slice is **Issue Full Item**, followed by **Issue Inspector**. Later Board/Cycle collections and contextual command/shortcut consumers must reuse the accepted Selection/Action/Peek owners rather than fork Issue action semantics.
 
 ## 10. Slice Definition of Done
 

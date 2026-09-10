@@ -1,8 +1,9 @@
 import type {
   KeyboardEventHandler,
+  MouseEventHandler,
   PointerEventHandler,
 } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "zustand";
 
 import {
@@ -13,16 +14,27 @@ import {
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
 import { TrailWorkflowIssueComposer } from "../../entities/trail-standard-creation-composers";
 import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
+import { useTrailActionMenuPresenter } from "../../interactions/trail-action-menu-context";
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
 import {
   isTrailCollectionSelectionKeyboardOriginEligible,
   useTrailCollectionSelectionState,
 } from "../../interactions/trail-collection-selection-state";
 import {
+  executeTrailWorkflowIssueAction,
+  resolveTrailWorkflowIssueBulkActionScope,
+  resolveTrailWorkflowIssueActionContext,
+  resolveTrailWorkflowIssueActionScope,
+  type TrailWorkflowIssueActionContext,
+  type TrailWorkflowIssueActionId,
+} from "../../interactions/trail-workflow-issue-action-registry";
+import {
   getAdjacentTrailIssueId,
   isTrailIssuePeekKeyboardOriginEligible,
   useTrailIssuePeek,
 } from "../../interactions/trail-issue-peek-state";
+import { TrailBulkBar } from "../../patterns/trail-bulk-bar";
+import { TrailConfirmation } from "../../patterns/trail-confirmation";
 import { TrailEmptyState } from "../../patterns/trail-empty-state";
 import { TrailGroupHeader } from "../../patterns/trail-group-header";
 import { TrailIssuePeek } from "../../patterns/trail-issue-peek";
@@ -41,13 +53,23 @@ import { TrailProjectWorkspaceViewControls } from "./trail-project-workspace-vie
 
 type TrailProjectWorkspacePageActions = Pick<
   TrailUiActions["issues"],
-  "createFromDraft"
+  "changeStatus" | "createFromDraft" | "delete" | "moveToProject"
 >;
 
 function TrailAddIcon() {
   return (
     <svg aria-hidden="true" className="trail-projects-page__add-icon" viewBox="0 0 16 16">
       <path d="M8 3.5v9M3.5 8h9" />
+    </svg>
+  );
+}
+
+function TrailMoreIcon() {
+  return (
+    <svg aria-hidden="true" className="trail-action-overflow-icon" viewBox="0 0 16 16">
+      <circle cx="3.5" cy="8" r="1" />
+      <circle cx="8" cy="8" r="1" />
+      <circle cx="12.5" cy="8" r="1" />
     </svg>
   );
 }
@@ -136,11 +158,14 @@ export function TrailProjectWorkspacePage({
   readonly runtimeStore: TrailRuntimeStore;
 }) {
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
+  const actionMenu = useTrailActionMenuPresenter();
   const filters = useTrailCollectionFilterState<TrailProjectWorkspaceFilterPropertyId>();
   const [collapsedStatusIds, setCollapsedStatusIds] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
   const [composerReferenceTimestamp, setComposerReferenceTimestamp] = useState<number | null>(null);
+  const [deleteContext, setDeleteContext] = useState<TrailWorkflowIssueActionContext | null>(null);
+  const deleteReturnFocusRef = useRef<HTMLElement | null>(null);
   const now = Date.now();
   const readModel = selectTrailProjectWorkspaceReadModel(state, {
     filter: filters.state,
@@ -161,6 +186,28 @@ export function TrailProjectWorkspacePage({
     : readModel.sections
         .flatMap((section) => section.issues)
         .find((issue) => issue.id === peek.targetId && peekVisibleIssueIds.includes(issue.id));
+  const peekActionContext = peekIssue === undefined
+    ? null
+    : resolveTrailWorkflowIssueActionContext(
+        state,
+        resolveTrailWorkflowIssueActionScope({
+          invokedIssueId: peekIssue.id,
+          selectedIssueIds: selection.selectedIds,
+          source: "explicit",
+        }),
+      );
+  const bulkActionContext = selection.selectedIds.size === 0
+    ? null
+    : resolveTrailWorkflowIssueActionContext(
+        state,
+        resolveTrailWorkflowIssueBulkActionScope(selection.selectedIds),
+      );
+  const bulkCancelAction = bulkActionContext?.actions.find(
+    ({ id }) => id === "issue.cancel",
+  );
+  const bulkOverflowActions = bulkActionContext?.actions.filter(
+    ({ id }) => id !== "issue.cancel",
+  ) ?? [];
   const writable = readModel !== null && state.control.kind === "ready";
   const canCreateIssue = writable && readModel.canCreateIssue;
 
@@ -178,11 +225,111 @@ export function TrailProjectWorkspacePage({
     });
   };
 
+  const selectAction = (
+    context: TrailWorkflowIssueActionContext,
+    actionId: TrailWorkflowIssueActionId,
+    targetId?: string,
+    returnFocusTarget?: HTMLElement | null,
+  ): void | Promise<void> => {
+    if (actionId === "issue.delete") {
+      deleteReturnFocusRef.current = returnFocusTarget ?? null;
+      setDeleteContext(context);
+      return;
+    }
+    return executeTrailWorkflowIssueAction(actions, context, actionId, targetId);
+  };
+
+  const executeDirectAction = (
+    context: TrailWorkflowIssueActionContext,
+    actionId: TrailWorkflowIssueActionId,
+    targetId?: string,
+  ): void => {
+    void executeTrailWorkflowIssueAction(actions, context, actionId, targetId)
+      .catch(() => undefined);
+  };
+
   const handlePointerDownCapture: PointerEventHandler<HTMLElement> = (event) => {
-    if (peek.targetId === null || !(event.target instanceof Element)) return;
+    if (
+      deleteContext !== null
+      || peek.targetId === null
+      || !(event.target instanceof Element)
+    ) return;
     if (event.target.closest(".trail-issue-peek") !== null) return;
     if (event.target.closest("[data-workflow-issue-row='true']") !== null) return;
     peek.close();
+  };
+
+  const handleContextMenu: MouseEventHandler<HTMLElement> = (event) => {
+    if (actionMenu === null || !(event.target instanceof Element)) return;
+    const row = event.target.closest<HTMLElement>("[data-workflow-issue-id]");
+    const invokedIssueId = row?.dataset.workflowIssueId;
+    if (invokedIssueId === undefined) return;
+
+    const issueIds = resolveTrailWorkflowIssueActionScope({
+      invokedIssueId,
+      selectedIssueIds: selection.selectedIds,
+      source: "context-menu",
+    });
+    const context = resolveTrailWorkflowIssueActionContext(state, issueIds);
+    if (context === null) return;
+
+    if (context.actions.length === 0 && context.unavailableReason === undefined) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    actionMenu.showAtMouseEvent(event.nativeEvent, {
+      items: context.actions,
+      onSelect: (actionId, targetId) => selectAction(context, actionId, targetId, row),
+      unavailableReason: context.unavailableReason,
+    });
+  };
+
+  const handlePeekActionMenu: MouseEventHandler<HTMLButtonElement> = (event) => {
+    if (
+      actionMenu === null
+      || peekActionContext === null
+      || (peekActionContext.actions.length === 0 && peekActionContext.unavailableReason === undefined)
+    ) {
+      return;
+    }
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const page = event.currentTarget.closest<HTMLElement>(".trail-project-workspace-page");
+    const issueRows = page?.querySelectorAll<HTMLElement>("[data-workflow-issue-id]") ?? [];
+    const sourceRow = Array.from(issueRows).find(
+      (row) => row.dataset.workflowIssueId === peekActionContext.issues[0]?.id,
+    ) ?? null;
+    actionMenu.showAtPosition({ x: bounds.right, y: bounds.bottom }, {
+      items: peekActionContext.actions,
+      onSelect: (actionId, targetId) => selectAction(
+        peekActionContext,
+        actionId,
+        targetId,
+        sourceRow,
+      ),
+      unavailableReason: peekActionContext.unavailableReason,
+    });
+  };
+
+  const handleBulkActionMenu: MouseEventHandler<HTMLButtonElement> = (event) => {
+    if (
+      actionMenu === null
+      || bulkActionContext === null
+      || (bulkOverflowActions.length === 0 && bulkActionContext.unavailableReason === undefined)
+    ) {
+      return;
+    }
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const returnFocusTarget = event.currentTarget;
+    actionMenu.showAtPosition({ x: bounds.right, y: bounds.top }, {
+      items: bulkOverflowActions,
+      onSelect: (actionId, targetId) => selectAction(
+        bulkActionContext,
+        actionId,
+        targetId,
+        returnFocusTarget,
+      ),
+      unavailableReason: bulkActionContext.unavailableReason,
+    });
   };
 
   const handleSelectionKeyDown: KeyboardEventHandler<HTMLElement> = (event) => {
@@ -192,6 +339,7 @@ export function TrailProjectWorkspacePage({
       || selection.selectedIds.size === 0
       || peek.targetId !== null
       || composerReferenceTimestamp !== null
+      || deleteContext !== null
       || !isTrailCollectionSelectionKeyboardOriginEligible(event.target)
     ) {
       return;
@@ -202,7 +350,11 @@ export function TrailProjectWorkspacePage({
   };
 
   const handleKeyDownCapture: KeyboardEventHandler<HTMLElement> = (event) => {
-    if (peek.targetId === null || composerReferenceTimestamp !== null) return;
+    if (
+      deleteContext !== null
+      || peek.targetId === null
+      || composerReferenceTimestamp !== null
+    ) return;
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -253,6 +405,7 @@ export function TrailProjectWorkspacePage({
       aria-label={`${readModel.project.title} project`}
       className="trail-project-workspace-page"
       data-project-status-category={readModel.project.statusCategory}
+      onContextMenu={handleContextMenu}
       onKeyDown={handleSelectionKeyDown}
       onKeyDownCapture={handleKeyDownCapture}
       onPointerDownCapture={handlePointerDownCapture}
@@ -342,12 +495,66 @@ export function TrailProjectWorkspacePage({
       {peekIssue === undefined ? null : (
         <div className="trail-project-workspace-page__peek-layer">
           <TrailIssuePeek
+            actions={actionMenu === null || peekActionContext === null ? undefined : (
+              <TrailIconButton
+                icon={<TrailMoreIcon />}
+                label="More issue actions"
+                onClick={handlePeekActionMenu}
+              />
+            )}
             issue={peekIssue}
             renderMarkdown={renderMarkdown}
             showProject={false}
             timezone={readModel.configuration.temporal.timezone}
           />
         </div>
+      )}
+
+      {bulkActionContext === null ? null : (
+        <div className="trail-project-workspace-page__bulk-layer">
+          <TrailBulkBar
+            actions={bulkCancelAction === undefined ? undefined : (
+              <TrailButton
+                onClick={() => executeDirectAction(
+                  bulkActionContext,
+                  bulkCancelAction.id,
+                  bulkCancelAction.targets[0]?.id,
+                )}
+              >
+                {bulkCancelAction.label}
+              </TrailButton>
+            )}
+            count={selection.selectedIds.size}
+            onClear={selection.clear}
+            onOverflow={actionMenu === null || (
+              bulkOverflowActions.length === 0
+              && bulkActionContext.unavailableReason === undefined
+            ) ? undefined : handleBulkActionMenu}
+          />
+        </div>
+      )}
+
+      {deleteContext === null ? null : (
+        <TrailConfirmation
+          confirmLabel="Delete"
+          description={deleteContext.issues.length === 1
+            ? `Delete “${deleteContext.issues[0]?.title ?? "this issue"}” from Trail?`
+            : `Delete ${deleteContext.issues.length} selected issues from Trail?`}
+          onConfirm={() => {
+            const context = deleteContext;
+            setDeleteContext(null);
+            executeDirectAction(context, "issue.delete");
+          }}
+          onOpenChange={(open) => {
+            if (!open) setDeleteContext(null);
+          }}
+          open
+          returnFocusRef={deleteReturnFocusRef}
+          title={deleteContext.issues.length > 1
+            ? `Delete ${deleteContext.issues.length} issues?`
+            : "Delete issue?"}
+          tone="danger"
+        />
       )}
 
       {composerReferenceTimestamp === null ? null : (
