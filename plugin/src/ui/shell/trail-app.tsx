@@ -3,6 +3,7 @@ import { useStore } from "zustand";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TRAIL_DEVELOPMENT_UI_ENABLED } from "../../trail-build-flags";
 import { TrailFoundationLab } from "../foundation/trail-foundation-lab";
+import { TrailIssueFullItemPage } from "../pages/issues/trail-issue-full-item-page";
 import { TrailInitiativePage } from "../pages/projects/trail-initiative-page";
 import { TrailProjectWorkspacePage } from "../pages/projects/trail-project-workspace-page";
 import { TrailProjectsPage } from "../pages/projects/trail-projects-page";
@@ -139,10 +140,29 @@ export function TrailApp({
               onInitiativeActivate={(initiativeId) => {
                 onNavigate({ initiativeId, kind: "initiative" });
               }}
+              onIssueActivate={(issueId) => {
+                onNavigate({ issueId, kind: "issue" });
+              }}
               onProjectsActivate={() => {
                 onNavigate({ kind: "projects" });
               }}
               projectId={currentLocation.projectId}
+              renderMarkdown={renderMarkdown}
+              runtimeStore={runtimeStore}
+            />
+          </TrailPageSurface>
+        ) : currentLocation.kind === "issue" ? (
+          <TrailPageSurface>
+            <TrailIssueFullItemPage
+              actions={actions.issues}
+              issueId={currentLocation.issueId}
+              key={currentLocation.issueId}
+              onProjectActivate={(projectId) => {
+                onNavigate({ kind: "project", projectId });
+              }}
+              onProjectsActivate={() => {
+                onNavigate({ kind: "projects" });
+              }}
               renderMarkdown={renderMarkdown}
               runtimeStore={runtimeStore}
             />

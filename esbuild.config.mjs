@@ -25,6 +25,7 @@ const stylesheetSources = [
   "plugin/styles/pages.css",
   "plugin/styles/pages-projects.css",
   "plugin/styles/pages-project-workspace-actions.css",
+  "plugin/styles/pages-issues.css",
   "plugin/styles/shell.css",
   "plugin/styles/foundation.css",
 ];

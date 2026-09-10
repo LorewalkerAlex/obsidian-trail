@@ -59,5 +59,7 @@ describe("TrailProjectPatternSpecimens", () => {
       .toBeInTheDocument();
     expect(actionGallery.getByRole("button", { name: "More issue actions" }))
       .toBeInTheDocument();
+    expect(actionGallery.getByRole("button", { name: "Open full item" }))
+      .toBeInTheDocument();
   });
 });

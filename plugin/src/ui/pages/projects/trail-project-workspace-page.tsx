@@ -145,6 +145,7 @@ function TrailProjectStatusSection({
 export function TrailProjectWorkspacePage({
   actions,
   onInitiativeActivate,
+  onIssueActivate,
   onProjectsActivate,
   projectId,
   renderMarkdown,
@@ -152,6 +153,7 @@ export function TrailProjectWorkspacePage({
 }: {
   readonly actions: TrailProjectWorkspacePageActions;
   readonly onInitiativeActivate: (initiativeId: string) => void;
+  readonly onIssueActivate?: (issueId: string) => void;
   readonly onProjectsActivate: () => void;
   readonly projectId: string;
   readonly renderMarkdown: TrailMarkdownRender;
@@ -503,6 +505,9 @@ export function TrailProjectWorkspacePage({
               />
             )}
             issue={peekIssue}
+            onOpenFullItem={onIssueActivate === undefined
+              ? undefined
+              : () => onIssueActivate(peekIssue.id)}
             renderMarkdown={renderMarkdown}
             showProject={false}
             timezone={readModel.configuration.temporal.timezone}

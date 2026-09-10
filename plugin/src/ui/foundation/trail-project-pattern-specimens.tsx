@@ -168,7 +168,7 @@ export function TrailProjectPatternSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="Selection actions stay in one shared bulk bar, while the read-only peek exposes only an explicit entity-local overflow affordance. Action legality and scope are supplied by the action registry rather than these patterns."
+        description="Selection actions stay in one shared bulk bar, while the read-only peek exposes only explicit entity-local actions. Action legality and scope are supplied by the action registry rather than these patterns; Open full item remains navigation into the dedicated Issue Page."
         kind="composition-gallery"
         owner="TrailBulkBar + TrailIssuePeek action slot"
         title="Issue action surfaces"
@@ -188,6 +188,7 @@ export function TrailProjectPatternSpecimens() {
               />
             )}
             issue={ACTION_PEEK_FIXTURE}
+            onOpenFullItem={() => { /* static navigation specimen */ }}
             renderMarkdown={renderNarrativeFixture}
             timezone="UTC"
           />

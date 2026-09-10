@@ -1,8 +1,9 @@
 import {
+  fireEvent,
   render,
   screen,
 } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { TrailWorkflowIssuePresentationReadModel } from "../../query/shared/trail-workflow-issue-presentation-query";
 import type { TrailMarkdownRender } from "./trail-markdown-content";
@@ -60,5 +61,21 @@ describe("TrailIssuePeek", () => {
     expect(container.querySelector("input, textarea, select, [contenteditable='true']"))
       .toBeNull();
 
+  });
+
+  it("emits Full Item navigation when the consuming collection supplies it", () => {
+    const onOpenFullItem = vi.fn();
+
+    render(
+      <TrailIssuePeek
+        issue={issue}
+        onOpenFullItem={onOpenFullItem}
+        renderMarkdown={renderMarkdown}
+        timezone="UTC"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open full item" }));
+    expect(onOpenFullItem).toHaveBeenCalledTimes(1);
   });
 });

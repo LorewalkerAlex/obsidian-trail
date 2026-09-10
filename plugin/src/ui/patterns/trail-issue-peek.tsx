@@ -9,6 +9,7 @@ import {
   TrailPriorityGlyph,
 } from "../entities/trail-priority";
 import { TrailStatusGlyph } from "../entities/trail-status";
+import { TrailButton } from "../primitives/trail-button";
 import {
   TrailMarkdownContent,
   type TrailMarkdownRender,
@@ -34,12 +35,14 @@ function TrailIssuePeekMetadataItem({
 export function TrailIssuePeek({
   actions,
   issue,
+  onOpenFullItem,
   renderMarkdown,
   showProject = true,
   timezone,
 }: {
   readonly actions?: ReactNode;
   readonly issue: TrailWorkflowIssuePresentationReadModel;
+  readonly onOpenFullItem?: () => void;
   readonly renderMarkdown: TrailMarkdownRender;
   readonly showProject?: boolean;
   readonly timezone: string;
@@ -130,6 +133,12 @@ export function TrailIssuePeek({
             markdown={issue.description}
             renderMarkdown={renderMarkdown}
           />
+        )}
+
+        {onOpenFullItem === undefined ? null : (
+          <div className="trail-issue-peek__footer">
+            <TrailButton onClick={onOpenFullItem}>Open full item</TrailButton>
+          </div>
         )}
       </div>
     </aside>

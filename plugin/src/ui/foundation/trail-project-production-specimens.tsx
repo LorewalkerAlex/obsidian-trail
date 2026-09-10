@@ -233,7 +233,7 @@ export function TrailProjectProductionSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="The same production read-only Peek surface is shown with rich and sparse Issue presentations. Project Workspace owns floating placement; this specimen calibrates the reusable surface itself."
+        description="The same production read-only Peek surface is shown with rich and sparse Issue presentations. Project Workspace owns floating placement; this specimen calibrates the reusable surface itself, including its stable path into Full Item."
         kind="composition-gallery"
         owner="TrailIssuePeek"
         title="Workflow Issue Peek"
@@ -241,11 +241,13 @@ export function TrailProjectProductionSpecimens() {
         <LabStateGrid>
           <TrailIssuePeek
             issue={richPeek}
+            onOpenFullItem={() => { /* static navigation specimen */ }}
             renderMarkdown={renderFoundationMarkdown}
             timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
           />
           <TrailIssuePeek
             issue={sparsePeek}
+            onOpenFullItem={() => { /* static navigation specimen */ }}
             renderMarkdown={renderFoundationMarkdown}
             timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
           />

@@ -4,16 +4,16 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The latest published prerequisite for the current Stage 8 interaction checkpoint is:
+The latest published prerequisite for the current Stage 8 detail checkpoint is:
 
 ```text
-f8cca74b972f5f8c3556cc4165fabd230500e1a3
-feat: expose effective issue capabilities
+87af9fde560974f195ee619c91c5a6c4531daa74
+feat: establish stage 8 issue actions
 ```
 
-That prerequisite establishes Query-owned Workflow Issue EffectiveCapabilities and legal Status/Project targets over the existing Domain lifecycle rules. The current interaction checkpoint builds on those facts rather than re-deriving legality in UI consumers.
+That checkpoint establishes the accepted Workflow Issue Row/Peek/Selection/Action interaction chain over Query-owned EffectiveCapabilities and legal targets. The current detail checkpoint builds on those owners rather than reopening their semantics in Full Item.
 
-Stages 5 through 7 remain closed. Stage 8 is active: Workflow Issue Row, read-only Peek, Collection Selection, and the shared Action Registry / Context Menu / Bulk track are now real production/host evidence; Issue Full Item and Issue Inspector remain ahead. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+Stages 5 through 7 remain closed. Stage 8 is active: Workflow Issue Row, read-only Peek, Collection Selection, the shared Action Registry / Context Menu / Bulk track, and Issue Full Item are now real production/host evidence; Issue Inspector remains ahead. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -478,7 +478,7 @@ Current key status:
 | --- | --- | --- |
 | Domain/Persistence/Mutation Runtime core | Accepted | consume; do not remodel |
 | readable/effective Runtime snapshot | Implemented | use once per top-level Read Model evaluation; profile before caching |
-| Page/surface Read Model boundary | Consumer-proven through Triage, Projects Root, Initiative Focus, Project Workspace, Initiative Inspector, and Project Inspector | continue just in time with Stage 8 and later surfaces; no universal ViewModel layer |
+| Page/surface Read Model boundary | Consumer-proven through Triage, Projects Root, Initiative Focus, Project Workspace, Initiative Inspector, Project Inspector, and Issue Full Item | continue just in time with Issue Inspector and later surfaces; no universal ViewModel layer |
 | Button/Input/Checkbox/basic primitives | Accepted / Lab-proven / Consumer-proven / Host-proven | consume; add semantic variants only from proven Product needs |
 | Collection Row / Property Control | Accepted / Lab-proven / Consumer-proven / Host-proven | consume; Stage 4 containment/state calibration is closed |
 | Workspace Frame / Page Surface | Consumer-proven / Host-proven | consume as the stable shared Main View chassis |
@@ -500,6 +500,7 @@ Current key status:
 | Picker / Popover / Confirmation / Composer | Accepted / Lab-proven / Consumer-proven / Host-proven | consume the accepted shared grammar in later Pages; do not reintroduce Page-local geometry or density overrides |
 | Collection Selection | Implemented / Consumer-proven / Host-proven | preserve visible-projection reconciliation, shared gutter, Shift range, `X` toggle, and top-layer-aware `Esc`; reuse in later selectable collections |
 | Workflow Issue Peek | Implemented / Lab-proven / Consumer-proven / Host-proven | preserve read-only preview/retarget behavior without navigation, selection side effects, or Inspector retargeting |
+| Issue Full Item Read Model / Page editor | Accepted / Consumer-proven / Host-proven | preserve stable Issue navigation, low-chrome inline title/body editing, host CodeMirror conventions, and Application-owned writes while Issue Inspector is implemented next |
 | Action Registry / Context Menu / Bulk | Accepted / Lab-proven / Consumer-proven / Host-proven | reuse the same registry/context authority in later Issue collections and future contextual command/shortcut consumers; Bulk remains a presentation/aggregation consumer, not a second legality system |
 
 Update this ledger as the active execution snapshot; do not turn it into historical release notes.
@@ -669,8 +670,8 @@ Build one coherent detail chain while maturing shared interactions only from rea
 ```text
 Issue Row/Card                         accepted
 → read-only Peek                       accepted
-→ Issue Full Item                      next
-→ Issue Inspector                      follows Full Item
+→ Issue Full Item                      accepted
+→ Issue Inspector                      next
 
 Shared interaction track:
 Collection Selection                   accepted
@@ -860,9 +861,12 @@ Current accepted facts:
 - Move-to-Project uses the Obsidian searchable picker over Query-owned legal destinations. Compact native Context Menus use intrinsic Trail action width with a bounded maximum, while searchable relation pickers retain a wider readable search surface;
 - Delete is exposed through the existing Issue Application intent and shared Confirmation. Confirmation remains the top transient layer; cancel/Esc restores focus to the surviving row/Peek/Bulk trigger so subsequent Esc handling returns to Peek or Collection Selection instead of being lost at the host boundary;
 - Foundation exercises the production Bulk Bar and Peek action affordance rather than owning a parallel specimen-only action system;
-- the release candidate passed repository-wide `npm run check` with 166 test files / 568 tests, production typecheck/build, and diagnostics typecheck/build. Representative real-Obsidian verification covered native right-click actions, legal searchable Move targets, Peek overflow, Bulk selection scope, destructive confirmation, layered Esc/focus restoration, retained selection for explicit unselected-row context, and final compact Context Menu geometry.
+- the Stage 8 action checkpoint passed repository-wide `npm run check` with 166 test files / 568 tests, production typecheck/build, and diagnostics typecheck/build. Representative real-Obsidian verification covered native right-click actions, legal searchable Move targets, Peek overflow, Bulk selection scope, destructive confirmation, layered Esc/focus restoration, retained selection for explicit unselected-row context, and final compact Context Menu geometry;
+- Issue Full Item is implemented as a stable `Issue(issueId)` Main View route over a focused Read Model. Ordinary Workflow Issue activation still opens read-only Peek; explicit `Open full item` is the stable host-navigation handoff, and Page ancestry navigation remains injected through the shell/Obsidian ViewState boundary;
+- Full Item title and lightweight Markdown body remain Page-local editing responsibilities. Title editing has no permanent Edit/Save/Cancel chrome, body editing uses host-provided CodeMirror Markdown conventions, and writes reuse the existing Issue Application edit intent rather than adding a second Runtime, persistence, or mutation authority;
+- the Stage 8A Full Item candidate passed repository-wide `npm run check` with 171 test files / 580 tests, production typecheck/build, and diagnostics typecheck/build. Representative real-Obsidian verification covered Peek -> Full Item navigation, low-chrome Markdown read presentation, CodeMirror edit/cancel behavior, host history return, and stable retargeting to the Issue Inspector carrier while Inspector content remains intentionally pending.
 
-The next coherent Stage 8 slice is **Issue Full Item**, followed by **Issue Inspector**. Later Board/Cycle collections and contextual command/shortcut consumers must reuse the accepted Selection/Action/Peek owners rather than fork Issue action semantics.
+The next coherent Stage 8 slice is **Issue Inspector**. Later Board/Cycle collections and contextual command/shortcut consumers must reuse the accepted Selection/Action/Peek/Full Item owners rather than fork Issue semantics.
 
 ## 10. Slice Definition of Done
 
