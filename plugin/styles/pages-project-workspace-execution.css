@@ -1,0 +1,49 @@
+/* Project execution presentation owns only Page-local Board/drag feedback placement. */
+/* Stable focus anchor for selection/drag continuity; it is not a Tab stop. */
+.trail-project-workspace-page:focus {
+  outline: 0;
+}
+
+/*
+ * Project Workspace owns the remaining Main View height so a Project Board
+ * Status column remains one continuous spatial target below its last Card.
+ * Future swimlane Boards can place drop-target attributes on narrower semantic
+ * cells without changing this structural Board geometry.
+ */
+.trail-project-workspace-page__scroll {
+  display: flex;
+  flex-direction: column;
+}
+
+.trail-project-workspace-page__scroll > * {
+  flex-shrink: 0;
+}
+
+.trail-project-workspace-page__content {
+  display: flex;
+  min-height: 0;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.trail-project-workspace-page__content > .trail-board {
+  flex: 1 0 auto;
+  align-items: stretch;
+}
+
+.trail-project-workspace-page__content > .trail-board > .trail-board__column {
+  align-self: stretch;
+  grid-template-rows: auto minmax(72px, 1fr);
+}
+
+.trail-project-workspace-page__drag-feedback {
+  margin: var(--trail-space-6) var(--trail-space-8) 0;
+  color: var(--trail-danger);
+  font-size: var(--trail-font-size-supporting);
+  line-height: 1.4;
+}
+
+.trail-project-workspace-page .trail-board + .trail-empty-state,
+.trail-project-workspace-page__sections + .trail-empty-state {
+  margin-top: var(--trail-space-10);
+}

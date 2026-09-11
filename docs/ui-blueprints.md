@@ -506,6 +506,8 @@ Zero-count sections remain as headers:
 
 The count means current filter-visible rows. A zero-count section does not grow a body but keeps workflow structure legible.
 
+For supported Status-grouped Workflow Issue Lists, the concrete Status section remains the Status drop target even at zero count or while collapsed; disclosure does not change target identity.
+
 ### 4.6 Workflow Issue Row
 
 Project Workspace:
@@ -822,6 +824,29 @@ same action
 ```
 
 Target-bearing Bulk actions use the intersection of ordinary legal targets.
+
+#### Workflow Issue Status drag scope
+
+Status drag is a focused shared interaction consumed only by Workflow Issue collections that expose concrete Status spatial targets.
+
+```text
+unselected grabbed Issue
+-> source scope = grabbed Issue only
+
+selected grabbed Issue
++ selection is entirely one concrete StatusDefinition
+-> source scope = selected Issues in current visible order
+
+selected grabbed Issue
++ selection spans concrete StatusDefinitions
+-> no multi-item drag
+```
+
+A destination is droppable only when every Issue in the source scope can accept that exact Status. Multi-item drag also requires every member to be immediately executable for that target; it does not fan out per-Issue needs-input prompts or intentionally begin a partial group Status change. Single-Issue drag may use the ordinary needs-input handoff.
+
+The interaction owns drag scope, pointer/hover state, and target intersection only. Query supplies current Issue snapshots and legal-target/input facts; Application/Domain remain the Status-mutation authority. Same-Status drop is a no-op with no rank. Project/Milestone/Cycle relationships are never drag targets.
+
+Project Workspace List and Board are the Stage 9 consumers. Current Cycle List/Board reuse the owner later. Projects Root / Initiative Focus do not consume it because their visible spatial grouping does not represent Workflow Issue Status.
 
 ### 5.5 Peek
 

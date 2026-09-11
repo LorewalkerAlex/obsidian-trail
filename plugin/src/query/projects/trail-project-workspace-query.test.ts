@@ -158,20 +158,20 @@ describe("Project Workspace Query", () => {
       id: section.id,
       issueIds: section.issues.map((item) => item.id),
     }))).toEqual([
-      { id: "issue-backlog", issueIds: ["issue-backlog"] },
-      { id: "issue-unstarted", issueIds: [] },
       {
         id: "issue-started",
         issueIds: ["issue-sooner-high", "issue-sooner-low", "issue-later-due"],
       },
+      { id: "issue-unstarted", issueIds: [] },
+      { id: "issue-backlog", issueIds: ["issue-backlog"] },
       { id: "issue-completed", issueIds: [] },
       { id: "issue-canceled", issueIds: [] },
     ]);
     expect(page?.visibleIssueIds).toEqual([
-      "issue-backlog",
       "issue-sooner-high",
       "issue-sooner-low",
       "issue-later-due",
+      "issue-backlog",
     ]);
     expect(page?.sections.find((section) => section.id === "issue-started")?.issues[0])
       .toMatchObject({ id: "issue-sooner-high", inCurrentCycle: true });

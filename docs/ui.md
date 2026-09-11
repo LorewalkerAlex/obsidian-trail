@@ -421,6 +421,8 @@ Canceled
 
 Every Status header remains visible even when its current filter-visible count is zero. Empty sections collapse to header height but keep workflow structure legible. Concrete StatusDefinitions retain configured names/order within their system category.
 
+On Status-grouped Workflow Issue Lists that support Status drag, each concrete Status section remains the spatial Status target even when its visible count is zero or its body is collapsed. Disclosure controls visibility only; it does not change the section's Status identity.
+
 ### 4.6 Shared Issue Row/Card hierarchy
 
 Project Workspace row:
@@ -555,6 +557,30 @@ same action
 + same target
 + every selected item can legally accept it
 ```
+
+#### Workflow Issue Status drag scope
+
+Status drag is available only when a Workflow Issue collection exposes concrete Statuses as spatial targets, such as Project Workspace List/Board and the later Current Cycle List/Board. Projects Root / Initiative Focus Project rows, Historical Cycle, Triage, Search, Peek, and Full Item do not gain Status drag merely because they contain draggable-looking rows or cards.
+
+Drag source scope is resolved from the grabbed Issue and current visible selection:
+
+```text
+grabbed Issue is not selected
+-> drag only the grabbed Issue
+-> retained unrelated selection is unchanged
+
+grabbed Issue is selected
++ every selected Issue has the same concrete StatusDefinition
+-> drag the selected Issues together in current visible order
+
+grabbed Issue is selected
++ selection spans multiple concrete StatusDefinitions
+-> multi-item drag is unavailable
+```
+
+The destination Status must be legal for every Issue in the drag scope. Multi-item drag uses the intersection of ordinary legal Status targets and is available only when the target can be applied immediately to every member; it does not open a sequence of per-Issue input prompts or partially advance a selection whose member first needs extra completion input. A single-Issue drag may hand off to the normal needs-input flow for that Issue.
+
+Dropping onto the current Status is a no-op and never creates persisted rank. Drag changes Status only: Project, Milestone, Cycle membership, and other relationships remain explicit actions. Selection remains subject to the normal visible-projection reconciliation after the Status mutation.
 
 ### 5.4 Peek
 

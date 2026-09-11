@@ -1,0 +1,83 @@
+/* Shared horizontal Board mechanics. Product Pages supply semantic columns and cards. */
+.trail-board {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--trail-space-9);
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: var(--trail-space-5) var(--trail-space-8) var(--trail-space-9);
+  overscroll-behavior-x: contain;
+}
+
+.trail-board__column {
+  box-sizing: border-box;
+  display: grid;
+  width: min(304px, 82vw);
+  min-width: 260px;
+  max-width: 328px;
+  flex: 1 0 260px;
+  align-self: flex-start;
+  grid-template-rows: auto minmax(72px, auto);
+  border-radius: var(--trail-radius-sm);
+  transition: background-color var(--trail-motion-fast), box-shadow var(--trail-motion-fast);
+}
+
+.trail-board__column-header {
+  display: flex;
+  min-width: 0;
+  min-height: var(--trail-control-height-lg);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--trail-space-4);
+  padding: 0 var(--trail-space-3);
+}
+
+.trail-board__column-identity {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-4);
+}
+
+.trail-board__column-leading {
+  display: inline-grid;
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--trail-text-muted);
+}
+
+.trail-board__column-leading .trail-status-glyph {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+}
+
+.trail-board__column-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+  font-weight: var(--trail-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-board__column-count {
+  flex: 0 0 auto;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-board__column-body {
+  display: grid;
+  min-width: 0;
+  min-height: 72px;
+  align-content: start;
+  gap: var(--trail-space-3);
+  padding: var(--trail-space-2);
+}

@@ -44,6 +44,14 @@ export type TrailProjectWorkspaceFilterState = TrailCollectionFilterState<
   TrailProjectWorkspaceFilterPropertyId
 >;
 
+const TRAIL_PROJECT_WORKSPACE_LIST_STATUS_CATEGORY_ORDER = [
+  "started",
+  "unstarted",
+  "backlog",
+  "completed",
+  "canceled",
+] as const satisfies readonly TrailStatusCategory[];
+
 export interface TrailProjectWorkspaceReadInput {
   readonly filter: TrailProjectWorkspaceFilterState;
   readonly now: TrailTimestamp;
@@ -201,6 +209,10 @@ export function selectTrailProjectWorkspaceReadModel(
   }
 
   const statusOptionGroups = selectTrailStatusOptionGroups(configuration, "issue");
+  const listStatusOptionGroups = [...statusOptionGroups].sort((left, right) => (
+    TRAIL_PROJECT_WORKSPACE_LIST_STATUS_CATEGORY_ORDER.indexOf(left.category)
+    - TRAIL_PROJECT_WORKSPACE_LIST_STATUS_CATEGORY_ORDER.indexOf(right.category)
+  ));
   const statusIds = new Set(
     statusOptionGroups.flatMap((group) => group.definitions.map((definition) => definition.id)),
   );
@@ -223,7 +235,7 @@ export function selectTrailProjectWorkspaceReadModel(
     visiblePresentations.push(presentation);
   }
 
-  const sections = statusOptionGroups.flatMap((group) => group.definitions.map((definition) => ({
+  const sections = listStatusOptionGroups.flatMap((group) => group.definitions.map((definition) => ({
     category: group.category,
     id: definition.id,
     issues: visiblePresentations.filter((issue) => issue.status.id === definition.id),

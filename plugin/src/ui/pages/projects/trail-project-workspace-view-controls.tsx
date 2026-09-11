@@ -24,7 +24,12 @@ import {
   TrailCollectionFilter,
   type TrailCollectionFilterProperty,
 } from "../../interactions/trail-collection-filter";
-import { TrailViewBar } from "../../patterns/trail-view-bar";
+import {
+  TrailViewBar,
+  TrailViewLayoutSwitch,
+} from "../../patterns/trail-view-bar";
+
+export type TrailProjectWorkspaceLayout = "board" | "list";
 
 function statusOptions(configuration: TrailConfiguration) {
   return TRAIL_STATUS_CATEGORIES.flatMap((category) => (
@@ -138,20 +143,44 @@ function projectWorkspaceFilterProperties(
   ];
 }
 
+function TrailListLayoutIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" viewBox="0 0 16 16">
+      <path d="M3 4.5h10M3 8h10M3 11.5h10" />
+    </svg>
+  );
+}
+
+function TrailBoardLayoutIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.3" viewBox="0 0 16 16">
+      <rect height="9" rx="1" width="3" x="2.25" y="3.5" />
+      <rect height="9" rx="1" width="3" x="6.5" y="3.5" />
+      <rect height="9" rx="1" width="3" x="10.75" y="3.5" />
+    </svg>
+  );
+}
+
 export function TrailProjectWorkspaceViewControls({
+  boardAvailable,
   configuration,
   filter,
+  layout,
   milestones,
   onClearAllFilters,
   onClearFilterClause,
+  onLayoutChange,
   onSetDueFilter,
   onToggleDiscreteFilter,
 }: {
+  readonly boardAvailable: boolean;
   readonly configuration: TrailConfiguration;
   readonly filter: TrailProjectWorkspaceFilterState;
+  readonly layout: TrailProjectWorkspaceLayout;
   readonly milestones: readonly TrailProjectWorkspaceNamedTargetReadModel[];
   readonly onClearAllFilters: () => void;
   readonly onClearFilterClause: (propertyId: TrailProjectWorkspaceFilterPropertyId) => void;
+  readonly onLayoutChange: (layout: TrailProjectWorkspaceLayout) => void;
   readonly onSetDueFilter: (
     propertyId: TrailProjectWorkspaceFilterPropertyId,
     value: TrailDueFilterValue,
@@ -179,6 +208,17 @@ export function TrailProjectWorkspaceViewControls({
           state={filter}
         />
       )}
+      trailing={boardAvailable ? (
+        <TrailViewLayoutSwitch
+          label="Project issue layout"
+          onValueChange={onLayoutChange}
+          options={[
+            { icon: <TrailListLayoutIcon />, label: "List", value: "list" },
+            { icon: <TrailBoardLayoutIcon />, label: "Board", value: "board" },
+          ]}
+          value={layout}
+        />
+      ) : undefined}
     />
   );
 }

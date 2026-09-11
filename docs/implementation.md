@@ -687,7 +687,18 @@ Picker, Confirmation, and Composer mechanics already exist and should be reused.
 
 After Issue collection/interaction owners are stable:
 
-- Project Board and Status drag mutation;
+Current status:
+
+- **Project execution slice complete / Host-proven** — Project Workspace List follows the frozen `In Progress -> Todo -> Backlog -> Done -> Canceled` presentation order without changing Domain Status-category order or configured concrete-Status order inside a category.
+- **Board presentation complete** — Started Projects expose List/Board over the same filtered collection. Project Board projects the normal `Todo -> In Progress -> Done` execution lanes, retains empty lanes, keeps Backlog/Canceled outside the normal Board projection, and consumes the production Workflow Issue Card plus focused Board pattern also exercised by Foundation.
+- **Status drag complete** — one focused Workflow Issue Status-drag owner consumes Query legal-target/input facts and the existing Issue Application Status intent. An unselected grabbed Issue moves alone; a selected same-concrete-Status set may move together in visible order; a selected mixed-Status set is not a multi-item drag scope. Multi-drag uses legal-target intersection, and drag never creates relationship or persisted-rank semantics.
+- **Spatial target ownership is explicit** — Project List Status sections remain concrete Status targets when empty/collapsed, while the whole Project Board column is the Status target because the entire Board is already scoped to one Project. Target geometry remains consumer-owned so Current Cycle can later bind drag to `Project swimlane x Status column` cells instead of treating a whole cross-Project column as one destination.
+- **Focus continuity is repaired at the Page boundary** — Project Workspace owns a stable programmatic focus anchor so optimistic Status movement cannot strand keyboard ownership on an unmounted row/card control. Top-layer `Esc` behavior survives drag/mutation, selection can be cleared immediately afterward, and cleared checkboxes do not retain an orphan focus-visible ring.
+- **Optimistic feedback reuses the existing Runtime model** — drag submits ordinary logical Status Mutation Plans; Query/UI immediately reads the pending-aware Effective Runtime, then authoritative settlement confirms the result or normal mutation recovery removes failed optimistic state.
+- **Validation is green** — the execution slice passed 13 focused test files / 38 tests, lint, production build/typecheck, and diagnostics build. The host-focus/full-column repair passed 3 focused files / 19 tests plus diagnostics build, and representative real-Obsidian verification covered List/Board switching, projection-aware selection, same-Status multi-drag, mixed-Status drag blocking, collapsed List targets, full-column Board targets, post-drag `Esc` selection clearing, focus-ring cleanup, and final Board column geometry.
+
+Remaining Stage 9 work:
+
 - Project deletion/settings integration;
 - final Sidebar Search mode using only Initiative/Project/Workflow Issue Read Models and normal navigation.
 
@@ -875,7 +886,7 @@ Closure facts:
 - Inspector mutation feedback stays local and quiet instead of disabling and repainting the entire property surface. Each Inspector intent resolves against the latest effective Issue projection so rapid sequential edits continue from optimistic Runtime state rather than a stale UI closure;
 - the final Stage 8 closure candidate passed repository-wide `npm run check` with 174 test files / 593 tests and production typecheck/build. The final host repair also passed its focused Body Editor + Issue Inspector suite (2 files / 10 tests), lint, and diagnostics typecheck/build. Representative real-Obsidian verification covered Full Item + Issue Inspector composition, property editing without whole-Inspector flashing, and preservation of CodeMirror draft plus undo/cancel semantics across Main View / Right Sidebar focus changes.
 
-Stage 8 is closed. **Stage 9 — Project execution views + Sidebar Search** is active. Project Board, Status drag mutation, Project deletion/settings integration, and final Sidebar Search must reuse the accepted Selection/Action/Peek/Full Item/Inspector owners rather than fork Issue semantics.
+Stage 8 is closed. **Stage 9 — Project execution views + Sidebar Search** is active. The first Project-execution slice corrects the current Project Workspace List projection to the frozen Status presentation order and establishes the shared Status-drag scope before dependent List/Board pointer consumers. Project Board, Status drag mutation, Project deletion/settings integration, and final Sidebar Search must reuse the accepted Selection/Action/Peek/Full Item/Inspector owners rather than fork Issue semantics.
 
 ## 10. Slice Definition of Done
 

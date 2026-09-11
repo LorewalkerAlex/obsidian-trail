@@ -11,6 +11,10 @@ import {
   type TrailProjectWorkspaceFilterPropertyId,
   type TrailProjectWorkspaceStatusSectionReadModel,
 } from "../../../query/projects/trail-project-workspace-query";
+import {
+  selectTrailWorkflowIssueStatusDragItems,
+  type TrailWorkflowIssueStatusDragItemReadModel,
+} from "../../../query/shared/trail-workflow-issue-status-drag-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
 import { TrailWorkflowIssueComposer } from "../../entities/trail-standard-creation-composers";
 import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
@@ -28,6 +32,11 @@ import {
   type TrailWorkflowIssueActionContext,
   type TrailWorkflowIssueActionId,
 } from "../../interactions/trail-workflow-issue-action-registry";
+import {
+  resolveTrailWorkflowIssueStatusDragScope,
+  type TrailWorkflowIssueStatusDragScope,
+} from "../../interactions/trail-workflow-issue-status-drag";
+import { useTrailWorkflowIssueStatusDragPointer } from "../../interactions/trail-workflow-issue-status-drag-pointer";
 import {
   getAdjacentTrailIssueId,
   isTrailIssuePeekKeyboardOriginEligible,
@@ -49,7 +58,14 @@ import {
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
-import { TrailProjectWorkspaceViewControls } from "./trail-project-workspace-view-controls";
+import {
+  selectTrailProjectWorkspaceBoardSections,
+  TrailProjectWorkspaceBoard,
+} from "./trail-project-workspace-board";
+import {
+  TrailProjectWorkspaceViewControls,
+  type TrailProjectWorkspaceLayout,
+} from "./trail-project-workspace-view-controls";
 
 type TrailProjectWorkspacePageActions = Pick<
   TrailUiActions["issues"],
@@ -108,6 +124,7 @@ function TrailProjectStatusSection({
       aria-label={`${section.label} issues`}
       className="trail-project-workspace-page__status-section"
       data-empty={section.issues.length === 0 ? "true" : undefined}
+      data-workflow-issue-status-drop-target={section.id}
     >
       <TrailGroupHeader
         count={section.issues.length}
@@ -142,6 +159,30 @@ function TrailProjectStatusSection({
   );
 }
 
+function resolveStatusDragScope(
+  items: readonly TrailWorkflowIssueStatusDragItemReadModel[],
+  selectedIssueIds: ReadonlySet<string>,
+  sourceIssueId: string,
+): TrailWorkflowIssueStatusDragScope | null {
+  return resolveTrailWorkflowIssueStatusDragScope({
+    issues: items.map((item) => ({
+      id: item.id,
+      statusDefinitionId: item.statusDefinitionId,
+      targets: item.targets,
+    })),
+    selectedIssueIds,
+    sourceIssueId,
+  });
+}
+
+function sameIssueIds(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function TrailProjectWorkspacePage({
   actions,
   onInitiativeActivate,
@@ -167,27 +208,39 @@ export function TrailProjectWorkspacePage({
   );
   const [composerReferenceTimestamp, setComposerReferenceTimestamp] = useState<number | null>(null);
   const [deleteContext, setDeleteContext] = useState<TrailWorkflowIssueActionContext | null>(null);
+  const [dragFeedback, setDragFeedback] = useState<string>();
+  const [layout, setLayout] = useState<TrailProjectWorkspaceLayout>("list");
   const deleteReturnFocusRef = useRef<HTMLElement | null>(null);
+  const pageRef = useRef<HTMLElement | null>(null);
   const now = Date.now();
   const readModel = selectTrailProjectWorkspaceReadModel(state, {
     filter: filters.state,
     now,
     projectId,
   });
-  const peekVisibleIssueIds = readModel === null
+  const boardAvailable = readModel?.project.statusCategory === "started";
+  const effectiveLayout: TrailProjectWorkspaceLayout = layout === "board" && boardAvailable
+    ? "board"
+    : "list";
+  const boardSections = readModel === null
     ? []
-    : readModel.sections.flatMap((section) => (
-        collapsedStatusIds.has(section.id)
-          ? []
-          : section.issues.map((issue) => issue.id)
-      ));
-  const peek = useTrailIssuePeek(peekVisibleIssueIds);
-  const selection = useTrailCollectionSelectionState(peekVisibleIssueIds);
+    : selectTrailProjectWorkspaceBoardSections(readModel.sections);
+  const visibleIssueIds = readModel === null
+    ? []
+    : effectiveLayout === "board"
+      ? boardSections.flatMap((section) => section.issues.map((issue) => issue.id))
+      : readModel.sections.flatMap((section) => (
+          collapsedStatusIds.has(section.id)
+            ? []
+            : section.issues.map((issue) => issue.id)
+        ));
+  const peek = useTrailIssuePeek(visibleIssueIds);
+  const selection = useTrailCollectionSelectionState(visibleIssueIds);
   const peekIssue = peek.targetId === null || readModel === null
     ? undefined
     : readModel.sections
         .flatMap((section) => section.issues)
-        .find((issue) => issue.id === peek.targetId && peekVisibleIssueIds.includes(issue.id));
+        .find((issue) => issue.id === peek.targetId && visibleIssueIds.includes(issue.id));
   const peekActionContext = peekIssue === undefined
     ? null
     : resolveTrailWorkflowIssueActionContext(
@@ -212,6 +265,73 @@ export function TrailProjectWorkspacePage({
   ) ?? [];
   const writable = readModel !== null && state.control.kind === "ready";
   const canCreateIssue = writable && readModel.canCreateIssue;
+
+  const resolveCurrentDragScope = (sourceIssueId: string) => {
+    const items = selectTrailWorkflowIssueStatusDragItems(
+      runtimeStore.getState(),
+      visibleIssueIds,
+    );
+    if (items === null) return null;
+    return resolveStatusDragScope(items, selection.selectedIds, sourceIssueId);
+  };
+
+  const handleStatusDrop = async (
+    scope: TrailWorkflowIssueStatusDragScope,
+    targetStatusDefinitionId: string,
+  ): Promise<void> => {
+    setDragFeedback(undefined);
+    const latestItems = selectTrailWorkflowIssueStatusDragItems(
+      runtimeStore.getState(),
+      scope.issueIds,
+    );
+    if (latestItems === null || scope.issueIds.length === 0) return;
+
+    const latestScope = resolveStatusDragScope(
+      latestItems,
+      new Set(scope.issueIds),
+      scope.issueIds[0] ?? "",
+    );
+    if (
+      latestScope === null
+      || latestScope.sourceStatusDefinitionId !== scope.sourceStatusDefinitionId
+      || !sameIssueIds(latestScope.issueIds, scope.issueIds)
+      || !latestScope.targetStatusDefinitionIds.includes(targetStatusDefinitionId)
+    ) {
+      return;
+    }
+
+    const completions: Promise<void>[] = [];
+    for (const item of latestItems) {
+      let result: ReturnType<TrailProjectWorkspacePageActions["changeStatus"]>;
+      try {
+        result = actions.changeStatus(item.expectedIssue, targetStatusDefinitionId);
+      } catch (error: unknown) {
+        setDragFeedback(`Status change failed: ${errorMessage(error)}`);
+        return;
+      }
+      if (result.kind === "needs-input") {
+        setDragFeedback(result.input.message);
+        return;
+      }
+      if (result.kind === "submitted") completions.push(result.receipt.completion);
+    }
+
+    try {
+      await Promise.all(completions);
+    } catch (error: unknown) {
+      setDragFeedback(`Status change failed: ${errorMessage(error)}`);
+    }
+  };
+
+  useTrailWorkflowIssueStatusDragPointer({
+    enabled: writable,
+    onDrop: (scope, targetStatusDefinitionId) => {
+      void handleStatusDrop(scope, targetStatusDefinitionId);
+    },
+    refreshKey: `${effectiveLayout}|${visibleIssueIds.join("|")}|${readModel?.sections.map(({ id }) => id).join("|") ?? ""}`,
+    resolveScope: resolveCurrentDragScope,
+    rootRef: pageRef,
+  });
 
   const openComposer = () => {
     if (!canCreateIssue) return;
@@ -251,13 +371,28 @@ export function TrailProjectWorkspacePage({
   };
 
   const handlePointerDownCapture: PointerEventHandler<HTMLElement> = (event) => {
-    if (
-      deleteContext !== null
-      || peek.targetId === null
-      || !(event.target instanceof Element)
-    ) return;
+    if (!(event.target instanceof Element)) return;
+
+    const interactiveTarget = event.target.closest([
+      "a",
+      "button",
+      "input",
+      "select",
+      "textarea",
+      "[contenteditable='true']",
+      "[role='button']",
+      "[role='dialog']",
+      "[role='menuitem']",
+      ".trail-issue-peek",
+      "[data-workflow-issue-id]",
+    ].join(", ")) !== null;
+    if (!interactiveTarget) {
+      pageRef.current?.focus({ preventScroll: true });
+    }
+
+    if (deleteContext !== null || peek.targetId === null) return;
     if (event.target.closest(".trail-issue-peek") !== null) return;
-    if (event.target.closest("[data-workflow-issue-row='true']") !== null) return;
+    if (event.target.closest("[data-workflow-issue-id]") !== null) return;
     peek.close();
   };
 
@@ -334,6 +469,11 @@ export function TrailProjectWorkspacePage({
     });
   };
 
+  const clearSelection = (): void => {
+    pageRef.current?.focus({ preventScroll: true });
+    selection.clear();
+  };
+
   const handleSelectionKeyDown: KeyboardEventHandler<HTMLElement> = (event) => {
     if (
       event.defaultPrevented
@@ -342,13 +482,14 @@ export function TrailProjectWorkspacePage({
       || peek.targetId !== null
       || composerReferenceTimestamp !== null
       || deleteContext !== null
+      || pageRef.current?.dataset.statusDragActive === "true"
       || !isTrailCollectionSelectionKeyboardOriginEligible(event.target)
     ) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
-    selection.clear();
+    clearSelection();
   };
 
   const handleKeyDownCapture: KeyboardEventHandler<HTMLElement> = (event) => {
@@ -372,7 +513,7 @@ export function TrailProjectWorkspacePage({
     }
     if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       const nextIssueId = getAdjacentTrailIssueId(
-        peekVisibleIssueIds,
+        visibleIssueIds,
         peek.targetId,
         event.key === "ArrowDown" ? "next" : "previous",
       );
@@ -393,7 +534,14 @@ export function TrailProjectWorkspacePage({
   };
 
   if (readModel === null) {
-    return <section aria-label="Project" className="trail-project-workspace-page" />;
+    return (
+      <section
+        aria-label="Project"
+        className="trail-project-workspace-page"
+        ref={pageRef}
+        tabIndex={-1}
+      />
+    );
   }
 
   const description = readModel.project.description;
@@ -407,10 +555,13 @@ export function TrailProjectWorkspacePage({
       aria-label={`${readModel.project.title} project`}
       className="trail-project-workspace-page"
       data-project-status-category={readModel.project.statusCategory}
+      data-status-drag-enabled={writable ? "true" : undefined}
       onContextMenu={handleContextMenu}
       onKeyDown={handleSelectionKeyDown}
       onKeyDownCapture={handleKeyDownCapture}
       onPointerDownCapture={handlePointerDownCapture}
+      ref={pageRef}
+      tabIndex={-1}
     >
       <div className="trail-project-workspace-page__scroll">
         <TrailPageHeader
@@ -448,32 +599,53 @@ export function TrailProjectWorkspacePage({
         )}
 
         <TrailProjectWorkspaceViewControls
+          boardAvailable={boardAvailable}
           configuration={readModel.configuration}
           filter={filters.state}
+          layout={effectiveLayout}
           milestones={readModel.milestones}
           onClearAllFilters={filters.clearAll}
           onClearFilterClause={filters.clearClause}
+          onLayoutChange={setLayout}
           onSetDueFilter={filters.setDueValue}
           onToggleDiscreteFilter={filters.toggleDiscreteValue}
         />
 
         <div className="trail-project-workspace-page__content">
-          <div className="trail-project-workspace-page__sections">
-            {readModel.sections.map((section) => (
-              <TrailProjectStatusSection
-                collapsed={collapsedStatusIds.has(section.id)}
-                key={section.id}
-                onExpandedChange={(expanded) => updateSectionExpanded(section.id, expanded)}
-                onIssuePeekOpen={peek.open}
-                onIssuePeekToggle={peek.toggle}
-                onIssueSelectionChange={selection.setSelected}
-                peekTargetId={peek.targetId}
-                section={section}
-                selectedIssueIds={selection.selectedIds}
-                timezone={readModel.configuration.temporal.timezone}
-              />
-            ))}
-          </div>
+          {effectiveLayout === "board" ? (
+            <TrailProjectWorkspaceBoard
+              onIssuePeekOpen={peek.open}
+              onIssuePeekToggle={peek.toggle}
+              onIssueSelectionChange={selection.setSelected}
+              peekTargetId={peek.targetId}
+              sections={readModel.sections}
+              selectedIssueIds={selection.selectedIds}
+              timezone={readModel.configuration.temporal.timezone}
+            />
+          ) : (
+            <div className="trail-project-workspace-page__sections">
+              {readModel.sections.map((section) => (
+                <TrailProjectStatusSection
+                  collapsed={collapsedStatusIds.has(section.id)}
+                  key={section.id}
+                  onExpandedChange={(expanded) => updateSectionExpanded(section.id, expanded)}
+                  onIssuePeekOpen={peek.open}
+                  onIssuePeekToggle={peek.toggle}
+                  onIssueSelectionChange={selection.setSelected}
+                  peekTargetId={peek.targetId}
+                  section={section}
+                  selectedIssueIds={selection.selectedIds}
+                  timezone={readModel.configuration.temporal.timezone}
+                />
+              ))}
+            </div>
+          )}
+
+          {dragFeedback === undefined ? null : (
+            <div className="trail-project-workspace-page__drag-feedback" role="alert">
+              {dragFeedback}
+            </div>
+          )}
 
           {readModel.emptyKind === "true" ? (
             <TrailEmptyState
@@ -530,7 +702,7 @@ export function TrailProjectWorkspacePage({
               </TrailButton>
             )}
             count={selection.selectedIds.size}
-            onClear={selection.clear}
+            onClear={clearSelection}
             onOverflow={actionMenu === null || (
               bulkOverflowActions.length === 0
               && bulkActionContext.unavailableReason === undefined

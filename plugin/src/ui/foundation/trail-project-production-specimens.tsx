@@ -4,7 +4,10 @@ import type {
   TrailStatusCategory,
 } from "../../domain/model/trail-values";
 import { TrailProjectSummaryRow } from "../entities/trail-project-summary-row";
+import { TrailStatusGlyph } from "../entities/trail-status";
+import { TrailWorkflowIssueCard } from "../entities/trail-workflow-issue-card";
 import { TrailWorkflowIssueRow } from "../entities/trail-workflow-issue-row";
+import { TrailBoard, TrailBoardColumn } from "../patterns/trail-board";
 import { TrailGroupHeader } from "../patterns/trail-group-header";
 import { TrailIssuePeek } from "../patterns/trail-issue-peek";
 import type { TrailMarkdownRender } from "../patterns/trail-page-narrative";
@@ -230,6 +233,63 @@ export function TrailProjectProductionSpecimens() {
             />
           </section>
         </div>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="The shared Board owner keeps three horizontal Status columns at a useful minimum width and lets the canvas overflow horizontally instead of stacking. The production Workflow Issue Card keeps only scan-worthy Project execution metadata and relies on the column for Status context."
+        kind="composition-gallery"
+        owner="TrailBoard + TrailWorkflowIssueCard"
+        title="Project issue board"
+      >
+        <TrailBoard label="Foundation project issue board">
+          <TrailBoardColumn
+            count={1}
+            label="Todo"
+            leading={<TrailStatusGlyph category="unstarted" label="Todo" />}
+          >
+            <TrailWorkflowIssueCard
+              issueId="foundation-board-todo"
+              labels={issueLabels.slice(0, 1)}
+              onSelectionChange={() => { /* static selection specimen */ }}
+              priority="medium"
+              timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+              title="Prepare the next implementation slice"
+            />
+          </TrailBoardColumn>
+          <TrailBoardColumn
+            count={2}
+            label="In Progress"
+            leading={<TrailStatusGlyph category="started" label="In Progress" />}
+          >
+            <TrailWorkflowIssueCard
+              due={TRAIL_FOUNDATION_REFERENCE_TIMESTAMP + (2 * 24 * 60 * 60 * 1000)}
+              estimate="large"
+              inCurrentCycle
+              issueId="foundation-board-started"
+              labels={issueLabels}
+              milestoneTitle="Workspace interaction pass"
+              onSelectionChange={() => { /* static selection specimen */ }}
+              priority="urgent"
+              selected
+              timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+              title="Build and calibrate the Project Board"
+            />
+            <TrailWorkflowIssueCard
+              estimate="medium"
+              issueId="foundation-board-started-long"
+              labels={[]}
+              onSelectionChange={() => { /* static selection specimen */ }}
+              priority="high"
+              timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+              title="Keep a deliberately longer Issue title compact without turning the Board card into a mini Full Item"
+            />
+          </TrailBoardColumn>
+          <TrailBoardColumn
+            count={0}
+            label="Done"
+            leading={<TrailStatusGlyph category="completed" label="Done" />}
+          />
+        </TrailBoard>
       </LabSpecimenRow>
 
       <LabSpecimenRow

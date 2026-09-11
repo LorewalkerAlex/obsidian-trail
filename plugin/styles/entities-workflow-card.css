@@ -1,0 +1,149 @@
+/* Workflow Issue Board Card plus the shared pointer feedback for Status drag. */
+.trail-workflow-issue-card {
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--trail-border-subtle);
+  border-radius: var(--trail-radius-sm);
+  outline: 0;
+  background: var(--trail-control-surface);
+  color: var(--trail-text-secondary);
+  transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), opacity var(--trail-motion-fast);
+}
+
+.trail-workflow-issue-card:hover,
+.trail-workflow-issue-card[data-highlighted="true"],
+.trail-workflow-issue-card:focus-visible {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-hover);
+}
+
+.trail-workflow-issue-card[data-selected="true"] {
+  border-color: var(--trail-control-border);
+  background: var(--trail-state-accent-soft);
+}
+
+.trail-workflow-issue-card__selection {
+  position: absolute;
+  z-index: 1;
+  top: var(--trail-space-4);
+  right: var(--trail-space-4);
+  display: inline-grid;
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--trail-motion-fast);
+}
+
+.trail-workflow-issue-card:hover .trail-workflow-issue-card__selection,
+.trail-workflow-issue-card[data-highlighted="true"] .trail-workflow-issue-card__selection,
+.trail-workflow-issue-card[data-selected="true"] .trail-workflow-issue-card__selection,
+.trail-workflow-issue-card:focus-visible .trail-workflow-issue-card__selection,
+.trail-workflow-issue-card__selection:has(:focus-visible) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.trail-workflow-issue-card__drag-surface {
+  display: grid;
+  min-width: 0;
+  gap: var(--trail-space-7);
+  padding: var(--trail-space-6);
+}
+
+.trail-workflow-issue-card__heading {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--trail-space-5);
+  padding-right: var(--trail-space-8);
+}
+
+.trail-workflow-issue-card__priority {
+  display: inline-grid;
+  width: 14px;
+  height: var(--trail-icon-size-sm);
+  place-items: center;
+  color: var(--trail-text-muted);
+}
+
+.trail-workflow-issue-card__priority .trail-priority-glyph {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+}
+
+.trail-workflow-issue-card__title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.trail-workflow-issue-card__metadata {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: var(--trail-space-4);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+}
+
+.trail-workflow-issue-card__milestone,
+.trail-workflow-issue-card__labels,
+.trail-workflow-issue-card__cycle,
+.trail-workflow-issue-card__estimate,
+.trail-workflow-issue-card__due {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-workflow-issue-card__milestone {
+  min-height: 1em;
+}
+
+.trail-workflow-issue-card__labels,
+.trail-workflow-issue-card__cycle,
+.trail-workflow-issue-card__estimate,
+.trail-workflow-issue-card__due {
+  display: inline-flex;
+  align-items: center;
+}
+
+.trail-workflow-issue-card__estimate {
+  justify-content: center;
+}
+
+.trail-workflow-issue-card__due {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+[data-status-drag-enabled="true"] [data-status-drag-available="true"] {
+  cursor: grab;
+}
+
+[data-status-drag-enabled="true"] [data-status-drag-available="true"]:active {
+  cursor: grabbing;
+}
+
+[data-workflow-issue-id][data-status-dragging="true"] {
+  opacity: 0.42;
+}
+
+[data-workflow-issue-status-drop-target][data-status-drag-over="true"] {
+  background: var(--trail-state-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--trail-focus-ring-quiet);
+}
