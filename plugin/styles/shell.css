@@ -267,6 +267,29 @@ body button.trail-navigation__row[aria-current="page"]:hover {
   width: 100%;
 }
 
+.trail-navigation__search-results {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-top: var(--trail-space-7);
+}
+
+.trail-navigation__search-group + .trail-navigation__search-group {
+  margin-top: var(--trail-space-7);
+}
+
+.trail-navigation__search-group-results {
+  display: grid;
+  gap: var(--trail-space-1);
+  margin-top: var(--trail-space-1);
+}
+
+.trail-navigation__search-empty {
+  padding: var(--trail-space-6);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-supporting);
+}
+
 .trail-product-placeholder {
   min-width: 0;
 }

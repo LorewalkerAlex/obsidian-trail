@@ -12,7 +12,7 @@ import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
-import { selectTrailSearchResults } from "./trail-search-query";
+import { selectTrailSidebarSearchReadModel } from "./trail-search-query";
 
 function state() {
   const runtimeStore = createTrailRuntimeStore();
@@ -95,22 +95,30 @@ function state() {
   return runtimeStore.getState();
 }
 
-describe("Trail Search query", () => {
-  it("finds title-bearing work objects across contexts and Project-owned Workflow Issues", () => {
-    expect(selectTrailSearchResults(state(), "alpha")).toEqual([
-      { entityId: "triage-a", kind: "triage-issue", title: "Alpha capture" },
-      { entityId: "issue-a", kind: "workflow-issue", projectId: "project-a", title: "Alpha workflow" },
-      { entityId: "initiative-a", kind: "initiative", title: "Initiative Alpha" },
-      { entityId: "project-a", kind: "project", title: "Project Alpha" },
-      { entityId: "milestone-a", kind: "milestone", projectId: "project-a", title: "Release Alpha" },
-      { entityId: "issue-loose", kind: "workflow-issue", projectId: "project-b", title: "Loose work" },
-    ]);
+describe("Trail Sidebar Search query", () => {
+  it("returns only Initiative, Project, and Workflow Issue results grouped for the Sidebar", () => {
+    expect(selectTrailSidebarSearchReadModel(state(), "alpha")).toEqual({
+      initiatives: [
+        { entityId: "initiative-a", kind: "initiative", title: "Initiative Alpha" },
+      ],
+      issues: [
+        { entityId: "issue-a", kind: "workflow-issue", title: "Alpha workflow" },
+        { entityId: "issue-loose", kind: "workflow-issue", title: "Loose work" },
+      ],
+      projects: [
+        { entityId: "project-a", kind: "project", title: "Project Alpha" },
+      ],
+    });
   });
 
-  it("keeps blank Search empty and ranks an exact title ahead of broader matches", () => {
+  it("keeps blank Search empty and ranks exact titles ahead of broader matches inside a group", () => {
     const runtime = state();
-    expect(selectTrailSearchResults(runtime, "   ")).toEqual([]);
-    expect(selectTrailSearchResults(runtime, "Project Alpha")[0]).toEqual({
+    expect(selectTrailSidebarSearchReadModel(runtime, "   ")).toEqual({
+      initiatives: [],
+      issues: [],
+      projects: [],
+    });
+    expect(selectTrailSidebarSearchReadModel(runtime, "Project Alpha").projects[0]).toEqual({
       entityId: "project-a",
       kind: "project",
       title: "Project Alpha",

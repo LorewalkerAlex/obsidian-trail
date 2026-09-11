@@ -1,31 +1,26 @@
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
 
-export type TrailSearchResultKind =
+export type TrailSidebarSearchResultKind =
   | "initiative"
-  | "milestone"
   | "project"
-  | "triage-issue"
   | "workflow-issue";
 
-export interface TrailSearchResult {
+export interface TrailSidebarSearchResultReadModel {
   readonly entityId: string;
-  readonly kind: TrailSearchResultKind;
-  readonly projectId?: string;
+  readonly kind: TrailSidebarSearchResultKind;
   readonly title: string;
 }
 
-interface RankedTrailSearchResult extends TrailSearchResult {
-  readonly rank: number;
+export interface TrailSidebarSearchReadModel {
+  readonly initiatives: readonly TrailSidebarSearchResultReadModel[];
+  readonly issues: readonly TrailSidebarSearchResultReadModel[];
+  readonly projects: readonly TrailSidebarSearchResultReadModel[];
 }
 
-const KIND_ORDER: Readonly<Record<TrailSearchResultKind, number>> = {
-  "workflow-issue": 0,
-  "triage-issue": 1,
-  project: 2,
-  initiative: 3,
-  milestone: 4,
-};
+interface RankedTrailSidebarSearchResult extends TrailSidebarSearchResultReadModel {
+  readonly rank: number;
+}
 
 function normalizeSearchText(value: string): string {
   return value.trim().toLowerCase();
@@ -40,58 +35,74 @@ function matchRank(title: string, description: string | undefined, query: string
   return undefined;
 }
 
+function sortRankedResults(
+  results: RankedTrailSidebarSearchResult[],
+): readonly TrailSidebarSearchResultReadModel[] {
+  return results
+    .sort((left, right) => {
+      if (left.rank !== right.rank) return left.rank - right.rank;
+      const titleOrder = left.title.localeCompare(right.title);
+      return titleOrder !== 0 ? titleOrder : left.entityId.localeCompare(right.entityId);
+    })
+    .map(({ rank: _rank, ...result }) => result);
+}
+
 /**
- * Global Search stays a read-only Runtime projection. It searches title-bearing
- * work objects only; Cycles remain on their dedicated time-oriented surface
- * because they do not own a canonical user-facing title.
+ * Sidebar Search is a read-only Runtime projection for the frozen V1 result set:
+ * Initiative, Project, and Workflow Issue. Triage, Milestone, Cycle, and Vault-note
+ * discovery stay outside this Trail Sidebar mode.
  */
-export function selectTrailSearchResults(
+export function selectTrailSidebarSearchReadModel(
   state: TrailRuntimeState,
   query: string,
-): readonly TrailSearchResult[] {
+): TrailSidebarSearchReadModel {
   const normalizedQuery = normalizeSearchText(query);
-  if (normalizedQuery === "") return [];
+  if (normalizedQuery === "") {
+    return { initiatives: [], issues: [], projects: [] };
+  }
 
   const domain = selectTrailReadableRuntimeSnapshot(state).authoritative.domain;
-  const results: RankedTrailSearchResult[] = [];
+  const initiatives: RankedTrailSidebarSearchResult[] = [];
+  const projects: RankedTrailSidebarSearchResult[] = [];
+  const issues: RankedTrailSidebarSearchResult[] = [];
 
-  const add = (result: TrailSearchResult, description?: string): void => {
+  const add = (
+    results: RankedTrailSidebarSearchResult[],
+    result: TrailSidebarSearchResultReadModel,
+    description?: string,
+  ): void => {
     const rank = matchRank(result.title, description, normalizedQuery);
     if (rank !== undefined) results.push({ ...result, rank });
   };
 
   for (const initiative of domain.initiativesById.values()) {
-    add({ entityId: initiative.id, kind: "initiative", title: initiative.title }, initiative.description);
-  }
-  for (const project of domain.projectsById.values()) {
-    add({ entityId: project.id, kind: "project", title: project.title }, project.description);
-  }
-  for (const milestone of domain.milestonesById.values()) {
-    add({
-      entityId: milestone.id,
-      kind: "milestone",
-      projectId: milestone.projectId,
-      title: milestone.title,
-    }, milestone.description);
-  }
-  for (const issue of domain.issuesById.values()) {
-    add({
-      entityId: issue.id,
-      kind: issue.context === "triage" ? "triage-issue" : "workflow-issue",
-      ...(issue.context === "workflow" && issue.projectId !== undefined
-        ? { projectId: issue.projectId }
-        : {}),
-      title: issue.title,
-    }, issue.description);
+    add(
+      initiatives,
+      { entityId: initiative.id, kind: "initiative", title: initiative.title },
+      initiative.description,
+    );
   }
 
-  return results
-    .sort((left, right) => {
-      if (left.rank !== right.rank) return left.rank - right.rank;
-      const titleOrder = left.title.localeCompare(right.title);
-      if (titleOrder !== 0) return titleOrder;
-      const kindOrder = KIND_ORDER[left.kind] - KIND_ORDER[right.kind];
-      return kindOrder !== 0 ? kindOrder : left.entityId.localeCompare(right.entityId);
-    })
-    .map(({ rank: _rank, ...result }) => result);
+  for (const project of domain.projectsById.values()) {
+    add(
+      projects,
+      { entityId: project.id, kind: "project", title: project.title },
+      project.description,
+    );
+  }
+
+  for (const issue of domain.issuesById.values()) {
+    if (issue.context !== "workflow") continue;
+    add(
+      issues,
+      { entityId: issue.id, kind: "workflow-issue", title: issue.title },
+      issue.description,
+    );
+  }
+
+  return {
+    initiatives: sortRankedResults(initiatives),
+    issues: sortRankedResults(issues),
+    projects: sortRankedResults(projects),
+  };
 }

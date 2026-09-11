@@ -1,5 +1,10 @@
+import { useState, type KeyboardEventHandler } from "react";
 import { useStore } from "zustand";
 
+import {
+  selectTrailSidebarSearchReadModel,
+  type TrailSidebarSearchResultReadModel,
+} from "../../query/search/trail-search-query";
 import { selectTrailReadableDefaultProject } from "../../query/shared/trail-project-target-query";
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
 import { TRAIL_DEVELOPMENT_UI_ENABLED } from "../../trail-build-flags";
@@ -119,23 +124,92 @@ function TrailNavigationRow({
   );
 }
 
+function searchResultLocation(result: TrailSidebarSearchResultReadModel): TrailLocation {
+  switch (result.kind) {
+    case "initiative":
+      return { initiativeId: result.entityId, kind: "initiative" };
+    case "project":
+      return { kind: "project", projectId: result.entityId };
+    case "workflow-issue":
+      return { issueId: result.entityId, kind: "issue" };
+  }
+}
+
 function TrailSidebarSearch({
   navigationStore,
+  onNavigate,
+  runtimeStore,
 }: {
   readonly navigationStore: TrailNavigationStore;
+  readonly onNavigate: (location: TrailLocation) => void;
+  readonly runtimeStore: TrailRuntimeStore;
 }) {
+  const [search, setSearch] = useState("");
+  const state = useStore(runtimeStore, (runtimeState) => runtimeState);
+  const readModel = selectTrailSidebarSearchReadModel(state, search);
+  const groups = [
+    { label: "Initiatives", results: readModel.initiatives },
+    { label: "Projects", results: readModel.projects },
+    { label: "Issues", results: readModel.issues },
+  ];
+  const hasResults = groups.some(({ results }) => results.length > 0);
+  const hasQuery = search.trim().length > 0;
+
+  const closeSearch = () => navigationStore.getState().closeSearch();
+  const activateResult = (result: TrailSidebarSearchResultReadModel) => {
+    closeSearch();
+    onNavigate(searchResultLocation(result));
+  };
+  const handleKeyDown: KeyboardEventHandler<HTMLElement> = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeSearch();
+      return;
+    }
+
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+
+    const resultButtons = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        ".trail-navigation__search-result",
+      ),
+    );
+    if (resultButtons.length === 0) return;
+
+    const activeElement = document.activeElement;
+    const input = event.currentTarget.querySelector<HTMLInputElement>(".trail-input");
+    if (activeElement === input) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        resultButtons[0]?.focus();
+      }
+      return;
+    }
+
+    const currentIndex = resultButtons.indexOf(activeElement as HTMLButtonElement);
+    if (currentIndex < 0) return;
+
+    event.preventDefault();
+    if (event.key === "ArrowDown") {
+      resultButtons[Math.min(currentIndex + 1, resultButtons.length - 1)]?.focus();
+      return;
+    }
+
+    if (currentIndex === 0) input?.focus();
+    else resultButtons[currentIndex - 1]?.focus();
+  };
+
   return (
     <section
       aria-label="Trail search"
       className="trail-navigation__search"
-      onKeyDown={(event) => {
-        if (event.key === "Escape") navigationStore.getState().closeSearch();
-      }}
+      onKeyDown={handleKeyDown}
     >
       <div className="trail-navigation__search-header">
         <button
           className="trail-navigation__search-back"
-          onClick={() => navigationStore.getState().closeSearch()}
+          onClick={closeSearch}
           type="button"
         >
           Back
@@ -146,9 +220,43 @@ function TrailSidebarSearch({
         <TrailInput
           aria-label="Search Trail"
           autoFocus
-          placeholder="Search Trail"
+          onChange={(event) => setSearch(event.currentTarget.value)}
+          value={search}
         />
       </div>
+
+      {!hasQuery ? null : (
+        <div className="trail-navigation__search-results">
+          {groups.map((group) => (
+            group.results.length === 0 ? null : (
+              <section
+                aria-label={group.label}
+                className="trail-navigation__search-group"
+                key={group.label}
+              >
+                <div className="trail-navigation__section-label">{group.label}</div>
+                <div className="trail-navigation__search-group-results">
+                  {group.results.map((result) => (
+                    <button
+                      className="trail-navigation__row trail-navigation__search-result"
+                      key={`${result.kind}:${result.entityId}`}
+                      onClick={() => activateResult(result)}
+                      type="button"
+                    >
+                      <span className="trail-navigation__row-label">{result.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )
+          ))}
+          {hasResults ? null : (
+            <div className="trail-navigation__search-empty" role="status">
+              No results
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }
@@ -169,7 +277,13 @@ export function TrailNavigation({
   const defaultProject = useStore(runtimeStore, selectTrailReadableDefaultProject);
 
   if (sidebarMode === "search") {
-    return <TrailSidebarSearch navigationStore={navigationStore} />;
+    return (
+      <TrailSidebarSearch
+        navigationStore={navigationStore}
+        onNavigate={onNavigate}
+        runtimeStore={runtimeStore}
+      />
+    );
   }
 
   const navigate = (nextLocation: TrailLocation) => {
