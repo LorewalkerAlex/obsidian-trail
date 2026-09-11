@@ -1,5 +1,5 @@
 import type { KeyboardEventHandler } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "zustand";
 
 import { addTrailCalendarDays } from "../../../domain/rules/trail-temporal-rules";
@@ -23,6 +23,7 @@ import { TrailPageHeader } from "../../patterns/trail-page-header";
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
+import { useTrailProjectCollectionActions } from "./trail-project-collection-actions";
 import { TrailProjectTimeline } from "./trail-project-timeline";
 import {
   TrailProjectsViewControls,
@@ -34,7 +35,10 @@ const TIMELINE_RANGE_PADDING_DAYS = 14;
 type TrailProjectsPageActions = Pick<
   TrailUiActions["projects"],
   "createFromDraft"
->;
+> & Partial<Pick<
+  TrailUiActions["projects"],
+  "changeInitiative" | "changeStatus"
+>>;
 
 function TrailAddIcon() {
   return (
@@ -86,6 +90,7 @@ function TrailProjectsList({
   onGroupExpandedChange,
   onInitiativeActivate,
   onProjectActivate,
+  onProjectContextMenu,
   onProjectSelectionChange,
   selectedProjectIds,
   timezone,
@@ -95,6 +100,7 @@ function TrailProjectsList({
   readonly onGroupExpandedChange: (key: string, expanded: boolean) => void;
   readonly onInitiativeActivate: (initiativeId: string) => void;
   readonly onProjectActivate: (projectId: string) => void;
+  readonly onProjectContextMenu: ReturnType<typeof useTrailProjectCollectionActions>["onProjectContextMenu"];
   readonly onProjectSelectionChange: (
     projectId: string,
     selected: boolean,
@@ -133,6 +139,7 @@ function TrailProjectsList({
                 due={project.due}
                 key={project.id}
                 onActivate={() => onProjectActivate(project.id)}
+                onContextMenu={(event) => onProjectContextMenu(event, project.id)}
                 onSelectionChange={(selected, extendRange) => {
                   onProjectSelectionChange(project.id, selected, extendRange);
                 }}
@@ -190,6 +197,7 @@ export function TrailProjectsPage({
   readonly onProjectActivate: (projectId: string) => void;
   readonly runtimeStore: TrailRuntimeStore;
 }) {
+  const pageRef = useRef<HTMLElement | null>(null);
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
   const filters = useTrailCollectionFilterState<TrailProjectsRootFilterPropertyId>();
   const [layout, setLayout] = useState<TrailProjectsRootLayout>("list");
@@ -211,6 +219,22 @@ export function TrailProjectsPage({
       ));
   const selection = useTrailCollectionSelectionState(visibleProjectIds);
   const writable = readModel !== null && state.control.kind === "ready";
+  const mutationActions = actions.changeInitiative === undefined || actions.changeStatus === undefined
+    ? undefined
+    : {
+        changeInitiative: actions.changeInitiative,
+        changeStatus: actions.changeStatus,
+      };
+  const clearSelection = () => {
+    pageRef.current?.focus({ preventScroll: true });
+    selection.clear();
+  };
+  const collectionActions = useTrailProjectCollectionActions({
+    actions: mutationActions,
+    clearSelection,
+    runtimeStore,
+    selectedProjectIds: selection.selectedIds,
+  });
 
   const openComposer = () => {
     if (!writable) return;
@@ -238,84 +262,99 @@ export function TrailProjectsPage({
     }
     event.preventDefault();
     event.stopPropagation();
-    selection.clear();
+    clearSelection();
   };
 
   return (
-    <section className="trail-projects-page" aria-label="Projects" onKeyDown={handleSelectionKeyDown}>
-      <TrailPageHeader
-        actions={(
-          <TrailIconButton
-            disabled={!writable}
-            icon={<TrailAddIcon />}
-            label="Add project"
-            onClick={openComposer}
-          />
+    <section
+      aria-label="Projects"
+      className="trail-projects-page"
+      onKeyDown={handleSelectionKeyDown}
+      ref={pageRef}
+      tabIndex={-1}
+    >
+      <div className="trail-projects-page__scroll">
+        <TrailPageHeader
+          actions={(
+            <TrailIconButton
+              disabled={!writable}
+              icon={<TrailAddIcon />}
+              label="Add project"
+              onClick={openComposer}
+            />
+          )}
+          title="Projects"
+        />
+
+        {readModel === null ? null : (
+          <>
+            <TrailProjectsViewControls
+              configuration={readModel.configuration}
+              filter={filters.state}
+              initiatives={readModel.initiatives}
+              layout={layout}
+              onClearAllFilters={filters.clearAll}
+              onClearFilterClause={filters.clearClause}
+              onLayoutChange={setLayout}
+              onSetDueFilter={filters.setDueValue}
+              onToggleDiscreteFilter={filters.toggleDiscreteValue}
+            />
+
+            <div className="trail-projects-page__content">
+              {readModel.emptyKind === "true" ? (
+                <TrailEmptyState
+                  action={(
+                    <TrailButton disabled={!writable} onClick={openComposer} variant="primary">
+                      New project
+                    </TrailButton>
+                  )}
+                  description="Create a project to collect durable work under a shared outcome."
+                  title="No projects yet"
+                />
+              ) : readModel.emptyKind === "filtered" ? (
+                <TrailEmptyState
+                  action={<TrailButton onClick={filters.clearAll}>Clear filters</TrailButton>}
+                  title="No projects match the filters."
+                />
+              ) : readModel.emptyKind === "projection" ? (
+                <TrailEmptyState
+                  description="Completed and canceled projects are hidden by default. Use the Status filter to include them."
+                  title="No active projects"
+                />
+              ) : layout === "list" ? (
+                <TrailProjectsList
+                  collapsedGroupKeys={collapsedGroupKeys}
+                  groups={readModel.groups}
+                  onGroupExpandedChange={updateGroupExpanded}
+                  onInitiativeActivate={onInitiativeActivate}
+                  onProjectActivate={onProjectActivate}
+                  onProjectContextMenu={collectionActions.onProjectContextMenu}
+                  onProjectSelectionChange={selection.setSelected}
+                  selectedProjectIds={selection.selectedIds}
+                  timezone={readModel.configuration.temporal.timezone}
+                />
+              ) : readModel.timeline.projectionEmpty ? (
+                <TrailEmptyState
+                  description="Timeline appears when the current Project collection has activity, lifecycle, or eligible Due evidence."
+                  title="No timeline evidence for these projects"
+                />
+              ) : (
+                <TrailProjectsTimelineProjection
+                  onProjectActivate={onProjectActivate}
+                  rows={readModel.timeline.rows}
+                  timezone={readModel.configuration.temporal.timezone}
+                  today={now}
+                />
+              )}
+            </div>
+          </>
         )}
-        title="Projects"
-      />
+      </div>
 
-      {readModel === null ? null : (
-        <>
-          <TrailProjectsViewControls
-            configuration={readModel.configuration}
-            filter={filters.state}
-            initiatives={readModel.initiatives}
-            layout={layout}
-            onClearAllFilters={filters.clearAll}
-            onClearFilterClause={filters.clearClause}
-            onLayoutChange={setLayout}
-            onSetDueFilter={filters.setDueValue}
-            onToggleDiscreteFilter={filters.toggleDiscreteValue}
-          />
-
-          <div className="trail-projects-page__content">
-            {readModel.emptyKind === "true" ? (
-              <TrailEmptyState
-                action={(
-                  <TrailButton disabled={!writable} onClick={openComposer} variant="primary">
-                    New project
-                  </TrailButton>
-                )}
-                description="Create a project to collect durable work under a shared outcome."
-                title="No projects yet"
-              />
-            ) : readModel.emptyKind === "filtered" ? (
-              <TrailEmptyState
-                action={<TrailButton onClick={filters.clearAll}>Clear filters</TrailButton>}
-                title="No projects match the filters."
-              />
-            ) : readModel.emptyKind === "projection" ? (
-              <TrailEmptyState
-                description="Completed and canceled projects are hidden by default. Use the Status filter to include them."
-                title="No active projects"
-              />
-            ) : layout === "list" ? (
-              <TrailProjectsList
-                collapsedGroupKeys={collapsedGroupKeys}
-                groups={readModel.groups}
-                onGroupExpandedChange={updateGroupExpanded}
-                onInitiativeActivate={onInitiativeActivate}
-                onProjectActivate={onProjectActivate}
-                onProjectSelectionChange={selection.setSelected}
-                selectedProjectIds={selection.selectedIds}
-                timezone={readModel.configuration.temporal.timezone}
-              />
-            ) : readModel.timeline.projectionEmpty ? (
-              <TrailEmptyState
-                description="Timeline appears when the current Project collection has activity, lifecycle, or eligible Due evidence."
-                title="No timeline evidence for these projects"
-              />
-            ) : (
-              <TrailProjectsTimelineProjection
-                onProjectActivate={onProjectActivate}
-                rows={readModel.timeline.rows}
-                timezone={readModel.configuration.temporal.timezone}
-                today={now}
-              />
-            )}
-          </div>
-        </>
+      {layout !== "list" || collectionActions.bulkBar === null ? null : (
+        <div className="trail-projects-page__bulk-layer">
+          {collectionActions.bulkBar}
+        </div>
       )}
 
       {composerReferenceTimestamp === null || readModel === null ? null : (

@@ -24,7 +24,7 @@ import {
 } from "./adapters/obsidian/trail-navigation-view";
 import type { TrailObsidianFileKinds } from "./adapters/obsidian/trail-obsidian-file-kinds";
 import { createObsidianPluginDataIO } from "./adapters/obsidian/trail-plugin-data-io-obsidian";
-import { TrailSettingsTab } from "./adapters/obsidian/trail-settings-tab";
+import { TrailWorkspaceSettingsTab } from "./adapters/obsidian/trail-workspace-settings-tab";
 import { createObsidianSourceIO } from "./adapters/obsidian/trail-source-io-obsidian";
 import {
   createObsidianVaultEventAdapter,
@@ -188,12 +188,23 @@ export default class TrailPlugin extends Plugin {
       weeklyNoteRepository,
       environment,
     );
-    const actions: TrailUiActions = { ...domainActions, weeklyNote };
-    this.addSettingTab(new TrailSettingsTab(
+    const actions: TrailUiActions = {
+      ...domainActions,
+      projects: {
+        ...domainActions.projects,
+        delete: (expectedProject, replacementProjectId) => applicationSession.projects.delete(
+          expectedProject,
+          replacementProjectId,
+        ),
+      },
+      weeklyNote,
+    };
+    this.addSettingTab(new TrailWorkspaceSettingsTab(
       this.app,
       this,
       runtimeStore,
       applicationSession.configuration,
+      applicationSession.workspace,
     ));
     const vaultEvents = createObsidianVaultEventAdapter({
       onObserved: (event, disposition) => {

@@ -137,11 +137,15 @@ export function TrailApp({
             <TrailProjectWorkspacePage
               actions={actions.issues}
               key={currentLocation.projectId}
+              onDeleteProject={actions.projects.delete}
               onInitiativeActivate={(initiativeId) => {
                 onNavigate({ initiativeId, kind: "initiative" });
               }}
               onIssueActivate={(issueId) => {
                 onNavigate({ issueId, kind: "issue" });
+              }}
+              onProjectDeleted={() => {
+                onNavigate({ kind: "projects" });
               }}
               onProjectsActivate={() => {
                 onNavigate({ kind: "projects" });

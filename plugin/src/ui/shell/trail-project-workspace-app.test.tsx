@@ -20,6 +20,9 @@ function uiActions(): TrailUiActions {
     issues: {
       createFromDraft: vi.fn(),
     },
+    projects: {
+      delete: vi.fn(),
+    },
   } as unknown as TrailUiActions;
 }
 

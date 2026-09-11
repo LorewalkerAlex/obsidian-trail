@@ -1,3 +1,41 @@
+/* Project collection Pages own placement of shared selection action surfaces. */
+.trail-projects-page,
+.trail-initiative-page {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trail-projects-page__scroll,
+.trail-initiative-page__scroll {
+  box-sizing: border-box;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.trail-projects-page__bulk-layer,
+.trail-initiative-page__bulk-layer {
+  position: absolute;
+  z-index: calc(var(--layer-menu, 1000) - 2);
+  right: var(--trail-space-8);
+  bottom: var(--trail-space-8);
+  left: var(--trail-space-8);
+  display: flex;
+  min-width: 0;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.trail-projects-page__bulk-layer > .trail-bulk-bar,
+.trail-initiative-page__bulk-layer > .trail-bulk-bar {
+  max-width: min(100%, 560px);
+  pointer-events: auto;
+}
+
 /* Project Workspace owns placement of shared transient Issue action surfaces. */
 .trail-project-workspace-page__bulk-layer {
   position: absolute;
@@ -16,13 +54,116 @@
   pointer-events: auto;
 }
 
+/* Project deletion is Page-local, but its geometry follows the shared Linear-faithful confirmation grammar. */
+.trail-confirmation__content:has(.trail-project-delete-flow) {
+  width: min(420px, calc(100vw - 32px));
+}
+
+.trail-confirmation__surface:has(.trail-project-delete-flow) {
+  width: 100%;
+  padding: var(--trail-space-8);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-menu-radius);
+}
+
+.trail-confirmation__surface:has(.trail-project-delete-flow) .trail-confirmation__title {
+  font-size: var(--trail-font-size-body);
+  line-height: 1.35;
+}
+
+.trail-confirmation__surface:has(.trail-project-delete-flow) .trail-confirmation__description {
+  margin-top: var(--trail-space-4);
+  font-size: var(--trail-font-size-supporting);
+  line-height: 1.45;
+}
+
+.trail-confirmation__surface:has(.trail-project-delete-flow) .trail-confirmation__actions {
+  gap: var(--trail-space-3);
+  margin-top: var(--trail-space-8);
+}
+
+.trail-project-delete-flow {
+  display: grid;
+  gap: var(--trail-space-3);
+}
+
+.trail-project-delete-flow__prompt {
+  color: var(--trail-text-secondary);
+}
+
+.trail-project-delete-flow__project-name {
+  color: var(--trail-text-primary);
+  font-weight: var(--trail-weight-medium);
+}
+
+.trail-project-delete-flow__consequence {
+  color: var(--trail-text-muted);
+}
+
+.trail-project-delete-flow__replacement {
+  display: grid;
+  gap: var(--trail-space-2);
+  margin-top: var(--trail-space-3);
+}
+
+.trail-project-delete-flow__label {
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-medium);
+}
+
+body .trail-project-delete-flow__replacement button.trail-property-control {
+  width: 100%;
+  height: var(--trail-control-height-md);
+  justify-content: flex-start;
+  padding: 0 var(--trail-space-5);
+  border-color: var(--trail-control-border);
+  background: var(--trail-control-surface);
+  color: var(--trail-text-secondary);
+  text-align: left;
+}
+
+body .trail-project-delete-flow__replacement button.trail-property-control:hover:not(:disabled),
+body .trail-project-delete-flow__replacement button.trail-property-control:focus-visible {
+  border-color: var(--trail-control-border-hover);
+  background: var(--trail-control-surface-hover);
+  color: var(--trail-text-primary);
+}
+
+.trail-project-delete-flow__replacement .trail-property-control__summary {
+  max-width: none;
+  text-align: left;
+}
+
+body .trail-project-delete-flow__replacement button.trail-property-control::after {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  content: "";
+  opacity: 0.65;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.trail-project-delete-flow__warning {
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  line-height: 1.4;
+}
+
 @container (max-width: 480px) {
+  .trail-projects-page__bulk-layer,
+  .trail-initiative-page__bulk-layer,
   .trail-project-workspace-page__bulk-layer {
     right: var(--trail-space-4);
     bottom: var(--trail-space-4);
     left: var(--trail-space-4);
   }
 
+  .trail-projects-page__bulk-layer > .trail-bulk-bar,
+  .trail-initiative-page__bulk-layer > .trail-bulk-bar,
   .trail-project-workspace-page__bulk-layer > .trail-bulk-bar {
     width: 100%;
   }

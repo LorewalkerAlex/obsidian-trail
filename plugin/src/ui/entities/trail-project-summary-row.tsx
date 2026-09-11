@@ -1,4 +1,4 @@
-import type { KeyboardEventHandler } from "react";
+import type { KeyboardEventHandler, MouseEventHandler } from "react";
 
 import type {
   TrailPriority,
@@ -31,6 +31,7 @@ export interface TrailProjectSummaryRowProps {
   readonly due?: TrailTimestamp;
   readonly highlighted?: boolean;
   readonly onActivate?: () => void;
+  readonly onContextMenu?: MouseEventHandler<HTMLDivElement>;
   readonly onSelectionChange?: (selected: boolean, extendRange: boolean) => void;
   readonly priority: TrailPriority | undefined;
   readonly progress: TrailProjectSummaryProgress;
@@ -45,6 +46,7 @@ export function TrailProjectSummaryRow({
   due,
   highlighted = false,
   onActivate,
+  onContextMenu,
   onSelectionChange,
   priority,
   progress,
@@ -86,6 +88,7 @@ export function TrailProjectSummaryRow({
         />
       )}
       onClick={onActivate === undefined ? undefined : activate}
+      onContextMenu={onContextMenu}
       onKeyDownCapture={onSelectionChange === undefined ? undefined : handleKeyDownCapture}
       selected={selected}
       selectionControl={onSelectionChange === undefined ? undefined : (

@@ -71,6 +71,27 @@ describe("TrailConfirmation", () => {
     });
   });
 
+  it("keeps the guarded action disabled until a composed workflow is ready", () => {
+    const onConfirm = vi.fn();
+    render(
+      <TrailConfirmation
+        confirmDisabled
+        confirmLabel="Delete"
+        description="Choose a replacement Project first."
+        onConfirm={onConfirm}
+        open
+        title="Delete this project?"
+        tone="danger"
+      />,
+    );
+
+    const confirm = screen.getByRole("button", { name: "Delete" });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(confirm);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Delete this project?" })).toBeInTheDocument();
+  });
+
   it("treats Escape as Cancel and restores focus without running the guarded action", async () => {
     const onConfirm = renderConfirmation();
     const trigger = screen.getByRole("button", { name: "Open confirmation" });

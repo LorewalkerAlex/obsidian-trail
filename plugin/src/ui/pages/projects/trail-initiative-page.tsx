@@ -1,5 +1,5 @@
 import type { KeyboardEventHandler } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "zustand";
 
 import {
@@ -26,12 +26,16 @@ import {
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
+import { useTrailProjectCollectionActions } from "./trail-project-collection-actions";
 import { TrailInitiativeViewControls } from "./trail-projects-view-controls";
 
 type TrailInitiativePageActions = Pick<
   TrailUiActions["projects"],
   "createFromDraft"
->;
+> & Partial<Pick<
+  TrailUiActions["projects"],
+  "changeInitiative" | "changeStatus"
+>>;
 
 function TrailAddIcon() {
   return (
@@ -56,6 +60,7 @@ export function TrailInitiativePage({
   readonly renderMarkdown: TrailMarkdownRender;
   readonly runtimeStore: TrailRuntimeStore;
 }) {
+  const pageRef = useRef<HTMLElement | null>(null);
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
   const filters = useTrailCollectionFilterState<TrailInitiativeFocusFilterPropertyId>();
   const [composerReferenceTimestamp, setComposerReferenceTimestamp] = useState<number | null>(null);
@@ -68,6 +73,22 @@ export function TrailInitiativePage({
   const visibleProjectIds = readModel?.projects.map((project) => project.id) ?? [];
   const selection = useTrailCollectionSelectionState(visibleProjectIds);
   const writable = readModel !== null && state.control.kind === "ready";
+  const mutationActions = actions.changeInitiative === undefined || actions.changeStatus === undefined
+    ? undefined
+    : {
+        changeInitiative: actions.changeInitiative,
+        changeStatus: actions.changeStatus,
+      };
+  const clearSelection = () => {
+    pageRef.current?.focus({ preventScroll: true });
+    selection.clear();
+  };
+  const collectionActions = useTrailProjectCollectionActions({
+    actions: mutationActions,
+    clearSelection,
+    runtimeStore,
+    selectedProjectIds: selection.selectedIds,
+  });
 
   const openComposer = () => {
     if (!writable) return;
@@ -86,11 +107,18 @@ export function TrailInitiativePage({
     }
     event.preventDefault();
     event.stopPropagation();
-    selection.clear();
+    clearSelection();
   };
 
   if (readModel === null) {
-    return <section aria-label="Initiative" className="trail-initiative-page" />;
+    return (
+      <section
+        aria-label="Initiative"
+        className="trail-initiative-page"
+        ref={pageRef}
+        tabIndex={-1}
+      />
+    );
   }
 
   const description = readModel.initiative.description;
@@ -100,78 +128,89 @@ export function TrailInitiativePage({
       aria-label={`${readModel.initiative.title} initiative`}
       className="trail-initiative-page"
       onKeyDown={handleSelectionKeyDown}
+      ref={pageRef}
+      tabIndex={-1}
     >
-      <TrailPageHeader
-        actions={(
-          <TrailIconButton
-            disabled={!writable}
-            icon={<TrailAddIcon />}
-            label="Add project"
-            onClick={openComposer}
-          />
-        )}
-        breadcrumb={(
-          <TrailPageBreadcrumbButton onClick={onProjectsActivate}>
-            Projects
-          </TrailPageBreadcrumbButton>
-        )}
-        title={readModel.initiative.title}
-      />
-
-      {description === undefined || description.trim().length === 0 ? null : (
-        <TrailPageNarrative
-          markdown={description}
-          renderMarkdown={renderMarkdown}
+      <div className="trail-initiative-page__scroll">
+        <TrailPageHeader
+          actions={(
+            <TrailIconButton
+              disabled={!writable}
+              icon={<TrailAddIcon />}
+              label="Add project"
+              onClick={openComposer}
+            />
+          )}
+          breadcrumb={(
+            <TrailPageBreadcrumbButton onClick={onProjectsActivate}>
+              Projects
+            </TrailPageBreadcrumbButton>
+          )}
+          title={readModel.initiative.title}
         />
-      )}
 
-      <TrailInitiativeViewControls
-        configuration={readModel.configuration}
-        filter={filters.state}
-        onClearAllFilters={filters.clearAll}
-        onClearFilterClause={filters.clearClause}
-        onSetDueFilter={filters.setDueValue}
-        onToggleDiscreteFilter={filters.toggleDiscreteValue}
-      />
-
-      <div className="trail-initiative-page__content">
-        {readModel.emptyKind === "true" ? (
-          <TrailEmptyState
-            action={(
-              <TrailButton disabled={!writable} onClick={openComposer} variant="primary">
-                New project
-              </TrailButton>
-            )}
-            description="Create a project in this initiative to organize work toward its outcome."
-            title="No projects in this initiative yet"
+        {description === undefined || description.trim().length === 0 ? null : (
+          <TrailPageNarrative
+            markdown={description}
+            renderMarkdown={renderMarkdown}
           />
-        ) : readModel.emptyKind === "filtered" ? (
-          <TrailEmptyState
-            action={<TrailButton onClick={filters.clearAll}>Clear filters</TrailButton>}
-            title="No projects match the filters."
-          />
-        ) : (
-          <div className="trail-initiative-page__projects">
-            {readModel.projects.map((project) => (
-              <TrailProjectSummaryRow
-                due={project.due}
-                key={project.id}
-                onActivate={() => onProjectActivate(project.id)}
-                onSelectionChange={(selected, extendRange) => {
-                  selection.setSelected(project.id, selected, extendRange);
-                }}
-                priority={project.priority}
-                progress={project.progress}
-                selected={selection.selectedIds.has(project.id)}
-                statusCategory={project.statusCategory}
-                statusLabel={project.statusLabel}
-                timezone={readModel.configuration.temporal.timezone}
-                title={project.title}
-              />
-            ))}
-          </div>
         )}
+
+        <TrailInitiativeViewControls
+          configuration={readModel.configuration}
+          filter={filters.state}
+          onClearAllFilters={filters.clearAll}
+          onClearFilterClause={filters.clearClause}
+          onSetDueFilter={filters.setDueValue}
+          onToggleDiscreteFilter={filters.toggleDiscreteValue}
+        />
+
+        <div className="trail-initiative-page__content">
+          {readModel.emptyKind === "true" ? (
+            <TrailEmptyState
+              action={(
+                <TrailButton disabled={!writable} onClick={openComposer} variant="primary">
+                  New project
+                </TrailButton>
+              )}
+              description="Create a project in this initiative to organize work toward its outcome."
+              title="No projects in this initiative yet"
+            />
+          ) : readModel.emptyKind === "filtered" ? (
+            <TrailEmptyState
+              action={<TrailButton onClick={filters.clearAll}>Clear filters</TrailButton>}
+              title="No projects match the filters."
+            />
+          ) : (
+            <div className="trail-initiative-page__projects">
+              {readModel.projects.map((project) => (
+                <TrailProjectSummaryRow
+                  due={project.due}
+                  key={project.id}
+                  onActivate={() => onProjectActivate(project.id)}
+                  onContextMenu={(event) => collectionActions.onProjectContextMenu(event, project.id)}
+                  onSelectionChange={(selected, extendRange) => {
+                    selection.setSelected(project.id, selected, extendRange);
+                  }}
+                  priority={project.priority}
+                  progress={project.progress}
+                  selected={selection.selectedIds.has(project.id)}
+                  statusCategory={project.statusCategory}
+                  statusLabel={project.statusLabel}
+                  timezone={readModel.configuration.temporal.timezone}
+                  title={project.title}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {collectionActions.bulkBar === null ? null : (
+        <div className="trail-initiative-page__bulk-layer">
+          {collectionActions.bulkBar}
+        </div>
+      )}
 
       {composerReferenceTimestamp === null ? null : (
         <TrailProjectComposer

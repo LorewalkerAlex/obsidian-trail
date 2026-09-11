@@ -58,6 +58,7 @@ import {
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
+import { TrailProjectDeleteAction } from "./trail-project-delete-action";
 import {
   selectTrailProjectWorkspaceBoardSections,
   TrailProjectWorkspaceBoard,
@@ -187,6 +188,8 @@ export function TrailProjectWorkspacePage({
   actions,
   onInitiativeActivate,
   onIssueActivate,
+  onDeleteProject,
+  onProjectDeleted,
   onProjectsActivate,
   projectId,
   renderMarkdown,
@@ -195,6 +198,8 @@ export function TrailProjectWorkspacePage({
   readonly actions: TrailProjectWorkspacePageActions;
   readonly onInitiativeActivate: (initiativeId: string) => void;
   readonly onIssueActivate?: (issueId: string) => void;
+  readonly onDeleteProject?: NonNullable<TrailUiActions["projects"]["delete"]>;
+  readonly onProjectDeleted?: () => void;
   readonly onProjectsActivate: () => void;
   readonly projectId: string;
   readonly renderMarkdown: TrailMarkdownRender;
@@ -566,13 +571,23 @@ export function TrailProjectWorkspacePage({
       <div className="trail-project-workspace-page__scroll">
         <TrailPageHeader
           actions={(
-            <TrailIconButton
-              disabled={!canCreateIssue}
-              icon={<TrailAddIcon />}
-              label="Add issue"
-              onClick={openComposer}
-              title={addIssueTitle}
-            />
+            <>
+              <TrailIconButton
+                disabled={!canCreateIssue}
+                icon={<TrailAddIcon />}
+                label="Add issue"
+                onClick={openComposer}
+                title={addIssueTitle}
+              />
+              {onDeleteProject === undefined || onProjectDeleted === undefined ? null : (
+                <TrailProjectDeleteAction
+                  onDelete={onDeleteProject}
+                  onDeleted={onProjectDeleted}
+                  projectId={readModel.project.id}
+                  runtimeStore={runtimeStore}
+                />
+              )}
+            </>
           )}
           breadcrumb={(
             <>
