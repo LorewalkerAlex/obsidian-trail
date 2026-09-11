@@ -4,16 +4,16 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The latest published prerequisite for the current Stage 8 detail checkpoint is:
+The latest published prerequisite for the Stage 8 closure candidate is:
 
 ```text
-87af9fde560974f195ee619c91c5a6c4531daa74
-feat: establish stage 8 issue actions
+3e80278f7ae9f8d8a9dda930403571562eb2d158
+feat: establish stage 8 issue full item
 ```
 
-That checkpoint establishes the accepted Workflow Issue Row/Peek/Selection/Action interaction chain over Query-owned EffectiveCapabilities and legal targets. The current detail checkpoint builds on those owners rather than reopening their semantics in Full Item.
+That checkpoint establishes the accepted Workflow Issue Row/Peek/Selection/Action chain plus Issue Full Item. The Stage 8 closure candidate adds the matching Issue Inspector over those owners without reopening their Domain, navigation, or mutation semantics.
 
-Stages 5 through 7 remain closed. Stage 8 is active: Workflow Issue Row, read-only Peek, Collection Selection, the shared Action Registry / Context Menu / Bulk track, and Issue Full Item are now real production/host evidence; Issue Inspector remains ahead. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+Stages 5 through 8 are closed. Stage 9 is active: the complete Workflow Issue interaction/detail chain now has production, automated, and representative host evidence through Row/Peek/Selection/Actions, Full Item, and Issue Inspector. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -228,6 +228,8 @@ ProjectsRootReadModel
 InitiativeFocusReadModel
 ProjectWorkspaceReadModel
 ProjectInspectorReadModel
+IssueFullItemReadModel
+IssueInspectorReadModel
 CurrentCycleReadModel
 HomeReadModel
 SidebarSearchReadModel
@@ -294,7 +296,7 @@ The architectural contract is frozen by `architecture.md` + `design-to-code-map.
 
 Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
 
-**Stages 0 through 7 are closed. Stage 8 is the active implementation stage.**
+**Stages 0 through 8 are closed. Stage 9 is the active implementation stage.**
 
 ## 6. Foundation Lab Contract
 
@@ -671,7 +673,7 @@ Build one coherent detail chain while maturing shared interactions only from rea
 Issue Row/Card                         accepted
 → read-only Peek                       accepted
 → Issue Full Item                      accepted
-→ Issue Inspector                      next
+→ Issue Inspector                      accepted
 
 Shared interaction track:
 Collection Selection                   accepted
@@ -838,18 +840,20 @@ Closure facts:
 
 At Stage 7 closure, Selection / Action Registry / Bulk / Peek were still deferred because that stage did not require them. Stage 8 has since implemented and accepted Selection, Peek, Action Registry/context resolution, Context Menu/overflow, and Bulk Bar; Board remains Stage 9.
 
-### Stage 8 active - Issue interaction/detail chain
+### Stage 8 closed - Issue interaction/detail chain
 
-Published Stage 8 prerequisites leading into the current interaction checkpoint include:
+Published Stage 8 checkpoints leading into the closure candidate include:
 
 ```text
 252f58a5ffa69f1277f98c5d050fb3c9d2c73ffc  feat: checkpoint stage 8 issue peek and diagnostics
 bbc59d00316f81e3c124125e403a5f036d23b175  feat: align issue rows and collection selection
 966793133cf9eb17b301d4b4e1cca99e66acd567  fix: enforce project-scoped issue capabilities
 f8cca74b972f5f8c3556cc4165fabd230500e1a3  feat: expose effective issue capabilities
+87af9fde560974f195ee619c91c5a6c4531daa74  feat: establish stage 8 issue actions
+3e80278f7ae9f8d8a9dda930403571562eb2d158  feat: establish stage 8 issue full item
 ```
 
-Current accepted facts:
+Closure facts:
 
 - the production Workflow Issue Row is shared by Foundation and Project Workspace and uses `Selection | Priority | Status + Title | soft semantic columns`; unset Priority and missing trailing values render no placeholder text while their semantic tracks preserve scan alignment;
 - Status remains visible per Issue even inside a Status section; no human-readable Workflow Issue identifier is introduced merely to separate leading semantics;
@@ -864,9 +868,14 @@ Current accepted facts:
 - the Stage 8 action checkpoint passed repository-wide `npm run check` with 166 test files / 568 tests, production typecheck/build, and diagnostics typecheck/build. Representative real-Obsidian verification covered native right-click actions, legal searchable Move targets, Peek overflow, Bulk selection scope, destructive confirmation, layered Esc/focus restoration, retained selection for explicit unselected-row context, and final compact Context Menu geometry;
 - Issue Full Item is implemented as a stable `Issue(issueId)` Main View route over a focused Read Model. Ordinary Workflow Issue activation still opens read-only Peek; explicit `Open full item` is the stable host-navigation handoff, and Page ancestry navigation remains injected through the shell/Obsidian ViewState boundary;
 - Full Item title and lightweight Markdown body remain Page-local editing responsibilities. Title editing has no permanent Edit/Save/Cancel chrome, body editing uses host-provided CodeMirror Markdown conventions, and writes reuse the existing Issue Application edit intent rather than adding a second Runtime, persistence, or mutation authority;
-- the Stage 8A Full Item candidate passed repository-wide `npm run check` with 171 test files / 580 tests, production typecheck/build, and diagnostics typecheck/build. Representative real-Obsidian verification covered Peek -> Full Item navigation, low-chrome Markdown read presentation, CodeMirror edit/cancel behavior, host history return, and stable retargeting to the Issue Inspector carrier while Inspector content remains intentionally pending.
+- the Stage 8A Full Item checkpoint passed repository-wide `npm run check` with 171 test files / 580 tests, production typecheck/build, and diagnostics typecheck/build. Representative real-Obsidian verification covered Peek -> Full Item navigation, low-chrome Markdown read presentation, CodeMirror edit/cancel behavior, host history return, and stable retargeting to the Issue Inspector carrier;
+- `IssueInspectorReadModel` projects Status, Project, Priority, Milestone, Labels, Due, Estimate, and Current Cycle context from one readable Runtime snapshot. Inspector writes reuse existing Issue Application intents, while Current Cycle membership remains Cycle-owned and uses the existing Cycle Application intent instead of becoming a duplicate Issue property;
+- Project and Milestone editing reuse the shared searchable relation-property mechanics, and Estimate editing uses one shared production owner consumed by both the standard Issue Composer and Issue Inspector. Completed-Issue Estimate legality remains Domain/Application-owned rather than Inspector-owned;
+- Full Item and Issue Inspector form one persistent detail workspace: moving focus into the Obsidian Right Sidebar does not unmount the CodeMirror body editor. The editor naturally loses its visible caret while Inspector owns focus, but its draft and undo/cancel session survive Inspector interaction;
+- Inspector mutation feedback stays local and quiet instead of disabling and repainting the entire property surface. Each Inspector intent resolves against the latest effective Issue projection so rapid sequential edits continue from optimistic Runtime state rather than a stale UI closure;
+- the final Stage 8 closure candidate passed repository-wide `npm run check` with 174 test files / 593 tests and production typecheck/build. The final host repair also passed its focused Body Editor + Issue Inspector suite (2 files / 10 tests), lint, and diagnostics typecheck/build. Representative real-Obsidian verification covered Full Item + Issue Inspector composition, property editing without whole-Inspector flashing, and preservation of CodeMirror draft plus undo/cancel semantics across Main View / Right Sidebar focus changes.
 
-The next coherent Stage 8 slice is **Issue Inspector**. Later Board/Cycle collections and contextual command/shortcut consumers must reuse the accepted Selection/Action/Peek/Full Item owners rather than fork Issue semantics.
+Stage 8 is closed. **Stage 9 — Project execution views + Sidebar Search** is active. Project Board, Status drag mutation, Project deletion/settings integration, and final Sidebar Search must reuse the accepted Selection/Action/Peek/Full Item/Inspector owners rather than fork Issue semantics.
 
 ## 10. Slice Definition of Done
 

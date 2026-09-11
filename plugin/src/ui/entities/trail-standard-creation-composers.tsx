@@ -10,8 +10,6 @@ import type { TrailWorkflowIssueCreateInput } from "../../application/issues/tra
 import type { TrailProjectCreateInput } from "../../application/projects/trail-project-application";
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import {
-  TRAIL_ESTIMATES,
-  type TrailEstimate,
   type TrailPriority,
   type TrailTimestamp,
 } from "../../domain/model/trail-values";
@@ -26,6 +24,7 @@ import {
 import { TrailViewPopover } from "../patterns/trail-view-popover";
 import { TrailInput } from "../primitives/trail-input";
 import { TrailTextarea } from "../primitives/trail-textarea";
+import { TrailEstimatePropertySelect } from "./trail-estimate-property-select";
 import { TrailLabelPropertySelect } from "./trail-label-property-select";
 import { TrailOptionalDuePropertySelect } from "./trail-optional-due-property-select";
 import { TrailPriorityPropertySelect } from "./trail-priority-property-select";
@@ -127,83 +126,6 @@ function TrailRelationPropertySelect({
         {options.length === 0 ? (
           <div className="trail-view-popover__title">No available options</div>
         ) : null}
-      </div>
-    </TrailViewPopover>
-  );
-}
-
-const ESTIMATE_LABELS: Readonly<Record<TrailEstimate, string>> = {
-  large: "L",
-  medium: "M",
-  small: "S",
-  xlarge: "XL",
-};
-
-function TrailEstimatePropertySelect({
-  disabled = false,
-  onValueChange,
-  value,
-}: {
-  readonly disabled?: boolean;
-  readonly onValueChange: (value: TrailEstimate | undefined) => void;
-  readonly value: TrailEstimate | undefined;
-}) {
-  const [open, setOpen] = useState(false);
-  const summary = value === undefined ? "No estimate" : ESTIMATE_LABELS[value];
-  const choose = (nextValue: TrailEstimate | undefined) => {
-    onValueChange(nextValue);
-    setOpen(false);
-  };
-
-  return (
-    <TrailViewPopover
-      label="Estimate"
-      layer="modal-child"
-      onOpenChange={setOpen}
-      open={open}
-      trigger={(
-        <TrailPropertyControl
-          aria-label={`Estimate: ${summary}`}
-          aria-haspopup="dialog"
-          disabled={disabled}
-        >
-          {summary}
-        </TrailPropertyControl>
-      )}
-    >
-      <div className="trail-view-popover__stack">
-        <div className="trail-view-popover__title">Estimate</div>
-        <button
-          className="trail-view-popover__item"
-          onClick={() => choose(undefined)}
-          type="button"
-        >
-          <span>No estimate</span>
-          <span
-            aria-hidden="true"
-            className="trail-view-popover__check"
-            data-visible={value === undefined ? "true" : "false"}
-          >
-            ✓
-          </span>
-        </button>
-        {TRAIL_ESTIMATES.map((estimate) => (
-          <button
-            className="trail-view-popover__item"
-            key={estimate}
-            onClick={() => choose(estimate)}
-            type="button"
-          >
-            <span>{ESTIMATE_LABELS[estimate]}</span>
-            <span
-              aria-hidden="true"
-              className="trail-view-popover__check"
-              data-visible={estimate === value ? "true" : "false"}
-            >
-              ✓
-            </span>
-          </button>
-        ))}
       </div>
     </TrailViewPopover>
   );
@@ -404,6 +326,7 @@ export function TrailWorkflowIssueComposer({
           />
           <TrailEstimatePropertySelect
             disabled={pending}
+            layer="modal-child"
             onValueChange={(estimate) => updateDraft({ estimate })}
             value={draft.estimate}
           />

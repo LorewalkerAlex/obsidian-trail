@@ -24,6 +24,7 @@ describe("TrailStandardComposerFamilySpecimen", () => {
       .toHaveAttribute("data-required", "true");
     expect(projectRelation.closest(".trail-composer__context-accessory")).not.toBeNull();
     expect(within(issue).getByRole("combobox", { name: "Priority: Medium" })).toBeInTheDocument();
+    expect(within(issue).getByRole("button", { name: "Estimate: Medium" })).toBeInTheDocument();
     expect(within(project).getByRole("button", { name: "Initiative: No initiative" })).toBeInTheDocument();
   });
 });

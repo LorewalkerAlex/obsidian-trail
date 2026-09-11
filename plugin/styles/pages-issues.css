@@ -263,6 +263,57 @@ body .trail-issue-full-item__body-editor.markdown-source-view.mod-cm6 .cm-gutter
   color: var(--trail-danger);
 }
 
+/* Issue Inspector adds only Issue-specific context; shared property-row geometry lives with the established Inspector grammar. */
+.trail-issue-inspector__context-row {
+  display: grid;
+  min-width: 0;
+  min-height: var(--trail-control-height-lg);
+  grid-template-columns: minmax(64px, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: var(--trail-space-6);
+  border-bottom: 1px solid var(--trail-row-divider);
+}
+
+.trail-issue-inspector__context-empty {
+  min-width: 0;
+  justify-self: end;
+  overflow: hidden;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-issue-inspector__cycle-context {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--trail-space-4);
+}
+
+.trail-issue-inspector__cycle-range {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-2);
+  overflow: hidden;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  white-space: nowrap;
+}
+
+.trail-issue-inspector__cycle-range .trail-due-date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trail-issue-inspector__cycle-context > .trail-button {
+  min-height: var(--trail-control-height-sm);
+  flex: 0 0 auto;
+  padding-inline: var(--trail-space-4);
+}
+
 @container (max-width: 640px) {
   .trail-issue-full-item__document {
     padding-right: var(--trail-space-14);
@@ -280,4 +331,11 @@ body .trail-issue-full-item__body-editor.markdown-source-view.mod-cm6 .cm-gutter
   .trail-issue-full-item__breadcrumb {
     margin-bottom: var(--trail-space-12);
   }
+}
+
+.trail-issue-inspector .trail-inspector__header h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }

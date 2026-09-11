@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import type { TrailPriority } from "../../domain/model/trail-values";
+import type { TrailEstimate, TrailPriority } from "../../domain/model/trail-values";
+import { TrailEstimatePropertySelect } from "../entities/trail-estimate-property-select";
 import { TrailPriorityPropertySelect } from "../entities/trail-priority-property-select";
 import { TrailComposerSurface } from "../patterns/trail-composer";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
@@ -67,6 +68,7 @@ function ComposerContextAccessory({ kind }: { readonly kind: ComposerKind }) {
 
 function ComposerPreview({ kind }: { readonly kind: ComposerKind }) {
   const [priority, setPriority] = useState<TrailPriority | undefined>("medium");
+  const [estimate, setEstimate] = useState<TrailEstimate | undefined>("medium");
   const specimen = SPECIMENS[kind];
 
   return (
@@ -102,7 +104,13 @@ function ComposerPreview({ kind }: { readonly kind: ComposerKind }) {
             />
             <FixedProperty label="Labels" />
             {kind === "issue" ? <FixedProperty label="Milestone" /> : null}
-            {kind === "issue" ? <FixedProperty label="Estimate" /> : null}
+            {kind === "issue" ? (
+              <TrailEstimatePropertySelect
+                layer="modal-child"
+                onValueChange={setEstimate}
+                value={estimate}
+              />
+            ) : null}
             <FixedProperty label={kind === "triage" ? "Review Sep 12" : "Due"} />
           </TrailStandardComposerProperties>
         </TrailStandardComposerForm>

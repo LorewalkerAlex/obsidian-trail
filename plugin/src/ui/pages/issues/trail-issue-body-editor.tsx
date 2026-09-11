@@ -9,6 +9,10 @@ export interface TrailIssueBodyEditorProps {
   readonly onCommit: (value: string) => void;
 }
 
+function isInsidePersistentInspector(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(".trail-inspector") !== null;
+}
+
 /**
  * Page-local Markdown source editor. Obsidian remains the host/document visual
  * authority; this owner supplies only the embedded CodeMirror editing session.
@@ -27,6 +31,13 @@ export function TrailIssueBodyEditor({
     if (host === null) return;
 
     let finished = false;
+    let pointerDownInInspector = false;
+    const ownerDocument = host.ownerDocument;
+    const handlePointerDown = (event: PointerEvent) => {
+      pointerDownInInspector = isInsidePersistentInspector(event.target);
+    };
+    ownerDocument.addEventListener("pointerdown", handlePointerDown, true);
+
     const finishCommit = (view: EditorView) => {
       if (finished) return;
       finished = true;
@@ -47,7 +58,11 @@ export function TrailIssueBodyEditor({
           spellcheck: "true",
         }),
         EditorView.domEventHandlers({
-          blur: (_event, editor) => {
+          blur: (event, editor) => {
+            const staysInIssueDetail = pointerDownInInspector
+              || isInsidePersistentInspector(event.relatedTarget);
+            pointerDownInInspector = false;
+            if (staysInIssueDetail) return false;
             finishCommit(editor);
             return false;
           },
@@ -75,6 +90,7 @@ export function TrailIssueBodyEditor({
     view.focus();
 
     return () => {
+      ownerDocument.removeEventListener("pointerdown", handlePointerDown, true);
       finished = true;
       view.destroy();
     };

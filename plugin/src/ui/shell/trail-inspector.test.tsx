@@ -69,7 +69,7 @@ describe("TrailInspector", () => {
       .not.toBeInTheDocument();
   });
 
-  it("keeps later-stage Issue and Cycle targets on the existing placeholder", () => {
+  it("dispatches an Issue target into real Issue Inspector content", () => {
     const inspectorStore = createTrailInspectorStore();
     act(() => inspectorStore.getState().restore({
       issueId: "issue-a",
@@ -84,7 +84,28 @@ describe("TrailInspector", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 2, name: "Issue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Unavailable" })).toBeInTheDocument();
+    expect(screen.getByText("Issue data is not available.")).toBeInTheDocument();
+    expect(screen.queryByText("Inspector content has not been implemented yet."))
+      .not.toBeInTheDocument();
+  });
+
+  it("keeps later-stage Cycle targets on the existing placeholder", () => {
+    const inspectorStore = createTrailInspectorStore();
+    act(() => inspectorStore.getState().restore({
+      cycleId: "cycle-a",
+      kind: "cycle",
+    }));
+
+    render(
+      <TrailInspector
+        actions={actions()}
+        inspectorStore={inspectorStore}
+        runtimeStore={createTrailTestRuntimeStore()}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 2, name: "Cycle" })).toBeInTheDocument();
     expect(screen.getByText("Inspector content has not been implemented yet."))
       .toBeInTheDocument();
   });

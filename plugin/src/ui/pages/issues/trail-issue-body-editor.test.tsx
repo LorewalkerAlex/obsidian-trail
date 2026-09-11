@@ -1,4 +1,5 @@
 import {
+  fireEvent,
   render,
   screen,
 } from "@testing-library/react";
@@ -63,26 +64,79 @@ vi.mock("@codemirror/view", () => {
 import { TrailIssueBodyEditor } from "./trail-issue-body-editor";
 
 describe("TrailIssueBodyEditor", () => {
-  it("uses one embedded CodeMirror session and commits its current document on blur", () => {
+  it("preserves its CodeMirror session when pointer focus moves into the persistent Inspector", () => {
     const onCancel = vi.fn();
     const onCommit = vi.fn();
 
-    render(
-      <TrailIssueBodyEditor
-        initialValue="Initial Markdown"
-        onCancel={onCancel}
-        onCommit={onCommit}
-      />,
+    const { unmount } = render(
+      <>
+        <TrailIssueBodyEditor
+          initialValue="Initial Markdown"
+          onCancel={onCancel}
+          onCommit={onCommit}
+        />
+        <aside className="trail-inspector">
+          <button type="button">Inspector property</button>
+        </aside>
+      </>,
     );
 
     expect(screen.getByText("Initial Markdown")).toHaveClass("cm-content");
     expect(editorHarness.focus).toHaveBeenCalledTimes(1);
 
     editorHarness.value = "Edited **Markdown**";
+    const inspectorProperty = screen.getByRole("button", { name: "Inspector property" });
+    fireEvent.pointerDown(inspectorProperty);
+    editorHarness.handlers?.blur?.(new FocusEvent("blur"), editorHarness.view);
+
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(editorHarness.destroy).not.toHaveBeenCalled();
+
+    unmount();
+    expect(editorHarness.destroy).toHaveBeenCalled();
+  });
+
+  it("preserves its CodeMirror session when keyboard focus moves into the persistent Inspector", () => {
+    const onCommit = vi.fn();
+
+    render(
+      <>
+        <TrailIssueBodyEditor
+          initialValue="Initial Markdown"
+          onCancel={vi.fn()}
+          onCommit={onCommit}
+        />
+        <aside className="trail-inspector">
+          <button type="button">Inspector property</button>
+        </aside>
+      </>,
+    );
+
+    const inspectorProperty = screen.getByRole("button", { name: "Inspector property" });
+    editorHarness.handlers?.blur?.(
+      new FocusEvent("blur", { relatedTarget: inspectorProperty }),
+      editorHarness.view,
+    );
+
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it("still commits its current document when focus leaves the editing/detail surfaces", () => {
+    const onCommit = vi.fn();
+
+    render(
+      <TrailIssueBodyEditor
+        initialValue="Initial Markdown"
+        onCancel={vi.fn()}
+        onCommit={onCommit}
+      />,
+    );
+
+    editorHarness.value = "Edited **Markdown**";
     editorHarness.handlers?.blur?.(new FocusEvent("blur"), editorHarness.view);
 
     expect(onCommit).toHaveBeenCalledWith("Edited **Markdown**");
-    expect(onCancel).not.toHaveBeenCalled();
   });
 
   it("lets Escape cancel the local editor session without committing", () => {
