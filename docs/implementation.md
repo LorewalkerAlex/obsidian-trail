@@ -4,16 +4,16 @@
 
 The active formal implementation is `plugin/` on `main`.
 
-The latest published prerequisite for the Stage 8 closure candidate is:
+The latest published Stage 9 checkpoints are:
 
 ```text
-3e80278f7ae9f8d8a9dda930403571562eb2d158
-feat: establish stage 8 issue full item
+f829a30f7468165547f8b8288640c77716e3e134  feat: establish stage 9 project execution
+00cadd26da8c3d3a2111776dd7f899aad451a236  feat: add project lifecycle and collection actions
 ```
 
-That checkpoint establishes the accepted Workflow Issue Row/Peek/Selection/Action chain plus Issue Full Item. The Stage 8 closure candidate adds the matching Issue Inspector over those owners without reopening their Domain, navigation, or mutation semantics.
+These checkpoints establish the Project Workspace execution path plus the first Project lifecycle/settings/collection-action integration over the already accepted shared interaction owners. They do not reopen Product, Domain, navigation, or mutation semantics.
 
-Stages 5 through 8 are closed. Stage 9 is active: the complete Workflow Issue interaction/detail chain now has production, automated, and representative host evidence through Row/Peek/Selection/Actions, Full Item, and Issue Inspector. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+Stages 5 through 8 are closed. Stage 9 is active: Project Workspace List/Board and Status drag are published, Project deletion/Default Project settings and Project collection actions are now implemented on `main`, and final Sidebar Search remains the main functional slice. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -36,8 +36,9 @@ Known alignment debt now centers on:
 
 1. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
 2. Search Query still contains legacy Milestone/Triage result kinds. Target Sidebar Search result kinds are Initiative, Project, and Workflow Issue only.
+3. Project lifecycle/collection transient presentation is functionally integrated but still needs final Linear-faithful calibration. The searchable Default Project chooser needs one final representative host visual pass after the environment switch; broader micro-polish may be deferred to Stage 12 once Stage 9 behavior is stable.
 
-These are implementation gaps, not design questions. Stage 8 real consumers now use shared Collection Selection, read-only Peek, and one Action Registry/context-resolution path in production. Context Menu, Peek overflow, and Bulk Bar consume that same action authority over Query capability/legal-target facts and existing Application intents; Bulk target-bearing actions intersect per-item legal targets instead of creating a parallel legality model. No human-readable Workflow Issue identifier is planned merely to support row spacing.
+These are implementation/calibration gaps, not design questions. Stage 8 established the shared Collection Selection, Peek, Action Registry, Context Menu, and Bulk Bar mechanics; Stage 9 now reuses those owners for Project collection actions and Project deletion/settings rather than creating a parallel Project interaction system. No human-readable Workflow Issue identifier is planned merely to support row spacing.
 
 ## 3. Established Foundations
 
@@ -687,6 +688,13 @@ Picker, Confirmation, and Composer mechanics already exist and should be reused.
 
 After Issue collection/interaction owners are stable:
 
+Published Stage 9 checkpoints:
+
+```text
+f829a30f7468165547f8b8288640c77716e3e134  feat: establish stage 9 project execution
+00cadd26da8c3d3a2111776dd7f899aad451a236  feat: add project lifecycle and collection actions
+```
+
 Current status:
 
 - **Project execution slice complete / Host-proven** — Project Workspace List follows the frozen `In Progress -> Todo -> Backlog -> Done -> Canceled` presentation order without changing Domain Status-category order or configured concrete-Status order inside a category.
@@ -695,13 +703,18 @@ Current status:
 - **Spatial target ownership is explicit** — Project List Status sections remain concrete Status targets when empty/collapsed, while the whole Project Board column is the Status target because the entire Board is already scoped to one Project. Target geometry remains consumer-owned so Current Cycle can later bind drag to `Project swimlane x Status column` cells instead of treating a whole cross-Project column as one destination.
 - **Focus continuity is repaired at the Page boundary** — Project Workspace owns a stable programmatic focus anchor so optimistic Status movement cannot strand keyboard ownership on an unmounted row/card control. Top-layer `Esc` behavior survives drag/mutation, selection can be cleared immediately afterward, and cleared checkboxes do not retain an orphan focus-visible ring.
 - **Optimistic feedback reuses the existing Runtime model** — drag submits ordinary logical Status Mutation Plans; Query/UI immediately reads the pending-aware Effective Runtime, then authoritative settlement confirms the result or normal mutation recovery removes failed optimistic state.
-- **Validation is green** — the execution slice passed 13 focused test files / 38 tests, lint, production build/typecheck, and diagnostics build. The host-focus/full-column repair passed 3 focused files / 19 tests plus diagnostics build, and representative real-Obsidian verification covered List/Board switching, projection-aware selection, same-Status multi-drag, mixed-Status drag blocking, collapsed List targets, full-column Board targets, post-drag `Esc` selection clearing, focus-ring cleanup, and final Board column geometry.
+- **Project deletion is implemented over the existing Domain/Application delete contract** — a focused Project Delete Read Model exposes the current expected Project, Default Project guard, concrete consequence counts, and only replacement Projects that can accept every child Issue without an implicit Status change. The Project Workspace `...` action is low-frequency/destructive, requires an explicit legal replacement when child Issues exist, reuses shared Confirmation plus the relation picker, and keeps the Default Project undeletable until a separate Workspace mutation changes the default reference.
+- **Default Project Settings integration is implemented** — the Obsidian Settings adapter projects the current ordinary Project reference and opens a host-native searchable `FuzzySuggestModal` rather than a wide native `<select>`. Changes route through the existing Workspace Application setter and do not move existing Issues.
+- **Project collection actions close the selectable-row gap in Projects Root / Initiative Focus** — Project rows now consume a Project Action Registry, native right-click presentation, and one collection-level Bulk Bar over the retained selection model. Common `Change status` / `Change initiative` targets are Query-owned legality intersections; right-clicking an unselected Project scopes only that menu without destroying retained selection. Project rows still do not gain drag, and bulk Delete is intentionally absent.
+- **Validation is green** — the earlier execution slice passed its focused suites plus production/diagnostics builds and representative real-Obsidian Board/drag evidence. The Project lifecycle/action checkpoint then passed focused Project collection/delete/settings tests, typecheck, diagnostics build, and GitHub CI #205, whose `Run project checks` step executes repository-wide `npm run check`, on `00cadd26da8c3d3a2111776dd7f899aad451a236`.
+- **Representative host evidence exists for the Project lifecycle/action workflow** — real Obsidian checks covered the Default Project delete guard, replacement-Project confirmation/picker, Esc/focus cleanup, Projects Root multi-selection, Bulk Bar, direct Status/Initiative target pickers, and native Project context menus. The final searchable Default Project chooser still needs one representative host visual pass after the environment switch; Project Delete/Bulk transient presentation also remains a deliberate final-calibration target rather than a semantic blocker.
 
 Remaining Stage 9 work:
 
-- Project deletion/settings integration;
-- final Sidebar Search mode using only Initiative/Project/Workflow Issue Read Models and normal navigation.
+- final Sidebar Search mode using only Initiative/Project/Workflow Issue Read Models and normal navigation;
+- one final host visual pass for the searchable Default Project chooser after the environment switch.
 
+Project lifecycle/Bulk/Delete micro-calibration may continue in Stage 12 full-system calibration once behavior is stable; it does not justify reopening the resolved Product/UI semantics.
 
 Projects Timeline is no longer deferred to Stage 9. Its presentation owner, derived Query projection, and real Projects Root integration belong to Stage 6 so the Projects Root List/Timeline contract is completed as one Product surface.
 ### Stage 10 — Cycles
@@ -886,7 +899,7 @@ Closure facts:
 - Inspector mutation feedback stays local and quiet instead of disabling and repainting the entire property surface. Each Inspector intent resolves against the latest effective Issue projection so rapid sequential edits continue from optimistic Runtime state rather than a stale UI closure;
 - the final Stage 8 closure candidate passed repository-wide `npm run check` with 174 test files / 593 tests and production typecheck/build. The final host repair also passed its focused Body Editor + Issue Inspector suite (2 files / 10 tests), lint, and diagnostics typecheck/build. Representative real-Obsidian verification covered Full Item + Issue Inspector composition, property editing without whole-Inspector flashing, and preservation of CodeMirror draft plus undo/cancel semantics across Main View / Right Sidebar focus changes.
 
-Stage 8 is closed. **Stage 9 — Project execution views + Sidebar Search** is active. The first Project-execution slice corrects the current Project Workspace List projection to the frozen Status presentation order and establishes the shared Status-drag scope before dependent List/Board pointer consumers. Project Board, Status drag mutation, Project deletion/settings integration, and final Sidebar Search must reuse the accepted Selection/Action/Peek/Full Item/Inspector owners rather than fork Issue semantics.
+Stage 8 is closed. **Stage 9 — Project execution views + Sidebar Search** is active. Published Stage 9 checkpoints now cover Project Workspace List/Board, Workflow Issue Status drag, Project deletion/Default Project Settings integration, and Project collection Action Registry/Context Menu/Bulk consumers. The remaining functional slice is Sidebar Search; one final host visual pass for the searchable Default Project chooser and later Linear-faithful micro-calibration remain presentation work rather than new Product/Domain design.
 
 ## 10. Slice Definition of Done
 
