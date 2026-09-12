@@ -43,6 +43,11 @@ describe("Trail Cycle Foundation specimen", () => {
     expect(within(board).getByRole("region", {
       name: "Refine navigation and search project swimlane",
     })).toBeInTheDocument();
+    expect(within(board).getByRole("button", { name: "Polish visual foundation" }))
+      .toBeInTheDocument();
+    expect(within(board).getByRole("button", { name: "Refine navigation and search" }))
+      .toBeInTheDocument();
+    expect(board.querySelectorAll(".trail-cycle-board__lane-project-icon")).toHaveLength(2);
     expect(within(board).getByText("Build the Current Cycle read surface")).toBeInTheDocument();
     expect(within(board).getByText("Keep Project lanes readable across the Board")).toBeInTheDocument();
     expect(within(board).queryByLabelText("In current cycle")).not.toBeInTheDocument();

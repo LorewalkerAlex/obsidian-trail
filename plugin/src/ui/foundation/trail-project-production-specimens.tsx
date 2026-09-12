@@ -358,13 +358,14 @@ export function TrailProjectProductionSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="Current Cycle Board keeps Status horizontal and Project vertical. Project owns the swimlane header rather than repeating inside every card, while the production Workflow Issue Card remains the shared scan unit and each Status cell remains the only drag target."
+        description="Current Cycle Board keeps Status horizontal and Project vertical. A persistent Project glyph + title owns each actionable swimlane header rather than repeating inside every card, while the production Workflow Issue Card remains the shared scan unit and each Status cell remains the only drag target."
         kind="composition-gallery"
         owner="TrailCycleBoard + TrailWorkflowIssueCard"
         title="Cycle board project swimlanes"
       >
         <TrailCycleBoard
           onIssueSelectionChange={() => { /* static selection specimen */ }}
+          onProjectActivate={() => { /* static navigation specimen */ }}
           projects={cycleBoardProjects}
           sections={cycleBoardSections}
           selectedIssueIds={new Set(["foundation-cycle-alpha-started"])}

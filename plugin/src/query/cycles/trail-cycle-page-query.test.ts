@@ -130,6 +130,10 @@ describe("Trail Cycle Page query", () => {
       issueCount: 4,
       progress: { max: 4, value: 1 },
     });
+    expect(model.projects).toEqual([
+      { id: "project-a", issueCount: 2, title: "Project Alpha" },
+      { id: "project-b", issueCount: 2, title: "Project Beta" },
+    ]);
     expect(model.sections.map(({ id }) => id)).toEqual([
       "issue-started",
       "issue-unstarted",
@@ -154,6 +158,29 @@ describe("Trail Cycle Page query", () => {
       "issue-todo",
       "issue-completed",
     ]);
+  });
+
+  it("filters visibility without removing persistent Project swimlanes", () => {
+    const { currentCycle, store } = readyStore();
+    const model = selectTrailCyclePageReadModel(store.getState(), currentCycle.id, {
+      filter: {
+        project: {
+          kind: "discrete",
+          values: [{ kind: "value", value: "project-a" }],
+        },
+      },
+      now: 20,
+    });
+
+    expect(model?.kind).toBe("current");
+    if (model?.kind !== "current") return;
+
+    expect(model.visibleIssueIds).toEqual(["issue-started", "issue-completed"]);
+    expect(model.projects).toEqual([
+      { id: "project-a", issueCount: 2, title: "Project Alpha" },
+      { id: "project-b", issueCount: 0, title: "Project Beta" },
+    ]);
+    expect(model.emptyKind).toBeUndefined();
   });
 
   it("keeps historical membership flat while resolving current live Issue fields", () => {

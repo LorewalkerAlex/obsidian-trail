@@ -107,10 +107,21 @@ describe("TrailCycleBoard", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Project Beta" }));
+    const projectButton = screen.getByRole("button", { name: "Project Beta" });
+    fireEvent.click(projectButton);
     expect(onProjectActivate).toHaveBeenCalledWith("project-b");
 
     const betaLane = screen.getByRole("region", { name: "Project Beta project swimlane" });
+    expect(betaLane.querySelector(".trail-cycle-board__lane-project-icon")).not.toBeNull();
+    expect(projectButton).toHaveClass("trail-cycle-board__lane-title--action");
     expect(betaLane).not.toHaveAttribute("data-workflow-issue-status-drop-target");
+
+    const disclosure = screen.getByRole("button", { name: "Collapse Project Beta" });
+    expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(disclosure);
+    expect(screen.getByRole("button", { name: "Expand Project Beta" }))
+      .toHaveAttribute("aria-expanded", "false");
+    expect(within(betaLane).queryByText("Execute beta")).not.toBeInTheDocument();
+    expect(betaLane.querySelectorAll("[data-workflow-issue-status-drop-target]")).toHaveLength(0);
   });
 });

@@ -1,6 +1,7 @@
 import { useState, type KeyboardEventHandler } from "react";
 import { useStore } from "zustand";
 
+import { selectTrailCyclesIndexReadModel } from "../../query/cycles/trail-cycle-page-query";
 import {
   selectTrailSidebarSearchReadModel,
   type TrailSidebarSearchResultReadModel,
@@ -275,6 +276,9 @@ export function TrailNavigation({
   const location = useStore(navigationStore, (state) => state.location);
   const sidebarMode = useStore(navigationStore, (state) => state.sidebarMode);
   const defaultProject = useStore(runtimeStore, selectTrailReadableDefaultProject);
+  const currentCycleId = useStore(runtimeStore, (state) => (
+    selectTrailCyclesIndexReadModel(state)?.current?.id
+  ));
 
   if (sidebarMode === "search") {
     return (
@@ -350,7 +354,9 @@ export function TrailNavigation({
         <TrailNavigationRow
           active={location.kind === "cycles" || location.kind === "cycle"}
           icon="cycles"
-          onClick={() => navigate({ kind: "cycles" })}
+          onClick={() => navigate(currentCycleId === undefined
+            ? { kind: "cycles" }
+            : { cycleId: currentCycleId, kind: "cycle" })}
         >
           Cycles
         </TrailNavigationRow>

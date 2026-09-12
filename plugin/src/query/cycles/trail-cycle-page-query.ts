@@ -9,6 +9,15 @@ import type {
 } from "../../domain/model/trail-values";
 import type { TrailEffectiveRuntimeSnapshot } from "../../runtime/projection/trail-runtime-projection";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
+import {
+  type TrailCollectionFilterClause,
+  type TrailCollectionFilterState,
+  type TrailDiscreteFilterClause,
+  isTrailCollectionFilterActive,
+  matchesTrailDueFilter,
+  matchesTrailOptionalDiscreteFilter,
+  matchesTrailSetDiscreteFilter,
+} from "../shared/trail-collection-filter";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
 import {
   selectTrailWorkflowIssueProgress,
@@ -23,6 +32,31 @@ import {
   type TrailWorkflowIssuePresentationReadModel,
 } from "../shared/trail-workflow-issue-presentation-query";
 import { selectTrailClosedCyclesFromReadableSnapshot } from "./trail-cycle-query";
+
+export type TrailCycleFilterPropertyId =
+  | "due"
+  | "estimate"
+  | "labels"
+  | "milestone"
+  | "priority"
+  | "project"
+  | "status";
+
+export type TrailCycleFilterState = TrailCollectionFilterState<TrailCycleFilterPropertyId>;
+
+export interface TrailCyclePageReadInput {
+  readonly filter: TrailCycleFilterState;
+  readonly now: TrailTimestamp;
+}
+
+export interface TrailCycleNamedTargetReadModel {
+  readonly id: string;
+  readonly title: string;
+}
+
+export interface TrailCycleProjectReadModel extends TrailCycleNamedTargetReadModel {
+  readonly issueCount: number;
+}
 
 export interface TrailCycleHistoryItemReadModel {
   readonly endedAt: TrailTimestamp;
@@ -55,22 +89,25 @@ export interface TrailHistoricalCycleSummaryReadModel extends TrailCycleSummaryR
   readonly endedAt: TrailTimestamp;
 }
 
-export interface TrailCurrentCyclePageReadModel {
+interface TrailCyclePageReadModelBase {
   readonly configuration: TrailConfiguration;
-  readonly cycle: TrailCurrentCycleSummaryReadModel;
+  readonly emptyKind?: "filtered" | "true";
   readonly history: readonly TrailCycleHistoryItemReadModel[];
-  readonly kind: "current";
-  readonly sections: readonly TrailCycleStatusSectionReadModel[];
+  readonly milestones: readonly TrailCycleNamedTargetReadModel[];
+  readonly projects: readonly TrailCycleProjectReadModel[];
   readonly visibleIssueIds: readonly string[];
 }
 
-export interface TrailHistoricalCyclePageReadModel {
-  readonly configuration: TrailConfiguration;
+export interface TrailCurrentCyclePageReadModel extends TrailCyclePageReadModelBase {
+  readonly cycle: TrailCurrentCycleSummaryReadModel;
+  readonly kind: "current";
+  readonly sections: readonly TrailCycleStatusSectionReadModel[];
+}
+
+export interface TrailHistoricalCyclePageReadModel extends TrailCyclePageReadModelBase {
   readonly cycle: TrailHistoricalCycleSummaryReadModel;
-  readonly history: readonly TrailCycleHistoryItemReadModel[];
   readonly issues: readonly TrailWorkflowIssuePresentationReadModel[];
   readonly kind: "historical";
-  readonly visibleIssueIds: readonly string[];
 }
 
 export type TrailCyclePageReadModel =
@@ -159,6 +196,89 @@ function historicalCycleSummary(
   };
 }
 
+function requireDiscreteClause(
+  clause: TrailCollectionFilterClause | undefined,
+  property: string,
+): TrailDiscreteFilterClause | undefined {
+  if (clause === undefined) return undefined;
+  if (clause.kind !== "discrete") {
+    throw new Error(`${property} filter must be a discrete clause`);
+  }
+  return clause;
+}
+
+function matchesCycleFilter(
+  issue: TrailWorkflowIssue,
+  filter: TrailCycleFilterState,
+  now: TrailTimestamp,
+  timezone: string,
+): boolean {
+  const statusClause = requireDiscreteClause(filter.status, "Status");
+  if (!matchesTrailOptionalDiscreteFilter(issue.statusDefinitionId, statusClause)) return false;
+
+  const projectClause = requireDiscreteClause(filter.project, "Project");
+  if (!matchesTrailOptionalDiscreteFilter(issue.projectId, projectClause)) return false;
+
+  const priorityClause = requireDiscreteClause(filter.priority, "Priority");
+  if (!matchesTrailOptionalDiscreteFilter(issue.priority, priorityClause)) return false;
+
+  const milestoneClause = requireDiscreteClause(filter.milestone, "Milestone");
+  if (!matchesTrailOptionalDiscreteFilter(issue.milestoneId, milestoneClause)) return false;
+
+  const labelClause = requireDiscreteClause(filter.labels, "Labels");
+  if (!matchesTrailSetDiscreteFilter(issue.labelIds, labelClause)) return false;
+
+  const estimateClause = requireDiscreteClause(filter.estimate, "Estimate");
+  if (!matchesTrailOptionalDiscreteFilter(issue.estimate, estimateClause)) return false;
+
+  const dueClause = filter.due;
+  if (dueClause !== undefined) {
+    if (dueClause.kind !== "due") throw new Error("Due filter must be a Due clause");
+    if (issue.due === undefined) return false;
+    if (!matchesTrailDueFilter(issue.due, dueClause.value, now, timezone)) return false;
+  }
+
+  return true;
+}
+
+function cycleProjects(
+  allIssues: readonly TrailWorkflowIssuePresentationReadModel[],
+  visibleIssueIds: ReadonlySet<string>,
+): readonly TrailCycleProjectReadModel[] {
+  const projects = new Map<string, TrailCycleNamedTargetReadModel>();
+  const visibleCounts = new Map<string, number>();
+
+  for (const issue of allIssues) {
+    projects.set(issue.project.id, issue.project);
+    if (visibleIssueIds.has(issue.id)) {
+      visibleCounts.set(issue.project.id, (visibleCounts.get(issue.project.id) ?? 0) + 1);
+    }
+  }
+
+  return [...projects.values()]
+    .sort((left, right) => {
+      const titleOrder = left.title.localeCompare(right.title);
+      return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
+    })
+    .map((project) => ({
+      ...project,
+      issueCount: visibleCounts.get(project.id) ?? 0,
+    }));
+}
+
+function cycleMilestones(
+  issues: readonly TrailWorkflowIssuePresentationReadModel[],
+): readonly TrailCycleNamedTargetReadModel[] {
+  const milestones = new Map<string, TrailCycleNamedTargetReadModel>();
+  for (const issue of issues) {
+    if (issue.milestone !== undefined) milestones.set(issue.milestone.id, issue.milestone);
+  }
+  return [...milestones.values()].sort((left, right) => {
+    const titleOrder = left.title.localeCompare(right.title);
+    return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
+  });
+}
+
 export function selectTrailCyclesIndexReadModel(
   state: TrailRuntimeState,
 ): TrailCyclesIndexReadModel | null {
@@ -191,6 +311,7 @@ export function selectTrailCyclesIndexReadModel(
 export function selectTrailCyclePageReadModel(
   state: TrailRuntimeState,
   cycleId: string,
+  input?: TrailCyclePageReadInput,
 ): TrailCyclePageReadModel | null {
   const readable = selectTrailReadableRuntimeSnapshot(state);
   const configuration = readable.authoritative.configuration;
@@ -200,25 +321,48 @@ export function selectTrailCyclePageReadModel(
   if (cycle === undefined) return null;
   const issues = cycleIssues(readable, cycle);
   if (issues === null) return null;
+
   const sortedIssues = [...issues].sort(compareTrailWorkflowIssueCollectionOrder);
   const projectIssuePresentation = createTrailWorkflowIssuePresentationProjector(readable);
   if (projectIssuePresentation === null) return null;
-  const presentations: TrailWorkflowIssuePresentationReadModel[] = [];
+  const allPresentations: TrailWorkflowIssuePresentationReadModel[] = [];
   for (const issue of sortedIssues) {
     const presentation = projectIssuePresentation(issue);
     if (presentation === null) return null;
-    presentations.push(presentation);
+    allPresentations.push(presentation);
   }
 
+  const visibleIssues = input === undefined
+    ? sortedIssues
+    : sortedIssues.filter((issue) => matchesCycleFilter(
+        issue,
+        input.filter,
+        input.now,
+        configuration.temporal.timezone,
+      ));
+  const visibleIds = new Set(visibleIssues.map(({ id }) => id));
+  const visiblePresentations = allPresentations.filter(({ id }) => visibleIds.has(id));
+  const activeFilter = input === undefined ? false : isTrailCollectionFilterActive(input.filter);
+  const emptyKind = issues.length === 0
+    ? "true" as const
+    : visibleIssues.length === 0 && activeFilter
+      ? "filtered" as const
+      : undefined;
+  const projects = cycleProjects(allPresentations, visibleIds);
+  const milestones = cycleMilestones(allPresentations);
   const history = cycleHistory(readable);
+
   if (cycle.endedAt !== undefined) {
     return {
       configuration,
       cycle: historicalCycleSummary(configuration, cycle, cycle.endedAt, issues),
+      emptyKind,
       history,
-      issues: presentations,
+      issues: visiblePresentations,
       kind: "historical",
-      visibleIssueIds: presentations.map((issue) => issue.id),
+      milestones,
+      projects,
+      visibleIssueIds: visiblePresentations.map((issue) => issue.id),
     };
   }
 
@@ -229,15 +373,18 @@ export function selectTrailCyclePageReadModel(
     .flatMap((group) => group.definitions.map((definition) => ({
       category: group.category,
       id: definition.id,
-      issues: presentations.filter((issue) => issue.status.id === definition.id),
+      issues: visiblePresentations.filter((issue) => issue.status.id === definition.id),
       label: definition.name,
     })));
 
   return {
     configuration,
     cycle: summary,
+    emptyKind,
     history,
     kind: "current",
+    milestones,
+    projects,
     sections,
     visibleIssueIds: sections.flatMap((section) => section.issues.map((issue) => issue.id)),
   };
