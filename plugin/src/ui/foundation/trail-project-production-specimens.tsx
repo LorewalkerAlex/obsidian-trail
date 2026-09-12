@@ -1,3 +1,4 @@
+import type { TrailCycleStatusSectionReadModel } from "../../query/cycles/trail-cycle-page-query";
 import type { TrailWorkflowIssuePresentationReadModel } from "../../query/shared/trail-workflow-issue-presentation-query";
 import type {
   TrailProjectStatusCategory,
@@ -8,6 +9,7 @@ import { TrailStatusGlyph } from "../entities/trail-status";
 import { TrailWorkflowIssueCard } from "../entities/trail-workflow-issue-card";
 import { TrailWorkflowIssueRow } from "../entities/trail-workflow-issue-row";
 import { TrailBoard, TrailBoardColumn } from "../patterns/trail-board";
+import { TrailCycleBoard } from "../pages/cycles/trail-cycle-board";
 import { TrailGroupHeader } from "../patterns/trail-group-header";
 import { TrailIssuePeek } from "../patterns/trail-issue-peek";
 import type { TrailMarkdownRender } from "../patterns/trail-page-narrative";
@@ -156,6 +158,85 @@ export function TrailProjectProductionSpecimens() {
     },
     title: "Keep absent optional detail quiet",
   };
+  const cycleBoardSections: readonly TrailCycleStatusSectionReadModel[] = [
+    {
+      category: "unstarted",
+      id: "foundation-cycle-todo",
+      issues: [{
+        id: "foundation-cycle-alpha-todo",
+        inCurrentCycle: true,
+        labels: issueLabels.slice(0, 1),
+        priority: "medium",
+        project: { id: "foundation-project-alpha", title: "Polish visual foundation" },
+        status: {
+          category: "unstarted",
+          id: "foundation-cycle-todo",
+          label: "Todo",
+        },
+        title: "Prepare the Cycle page composition",
+      }],
+      label: "Todo",
+    },
+    {
+      category: "started",
+      id: "foundation-cycle-started",
+      issues: [
+        {
+          due: TRAIL_FOUNDATION_REFERENCE_TIMESTAMP + (2 * 24 * 60 * 60 * 1000),
+          estimate: "large",
+          id: "foundation-cycle-alpha-started",
+          inCurrentCycle: true,
+          labels: issueLabels,
+          milestone: { id: "foundation-cycle-milestone", title: "Workspace interaction pass" },
+          priority: "urgent",
+          project: { id: "foundation-project-alpha", title: "Polish visual foundation" },
+          status: {
+            category: "started",
+            id: "foundation-cycle-started",
+            label: "In Progress",
+          },
+          title: "Build the Current Cycle read surface",
+        },
+        {
+          estimate: "medium",
+          id: "foundation-cycle-beta-started",
+          inCurrentCycle: true,
+          labels: [],
+          priority: "high",
+          project: { id: "foundation-project-beta", title: "Refine navigation and search" },
+          status: {
+            category: "started",
+            id: "foundation-cycle-started",
+            label: "In Progress",
+          },
+          title: "Keep Project lanes readable across the Board",
+        },
+      ],
+      label: "In Progress",
+    },
+    {
+      category: "completed",
+      id: "foundation-cycle-done",
+      issues: [{
+        id: "foundation-cycle-beta-done",
+        inCurrentCycle: true,
+        labels: [],
+        priority: "low",
+        project: { id: "foundation-project-beta", title: "Refine navigation and search" },
+        status: {
+          category: "completed",
+          id: "foundation-cycle-done",
+          label: "Done",
+        },
+        title: "Close the Cycle collection foundation",
+      }],
+      label: "Done",
+    },
+  ];
+  const cycleBoardProjects = [
+    { id: "foundation-project-alpha", issueCount: 2, title: "Polish visual foundation" },
+    { id: "foundation-project-beta", issueCount: 2, title: "Refine navigation and search" },
+  ] as const;
 
   return (
     <>
@@ -274,6 +355,21 @@ export function TrailProjectProductionSpecimens() {
             title="Keep Project identity visible across mixed Cycle scope"
           />
         </div>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="Current Cycle Board keeps Status horizontal and Project vertical. Project owns the swimlane header rather than repeating inside every card, while the production Workflow Issue Card remains the shared scan unit and each Status cell remains the only drag target."
+        kind="composition-gallery"
+        owner="TrailCycleBoard + TrailWorkflowIssueCard"
+        title="Cycle board project swimlanes"
+      >
+        <TrailCycleBoard
+          onIssueSelectionChange={() => { /* static selection specimen */ }}
+          projects={cycleBoardProjects}
+          sections={cycleBoardSections}
+          selectedIssueIds={new Set(["foundation-cycle-alpha-started"])}
+          timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+        />
       </LabSpecimenRow>
 
       <LabSpecimenRow

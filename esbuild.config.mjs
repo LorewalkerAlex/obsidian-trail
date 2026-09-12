@@ -26,6 +26,7 @@ const stylesheetSources = [
   "plugin/styles/entities-workflow-card.css",
   "plugin/styles/pages.css",
   "plugin/styles/pages-projects.css",
+  "plugin/styles/pages-cycles.css",
   "plugin/styles/pages-project-workspace-execution.css",
   "plugin/styles/pages-project-workspace-actions.css",
   "plugin/styles/pages-issues.css",
