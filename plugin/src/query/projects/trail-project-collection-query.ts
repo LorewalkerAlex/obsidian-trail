@@ -22,6 +22,10 @@ import {
   matchesTrailOptionalDiscreteFilter,
   matchesTrailSetDiscreteFilter,
 } from "../shared/trail-collection-filter";
+import {
+  createTrailProgressReadModel,
+  type TrailProgressReadModel,
+} from "../shared/trail-progress-query";
 
 const PRIORITY_ORDER = new Map<TrailPriority, number>(
   TRAIL_PRIORITIES.map((priority, index) => [priority, index]),
@@ -43,17 +47,7 @@ export interface TrailProjectCollectionFilterInput {
   readonly now: TrailTimestamp;
 }
 
-export type TrailProjectProgressReadModel =
-  | {
-      readonly max: number;
-      readonly unavailable?: false;
-      readonly value: number;
-    }
-  | {
-      readonly max?: never;
-      readonly unavailable: true;
-      readonly value?: never;
-    };
+export type TrailProjectProgressReadModel = TrailProgressReadModel;
 
 export interface TrailProjectSummaryReadModel {
   readonly due?: TrailTimestamp;
@@ -229,18 +223,7 @@ export function selectTrailWorkflowIssuesForProject(
 function projectProgress(
   issues: readonly TrailProjectWorkflowIssueProjection[],
 ): TrailProjectProgressReadModel {
-  let completed = 0;
-  let effective = 0;
-
-  for (const { status } of issues) {
-    if (status.category === "canceled") continue;
-    effective += 1;
-    if (status.category === "completed") completed += 1;
-  }
-
-  return effective === 0
-    ? { unavailable: true }
-    : { max: effective, value: completed };
+  return createTrailProgressReadModel(issues.map(({ status }) => status.category));
 }
 
 export function createTrailProjectSummaryReadModel(

@@ -2,15 +2,17 @@ import type {
   TrailCycle,
   TrailWorkflowIssue,
 } from "../../domain/model/trail-entities";
+import type { TrailTimestamp } from "../../domain/model/trail-values";
 import {
   isTrailTerminalStatusDefinition,
   resolveTrailStatusDefinition,
 } from "../../domain/rules/trail-status-rules";
+import type { TrailEffectiveRuntimeSnapshot } from "../../runtime/projection/trail-runtime-projection";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
 
 function cyclePlanningIssueOrder(
-  readable: ReturnType<typeof selectTrailReadableRuntimeSnapshot>,
+  readable: TrailEffectiveRuntimeSnapshot,
   issue: TrailWorkflowIssue,
 ): readonly [string, string, string] {
   const projectTitle = issue.projectId === undefined
@@ -20,7 +22,7 @@ function cyclePlanningIssueOrder(
 }
 
 function compareCyclePlanningIssues(
-  readable: ReturnType<typeof selectTrailReadableRuntimeSnapshot>,
+  readable: TrailEffectiveRuntimeSnapshot,
   left: TrailWorkflowIssue,
   right: TrailWorkflowIssue,
 ): number {
@@ -34,7 +36,7 @@ function compareCyclePlanningIssues(
 }
 
 function isTerminalWorkflowIssue(
-  readable: ReturnType<typeof selectTrailReadableRuntimeSnapshot>,
+  readable: TrailEffectiveRuntimeSnapshot,
   issue: TrailWorkflowIssue,
 ): boolean {
   const configuration = readable.authoritative.configuration;
@@ -45,6 +47,22 @@ function isTerminalWorkflowIssue(
     issue.statusDefinitionId,
   );
   return status !== undefined && isTrailTerminalStatusDefinition(status);
+}
+
+export type TrailClosedCycle = TrailCycle & { readonly endedAt: TrailTimestamp };
+
+/** Shared newest-first history order for every Cycle history consumer. */
+export function selectTrailClosedCyclesFromReadableSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
+): readonly TrailClosedCycle[] {
+  return [...readable.authoritative.domain.cyclesById.values()]
+    .filter((cycle): cycle is TrailClosedCycle => cycle.endedAt !== undefined)
+    .sort((left, right) => {
+      const endedOrder = right.endedAt - left.endedAt;
+      return endedOrder !== 0
+        ? endedOrder
+        : right.startedAt - left.startedAt || left.id.localeCompare(right.id);
+    });
 }
 
 export function selectTrailReadableCycleById(
@@ -58,13 +76,9 @@ export function selectTrailReadableCycleById(
 export function selectTrailCycleHistoryIds(
   state: TrailRuntimeState,
 ): readonly string[] {
-  return [...selectTrailReadableRuntimeSnapshot(state).authoritative.domain.cyclesById.values()]
-    .filter((cycle) => cycle.endedAt !== undefined)
-    .sort((left, right) => {
-      const endedOrder = (right.endedAt ?? 0) - (left.endedAt ?? 0);
-      return endedOrder !== 0 ? endedOrder : right.startedAt - left.startedAt || left.id.localeCompare(right.id);
-    })
-    .map((cycle) => cycle.id);
+  return selectTrailClosedCyclesFromReadableSnapshot(
+    selectTrailReadableRuntimeSnapshot(state),
+  ).map((cycle) => cycle.id);
 }
 
 /**

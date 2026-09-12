@@ -44,9 +44,10 @@ describe("TrailWorkflowIssueRow", () => {
       .toHaveLength(5);
   });
 
-  it("reserves soft metadata tracks without rendering absent-value placeholders", () => {
+  it("reserves Page-owned soft metadata tracks without rendering absent-value placeholders", () => {
     const { container } = render(
       <TrailWorkflowIssueRow
+        inCurrentCycle={false}
         labels={[]}
         priority={undefined}
         statusCategory="backlog"
@@ -72,6 +73,33 @@ describe("TrailWorkflowIssueRow", () => {
       expect(slot).not.toBeNull();
       expect(slot).toBeEmptyDOMElement();
     }
+  });
+
+  it("promotes Project to necessary Cycle scope context ahead of soft metadata", () => {
+    const { container } = render(
+      <TrailWorkflowIssueRow
+        labels={[]}
+        projectTitle="Project Alpha"
+        statusCategory="unstarted"
+        statusLabel="Todo"
+        timezone="UTC"
+        title="Plan the cycle slice"
+      />,
+    );
+
+    expect(screen.getByText("Project Alpha")).toBeInTheDocument();
+    expect(container.querySelector(".trail-workflow-issue-row__project")).toHaveTextContent("Project Alpha");
+    expect(container.querySelector(".trail-workflow-issue-row__project-icon")).not.toBeNull();
+    expect(container.querySelector(".trail-workflow-issue-row__cycle")).toBeNull();
+
+    const content = container.querySelector(".trail-workflow-issue-row__content");
+    expect(content).toHaveClass("trail-workflow-issue-row__content--project");
+    expect(content?.children).toHaveLength(4);
+    expect(content?.children[1]).toHaveClass("trail-workflow-issue-row__identity");
+    expect(content?.children[2]).toHaveClass("trail-workflow-issue-row__project");
+    expect(content?.children[3]).toHaveClass("trail-workflow-issue-row__metadata");
+    expect(container.querySelector(".trail-workflow-issue-row__metadata")?.children)
+      .toHaveLength(4);
   });
 
   it("separates selection, ordinary activation, and the explicit Space preview toggle", () => {

@@ -21,10 +21,25 @@ import {
 } from "./trail-priority";
 import { TrailStatusGlyph } from "./trail-status";
 
+function TrailProjectContextIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="trail-workflow-issue-row__project-icon"
+      fill="none"
+      viewBox="0 0 16 16"
+    >
+      <rect height="10" rx="1.75" width="10" x="3" y="3" />
+      <path d="M5.5 6h5M5.5 8.25h5M5.5 10.5h3.25" />
+    </svg>
+  );
+}
+
 export interface TrailWorkflowIssueRowProps {
   readonly due?: TrailTimestamp;
   readonly estimate?: TrailEstimate;
   readonly highlighted?: boolean;
+  /** undefined omits the Current Cycle track; false keeps the Page-owned track empty. */
   readonly inCurrentCycle?: boolean;
   readonly issueId?: string;
   readonly labels: readonly TrailLabel[];
@@ -33,6 +48,8 @@ export interface TrailWorkflowIssueRowProps {
   readonly onPreviewToggle?: () => void;
   readonly onSelectionChange?: (selected: boolean, extendRange: boolean) => void;
   readonly priority?: TrailPriority;
+  /** Present on cross-Project Cycle Lists; omitted when Page/lane scope already owns Project. */
+  readonly projectTitle?: string;
   readonly selected?: boolean;
   readonly statusCategory: TrailStatusCategory;
   readonly statusLabel: string;
@@ -44,7 +61,7 @@ export function TrailWorkflowIssueRow({
   due,
   estimate,
   highlighted = false,
-  inCurrentCycle = false,
+  inCurrentCycle,
   issueId,
   labels,
   milestoneTitle,
@@ -52,6 +69,7 @@ export function TrailWorkflowIssueRow({
   onPreviewToggle,
   onSelectionChange,
   priority,
+  projectTitle,
   selected = false,
   statusCategory,
   statusLabel,
@@ -59,6 +77,15 @@ export function TrailWorkflowIssueRow({
   title,
 }: TrailWorkflowIssueRowProps) {
   const interactive = onActivate !== undefined || onPreviewToggle !== undefined;
+  const hasCurrentCycleTrack = inCurrentCycle !== undefined;
+  const contentClassName = [
+    "trail-workflow-issue-row__content",
+    projectTitle === undefined ? null : "trail-workflow-issue-row__content--project",
+  ].filter((className): className is string => className !== null).join(" ");
+  const metadataClassName = [
+    "trail-workflow-issue-row__metadata",
+    hasCurrentCycleTrack ? "trail-workflow-issue-row__metadata--cycle" : null,
+  ].filter((className): className is string => className !== null).join(" ");
   const handleActivate: MouseEventHandler<HTMLDivElement> = (event) => {
     event.currentTarget.focus({ preventScroll: true });
     onActivate?.();
@@ -108,7 +135,7 @@ export function TrailWorkflowIssueRow({
       tabIndex={interactive || onSelectionChange !== undefined ? 0 : undefined}
     >
       <div
-        className="trail-workflow-issue-row__content"
+        className={contentClassName}
         data-workflow-issue-drag-handle="true"
       >
         <span
@@ -125,7 +152,14 @@ export function TrailWorkflowIssueRow({
           <span className="trail-workflow-issue-row__title" title={title}>{title}</span>
         </span>
 
-        <span className="trail-workflow-issue-row__metadata">
+        {projectTitle === undefined ? null : (
+          <span className="trail-workflow-issue-row__project" title={projectTitle}>
+            <TrailProjectContextIcon />
+            <span className="trail-workflow-issue-row__project-label">{projectTitle}</span>
+          </span>
+        )}
+
+        <span className={metadataClassName}>
           <span
             className="trail-workflow-issue-row__milestone"
             title={milestoneTitle}
@@ -135,11 +169,13 @@ export function TrailWorkflowIssueRow({
           <span className="trail-workflow-issue-row__labels">
             {labels.length === 0 ? null : <TrailLabelDots labels={labels} />}
           </span>
-          <span className="trail-workflow-issue-row__cycle">
-            {inCurrentCycle ? (
-              <span aria-label="In current cycle" title="In current cycle">Current</span>
-            ) : null}
-          </span>
+          {hasCurrentCycleTrack ? (
+            <span className="trail-workflow-issue-row__cycle">
+              {inCurrentCycle === true ? (
+                <span aria-label="In current cycle" title="In current cycle">Current</span>
+              ) : null}
+            </span>
+          ) : null}
           <span className="trail-workflow-issue-row__estimate">
             {estimate === undefined ? null : <TrailEstimateValue estimate={estimate} />}
           </span>

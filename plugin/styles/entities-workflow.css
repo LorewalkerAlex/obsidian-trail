@@ -17,6 +17,31 @@
   overflow: hidden;
 }
 
+.trail-workflow-issue-row__content--project {
+  grid-template-columns: 14px minmax(0, 1fr) minmax(124px, 160px) auto;
+}
+
+.trail-workflow-issue-row__project {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-4);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+  font-weight: var(--trail-weight-medium);
+}
+
+.trail-workflow-issue-row__project-icon {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  color: var(--trail-text-muted);
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+}
+
 .trail-workflow-issue-row__priority {
   display: inline-grid;
   width: 14px;
@@ -44,6 +69,7 @@
 }
 
 .trail-workflow-issue-row__title,
+.trail-workflow-issue-row__project-label,
 .trail-workflow-issue-row__milestone,
 .trail-workflow-issue-row__cycle,
 .trail-workflow-issue-row__estimate,
@@ -64,9 +90,13 @@
 .trail-workflow-issue-row__metadata {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(76px, 116px) 42px 60px 20px 54px;
+  grid-template-columns: minmax(76px, 116px) 42px 20px 54px;
   align-items: center;
   column-gap: var(--trail-space-7);
+}
+
+.trail-workflow-issue-row__metadata--cycle {
+  grid-template-columns: minmax(76px, 116px) 42px 60px 20px 54px;
 }
 
 .trail-workflow-issue-row__labels,
@@ -121,6 +151,10 @@
     grid-template-columns: 42px 20px 54px;
   }
 
+  .trail-workflow-issue-row__content--project {
+    grid-template-columns: 14px minmax(0, 1fr) minmax(116px, 148px) auto;
+  }
+
   .trail-workflow-issue-row__milestone,
   .trail-workflow-issue-row__cycle {
     display: none;
@@ -132,6 +166,10 @@
     grid-template-columns: 20px 54px;
   }
 
+  .trail-workflow-issue-row__content--project {
+    grid-template-columns: 14px minmax(0, 1fr) minmax(108px, 136px) auto;
+  }
+
   .trail-workflow-issue-row__labels {
     display: none;
   }
@@ -140,6 +178,10 @@
 @container (max-width: 500px) {
   .trail-workflow-issue-row__metadata {
     grid-template-columns: 54px;
+  }
+
+  .trail-workflow-issue-row__content--project {
+    grid-template-columns: 14px minmax(0, 1fr) minmax(96px, 124px) auto;
   }
 
   .trail-workflow-issue-row__estimate {
@@ -153,7 +195,21 @@
     column-gap: var(--trail-space-7);
   }
 
+  .trail-workflow-issue-row__content--project {
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 116px) auto;
+  }
+
   .trail-workflow-issue-row__priority {
+    display: none;
+  }
+}
+
+@container (max-width: 360px) {
+  .trail-workflow-issue-row__content--project {
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 112px);
+  }
+
+  .trail-workflow-issue-row__content--project .trail-workflow-issue-row__metadata {
     display: none;
   }
 }

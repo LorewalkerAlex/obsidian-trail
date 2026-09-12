@@ -4,12 +4,10 @@ import type {
   TrailMilestone,
   TrailWorkflowIssue,
 } from "../../domain/model/trail-entities";
-import {
-  TRAIL_PRIORITIES,
-  type TrailPriority,
-  type TrailProjectStatusCategory,
-  type TrailStatusCategory,
-  type TrailTimestamp,
+import type {
+  TrailProjectStatusCategory,
+  TrailStatusCategory,
+  TrailTimestamp,
 } from "../../domain/model/trail-values";
 import { canTrailProjectAcceptWorkflowIssue } from "../../domain/rules/trail-project-rules";
 import { resolveTrailDefaultStatusDefinition } from "../../domain/rules/trail-status-rules";
@@ -27,6 +25,10 @@ import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-qu
 import { selectTrailWorkflowIssueCreationProjectsFromReadableSnapshot } from "../shared/trail-project-target-query";
 import { selectTrailStatusOptionGroups } from "../shared/trail-status-query";
 import {
+  compareTrailWorkflowIssueCollectionOrder,
+  selectTrailWorkflowIssueListStatusGroups,
+} from "../shared/trail-workflow-issue-collection-query";
+import {
   createTrailWorkflowIssuePresentationProjector,
   type TrailWorkflowIssuePresentationReadModel,
 } from "../shared/trail-workflow-issue-presentation-query";
@@ -43,14 +45,6 @@ export type TrailProjectWorkspaceFilterPropertyId =
 export type TrailProjectWorkspaceFilterState = TrailCollectionFilterState<
   TrailProjectWorkspaceFilterPropertyId
 >;
-
-const TRAIL_PROJECT_WORKSPACE_LIST_STATUS_CATEGORY_ORDER = [
-  "started",
-  "unstarted",
-  "backlog",
-  "completed",
-  "canceled",
-] as const satisfies readonly TrailStatusCategory[];
 
 export interface TrailProjectWorkspaceReadInput {
   readonly filter: TrailProjectWorkspaceFilterState;
@@ -104,24 +98,6 @@ function requireDiscreteClause(
     throw new Error(`${property} filter must be a discrete clause`);
   }
   return clause;
-}
-
-function priorityOrder(priority: TrailPriority | undefined): number {
-  if (priority === undefined) return TRAIL_PRIORITIES.length;
-  const index = TRAIL_PRIORITIES.indexOf(priority);
-  return index < 0 ? TRAIL_PRIORITIES.length : index;
-}
-
-function compareIssueOrder(left: TrailWorkflowIssue, right: TrailWorkflowIssue): number {
-  const leftDue = left.due ?? Number.POSITIVE_INFINITY;
-  const rightDue = right.due ?? Number.POSITIVE_INFINITY;
-  if (leftDue !== rightDue) return leftDue - rightDue;
-
-  const priorityDelta = priorityOrder(left.priority) - priorityOrder(right.priority);
-  if (priorityDelta !== 0) return priorityDelta;
-
-  const createdDelta = left.createdAt - right.createdAt;
-  return createdDelta !== 0 ? createdDelta : left.id.localeCompare(right.id);
 }
 
 function matchesProjectWorkspaceFilter(
@@ -209,10 +185,7 @@ export function selectTrailProjectWorkspaceReadModel(
   }
 
   const statusOptionGroups = selectTrailStatusOptionGroups(configuration, "issue");
-  const listStatusOptionGroups = [...statusOptionGroups].sort((left, right) => (
-    TRAIL_PROJECT_WORKSPACE_LIST_STATUS_CATEGORY_ORDER.indexOf(left.category)
-    - TRAIL_PROJECT_WORKSPACE_LIST_STATUS_CATEGORY_ORDER.indexOf(right.category)
-  ));
+  const listStatusOptionGroups = selectTrailWorkflowIssueListStatusGroups(configuration);
   const statusIds = new Set(
     statusOptionGroups.flatMap((group) => group.definitions.map((definition) => definition.id)),
   );
@@ -225,7 +198,7 @@ export function selectTrailProjectWorkspaceReadModel(
       input.now,
       configuration.temporal.timezone,
     ))
-    .sort(compareIssueOrder);
+    .sort(compareTrailWorkflowIssueCollectionOrder);
   const projectIssuePresentation = createTrailWorkflowIssuePresentationProjector(readable);
   if (projectIssuePresentation === null) return null;
   const visiblePresentations: TrailWorkflowIssuePresentationReadModel[] = [];

@@ -206,6 +206,7 @@ export function TrailProjectProductionSpecimens() {
             />
             <TrailWorkflowIssueRow
               estimate="medium"
+              inCurrentCycle={false}
               labels={issueLabels.slice(0, 1)}
               onSelectionChange={() => { /* static selection specimen */ }}
               priority="high"
@@ -215,6 +216,7 @@ export function TrailProjectProductionSpecimens() {
               title="Verify a deliberately long Issue title keeps the soft metadata columns readable under ordinary width pressure"
             />
             <TrailWorkflowIssueRow
+              inCurrentCycle={false}
               labels={[]}
               onSelectionChange={() => { /* static selection specimen */ }}
               priority={undefined}
@@ -232,6 +234,45 @@ export function TrailProjectProductionSpecimens() {
               onExpandedChange={() => { /* static composition */ }}
             />
           </section>
+        </div>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="Cycle List reuses the production Workflow Issue Row but elevates the owning Project into persistent scope context between Issue identity and soft planning metadata. Project stays readable longer as width compresses, while redundant Current Cycle membership remains absent inside Cycle scope."
+        kind="composition-gallery"
+        owner="TrailWorkflowIssueRow + Current Cycle List composition"
+        title="Cycle list issue rows"
+      >
+        <div className="trail-lab-list">
+          <TrailGroupHeader
+            count={2}
+            expanded
+            label="In progress"
+            onExpandedChange={() => { /* static composition */ }}
+          />
+          <TrailWorkflowIssueRow
+            due={TRAIL_FOUNDATION_REFERENCE_TIMESTAMP + (2 * 24 * 60 * 60 * 1000)}
+            estimate="large"
+            labels={issueLabels}
+            milestoneTitle="Workspace interaction pass"
+            onSelectionChange={() => { /* static selection specimen */ }}
+            priority="urgent"
+            projectTitle="Polish visual foundation"
+            statusCategory="started"
+            statusLabel="In Progress"
+            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+            title="Establish the Current Cycle read surface"
+          />
+          <TrailWorkflowIssueRow
+            labels={[]}
+            onSelectionChange={() => { /* static selection specimen */ }}
+            priority="medium"
+            projectTitle="Refine navigation and search"
+            statusCategory="started"
+            statusLabel="In Progress"
+            timezone={TRAIL_FOUNDATION_CONFIGURATION.temporal.timezone}
+            title="Keep Project identity visible across mixed Cycle scope"
+          />
         </div>
       </LabSpecimenRow>
 

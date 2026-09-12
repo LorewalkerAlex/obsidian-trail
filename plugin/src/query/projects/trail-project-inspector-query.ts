@@ -17,6 +17,7 @@ import { resolveTrailStatusDefinition } from "../../domain/rules/trail-status-ru
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
 import { matchesTrailDueFilter } from "../shared/trail-collection-filter";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
+import { selectTrailWorkflowIssueProgress } from "../shared/trail-progress-query";
 import { selectTrailStatusOptionGroups } from "../shared/trail-status-query";
 import {
   selectTrailInitiativeTargets,
@@ -65,30 +66,6 @@ export interface TrailProjectInspectorReadModel {
   };
   readonly statusOptionGroups: readonly TrailProjectInspectorStatusOptionGroupReadModel[];
   readonly title: string;
-}
-
-function progressFromIssues(
-  configuration: TrailConfiguration,
-  issues: readonly TrailWorkflowIssue[],
-): TrailProjectProgressReadModel | null {
-  let completed = 0;
-  let effective = 0;
-
-  for (const issue of issues) {
-    const status = resolveTrailStatusDefinition(
-      configuration,
-      "issue",
-      issue.statusDefinitionId,
-    );
-    if (status === undefined) return null;
-    if (status.category === "canceled") continue;
-    effective += 1;
-    if (status.category === "completed") completed += 1;
-  }
-
-  return effective === 0
-    ? { unavailable: true }
-    : { max: effective, value: completed };
 }
 
 function issueProjectionForProject(
@@ -166,7 +143,7 @@ function milestoneProjection(
       ) return null;
       issues.push(issue);
     }
-    const progress = progressFromIssues(configuration, issues);
+    const progress = selectTrailWorkflowIssueProgress(configuration, issues);
     if (progress === null) return null;
     milestones.push({
       due: milestone.due,
@@ -210,7 +187,7 @@ export function selectTrailProjectInspectorReadModel(
 
   const issues = issueProjectionForProject(readable, project.id);
   if (issues === null) return null;
-  const progress = progressFromIssues(configuration, issues);
+  const progress = selectTrailWorkflowIssueProgress(configuration, issues);
   const attention = attentionFromIssues(configuration, issues, now);
   const milestones = milestoneProjection(readable, configuration, project.id);
   if (progress === null || attention === null || milestones === null) return null;
