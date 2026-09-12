@@ -86,7 +86,7 @@ export function createDiagnosticTrailUiActions(
 ): {
   readonly cycles: Pick<
     TrailApplicationSession["cycles"],
-    "changeMembership" | "close" | "start"
+    "changeMembership" | "changePlannedEnd" | "close" | "start"
   >;
   readonly initiatives: Pick<
     TrailApplicationSession["initiatives"],
@@ -127,6 +127,23 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.cycle.membership", error, data);
+        }
+      },
+      changePlannedEnd(expectedCycle, plannedEnd): TrailMutationActionResult {
+        const data = {
+          cycleId: expectedCycle.id,
+          sourcePlannedEnd: expectedCycle.plannedEnd,
+          targetPlannedEnd: plannedEnd,
+        };
+        try {
+          return observeActionResult(
+            diagnostics,
+            "ui.cycle.planned-end",
+            session.cycles.changePlannedEnd(expectedCycle, plannedEnd),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.cycle.planned-end", error, data);
         }
       },
       close(expectedCycle): TrailEntityMutationReceipt {

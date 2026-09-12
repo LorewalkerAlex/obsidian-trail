@@ -4,6 +4,7 @@ import type { TrailCycle, TrailIssue } from "../model/trail-entities";
 import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../../test/trail-test-fixtures";
 import {
   planChangeTrailCycleMembership,
+  planChangeTrailCyclePlannedEnd,
   planCloseTrailCycle,
   planOpenTrailCycle,
 } from "./trail-cycle-planning";
@@ -140,6 +141,40 @@ describe("Cycle planning", () => {
       commandId: "command-closed-membership",
       expectedCycle: planning.closedCycle,
       issueIds: [],
+    })).toMatchObject({ kind: "rejected", reason: { code: "cycle-closed" } });
+  });
+
+  it("changes planned end only while the Cycle is open", () => {
+    const planning = state();
+    const open: TrailCycle = {
+      id: "cycle-open",
+      issueIds: [planning.activeIssue.id],
+      plannedEnd: 100,
+      startedAt: 60,
+    };
+    const cyclesWithOpen = new Map(planning.domain.cyclesById);
+    cyclesWithOpen.set(open.id, open);
+    const withOpen = { ...planning, domain: { ...planning.domain, cyclesById: cyclesWithOpen } };
+    const changed = planChangeTrailCyclePlannedEnd(withOpen, {
+      commandId: "command-planned-end",
+      expectedCycle: open,
+      plannedEnd: 120,
+    });
+    expect(changed.kind).toBe("ready");
+    if (changed.kind === "ready") {
+      expect(changed.plan.cycle).toEqual({ ...open, plannedEnd: 120 });
+      expect(changed.plan.plan.intent).toBe("planning.cycle.change-planned-end");
+      expect(changed.plan.plan.effects).toEqual([{
+        after: { kind: "cycle", value: { ...open, plannedEnd: 120 } },
+        before: { kind: "cycle", value: open },
+        kind: "replace-entity",
+      }]);
+    }
+
+    expect(planChangeTrailCyclePlannedEnd(planning, {
+      commandId: "command-closed-planned-end",
+      expectedCycle: planning.closedCycle,
+      plannedEnd: 200,
     })).toMatchObject({ kind: "rejected", reason: { code: "cycle-closed" } });
   });
 

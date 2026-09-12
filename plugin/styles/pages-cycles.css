@@ -360,3 +360,118 @@ body button.trail-cycle-board__lane-title--action:focus-visible {
     max-height: min(480px, 100%);
   }
 }
+
+/* Cycle Inspector keeps lifecycle facts dense and uses the shared Inspector chrome. */
+.trail-cycle-inspector__section {
+  margin-top: var(--trail-space-12);
+}
+
+.trail-cycle-inspector__section-title {
+  margin: 0 0 var(--trail-space-4);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1.2;
+}
+
+.trail-cycle-inspector__section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--trail-space-4);
+  margin-bottom: var(--trail-space-4);
+}
+
+.trail-cycle-inspector__section-heading .trail-cycle-inspector__section-title {
+  margin-bottom: 0;
+}
+
+.trail-cycle-inspector__section-value {
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-cycle-inspector__header-relation {
+  margin-top: var(--trail-space-2);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.trail-cycle-inspector__properties {
+  display: grid;
+}
+
+.trail-cycle-inspector__property-row {
+  display: grid;
+  min-width: 0;
+  min-height: var(--trail-control-height-lg);
+  grid-template-columns: minmax(72px, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: var(--trail-space-6);
+  border-bottom: 1px solid var(--trail-row-divider);
+}
+
+.trail-cycle-inspector__property-label {
+  min-width: 0;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+}
+
+.trail-cycle-inspector__property-value {
+  display: flex;
+  min-width: 0;
+  justify-content: flex-end;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.trail-cycle-inspector__property-value > .trail-property-control {
+  max-width: 100%;
+}
+
+.trail-cycle-inspector__actions {
+  padding-top: var(--trail-space-4);
+  border-top: 1px solid var(--trail-row-divider);
+}
+
+.trail-cycle-inspector__actions .trail-button {
+  color: var(--trail-danger);
+}
+
+.trail-cycle-inspector__feedback {
+  margin-top: var(--trail-space-6);
+  color: var(--trail-danger);
+  font-size: var(--trail-font-size-supporting);
+  line-height: 1.4;
+}
+
+.trail-cycle-inspector__planned-end-editor {
+  display: grid;
+  gap: var(--trail-space-6);
+}
+
+.trail-cycle-inspector__planned-end-editor .trail-input {
+  width: 100%;
+}
+
+.trail-cycle-inspector__planned-end-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--trail-space-3);
+}
+
+.trail-cycle-inspector__close-description {
+  display: grid;
+  gap: var(--trail-space-3);
+}
+
+.trail-cycle-inspector__close-description strong {
+  color: var(--trail-text-primary);
+  font-weight: var(--trail-weight-medium);
+}

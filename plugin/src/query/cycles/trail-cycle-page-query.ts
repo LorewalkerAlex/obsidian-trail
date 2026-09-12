@@ -91,6 +91,7 @@ export interface TrailHistoricalCycleSummaryReadModel extends TrailCycleSummaryR
 
 interface TrailCyclePageReadModelBase {
   readonly configuration: TrailConfiguration;
+  readonly expectedCycle: TrailCycle;
   readonly emptyKind?: "filtered" | "true";
   readonly history: readonly TrailCycleHistoryItemReadModel[];
   readonly milestones: readonly TrailCycleNamedTargetReadModel[];
@@ -357,6 +358,7 @@ export function selectTrailCyclePageReadModel(
       configuration,
       cycle: historicalCycleSummary(configuration, cycle, cycle.endedAt, issues),
       emptyKind,
+      expectedCycle: cycle,
       history,
       issues: visiblePresentations,
       kind: "historical",
@@ -381,6 +383,7 @@ export function selectTrailCyclePageReadModel(
     configuration,
     cycle: summary,
     emptyKind,
+    expectedCycle: cycle,
     history,
     kind: "current",
     milestones,

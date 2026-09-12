@@ -20,6 +20,12 @@ export interface ChangeTrailCycleMembershipCommand {
   readonly issueIds: readonly string[];
 }
 
+export interface ChangeTrailCyclePlannedEndCommand {
+  readonly commandId: string;
+  readonly expectedCycle: TrailCycle;
+  readonly plannedEnd: TrailTimestamp;
+}
+
 export interface CloseTrailCycleCommand {
   readonly commandId: string;
   readonly effectiveAt: TrailTimestamp;
@@ -162,6 +168,37 @@ export function planChangeTrailCycleMembership(
         entity: { kind: "issue" as const, value: issue },
         kind: "entity-equals" as const,
       })),
+    }),
+  });
+}
+
+export function planChangeTrailCyclePlannedEnd(
+  state: TrailPlanningState,
+  command: ChangeTrailCyclePlannedEndCommand,
+): TrailPlanResult<TrailCyclePlan> {
+  const currentResult = currentTrailCycle(state, command.expectedCycle);
+  if (currentResult.kind !== "ready") return currentResult;
+  const current = currentResult.plan;
+  if (!isTrailCycleOpen(current)) {
+    return rejectTrailPlan("cycle-closed", `Closed Cycle planned end cannot be changed: ${current.id}`);
+  }
+
+  const candidate: TrailCycle = { ...current, plannedEnd: command.plannedEnd };
+  const cycle = sameTrailDomainEntity(
+    { kind: "cycle", value: current },
+    { kind: "cycle", value: candidate },
+  ) ? current : candidate;
+
+  return readyTrailPlan({
+    cycle,
+    plan: createTrailMutationPlan({
+      commandId: command.commandId,
+      effects: [{
+        after: { kind: "cycle", value: cycle },
+        before: { kind: "cycle", value: current },
+        kind: "replace-entity",
+      }],
+      intent: "planning.cycle.change-planned-end",
     }),
   });
 }

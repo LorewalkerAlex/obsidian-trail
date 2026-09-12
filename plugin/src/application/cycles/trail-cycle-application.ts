@@ -1,6 +1,7 @@
 import type { TrailCycle } from "../../domain/model/trail-entities";
 import {
   planChangeTrailCycleMembership,
+  planChangeTrailCyclePlannedEnd,
   planCloseTrailCycle,
   planOpenTrailCycle,
 } from "../../domain/planning/trail-cycle-planning";
@@ -63,6 +64,32 @@ export class TrailCycleApplication {
       commandId,
       expectedCycle,
       issueIds: normalizeIssueIds(issueIds),
+    });
+    const planned = resolveTrailApplicationPlan(result);
+    if (planned.kind === "needs-input") return { input: planned.input, kind: "needs-input" };
+    if (sameTrailDomainEntity(
+      { kind: "cycle", value: expectedCycle },
+      { kind: "cycle", value: planned.value.cycle },
+    )) {
+      return { entityId: expectedCycle.id, kind: "unchanged" };
+    }
+    return {
+      kind: "submitted",
+      receipt: submitTrailApplicationPlan(this.sourceSync, planned.value.plan, planned.value.cycle.id),
+    };
+  }
+
+  public changePlannedEnd(
+    expectedCycle: TrailCycle,
+    plannedEnd: number,
+  ): TrailMutationActionResult {
+    const state = readTrailPlanningState(this.runtimeStore);
+    const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
+    normalizeTrailCommandTime(this.environment);
+    const result = planChangeTrailCyclePlannedEnd(state, {
+      commandId,
+      expectedCycle,
+      plannedEnd: normalizeTrailCommandTimestamp(plannedEnd, "Cycle planned end"),
     });
     const planned = resolveTrailApplicationPlan(result);
     if (planned.kind === "needs-input") return { input: planned.input, kind: "needs-input" };

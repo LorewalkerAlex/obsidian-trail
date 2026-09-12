@@ -1,48 +1,17 @@
 import { useStore } from "zustand";
 
 import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store";
+import { TrailCycleInspector } from "../pages/cycles/trail-cycle-inspector";
 import { TrailIssueInspector } from "../pages/issues/trail-issue-inspector";
 import { TrailInitiativeInspector } from "../pages/projects/trail-initiative-inspector";
 import { TrailProjectInspector } from "../pages/projects/trail-project-inspector";
-import type { TrailInspectorStore, TrailInspectorTarget } from "./trail-inspector-state";
+import type { TrailInspectorStore } from "./trail-inspector-state";
 import type { TrailUiActions } from "./trail-ui-actions";
 
 export interface TrailInspectorProps {
   readonly actions: TrailUiActions;
   readonly inspectorStore: TrailInspectorStore;
   readonly runtimeStore: TrailRuntimeStore;
-}
-
-function targetKindLabel(target: TrailInspectorTarget): string {
-  switch (target.kind) {
-    case "initiative":
-      return "Initiative";
-    case "project":
-      return "Project";
-    case "issue":
-      return "Issue";
-    case "cycle":
-      return "Cycle";
-  }
-}
-
-function TrailPendingInspector({ target }: { readonly target: TrailInspectorTarget }) {
-  const kindLabel = targetKindLabel(target);
-  return (
-    <aside
-      aria-label="Trail inspector"
-      className="trail-inspector"
-      data-target-kind={target.kind}
-    >
-      <header className="trail-inspector__header">
-        <span className="trail-inspector__eyebrow">Inspector</span>
-        <h2>{kindLabel}</h2>
-      </header>
-      <p className="trail-inspector__placeholder">
-        Inspector content has not been implemented yet.
-      </p>
-    </aside>
-  );
 }
 
 export function TrailInspector({
@@ -83,6 +52,12 @@ export function TrailInspector({
       />
     );
   }
-
-  return <TrailPendingInspector target={target} />;
+  return (
+    <TrailCycleInspector
+      actions={actions.cycles}
+      cycleId={target.cycleId}
+      key={target.cycleId}
+      runtimeStore={runtimeStore}
+    />
+  );
 }
