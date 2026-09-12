@@ -5,7 +5,7 @@
   min-width: 0;
   overflow-x: auto;
   overflow-y: visible;
-  padding: var(--trail-space-5) var(--trail-space-8) var(--trail-space-10);
+  padding: var(--trail-space-3) var(--trail-space-8) var(--trail-space-10);
   overscroll-behavior-x: contain;
 }
 
@@ -19,13 +19,13 @@
   display: grid;
   width: max-content;
   min-width: 100%;
-  grid-auto-columns: minmax(260px, 304px);
+  grid-auto-columns: minmax(252px, 292px);
   grid-auto-flow: column;
-  gap: var(--trail-space-6);
+  gap: var(--trail-space-5);
 }
 
 .trail-cycle-board__status-grid {
-  padding-bottom: var(--trail-space-3);
+  padding-bottom: var(--trail-space-2);
 }
 
 .trail-cycle-board__status-header {
@@ -77,7 +77,7 @@
 
 .trail-cycle-board__lane-header {
   display: flex;
-  min-height: var(--trail-control-height-lg);
+  min-height: 30px;
   align-items: center;
   justify-content: flex-start;
   gap: var(--trail-space-3);
@@ -148,7 +148,7 @@ body button.trail-cycle-board__lane-disclosure:focus-visible {
   min-width: 0;
   overflow: hidden;
   color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-body);
+  font-size: var(--trail-font-size-supporting);
   font-weight: var(--trail-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -167,7 +167,7 @@ body button.trail-cycle-board__lane-title--action {
   box-shadow: none;
   color: var(--trail-text-secondary);
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
   text-align: left;
 }
 
@@ -183,7 +183,7 @@ body button.trail-cycle-board__lane-title--action:focus-visible {
 }
 
 .trail-cycle-board__lane-cells {
-  padding-bottom: var(--trail-space-9);
+  padding-bottom: var(--trail-space-5);
 }
 
 .trail-cycle-board__cell {
