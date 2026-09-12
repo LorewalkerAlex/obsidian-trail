@@ -366,7 +366,7 @@ The V1 Workspace navigation exposes the current Default Project shortcut, `Proje
 
 A future Workspace-level `Issues` collection may provide an all-Workflow-Issue browse surface across Projects, but it is deferred and does not shape V1 sidebar composition or restore a `No Project` state.
 
-Search is a required V1 global Trail location entered from the Navigation header. It searches Initiatives, Projects, Workflow Issues, and Triage entries; it does not become general Obsidian Vault search, a saved-query system, or another Inspector-owned workspace. Project/Initiative results navigate normally, Workflow Issue results use the shared Peek before explicit Full Item open, and Triage results enter the normal Triage Review Surface.
+Search is a required V1 temporary Trail Navigation Sidebar mode entered from the Navigation header; it is not a Main View Page/location. It searches exactly Initiatives, Projects, and Workflow Issues. Triage entries, Cycles, and ordinary Obsidian notes are not Sidebar Search result kinds, and Search does not become general Obsidian Vault search or a saved-query system. Opening Search leaves the current Main View and persistent Right Sidebar unchanged and does not create host history. Activating a result closes Search and performs normal stable navigation; Workflow Issue results navigate directly to the normal Issue Full Item route rather than opening Peek over an unrelated current Page.
 
 Command Menu is primarily for actions. Custom Views and Favorites are deferred beyond the current V1 UI closure and therefore do not shape the V1 sidebar or implementation plan.
 
