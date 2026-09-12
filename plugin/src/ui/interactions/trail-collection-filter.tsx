@@ -38,6 +38,7 @@ export type TrailCollectionFilterProperty<PropertyId extends string> =
     };
 
 export interface TrailCollectionFilterProps<PropertyId extends string> {
+  readonly layer?: "menu" | "modal-child";
   readonly onClearAll: () => void;
   readonly onClearClause: (propertyId: PropertyId) => void;
   readonly onSetDueValue: (propertyId: PropertyId, value: TrailDueFilterValue) => void;
@@ -146,6 +147,7 @@ function clauseSummary<PropertyId extends string>(
 }
 
 export function TrailCollectionFilter<PropertyId extends string>({
+  layer = "menu",
   onClearAll,
   onClearClause,
   onSetDueValue,
@@ -208,6 +210,7 @@ export function TrailCollectionFilter<PropertyId extends string>({
     <>
       <TrailViewPopover
         label={activeProperty === undefined ? "Filter" : `${activeProperty.label} filter`}
+        layer={layer}
         onOpenChange={handleOpenChange}
         open={open}
         trigger={(

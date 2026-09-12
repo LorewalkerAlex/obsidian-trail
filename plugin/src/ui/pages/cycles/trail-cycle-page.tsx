@@ -38,6 +38,7 @@ import {
 } from "../../patterns/trail-page-header";
 import { TrailButton } from "../../primitives/trail-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
+import { TrailCycleAddIssues } from "./trail-cycle-add-issues";
 import {
   selectTrailCycleBoardSections,
   TrailCycleBoard,
@@ -47,7 +48,10 @@ import {
   type TrailCycleLayout,
 } from "./trail-cycle-view-controls";
 
-type TrailCyclePageActions = Pick<TrailUiActions["issues"], "changeStatus">;
+type TrailCyclePageActions = Pick<TrailUiActions["issues"], "changeStatus"> & Pick<
+  TrailUiActions["cycles"],
+  "changeMembership"
+>;
 
 function formatCycleDate(timestamp: number, timezone: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -186,6 +190,7 @@ export function TrailCyclePage({
 }) {
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
   const filters = useTrailCollectionFilterState<TrailCycleFilterPropertyId>();
+  const [addIssuesOpen, setAddIssuesOpen] = useState(false);
   const [collapsedStatusIds, setCollapsedStatusIds] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
@@ -300,6 +305,12 @@ export function TrailCyclePage({
     });
   };
 
+  const openAddIssues = () => {
+    if (!writable) return;
+    peek.close();
+    setAddIssuesOpen(true);
+  };
+
   const handlePointerDownCapture: PointerEventHandler<HTMLElement> = (event) => {
     if (!(event.target instanceof Element)) return;
 
@@ -392,6 +403,9 @@ export function TrailCyclePage({
     >
       <div className="trail-cycle-page__scroll">
         <TrailPageHeader
+          actions={readModel.kind === "current" ? (
+            <TrailButton disabled={!writable} onClick={openAddIssues}>Add issues</TrailButton>
+          ) : undefined}
           breadcrumb={(
             <>
               <TrailPageBreadcrumbButton onClick={onCyclesActivate}>
@@ -491,6 +505,9 @@ export function TrailCyclePage({
 
           {readModel.emptyKind === "true" ? (
             <TrailEmptyState
+              action={readModel.kind === "current" ? (
+                <TrailButton disabled={!writable} onClick={openAddIssues}>Add issues</TrailButton>
+              ) : undefined}
               description={readModel.kind === "current"
                 ? "Add existing workflow issues when this cycle is ready for work."
                 : "This cycle closed without retained issue membership."}
@@ -517,6 +534,15 @@ export function TrailCyclePage({
           />
         </div>
       )}
+
+      {readModel.kind === "current" && addIssuesOpen ? (
+        <TrailCycleAddIssues
+          actions={actions}
+          cycleId={cycleId}
+          onDismiss={() => setAddIssuesOpen(false)}
+          runtimeStore={runtimeStore}
+        />
+      ) : null}
     </section>
   );
 }

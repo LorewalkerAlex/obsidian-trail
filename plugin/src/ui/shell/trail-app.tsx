@@ -159,7 +159,10 @@ export function TrailApp({
         ) : currentLocation.kind === "cycle" ? (
           <TrailPageSurface>
             <TrailCyclePage
-              actions={actions.issues}
+              actions={{
+                changeMembership: actions.cycles.changeMembership,
+                changeStatus: actions.issues.changeStatus,
+              }}
               cycleId={currentLocation.cycleId}
               key={currentLocation.cycleId}
               onCyclesActivate={() => {

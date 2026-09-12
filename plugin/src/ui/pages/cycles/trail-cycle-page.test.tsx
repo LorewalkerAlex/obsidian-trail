@@ -59,6 +59,17 @@ function readyStore(plannedEnd = Date.UTC(2026, 8, 14)) {
     statusDefinitionId: "issue-unstarted",
     title: "Verify project swimlanes",
   };
+  const candidate = {
+    context: "workflow" as const,
+    createdAt: Date.UTC(2026, 8, 3),
+    due: Date.UTC(2026, 8, 18),
+    id: "issue-candidate",
+    labelIds: [],
+    priority: "medium" as const,
+    projectId: projectA.id,
+    statusDefinitionId: "issue-backlog",
+    title: "Plan the next cycle slice",
+  };
   const cycle = {
     id: "cycle-current",
     issueIds: [alpha.id, beta.id],
@@ -73,7 +84,7 @@ function readyStore(plannedEnd = Date.UTC(2026, 8, 14)) {
     },
     sources: [
       {
-        issues: [alpha],
+        issues: [alpha, candidate],
         kind: "project",
         milestones: [],
         project: projectA,
@@ -94,7 +105,14 @@ function readyStore(plannedEnd = Date.UTC(2026, 8, 14)) {
     ],
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
-  return { cycle, store };
+  return { candidate, cycle, store };
+}
+
+function pageActions(changeMembership = vi.fn()) {
+  return {
+    changeMembership,
+    changeStatus: vi.fn(),
+  };
 }
 
 describe("TrailCyclePage", () => {
@@ -105,7 +123,7 @@ describe("TrailCyclePage", () => {
 
     render(
       <TrailCyclePage
-        actions={{ changeStatus: vi.fn() }}
+        actions={pageActions()}
         cycleId={cycle.id}
         onCyclesActivate={vi.fn()}
         onIssueActivate={vi.fn()}
@@ -116,6 +134,7 @@ describe("TrailCyclePage", () => {
     );
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Sep");
+    expect(screen.getByRole("button", { name: "Add issues" })).toBeInTheDocument();
     const summary = screen.getByRole("group", { name: "Cycle summary" });
     expect(summary).toHaveTextContent("4 days left");
     expect(summary).toHaveTextContent("2 issues");
@@ -137,13 +156,46 @@ describe("TrailCyclePage", () => {
     expect(screen.getByText("Project Beta")).toBeInTheDocument();
   });
 
+  it("adds selected discovery candidates through canonical Cycle membership", () => {
+    const { candidate, cycle, store } = readyStore();
+    const changeMembership = vi.fn(() => ({
+      entityId: cycle.id,
+      kind: "unchanged" as const,
+    }));
+
+    render(
+      <TrailCyclePage
+        actions={pageActions(changeMembership)}
+        cycleId={cycle.id}
+        onCyclesActivate={vi.fn()}
+        renderMarkdown={renderMarkdown}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Add issues" }));
+    const dialog = screen.getByRole("dialog", { name: "Add issues" });
+    expect(within(dialog).getByRole("searchbox", { name: "Search issues" })).toHaveFocus();
+    expect(within(dialog).getByText(candidate.title)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByText(candidate.title));
+    expect(within(dialog).getByText("1 selected")).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add 1 issue" }));
+
+    expect(changeMembership).toHaveBeenCalledWith(
+      cycle,
+      [...cycle.issueIds, candidate.id],
+    );
+    expect(screen.queryByRole("dialog", { name: "Add issues" })).not.toBeInTheDocument();
+  });
+
   it("shows a relative overdue state instead of repeating the range end date", () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 8, 20, 12));
     const { cycle, store } = readyStore();
 
     render(
       <TrailCyclePage
-        actions={{ changeStatus: vi.fn() }}
+        actions={pageActions()}
         cycleId={cycle.id}
         onCyclesActivate={vi.fn()}
         renderMarkdown={renderMarkdown}
@@ -161,7 +213,7 @@ describe("TrailCyclePage", () => {
 
     render(
       <TrailCyclePage
-        actions={{ changeStatus: vi.fn() }}
+        actions={pageActions()}
         cycleId={cycle.id}
         onCyclesActivate={vi.fn()}
         renderMarkdown={renderMarkdown}

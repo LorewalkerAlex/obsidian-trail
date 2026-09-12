@@ -13,6 +13,7 @@ import {
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
 import {
+  selectTrailCycleAddIssuesReadModel,
   selectTrailCyclePageReadModel,
   selectTrailCyclesIndexReadModel,
 } from "./trail-cycle-page-query";
@@ -116,6 +117,118 @@ function readyStore() {
   return { currentCycle, historicalCycle, store };
 }
 
+function addIssuesStore() {
+  const projectA = {
+    id: "project-a",
+    labelIds: [],
+    statusDefinitionId: "project-started",
+    title: "Project Alpha",
+  };
+  const projectB = {
+    id: "project-b",
+    labelIds: [],
+    statusDefinitionId: "project-started",
+    title: "Project Beta",
+  };
+  const plannedProject = {
+    id: "project-planned",
+    labelIds: [],
+    statusDefinitionId: "project-unstarted",
+    title: "Project Planned",
+  };
+  const member = {
+    context: "workflow" as const,
+    createdAt: 1,
+    id: "issue-member",
+    labelIds: [],
+    projectId: projectA.id,
+    statusDefinitionId: "issue-started",
+    title: "Already in cycle",
+  };
+  const alpha = {
+    context: "workflow" as const,
+    createdAt: 2,
+    due: 100,
+    id: "issue-alpha-candidate",
+    labelIds: ["label-work"],
+    priority: "high" as const,
+    projectId: projectA.id,
+    statusDefinitionId: "issue-unstarted",
+    title: "Prepare Alpha release",
+  };
+  const beta = {
+    context: "workflow" as const,
+    createdAt: 3,
+    id: "issue-beta-candidate",
+    labelIds: [],
+    projectId: projectB.id,
+    statusDefinitionId: "issue-backlog",
+    title: "Investigate Beta logs",
+  };
+  const completed = {
+    context: "workflow" as const,
+    createdAt: 4,
+    id: "issue-completed-candidate",
+    labelIds: [],
+    projectId: projectA.id,
+    statusDefinitionId: "issue-completed",
+    terminalAt: 5,
+    title: "Completed work",
+  };
+  const plannedIssue = {
+    context: "workflow" as const,
+    createdAt: 5,
+    id: "issue-planned-project",
+    labelIds: [],
+    projectId: plannedProject.id,
+    statusDefinitionId: "issue-backlog",
+    title: "Planned project work",
+  };
+  const cycle = {
+    id: "cycle-current",
+    issueIds: [member.id],
+    plannedEnd: 200,
+    startedAt: 50,
+  };
+  const store = createTrailRuntimeStore();
+  publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
+    pluginData: {
+      configuration: createTrailTestConfiguration(),
+      workspaceState: createTrailTestWorkspaceState(projectA.id),
+    },
+    sources: [
+      {
+        issues: [member, alpha, completed],
+        kind: "project",
+        milestones: [],
+        project: projectA,
+        sourcePath: "Trail/Projects/0001 Project Alpha.md",
+      },
+      {
+        issues: [beta],
+        kind: "project",
+        milestones: [],
+        project: projectB,
+        sourcePath: "Trail/Projects/0002 Project Beta.md",
+      },
+      {
+        issues: [plannedIssue],
+        kind: "project",
+        milestones: [],
+        project: plannedProject,
+        sourcePath: "Trail/Projects/0003 Project Planned.md",
+      },
+      {
+        cycles: [cycle],
+        kind: "cycles",
+        sourcePath: "Trail/Collections/Cycles.md",
+      },
+    ],
+  }), { sourceIssuesByPath: {} });
+  setTrailRuntimeControl(store, { kind: "ready" });
+  return { alpha, beta, cycle, store };
+}
+
 describe("Trail Cycle Page query", () => {
   it("projects the Current Cycle through the shared Status skeleton and cross-Project Issue presentation", () => {
     const { currentCycle, store } = readyStore();
@@ -181,6 +294,39 @@ describe("Trail Cycle Page query", () => {
       { id: "project-b", issueCount: 0, title: "Project Beta" },
     ]);
     expect(model.emptyKind).toBeUndefined();
+  });
+
+  it("discovers only open non-members from Started Projects for Add Issues and keeps search/filter transient", () => {
+    const { alpha, beta, cycle, store } = addIssuesStore();
+    const model = selectTrailCycleAddIssuesReadModel(store.getState(), cycle.id, {
+      filter: {},
+      now: 20,
+      search: "",
+    });
+
+    expect(model?.candidateIds).toEqual([alpha.id, beta.id]);
+    expect(model?.candidates.map(({ id }) => id)).toEqual([alpha.id, beta.id]);
+    expect(model?.projects.map(({ id }) => id)).toEqual(["project-a", "project-b"]);
+
+    const searched = selectTrailCycleAddIssuesReadModel(store.getState(), cycle.id, {
+      filter: {},
+      now: 20,
+      search: "beta",
+    });
+    expect(searched?.candidateIds).toEqual([alpha.id, beta.id]);
+    expect(searched?.candidates.map(({ id }) => id)).toEqual([beta.id]);
+
+    const filtered = selectTrailCycleAddIssuesReadModel(store.getState(), cycle.id, {
+      filter: {
+        priority: {
+          kind: "discrete",
+          values: [{ kind: "value", value: "high" }],
+        },
+      },
+      now: 20,
+      search: "",
+    });
+    expect(filtered?.candidates.map(({ id }) => id)).toEqual([alpha.id]);
   });
 
   it("keeps historical membership flat while resolving current live Issue fields", () => {

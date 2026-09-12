@@ -7,6 +7,10 @@ import type {
   TrailStatusCategory,
   TrailTimestamp,
 } from "../../domain/model/trail-values";
+import {
+  isTrailTerminalStatusDefinition,
+  resolveTrailStatusDefinition,
+} from "../../domain/rules/trail-status-rules";
 import type { TrailEffectiveRuntimeSnapshot } from "../../runtime/projection/trail-runtime-projection";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
 import {
@@ -47,6 +51,10 @@ export type TrailCycleFilterState = TrailCollectionFilterState<TrailCycleFilterP
 export interface TrailCyclePageReadInput {
   readonly filter: TrailCycleFilterState;
   readonly now: TrailTimestamp;
+}
+
+export interface TrailCycleAddIssuesReadInput extends TrailCyclePageReadInput {
+  readonly search: string;
 }
 
 export interface TrailCycleNamedTargetReadModel {
@@ -114,6 +122,15 @@ export interface TrailHistoricalCyclePageReadModel extends TrailCyclePageReadMod
 export type TrailCyclePageReadModel =
   | TrailCurrentCyclePageReadModel
   | TrailHistoricalCyclePageReadModel;
+
+export interface TrailCycleAddIssuesReadModel {
+  readonly candidateIds: readonly string[];
+  readonly candidates: readonly TrailWorkflowIssuePresentationReadModel[];
+  readonly configuration: TrailConfiguration;
+  readonly expectedCycle: TrailCycle;
+  readonly milestones: readonly TrailCycleNamedTargetReadModel[];
+  readonly projects: readonly TrailCycleProjectReadModel[];
+}
 
 export interface TrailCyclesIndexReadModel {
   readonly configuration: TrailConfiguration;
@@ -280,6 +297,47 @@ function cycleMilestones(
   });
 }
 
+function isCycleAddIssuesDiscoveryCandidate(
+  readable: TrailEffectiveRuntimeSnapshot,
+  issue: TrailWorkflowIssue,
+  currentMemberIds: ReadonlySet<string>,
+): boolean {
+  if (currentMemberIds.has(issue.id)) return false;
+  const configuration = readable.authoritative.configuration;
+  if (configuration === null) return false;
+
+  const issueStatus = resolveTrailStatusDefinition(
+    configuration,
+    "issue",
+    issue.statusDefinitionId,
+  );
+  if (issueStatus === undefined || isTrailTerminalStatusDefinition(issueStatus)) return false;
+
+  const project = readable.authoritative.domain.projectsById.get(issue.projectId);
+  if (project === undefined) return false;
+  const projectStatus = resolveTrailStatusDefinition(
+    configuration,
+    "project",
+    project.statusDefinitionId,
+  );
+  return projectStatus?.category === "started";
+}
+
+function matchesCycleAddIssuesSearch(
+  issue: TrailWorkflowIssuePresentationReadModel,
+  search: string,
+): boolean {
+  const query = search.trim().toLocaleLowerCase();
+  if (query.length === 0) return true;
+  return [
+    issue.title,
+    issue.project.title,
+    issue.status.label,
+    issue.milestone?.title,
+    ...issue.labels.map((label) => label.name),
+  ].some((value) => value?.toLocaleLowerCase().includes(query) === true);
+}
+
 export function selectTrailCyclesIndexReadModel(
   state: TrailRuntimeState,
 ): TrailCyclesIndexReadModel | null {
@@ -306,6 +364,60 @@ export function selectTrailCyclesIndexReadModel(
     configuration,
     current,
     history: cycleHistory(readable),
+  };
+}
+
+export function selectTrailCycleAddIssuesReadModel(
+  state: TrailRuntimeState,
+  cycleId: string,
+  input: TrailCycleAddIssuesReadInput,
+): TrailCycleAddIssuesReadModel | null {
+  const readable = selectTrailReadableRuntimeSnapshot(state);
+  const configuration = readable.authoritative.configuration;
+  if (configuration === null || readable.indexes.currentCycleId !== cycleId) return null;
+
+  const cycle = readable.authoritative.domain.cyclesById.get(cycleId);
+  if (cycle === undefined || cycle.endedAt !== undefined) return null;
+
+  const currentMemberIds = new Set<string>(cycle.issueIds);
+  const issues = [...readable.authoritative.domain.issuesById.values()]
+    .filter((issue): issue is TrailWorkflowIssue => issue.context === "workflow")
+    .filter((issue) => isCycleAddIssuesDiscoveryCandidate(readable, issue, currentMemberIds))
+    .sort(compareTrailWorkflowIssueCollectionOrder);
+  const projectIssuePresentation = createTrailWorkflowIssuePresentationProjector(readable);
+  if (projectIssuePresentation === null) return null;
+
+  const allPresentations: TrailWorkflowIssuePresentationReadModel[] = [];
+  for (const issue of issues) {
+    const presentation = projectIssuePresentation(issue);
+    if (presentation === null) return null;
+    allPresentations.push(presentation);
+  }
+
+  const visibleIssueIds = new Set(
+    issues
+      .filter((issue) => matchesCycleFilter(
+        issue,
+        input.filter,
+        input.now,
+        configuration.temporal.timezone,
+      ))
+      .map((issue) => issue.id),
+  );
+  const candidates = allPresentations.filter((issue) => (
+    visibleIssueIds.has(issue.id) && matchesCycleAddIssuesSearch(issue, input.search)
+  ));
+
+  return {
+    candidateIds: allPresentations.map((issue) => issue.id),
+    candidates,
+    configuration,
+    expectedCycle: cycle,
+    milestones: cycleMilestones(allPresentations),
+    projects: cycleProjects(
+      allPresentations,
+      new Set<string>(candidates.map((issue) => issue.id)),
+    ),
   };
 }
 

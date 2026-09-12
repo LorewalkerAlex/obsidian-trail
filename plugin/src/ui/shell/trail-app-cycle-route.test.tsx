@@ -66,6 +66,9 @@ function readyCycleStore() {
 
 function actions(): TrailUiActions {
   return {
+    cycles: {
+      changeMembership: vi.fn(),
+    },
     issues: {
       changeStatus: vi.fn(),
     },
@@ -92,6 +95,7 @@ describe("TrailApp Cycle route", () => {
     );
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Sep");
+    expect(screen.getAllByRole("button", { name: "Add issues" })).not.toHaveLength(0);
     expect(screen.getByRole("region", { name: "Current cycle board" })).toBeInTheDocument();
     expect(screen.queryByText("This page has not been implemented yet.")).not.toBeInTheDocument();
     expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-scroll", "nested");

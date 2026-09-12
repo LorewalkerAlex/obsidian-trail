@@ -108,7 +108,7 @@ function estimateOptions() {
   });
 }
 
-function cycleFilterProperties(
+export function createTrailCycleFilterProperties(
   configuration: TrailConfiguration,
   milestones: readonly TrailCycleNamedTargetReadModel[],
   projects: readonly TrailCycleProjectReadModel[],
@@ -207,7 +207,7 @@ export function TrailCycleViewControls({
   readonly projects: readonly TrailCycleProjectReadModel[];
 }) {
   const properties = useMemo(
-    () => cycleFilterProperties(configuration, milestones, projects),
+    () => createTrailCycleFilterProperties(configuration, milestones, projects),
     [configuration, milestones, projects],
   );
 

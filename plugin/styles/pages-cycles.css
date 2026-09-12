@@ -475,3 +475,200 @@ body button.trail-cycle-board__lane-title--action:focus-visible {
   color: var(--trail-text-primary);
   font-weight: var(--trail-weight-medium);
 }
+
+/* Add Issues is a Page-local existing-entity selector over shared collection mechanics. */
+.trail-cycle-add-issues__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal, 1100);
+  background: var(--trail-overlay-scrim);
+}
+
+.trail-cycle-add-issues__content {
+  box-sizing: border-box;
+  position: fixed;
+  top: 12vh;
+  left: 50%;
+  z-index: calc(var(--layer-modal, 1100) + 1);
+  display: grid;
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(680px, 76vh);
+  grid-template-rows: auto auto minmax(120px, 1fr) auto auto;
+  transform: translateX(-50%);
+  overflow: hidden;
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-md);
+  outline: 0;
+  background: var(--trail-surface-overlay);
+  box-shadow: var(--trail-shadow-overlay);
+  color: var(--trail-text-secondary);
+}
+
+.trail-cycle-add-issues__header {
+  min-width: 0;
+  padding: var(--trail-space-10) var(--trail-space-11) var(--trail-space-6);
+}
+
+.trail-cycle-add-issues__title {
+  margin: 0;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1.25;
+}
+
+.trail-cycle-add-issues__description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.trail-cycle-add-issues__controls {
+  display: grid;
+  min-width: 0;
+  gap: var(--trail-space-3);
+  padding: 0 var(--trail-space-8) var(--trail-space-6);
+  border-bottom: 1px solid var(--trail-row-divider);
+}
+
+body input.trail-cycle-add-issues__search {
+  height: var(--trail-control-height-lg);
+  margin: 0;
+  padding-right: var(--trail-space-5);
+  padding-left: var(--trail-space-5);
+  border: 0;
+  border-bottom: 1px solid var(--trail-row-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.trail-cycle-add-issues__filter {
+  display: flex;
+  min-width: 0;
+  min-height: var(--trail-control-height-sm);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--trail-space-3);
+}
+
+.trail-cycle-add-issues__candidates {
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.trail-cycle-add-issues__candidates .trail-collection-row {
+  min-height: 34px;
+  padding-right: var(--trail-space-8);
+  padding-left: var(--trail-space-8);
+}
+
+.trail-cycle-add-issues__candidates .trail-collection-row__selection {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.trail-cycle-add-issues__candidate-content {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 14px minmax(0, 1fr) minmax(116px, 160px) 20px 58px;
+  align-items: center;
+  gap: var(--trail-space-7);
+}
+
+.trail-cycle-add-issues__priority,
+.trail-cycle-add-issues__status {
+  display: inline-grid;
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+  place-items: center;
+  color: var(--trail-text-muted);
+}
+
+.trail-cycle-add-issues__priority .trail-priority-glyph,
+.trail-cycle-add-issues__status .trail-status-glyph {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+}
+
+.trail-cycle-add-issues__candidate-title,
+.trail-cycle-add-issues__project,
+.trail-cycle-add-issues__due {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-cycle-add-issues__candidate-title {
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-medium);
+}
+
+.trail-cycle-add-issues__project {
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+}
+
+.trail-cycle-add-issues__due {
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  text-align: right;
+}
+
+.trail-cycle-add-issues__empty {
+  padding: var(--trail-space-14) var(--trail-space-11);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  text-align: center;
+}
+
+.trail-cycle-add-issues__feedback {
+  padding: var(--trail-space-5) var(--trail-space-11) 0;
+  color: var(--trail-danger);
+  font-size: var(--trail-font-size-supporting);
+}
+
+.trail-cycle-add-issues__footer {
+  display: flex;
+  min-width: 0;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--trail-space-8);
+  padding: var(--trail-space-6) var(--trail-space-8);
+  border-top: 1px solid var(--trail-row-divider);
+}
+
+.trail-cycle-add-issues__selection-count {
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-cycle-add-issues__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--trail-space-3);
+}
+
+@media (max-width: 620px) {
+  .trail-cycle-add-issues__content {
+    top: var(--trail-space-8);
+    width: calc(100vw - (2 * var(--trail-space-8)));
+    max-height: calc(100vh - (2 * var(--trail-space-8)));
+  }
+
+  .trail-cycle-add-issues__candidate-content {
+    grid-template-columns: 14px minmax(0, 1fr) 20px 54px;
+  }
+
+  .trail-cycle-add-issues__project {
+    display: none;
+  }
+}
