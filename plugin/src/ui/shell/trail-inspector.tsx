@@ -11,12 +11,14 @@ import type { TrailUiActions } from "./trail-ui-actions";
 export interface TrailInspectorProps {
   readonly actions: TrailUiActions;
   readonly inspectorStore: TrailInspectorStore;
+  readonly onCycleActivate?: (cycleId: string) => void;
   readonly runtimeStore: TrailRuntimeStore;
 }
 
 export function TrailInspector({
   actions,
   inspectorStore,
+  onCycleActivate,
   runtimeStore,
 }: TrailInspectorProps) {
   const target = useStore(inspectorStore, (state) => state.target);
@@ -57,6 +59,7 @@ export function TrailInspector({
       actions={actions.cycles}
       cycleId={target.cycleId}
       key={target.cycleId}
+      onCycleActivate={onCycleActivate}
       runtimeStore={runtimeStore}
     />
   );

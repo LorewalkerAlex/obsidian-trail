@@ -81,15 +81,11 @@ export function selectTrailCycleHistoryIds(
   ).map((cycle) => cycle.id);
 }
 
-/**
- * Planning candidates are all current non-terminal Workflow Issues plus any
- * terminal Issue already retained in the open Cycle's membership.
- */
-export function selectTrailCyclePlanningIssueIds(
-  state: TrailRuntimeState,
+/** Snapshot-aware planning candidates for composed Cycle read models. */
+export function selectTrailCyclePlanningIssueIdsFromReadableSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
   currentCycleId?: string,
 ): readonly string[] {
-  const readable = selectTrailReadableRuntimeSnapshot(state);
   const currentMembers = new Set(
     currentCycleId === undefined
       ? []
@@ -102,12 +98,25 @@ export function selectTrailCyclePlanningIssueIds(
     .map((issue) => issue.id);
 }
 
-/** Start-next candidates are current non-terminal members of the source Cycle. */
-export function selectTrailNextCycleCandidateIssueIds(
+/**
+ * Planning candidates are all current non-terminal Workflow Issues plus any
+ * terminal Issue already retained in the open Cycle's membership.
+ */
+export function selectTrailCyclePlanningIssueIds(
   state: TrailRuntimeState,
+  currentCycleId?: string,
+): readonly string[] {
+  return selectTrailCyclePlanningIssueIdsFromReadableSnapshot(
+    selectTrailReadableRuntimeSnapshot(state),
+    currentCycleId,
+  );
+}
+
+/** Snapshot-aware Start-next convenience candidates for composed Cycle read models. */
+export function selectTrailNextCycleCandidateIssueIdsFromReadableSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
   cycleId: string,
 ): readonly string[] {
-  const readable = selectTrailReadableRuntimeSnapshot(state);
   const cycle = readable.authoritative.domain.cyclesById.get(cycleId);
   if (cycle === undefined || cycle.endedAt === undefined) return [];
   return cycle.issueIds
@@ -116,4 +125,15 @@ export function selectTrailNextCycleCandidateIssueIds(
     .filter((issue) => !isTerminalWorkflowIssue(readable, issue))
     .sort((left, right) => compareCyclePlanningIssues(readable, left, right))
     .map((issue) => issue.id);
+}
+
+/** Start-next candidates are current non-terminal members of the source Cycle. */
+export function selectTrailNextCycleCandidateIssueIds(
+  state: TrailRuntimeState,
+  cycleId: string,
+): readonly string[] {
+  return selectTrailNextCycleCandidateIssueIdsFromReadableSnapshot(
+    selectTrailReadableRuntimeSnapshot(state),
+    cycleId,
+  );
 }

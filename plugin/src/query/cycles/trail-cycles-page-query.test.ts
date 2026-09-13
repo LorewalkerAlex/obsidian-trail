@@ -12,7 +12,10 @@ import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
-import { selectTrailCyclesPageReadModel } from "./trail-cycles-page-query";
+import {
+  selectTrailCycleStartReadModel,
+  selectTrailCyclesPageReadModel,
+} from "./trail-cycles-page-query";
 
 function cycleStore(includeCurrent: boolean) {
   const project = {
@@ -20,6 +23,34 @@ function cycleStore(includeCurrent: boolean) {
     labelIds: [],
     statusDefinitionId: "project-started",
     title: "Project Alpha",
+  };
+  const active = {
+    context: "workflow" as const,
+    createdAt: 1,
+    id: "issue-active",
+    labelIds: [],
+    projectId: project.id,
+    statusDefinitionId: "issue-started",
+    title: "Active issue",
+  };
+  const backlog = {
+    context: "workflow" as const,
+    createdAt: 2,
+    id: "issue-backlog",
+    labelIds: [],
+    projectId: project.id,
+    statusDefinitionId: "issue-unstarted",
+    title: "Backlog issue",
+  };
+  const completed = {
+    context: "workflow" as const,
+    createdAt: 3,
+    id: "issue-completed",
+    labelIds: [],
+    projectId: project.id,
+    statusDefinitionId: "issue-completed",
+    terminalAt: Date.UTC(2026, 7, 3),
+    title: "Completed issue",
   };
   const historicalOlder = {
     endedAt: Date.UTC(2026, 6, 20),
@@ -31,7 +62,7 @@ function cycleStore(includeCurrent: boolean) {
   const historicalNewer = {
     endedAt: Date.UTC(2026, 7, 3),
     id: "cycle-history-newer",
-    issueIds: [],
+    issueIds: [active.id, completed.id],
     plannedEnd: Date.UTC(2026, 7, 3),
     startedAt: Date.UTC(2026, 6, 21),
   };
@@ -49,7 +80,7 @@ function cycleStore(includeCurrent: boolean) {
     },
     sources: [
       {
-        issues: [],
+        issues: [active, backlog, completed],
         kind: "project",
         milestones: [],
         project,
@@ -65,7 +96,15 @@ function cycleStore(includeCurrent: boolean) {
     ],
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
-  return { current, historicalNewer, historicalOlder, store };
+  return {
+    active,
+    backlog,
+    completed,
+    current,
+    historicalNewer,
+    historicalOlder,
+    store,
+  };
 }
 
 describe("Cycles Page query", () => {
@@ -97,5 +136,30 @@ describe("Cycles Page query", () => {
     expect(model?.current?.id).toBe(current.id);
     expect(model?.canStart).toBe(false);
     expect(model?.suggestedPlannedEndDate).toBeUndefined();
+  });
+
+  it("projects one Start flow with empty ordinary selection and live Start-next preselection", () => {
+    const { active, backlog, completed, historicalNewer, store } = cycleStore(false);
+    const now = Date.UTC(2026, 8, 10, 4);
+
+    const ordinary = selectTrailCycleStartReadModel(store.getState(), now);
+    expect(ordinary?.canStart).toBe(true);
+    expect(ordinary?.candidates.map(({ id }) => id)).toEqual([
+      active.id,
+      backlog.id,
+    ]);
+    expect(ordinary?.initialIssueIds).toEqual([]);
+
+    const startNext = selectTrailCycleStartReadModel(
+      store.getState(),
+      now,
+      historicalNewer.id,
+    );
+    expect(historicalNewer.issueIds).toContain(completed.id);
+    expect(startNext?.candidates.map(({ id }) => id)).toEqual([
+      active.id,
+      backlog.id,
+    ]);
+    expect(startNext?.initialIssueIds).toEqual([active.id]);
   });
 });

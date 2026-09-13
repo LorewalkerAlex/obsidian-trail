@@ -265,6 +265,9 @@ export default class TrailPlugin extends Plugin {
         runtimeStore,
         actions,
         inspectorStore,
+        (cycleId) => {
+          void this.activateView({ cycleId, kind: "cycle" });
+        },
       ),
     );
 

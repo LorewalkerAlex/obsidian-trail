@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -16,6 +16,7 @@ import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "../../../test/trail-test-fixtures";
+import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { TrailCyclesPage } from "./trail-cycles-page";
 
 afterEach(() => {
@@ -68,11 +69,15 @@ function readyStore(includeCurrent: boolean) {
 }
 
 function startAction(entityId = "cycle-new") {
-  return vi.fn((_input: { readonly plannedEnd: number }) => ({
+  return vi.fn((_input: { readonly issueIds?: readonly string[]; readonly plannedEnd: number }) => ({
     commandId: "command-cycle-start",
     completion: Promise.resolve(),
     entityId,
   }));
+}
+
+function cycleActions(start = startAction()) {
+  return { start } as unknown as Pick<TrailUiActions["cycles"], "start">;
 }
 
 describe("TrailCyclesPage", () => {
@@ -83,7 +88,7 @@ describe("TrailCyclesPage", () => {
 
     render(
       <TrailCyclesPage
-        actions={{ start: startAction() }}
+        actions={cycleActions()}
         onCycleActivate={onCycleActivate}
         runtimeStore={store}
       />,
@@ -106,7 +111,7 @@ describe("TrailCyclesPage", () => {
     expect(onCycleActivate).toHaveBeenCalledWith(history.id);
   });
 
-  it("starts an empty Cycle with the configured suggested end date and navigates after persistence", async () => {
+  it("opens the standard Start Cycle flow, starts empty, and navigates after persistence", async () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 8, 10, 4));
     const { store } = readyStore(false);
     const start = startAction();
@@ -114,16 +119,22 @@ describe("TrailCyclesPage", () => {
 
     render(
       <TrailCyclesPage
-        actions={{ start }}
+        actions={cycleActions(start)}
         onCycleActivate={onCycleActivate}
         runtimeStore={store}
       />,
     );
 
     fireEvent.click(screen.getAllByRole("button", { name: "Start cycle" })[0]);
+    const dialog = screen.getByRole("dialog", { name: "Start cycle" });
+    expect(within(dialog).getByText("Select issues now or start empty and add issues later."))
+      .toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Start cycle" }));
 
-    expect(start).toHaveBeenCalledTimes(1);
-    const plannedEnd = start.mock.calls[0]?.[0].plannedEnd;
+    await waitFor(() => expect(start).toHaveBeenCalledTimes(1));
+    const input = start.mock.calls[0]?.[0];
+    expect(input?.issueIds).toEqual([]);
+    const plannedEnd = input?.plannedEnd;
     expect(plannedEnd).toBeTypeOf("number");
     if (typeof plannedEnd !== "number") return;
     expect(readTrailZonedDateTimeParts(plannedEnd, "Asia/Singapore")).toMatchObject({
@@ -143,7 +154,7 @@ describe("TrailCyclesPage", () => {
 
     render(
       <TrailCyclesPage
-        actions={{ start: startAction() }}
+        actions={cycleActions()}
         onCycleActivate={vi.fn()}
         runtimeStore={store}
       />,

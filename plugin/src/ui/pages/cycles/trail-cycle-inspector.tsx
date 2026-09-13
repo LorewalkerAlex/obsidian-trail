@@ -17,10 +17,11 @@ import { TrailButton } from "../../primitives/trail-button";
 import { TrailInput } from "../../primitives/trail-input";
 import { TrailProgress } from "../../primitives/trail-progress";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
+import { TrailCycleStart } from "./trail-cycle-start";
 
 type TrailCycleInspectorActions = Pick<
   TrailUiActions["cycles"],
-  "changePlannedEnd" | "close"
+  "changePlannedEnd" | "close" | "start"
 >;
 
 const TRAIL_DAY_MS = 24 * 60 * 60 * 1000;
@@ -182,10 +183,12 @@ function TrailCyclePlannedEndEditor({
 export function TrailCycleInspector({
   actions,
   cycleId,
+  onCycleActivate,
   runtimeStore,
 }: {
   readonly actions: TrailCycleInspectorActions;
   readonly cycleId: string;
+  readonly onCycleActivate?: (cycleId: string) => void;
   readonly runtimeStore: TrailRuntimeStore;
 }) {
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
@@ -193,6 +196,7 @@ export function TrailCycleInspector({
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<string>();
   const [closeOpen, setCloseOpen] = useState(false);
+  const [startNextOpen, setStartNextOpen] = useState(false);
   const now = Date.now();
 
   if (readModel === null) {
@@ -241,7 +245,7 @@ export function TrailCycleInspector({
     }
   };
 
-  const closeCycle = async () => {
+  const closeCycle = async (startNext: boolean) => {
     if (readModel.kind !== "current" || pending) return;
     setFeedback(undefined);
     let receipt: ReturnType<TrailCycleInspectorActions["close"]>;
@@ -254,6 +258,7 @@ export function TrailCycleInspector({
     setPending(true);
     try {
       await receipt.completion;
+      if (startNext) setStartNextOpen(true);
     } catch (error: unknown) {
       setFeedback(`Close failed: ${errorMessage(error)}`);
     } finally {
@@ -364,6 +369,12 @@ export function TrailCycleInspector({
 
       {readModel.kind !== "current" ? null : (
         <TrailConfirmation
+          alternateConfirm={{
+            disabled: pending,
+            label: "Close and start next",
+            onConfirm: () => { void closeCycle(true); },
+            tone: "danger",
+          }}
           confirmDisabled={pending}
           confirmLabel="Close"
           description={(
@@ -373,14 +384,27 @@ export function TrailCycleInspector({
               <span>
                 {readModel.unfinishedIssueCount} {readModel.unfinishedIssueCount === 1 ? "issue is" : "issues are"} still open.
               </span>
-              <span>Closing does not change any issue properties.</span>
+              <span>Closing does not change any Issue properties.</span>
             </span>
           )}
-          onConfirm={() => { void closeCycle(); }}
+          onConfirm={() => { void closeCycle(false); }}
           onOpenChange={setCloseOpen}
           open={closeOpen}
           title="Close cycle?"
           tone="danger"
+        />
+      )}
+
+      {!startNextOpen ? null : (
+        <TrailCycleStart
+          actions={actions}
+          onDismiss={() => setStartNextOpen(false)}
+          onStarted={(nextCycleId) => {
+            setStartNextOpen(false);
+            onCycleActivate?.(nextCycleId);
+          }}
+          runtimeStore={runtimeStore}
+          sourceCycleId={cycleId}
         />
       )}
     </>

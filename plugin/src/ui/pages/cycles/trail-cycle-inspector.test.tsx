@@ -3,6 +3,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -18,6 +19,7 @@ import {
 import {
   createTrailRuntimeStore,
   setTrailRuntimeControl,
+  type TrailRuntimeStore,
 } from "../../../runtime/store/trail-runtime-store";
 import {
   createTrailTestConfiguration,
@@ -25,6 +27,34 @@ import {
 } from "../../../test/trail-test-fixtures";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { TrailCycleInspector } from "./trail-cycle-inspector";
+
+function publishCycleFixture(
+  store: TrailRuntimeStore,
+  project: TrailProject,
+  issues: readonly TrailWorkflowIssue[],
+  cycle: TrailCycle,
+) {
+  publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
+    pluginData: {
+      configuration: createTrailTestConfiguration(),
+      workspaceState: createTrailTestWorkspaceState(project.id),
+    },
+    sources: [
+      {
+        issues,
+        kind: "project",
+        milestones: [],
+        project,
+        sourcePath: "Trail/Projects/0001 Project Alpha.md",
+      },
+      {
+        cycles: [cycle],
+        kind: "cycles",
+        sourcePath: "Trail/Collections/Cycles.md",
+      },
+    ],
+  }), { sourceIssuesByPath: {} });
+}
 
 function readyCycleStore(closed = false) {
   const project: TrailProject = {
@@ -60,42 +90,37 @@ function readyCycleStore(closed = false) {
     startedAt: Date.UTC(2026, 7, 18, 4),
   };
   const store = createTrailRuntimeStore();
-  publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
-    pluginData: {
-      configuration: createTrailTestConfiguration(),
-      workspaceState: createTrailTestWorkspaceState(project.id),
-    },
-    sources: [
-      {
-        issues: [active, completed],
-        kind: "project",
-        milestones: [],
-        project,
-        sourcePath: "Trail/Projects/0001 Project Alpha.md",
-      },
-      {
-        cycles: [cycle],
-        kind: "cycles",
-        sourcePath: "Trail/Collections/Cycles.md",
-      },
-    ],
-  }), { sourceIssuesByPath: {} });
+  publishCycleFixture(store, project, [active, completed], cycle);
   setTrailRuntimeControl(store, { kind: "ready" });
-  return { cycle, store };
+  const closeCommitted = () => {
+    publishCycleFixture(store, project, [active, completed], {
+      ...cycle,
+      endedAt: Date.UTC(2026, 7, 31, 4),
+    });
+  };
+  return { active, closeCommitted, completed, cycle, store };
 }
 
-function actions() {
+function actions(onClose?: () => void) {
   const changePlannedEnd = vi.fn(() => ({ entityId: "cycle-a", kind: "unchanged" as const }));
-  const close = vi.fn(() => ({
-    commandId: "command-close",
+  const close = vi.fn(() => {
+    onClose?.();
+    return {
+      commandId: "command-close",
+      completion: Promise.resolve(),
+      entityId: "cycle-a",
+    };
+  });
+  const start = vi.fn((_input: { readonly issueIds?: readonly string[]; readonly plannedEnd: number }) => ({
+    commandId: "command-start",
     completion: Promise.resolve(),
-    entityId: "cycle-a",
+    entityId: "cycle-next",
   }));
-  const value = { changePlannedEnd, close } as unknown as Pick<
+  const value = { changePlannedEnd, close, start } as unknown as Pick<
     TrailUiActions["cycles"],
-    "changePlannedEnd" | "close"
+    "changePlannedEnd" | "close" | "start"
   >;
-  return { changePlannedEnd, close, value };
+  return { changePlannedEnd, close, start, value };
 }
 
 describe("TrailCycleInspector", () => {
@@ -142,10 +167,61 @@ describe("TrailCycleInspector", () => {
     expect(screen.getByText("Close cycle?")).toBeInTheDocument();
     expect(screen.getByText("2 issues will remain associated with this cycle.")).toBeInTheDocument();
     expect(screen.getByText("1 issue is still open.")).toBeInTheDocument();
-    expect(screen.getByText("Closing does not change any issue properties.")).toBeInTheDocument();
+    expect(screen.getByText("Closing does not change any Issue properties.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close and start next" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(close).toHaveBeenCalledWith(cycle));
+  });
+
+  it("closes first, opens Start-next with live open members selected, and cancel does not roll back close", async () => {
+    const { active, closeCommitted, cycle, store } = readyCycleStore();
+    const { close, start, value } = actions(closeCommitted);
+
+    render(
+      <TrailCycleInspector
+        actions={value}
+        cycleId={cycle.id}
+        onCycleActivate={vi.fn()}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Close cycle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close and start next" }));
+
+    await waitFor(() => expect(close).toHaveBeenCalledWith(cycle));
+    const dialog = await screen.findByRole("dialog", { name: "Start cycle" });
+    expect(within(dialog).getByLabelText(`Deselect ${active.title}`)).toBeChecked();
+    expect(within(dialog).queryByText("Completed issue")).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(start).not.toHaveBeenCalled();
+    expect(store.getState().committed.authoritative.domain.cyclesById.get(cycle.id)?.endedAt).toBeDefined();
+  });
+
+  it("starts the next Cycle through the normal Start action and activates it after persistence", async () => {
+    const { active, closeCommitted, cycle, store } = readyCycleStore();
+    const { start, value } = actions(closeCommitted);
+    const onCycleActivate = vi.fn();
+
+    render(
+      <TrailCycleInspector
+        actions={value}
+        cycleId={cycle.id}
+        onCycleActivate={onCycleActivate}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Close cycle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close and start next" }));
+    const dialog = await screen.findByRole("dialog", { name: "Start cycle" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Start cycle" }));
+
+    await waitFor(() => expect(start).toHaveBeenCalledTimes(1));
+    expect(start.mock.calls[0]?.[0].issueIds).toEqual([active.id]);
+    await waitFor(() => expect(onCycleActivate).toHaveBeenCalledWith("cycle-next"));
   });
 
   it("renders Historical Cycle facts read-only without Progress or Close", () => {

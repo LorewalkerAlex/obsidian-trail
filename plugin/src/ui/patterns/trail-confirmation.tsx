@@ -32,7 +32,15 @@ export function TrailConfirmationSurface({
   );
 }
 
+export interface TrailConfirmationAlternateConfirm {
+  readonly disabled?: boolean;
+  readonly label: string;
+  readonly onConfirm: () => void;
+  readonly tone?: TrailConfirmationTone;
+}
+
 export interface TrailConfirmationProps {
+  readonly alternateConfirm?: TrailConfirmationAlternateConfirm;
   readonly cancelLabel?: string;
   readonly confirmDisabled?: boolean;
   readonly confirmLabel: string;
@@ -48,6 +56,7 @@ export interface TrailConfirmationProps {
 
 /** Shared guarded-action behavior around the reusable confirmation surface. */
 export function TrailConfirmation({
+  alternateConfirm,
   cancelLabel = "Cancel",
   confirmDisabled = false,
   confirmLabel,
@@ -108,6 +117,18 @@ export function TrailConfirmation({
                     {confirmLabel}
                   </TrailButton>
                 </Dialog.Close>
+                {alternateConfirm === undefined ? null : (
+                  <Dialog.Close asChild>
+                    <TrailButton
+                      data-confirmation-tone={alternateConfirm.tone ?? tone}
+                      disabled={alternateConfirm.disabled ?? false}
+                      onClick={alternateConfirm.onConfirm}
+                      variant={(alternateConfirm.tone ?? tone) === "default" ? "primary" : undefined}
+                    >
+                      {alternateConfirm.label}
+                    </TrailButton>
+                  </Dialog.Close>
+                )}
               </>
             )}
             description={<Dialog.Description>{description}</Dialog.Description>}

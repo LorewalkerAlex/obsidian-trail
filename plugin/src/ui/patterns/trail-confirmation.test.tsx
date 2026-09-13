@@ -71,6 +71,30 @@ describe("TrailConfirmation", () => {
     });
   });
 
+  it("supports one alternate guarded action without redefining confirmation mechanics", () => {
+    const onConfirm = vi.fn();
+    const onAlternateConfirm = vi.fn();
+    render(
+      <TrailConfirmation
+        alternateConfirm={{
+          label: "Delete and archive",
+          onConfirm: onAlternateConfirm,
+          tone: "danger",
+        }}
+        confirmLabel="Delete"
+        description="Choose one explicit destructive outcome."
+        onConfirm={onConfirm}
+        open
+        title="Delete this entry?"
+        tone="danger"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete and archive" }));
+    expect(onAlternateConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
   it("keeps the guarded action disabled until a composed workflow is ready", () => {
     const onConfirm = vi.fn();
     render(

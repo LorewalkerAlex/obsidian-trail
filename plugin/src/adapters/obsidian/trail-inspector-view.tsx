@@ -17,6 +17,7 @@ export class TrailInspectorView extends ItemView {
     private readonly runtimeStore: TrailRuntimeStore,
     private readonly actions: TrailUiActions,
     private readonly inspectorStore: TrailInspectorStore,
+    private readonly onCycleActivate?: (cycleId: string) => void,
   ) {
     super(leaf);
   }
@@ -43,6 +44,7 @@ export class TrailInspectorView extends ItemView {
         <TrailInspector
           actions={this.actions}
           inspectorStore={this.inspectorStore}
+          onCycleActivate={this.onCycleActivate}
           runtimeStore={this.runtimeStore}
         />
       </StrictMode>,
