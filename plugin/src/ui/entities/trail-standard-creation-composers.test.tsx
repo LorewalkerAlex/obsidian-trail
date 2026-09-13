@@ -8,7 +8,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createTrailTestConfiguration } from "../../test/trail-test-fixtures";
 import {
+  TrailInitiativeComposer,
   TrailProjectComposer,
+  TrailTriageComposer,
   TrailWorkflowIssueComposer,
   type TrailIssueCreationProjectTarget,
 } from "./trail-standard-creation-composers";
@@ -134,5 +136,61 @@ describe("standard creation Composers", () => {
       labelIds: [],
       title: "Source title",
     }));
+  });
+
+  it("submits the Triage variant through the shared creation callback contract", async () => {
+    const onCreate = vi.fn(async () => undefined);
+    const onOpenChange = vi.fn();
+    const defaultDue = Date.parse("2026-09-12T15:59:59.999Z");
+
+    render(
+      <TrailTriageComposer
+        configuration={createTrailTestConfiguration()}
+        defaultDue={defaultDue}
+        onCreate={onCreate}
+        onOpenChange={onOpenChange}
+        open
+      />,
+    );
+
+    const title = screen.getByRole("textbox", { name: "Triage title" });
+    await waitFor(() => expect(title).toHaveFocus());
+    fireEvent.change(title, { target: { value: "Review onboarding idea" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Triage description" }), {
+      target: { value: "Captured context" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledWith({
+      description: "Captured context",
+      due: defaultDue,
+      labelIds: [],
+      priority: undefined,
+      title: "Review onboarding idea",
+    }));
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+  });
+
+  it("keeps Initiative creation title-first and delegates the semantic create", async () => {
+    const onCreate = vi.fn(async () => undefined);
+    const onOpenChange = vi.fn();
+
+    render(
+      <TrailInitiativeComposer
+        onCreate={onCreate}
+        onOpenChange={onOpenChange}
+        open
+      />,
+    );
+
+    const title = screen.getByRole("textbox", { name: "Initiative title" });
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+
+    fireEvent.change(title, { target: { value: "Improve Trail onboarding" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledWith("Improve Trail onboarding"));
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
   });
 });

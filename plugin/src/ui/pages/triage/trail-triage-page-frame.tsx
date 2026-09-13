@@ -4,9 +4,9 @@ import { useStore } from "zustand";
 import { resolveTrailTriageDefaultDue } from "../../../domain/rules/trail-temporal-rules";
 import { selectTrailReadableConfiguration } from "../../../query/shared/trail-effective-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
+import { TrailTriageComposer } from "../../entities/trail-standard-creation-composers";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
-import { TrailTriageComposer } from "./trail-triage-composer";
 import { TrailTriagePage } from "./trail-triage-page";
 
 type TrailTriagePageFrameActions = Pick<
@@ -60,9 +60,12 @@ export function TrailTriagePageFrame({
       </div>
       {composerInvocation === null ? null : (
         <TrailTriageComposer
-          actions={actions}
           configuration={composerInvocation.configuration}
           defaultDue={composerInvocation.defaultDue}
+          onCreate={async (input) => {
+            const receipt = actions.create(input);
+            await receipt.completion;
+          }}
           onOpenChange={(open) => {
             if (!open) setComposerInvocation(null);
           }}

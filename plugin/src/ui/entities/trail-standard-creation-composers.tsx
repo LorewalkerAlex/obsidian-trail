@@ -8,6 +8,7 @@ import {
 
 import type { TrailWorkflowIssueCreateInput } from "../../application/issues/trail-issue-application";
 import type { TrailProjectCreateInput } from "../../application/projects/trail-project-application";
+import type { TrailTriageCreateInput } from "../../application/triage/trail-triage-application";
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import {
   type TrailPriority,
@@ -24,6 +25,7 @@ import {
 import { TrailViewPopover } from "../patterns/trail-view-popover";
 import { TrailInput } from "../primitives/trail-input";
 import { TrailTextarea } from "../primitives/trail-textarea";
+import { TrailDuePropertySelect } from "./trail-due-property-select";
 import { TrailEstimatePropertySelect } from "./trail-estimate-property-select";
 import { TrailLabelPropertySelect } from "./trail-label-property-select";
 import { TrailOptionalDuePropertySelect } from "./trail-optional-due-property-select";
@@ -496,6 +498,238 @@ export function TrailProjectComposer({
             value={draft.due}
           />
         </TrailStandardComposerProperties>
+      </TrailStandardComposerForm>
+    </TrailComposer>
+  );
+}
+
+type TriageComposerDraft = Omit<TrailTriageCreateInput, "description" | "due"> & {
+  readonly description: string;
+  readonly due: TrailTimestamp;
+};
+
+function createTriageDraft(defaultDue: TrailTimestamp): TriageComposerDraft {
+  return {
+    description: "",
+    due: defaultDue,
+    labelIds: [],
+    priority: undefined,
+    title: "",
+  };
+}
+
+function sameTriageDraft(left: TriageComposerDraft, right: TriageComposerDraft): boolean {
+  return left.description === right.description
+    && left.due === right.due
+    && left.priority === right.priority
+    && left.title === right.title
+    && sameStrings(left.labelIds, right.labelIds);
+}
+
+export function TrailTriageComposer({
+  configuration,
+  defaultDue,
+  onCreate,
+  onOpenChange,
+  open,
+}: {
+  readonly configuration: TrailConfiguration;
+  readonly defaultDue: TrailTimestamp;
+  readonly onCreate: (input: TrailTriageCreateInput) => Promise<void>;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly open: boolean;
+}) {
+  const initialDraft = createTriageDraft(defaultDue);
+  const [baseline, setBaseline] = useState<TriageComposerDraft>(initialDraft);
+  const [draft, setDraft] = useState<TriageComposerDraft>(initialDraft);
+  const [feedback, setFeedback] = useState<string>();
+  const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
+  const previousOpenRef = useRef(false);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const canSubmit = draft.title.trim().length > 0;
+
+  useEffect(() => {
+    if (open && !previousOpenRef.current) {
+      const nextDraft = createTriageDraft(defaultDue);
+      setBaseline(nextDraft);
+      setDraft(nextDraft);
+      setFeedback(undefined);
+      pendingRef.current = false;
+      setPending(false);
+    }
+    previousOpenRef.current = open;
+  }, [defaultDue, open]);
+
+  const updateDraft = (patch: Partial<TriageComposerDraft>) => {
+    if (pendingRef.current) return;
+    setDraft((current) => ({ ...current, ...patch }));
+    setFeedback(undefined);
+  };
+
+  const submit = async () => {
+    if (pendingRef.current || !canSubmit) return;
+    pendingRef.current = true;
+    setPending(true);
+    setFeedback(undefined);
+    try {
+      await onCreate({
+        description: draft.description,
+        due: draft.due,
+        labelIds: draft.labelIds,
+        priority: draft.priority,
+        title: draft.title,
+      });
+      pendingRef.current = false;
+      setPending(false);
+      onOpenChange(false);
+    } catch (error: unknown) {
+      pendingRef.current = false;
+      setPending(false);
+      setFeedback(`Create failed: ${errorMessage(error)}`);
+    }
+  };
+
+  return (
+    <TrailComposer
+      canSubmit={canSubmit}
+      context="Triage"
+      dirty={!sameTriageDraft(draft, baseline)}
+      feedback={feedback}
+      initialFocusRef={titleRef}
+      onDismiss={() => {
+        if (!pendingRef.current) onOpenChange(false);
+      }}
+      onSubmit={() => { void submit(); }}
+      open={open}
+      pending={pending}
+      submitLabel="Create"
+    >
+      <TrailStandardComposerForm>
+        <TrailStandardComposerEditor>
+          <TrailInput
+            aria-label="Triage title"
+            disabled={pending}
+            onChange={(event) => updateDraft({ title: event.currentTarget.value })}
+            placeholder="Title"
+            ref={titleRef}
+            value={draft.title}
+          />
+          <TrailTextarea
+            aria-label="Triage description"
+            disabled={pending}
+            onChange={(event) => updateDraft({ description: event.currentTarget.value })}
+            placeholder="Add description..."
+            rows={3}
+            value={draft.description}
+          />
+        </TrailStandardComposerEditor>
+        <TrailStandardComposerProperties label="Triage properties">
+          <TrailPriorityPropertySelect
+            disabled={pending}
+            layer="modal-child"
+            onValueChange={(priority) => updateDraft({ priority })}
+            value={draft.priority}
+          />
+          <TrailLabelPropertySelect
+            disabled={pending}
+            entityType="issue"
+            groups={configuration.labelGroups}
+            labels={configuration.labels}
+            layer="modal-child"
+            onValueChange={(labelIds) => updateDraft({ labelIds })}
+            value={draft.labelIds}
+          />
+          <TrailDuePropertySelect
+            disabled={pending}
+            layer="modal-child"
+            onValueChange={(due) => updateDraft({ due })}
+            timezone={configuration.temporal.timezone}
+            value={draft.due}
+          />
+        </TrailStandardComposerProperties>
+      </TrailStandardComposerForm>
+    </TrailComposer>
+  );
+}
+
+export function TrailInitiativeComposer({
+  onCreate,
+  onOpenChange,
+  open,
+  seedTitle = "",
+}: {
+  readonly onCreate: (title: string) => Promise<void>;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly open: boolean;
+  readonly seedTitle?: string;
+}) {
+  const [baseline, setBaseline] = useState(seedTitle);
+  const [title, setTitle] = useState(seedTitle);
+  const [feedback, setFeedback] = useState<string>();
+  const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
+  const previousOpenRef = useRef(false);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const canSubmit = title.trim().length > 0;
+
+  useEffect(() => {
+    if (open && !previousOpenRef.current) {
+      setBaseline(seedTitle);
+      setTitle(seedTitle);
+      setFeedback(undefined);
+      pendingRef.current = false;
+      setPending(false);
+    }
+    previousOpenRef.current = open;
+  }, [open, seedTitle]);
+
+  const submit = async () => {
+    if (pendingRef.current || !canSubmit) return;
+    pendingRef.current = true;
+    setPending(true);
+    setFeedback(undefined);
+    try {
+      await onCreate(title);
+      pendingRef.current = false;
+      setPending(false);
+      onOpenChange(false);
+    } catch (error: unknown) {
+      pendingRef.current = false;
+      setPending(false);
+      setFeedback(`Create failed: ${errorMessage(error)}`);
+    }
+  };
+
+  return (
+    <TrailComposer
+      canSubmit={canSubmit}
+      context="Initiative"
+      dirty={title !== baseline}
+      feedback={feedback}
+      initialFocusRef={titleRef}
+      onDismiss={() => {
+        if (!pendingRef.current) onOpenChange(false);
+      }}
+      onSubmit={() => { void submit(); }}
+      open={open}
+      pending={pending}
+      submitLabel="Create"
+    >
+      <TrailStandardComposerForm>
+        <TrailStandardComposerEditor>
+          <TrailInput
+            aria-label="Initiative title"
+            disabled={pending}
+            onChange={(event) => {
+              setTitle(event.currentTarget.value);
+              setFeedback(undefined);
+            }}
+            placeholder="Title"
+            ref={titleRef}
+            value={title}
+          />
+        </TrailStandardComposerEditor>
       </TrailStandardComposerForm>
     </TrailComposer>
   );

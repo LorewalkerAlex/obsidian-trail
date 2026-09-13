@@ -14,9 +14,14 @@ import {
 import { TrailInput } from "../primitives/trail-input";
 import { TrailTextarea } from "../primitives/trail-textarea";
 
-type ComposerKind = "issue" | "project" | "triage";
+type ComposerKind = "initiative" | "issue" | "project" | "triage";
 
 const SPECIMENS = {
+  initiative: {
+    context: "Initiative",
+    description: "",
+    title: "Improve Trail onboarding",
+  },
   issue: {
     context: "Issue",
     description: "Follow up on the captured request and turn it into planned work.",
@@ -76,7 +81,9 @@ function ComposerPreview({ kind }: { readonly kind: ComposerKind }) {
       <TrailComposerSurface
         canSubmit
         context={specimen.context}
-        contextAccessory={kind === "triage" ? undefined : <ComposerContextAccessory kind={kind} />}
+        contextAccessory={kind === "triage" || kind === "initiative"
+          ? undefined
+          : <ComposerContextAccessory kind={kind} />}
         onDismiss={() => { /* visual calibration only */ }}
         onSubmit={() => { /* visual calibration only */ }}
         submitLabel="Create"
@@ -88,31 +95,35 @@ function ComposerPreview({ kind }: { readonly kind: ComposerKind }) {
               defaultValue={specimen.title}
               readOnly
             />
-            <TrailTextarea
-              aria-label={`${specimen.context} calibration description`}
-              defaultValue={specimen.description}
-              readOnly
-              rows={3}
-            />
+            {kind === "initiative" ? null : (
+              <TrailTextarea
+                aria-label={`${specimen.context} calibration description`}
+                defaultValue={specimen.description}
+                readOnly
+                rows={3}
+              />
+            )}
           </TrailStandardComposerEditor>
 
-          <TrailStandardComposerProperties label={`${specimen.context} properties`}>
-            <TrailPriorityPropertySelect
-              layer="modal-child"
-              onValueChange={setPriority}
-              value={priority}
-            />
-            <FixedProperty label="Labels" />
-            {kind === "issue" ? <FixedProperty label="Milestone" /> : null}
-            {kind === "issue" ? (
-              <TrailEstimatePropertySelect
+          {kind === "initiative" ? null : (
+            <TrailStandardComposerProperties label={`${specimen.context} properties`}>
+              <TrailPriorityPropertySelect
                 layer="modal-child"
-                onValueChange={setEstimate}
-                value={estimate}
+                onValueChange={setPriority}
+                value={priority}
               />
-            ) : null}
-            <FixedProperty label={kind === "triage" ? "Review Sep 12" : "Due"} />
-          </TrailStandardComposerProperties>
+              <FixedProperty label="Labels" />
+              {kind === "issue" ? <FixedProperty label="Milestone" /> : null}
+              {kind === "issue" ? (
+                <TrailEstimatePropertySelect
+                  layer="modal-child"
+                  onValueChange={setEstimate}
+                  value={estimate}
+                />
+              ) : null}
+              <FixedProperty label={kind === "triage" ? "Review Sep 12" : "Due"} />
+            </TrailStandardComposerProperties>
+          )}
         </TrailStandardComposerForm>
       </TrailComposerSurface>
     </section>
@@ -125,6 +136,7 @@ export function TrailStandardComposerFamilySpecimen() {
       <ComposerPreview kind="triage" />
       <ComposerPreview kind="issue" />
       <ComposerPreview kind="project" />
+      <ComposerPreview kind="initiative" />
     </div>
   );
 }
