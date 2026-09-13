@@ -19,6 +19,10 @@ import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-sto
 import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
 import {
+  isTrailCollectionSelectionKeyboardOriginEligible,
+  useTrailCollectionSelectionState,
+} from "../../interactions/trail-collection-selection-state";
+import {
   resolveTrailWorkflowIssueStatusDragScope,
   type TrailWorkflowIssueStatusDragScope,
 } from "../../interactions/trail-workflow-issue-status-drag";
@@ -28,6 +32,7 @@ import {
   isTrailIssuePeekKeyboardOriginEligible,
   useTrailIssuePeek,
 } from "../../interactions/trail-issue-peek-state";
+import { TrailBulkBar } from "../../patterns/trail-bulk-bar";
 import { TrailEmptyState } from "../../patterns/trail-empty-state";
 import { TrailGroupHeader } from "../../patterns/trail-group-header";
 import { TrailIssuePeek } from "../../patterns/trail-issue-peek";
@@ -100,16 +105,24 @@ function TrailCycleStatusSection({
   onExpandedChange,
   onIssuePeekOpen,
   onIssuePeekToggle,
+  onIssueSelectionChange,
   peekTargetId,
   section,
+  selectedIssueIds,
   timezone,
 }: {
   readonly collapsed: boolean;
   readonly onExpandedChange: (expanded: boolean) => void;
   readonly onIssuePeekOpen: (issueId: string) => void;
   readonly onIssuePeekToggle: (issueId: string) => void;
+  readonly onIssueSelectionChange: (
+    issueId: string,
+    selected: boolean,
+    extendRange: boolean,
+  ) => void;
   readonly peekTargetId: string | null;
   readonly section: TrailCycleStatusSectionReadModel;
+  readonly selectedIssueIds: ReadonlySet<string>;
   readonly timezone: string;
 }) {
   return (
@@ -136,8 +149,12 @@ function TrailCycleStatusSection({
           milestoneTitle={issue.milestone?.title}
           onActivate={() => onIssuePeekOpen(issue.id)}
           onPreviewToggle={() => onIssuePeekToggle(issue.id)}
+          onSelectionChange={(selected, extendRange) => {
+            onIssueSelectionChange(issue.id, selected, extendRange);
+          }}
           priority={issue.priority}
           projectTitle={issue.project.title}
+          selected={selectedIssueIds.has(issue.id)}
           statusCategory={issue.status.category}
           statusLabel={issue.status.label}
           timezone={timezone}
@@ -150,6 +167,7 @@ function TrailCycleStatusSection({
 
 function resolveStatusDragScope(
   items: readonly TrailWorkflowIssueStatusDragItemReadModel[],
+  selectedIssueIds: ReadonlySet<string>,
   sourceIssueId: string,
 ): TrailWorkflowIssueStatusDragScope | null {
   return resolveTrailWorkflowIssueStatusDragScope({
@@ -158,7 +176,7 @@ function resolveStatusDragScope(
       statusDefinitionId: item.statusDefinitionId,
       targets: item.targets,
     })),
-    selectedIssueIds: new Set<string>(),
+    selectedIssueIds,
     sourceIssueId,
   });
 }
@@ -195,6 +213,7 @@ export function TrailCyclePage({
     () => new Set<string>(),
   );
   const [dragFeedback, setDragFeedback] = useState<string>();
+  const [membershipFeedback, setMembershipFeedback] = useState<string>();
   const [layout, setLayout] = useState<TrailCycleLayout>("board");
   const pageRef = useRef<HTMLElement | null>(null);
   const now = Date.now();
@@ -219,6 +238,7 @@ export function TrailCyclePage({
               : section.issues.map((issue) => issue.id)
           ));
   const peek = useTrailIssuePeek(visibleIssueIds);
+  const selection = useTrailCollectionSelectionState(current ? visibleIssueIds : []);
   const visibleIssues = readModel === null
     ? []
     : readModel.kind === "historical"
@@ -237,7 +257,7 @@ export function TrailCyclePage({
       visibleIssueIds,
     );
     if (items === null) return null;
-    return resolveStatusDragScope(items, sourceIssueId);
+    return resolveStatusDragScope(items, selection.selectedIds, sourceIssueId);
   };
 
   const handleStatusDrop = async (
@@ -253,6 +273,7 @@ export function TrailCyclePage({
 
     const latestScope = resolveStatusDragScope(
       latestItems,
+      new Set(scope.issueIds),
       scope.issueIds[0] ?? "",
     );
     if (
@@ -309,6 +330,71 @@ export function TrailCyclePage({
     if (!writable) return;
     peek.close();
     setAddIssuesOpen(true);
+  };
+
+  const clearSelection = (): void => {
+    pageRef.current?.focus({ preventScroll: true });
+    selection.clear();
+  };
+
+  const removeSelectedFromCycle = async (): Promise<void> => {
+    if (!writable || selection.selectedIds.size === 0) return;
+    setMembershipFeedback(undefined);
+
+    const latest = selectTrailCyclePageReadModel(runtimeStore.getState(), cycleId, {
+      filter: {},
+      now: Date.now(),
+    });
+    if (latest?.kind !== "current") return;
+
+    const selectedIssueIds = new Set(selection.selectedIds);
+    const nextIssueIds = latest.expectedCycle.issueIds.filter(
+      (issueId) => !selectedIssueIds.has(issueId),
+    );
+    if (nextIssueIds.length === latest.expectedCycle.issueIds.length) {
+      clearSelection();
+      return;
+    }
+
+    let result: ReturnType<TrailCyclePageActions["changeMembership"]>;
+    try {
+      result = actions.changeMembership(latest.expectedCycle, nextIssueIds);
+    } catch (error: unknown) {
+      setMembershipFeedback(`Membership change failed: ${errorMessage(error)}`);
+      return;
+    }
+    if (result.kind === "needs-input") {
+      setMembershipFeedback(result.input.message);
+      return;
+    }
+    if (result.kind === "unchanged") {
+      clearSelection();
+      return;
+    }
+
+    try {
+      await result.receipt.completion;
+      clearSelection();
+    } catch (error: unknown) {
+      setMembershipFeedback(`Membership change failed: ${errorMessage(error)}`);
+    }
+  };
+
+  const handleSelectionKeyDown: KeyboardEventHandler<HTMLElement> = (event) => {
+    if (
+      event.defaultPrevented
+      || event.key !== "Escape"
+      || selection.selectedIds.size === 0
+      || peek.targetId !== null
+      || addIssuesOpen
+      || pageRef.current?.dataset.statusDragActive === "true"
+      || !isTrailCollectionSelectionKeyboardOriginEligible(event.target)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    clearSelection();
   };
 
   const handlePointerDownCapture: PointerEventHandler<HTMLElement> = (event) => {
@@ -396,6 +482,7 @@ export function TrailCyclePage({
       className="trail-cycle-page"
       data-cycle-kind={readModel.kind}
       data-status-drag-enabled={writable ? "true" : undefined}
+      onKeyDown={handleSelectionKeyDown}
       onKeyDownCapture={handleKeyDownCapture}
       onPointerDownCapture={handlePointerDownCapture}
       ref={pageRef}
@@ -452,10 +539,12 @@ export function TrailCyclePage({
             <TrailCycleBoard
               onIssuePeekOpen={peek.open}
               onIssuePeekToggle={peek.toggle}
+              onIssueSelectionChange={selection.setSelected}
               onProjectActivate={onProjectActivate}
               peekTargetId={peek.targetId}
               projects={readModel.projects}
               sections={readModel.sections}
+              selectedIssueIds={selection.selectedIds}
               timezone={timezone}
             />
           ) : readModel.kind === "current" ? (
@@ -467,8 +556,10 @@ export function TrailCyclePage({
                   onExpandedChange={(expanded) => updateSectionExpanded(section.id, expanded)}
                   onIssuePeekOpen={peek.open}
                   onIssuePeekToggle={peek.toggle}
+                  onIssueSelectionChange={selection.setSelected}
                   peekTargetId={peek.targetId}
                   section={section}
+                  selectedIssueIds={selection.selectedIds}
                   timezone={timezone}
                 />
               ))}
@@ -502,6 +593,11 @@ export function TrailCyclePage({
               {dragFeedback}
             </div>
           )}
+          {membershipFeedback === undefined ? null : (
+            <div className="trail-cycle-page__membership-feedback" role="alert">
+              {membershipFeedback}
+            </div>
+          )}
 
           {readModel.emptyKind === "true" ? (
             <TrailEmptyState
@@ -521,6 +617,23 @@ export function TrailCyclePage({
           ) : null}
         </div>
       </div>
+
+      {readModel.kind === "current" && selection.selectedIds.size > 0 ? (
+        <div className="trail-cycle-page__bulk-layer">
+          <TrailBulkBar
+            actions={(
+              <TrailButton
+                disabled={!writable}
+                onClick={() => { void removeSelectedFromCycle(); }}
+              >
+                Remove from cycle
+              </TrailButton>
+            )}
+            count={selection.selectedIds.size}
+            onClear={clearSelection}
+          />
+        </div>
+      ) : null}
 
       {peekIssue === undefined ? null : (
         <div className="trail-cycle-page__peek-layer">

@@ -316,7 +316,8 @@ body button.trail-cycle-board__lane-title--action:focus-visible {
   display: grid;
 }
 
-.trail-cycle-page__drag-feedback {
+.trail-cycle-page__drag-feedback,
+.trail-cycle-page__membership-feedback {
   margin: var(--trail-space-6) var(--trail-space-8) 0;
   color: var(--trail-danger);
   font-size: var(--trail-font-size-supporting);
@@ -327,6 +328,23 @@ body button.trail-cycle-board__lane-title--action:focus-visible {
 .trail-cycle-page__history-list + .trail-empty-state,
 .trail-cycle-board + .trail-empty-state {
   margin-top: var(--trail-space-10);
+}
+
+.trail-cycle-page__bulk-layer {
+  position: absolute;
+  z-index: calc(var(--layer-menu, 1000) - 2);
+  right: var(--trail-space-8);
+  bottom: var(--trail-space-8);
+  left: var(--trail-space-8);
+  display: flex;
+  min-width: 0;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.trail-cycle-page__bulk-layer > .trail-bulk-bar {
+  max-width: min(100%, 560px);
+  pointer-events: auto;
 }
 
 .trail-cycle-page__peek-layer {
@@ -358,6 +376,18 @@ body button.trail-cycle-board__lane-title--action:focus-visible {
 
   .trail-cycle-page__peek-layer > .trail-issue-peek {
     max-height: min(480px, 100%);
+  }
+}
+
+@container (max-width: 480px) {
+  .trail-cycle-page__bulk-layer {
+    right: var(--trail-space-4);
+    bottom: var(--trail-space-4);
+    left: var(--trail-space-4);
+  }
+
+  .trail-cycle-page__bulk-layer > .trail-bulk-bar {
+    width: 100%;
   }
 }
 

@@ -189,6 +189,54 @@ describe("TrailCyclePage", () => {
     expect(screen.queryByRole("dialog", { name: "Add issues" })).not.toBeInTheDocument();
   });
 
+  it("reuses collection selection across Board/List and removes the selected membership in one Cycle intent", () => {
+    const { cycle, store } = readyStore();
+    const changeMembership = vi.fn(() => ({
+      entityId: cycle.id,
+      kind: "unchanged" as const,
+    }));
+
+    render(
+      <TrailCyclePage
+        actions={pageActions(changeMembership)}
+        cycleId={cycle.id}
+        onCyclesActivate={vi.fn()}
+        renderMarkdown={renderMarkdown}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", {
+      name: "Select Build current cycle page",
+    }));
+    expect(screen.getByRole("toolbar", { name: "Selection actions" }))
+      .toHaveTextContent("1 selected");
+
+    fireEvent.click(screen.getByRole("button", { name: "List" }));
+    expect(screen.getByRole("checkbox", {
+      name: "Deselect Build current cycle page",
+    })).toBeChecked();
+
+    const singleBulkBar = screen.getByRole("toolbar", { name: "Selection actions" });
+    fireEvent.click(within(singleBulkBar).getByRole("button", { name: "Remove from cycle" }));
+    expect(changeMembership).toHaveBeenLastCalledWith(cycle, ["issue-beta"]);
+    expect(screen.queryByRole("toolbar", { name: "Selection actions" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", {
+      name: "Select Build current cycle page",
+    }));
+    fireEvent.click(screen.getByRole("checkbox", {
+      name: "Select Verify project swimlanes",
+    }));
+    const multiBulkBar = screen.getByRole("toolbar", { name: "Selection actions" });
+    expect(multiBulkBar).toHaveTextContent("2 selected");
+
+    fireEvent.click(within(multiBulkBar).getByRole("button", { name: "Remove from cycle" }));
+    expect(changeMembership).toHaveBeenLastCalledWith(cycle, []);
+    expect(changeMembership).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("toolbar", { name: "Selection actions" })).not.toBeInTheDocument();
+  });
+
   it("shows a relative overdue state instead of repeating the range end date", () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 8, 20, 12));
     const { cycle, store } = readyStore();
