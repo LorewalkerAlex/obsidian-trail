@@ -119,13 +119,14 @@ describe("TrailCyclePage", () => {
   it("composes the Current Cycle as Board by default and reuses the mixed-Project List", () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 8, 10, 12));
     const { cycle, store } = readyStore();
+    const onCyclesActivate = vi.fn();
     const onProjectActivate = vi.fn();
 
     render(
       <TrailCyclePage
         actions={pageActions()}
         cycleId={cycle.id}
-        onCyclesActivate={vi.fn()}
+        onCyclesActivate={onCyclesActivate}
         onIssueActivate={vi.fn()}
         onProjectActivate={onProjectActivate}
         renderMarkdown={renderMarkdown}
@@ -147,6 +148,10 @@ describe("TrailCyclePage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Project Alpha" }));
     expect(onProjectActivate).toHaveBeenCalledWith("project-a");
+
+    expect(screen.queryByRole("button", { name: "History" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cycles" }));
+    expect(onCyclesActivate).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "List" }));
     expect(screen.queryByRole("region", { name: "Current cycle board" })).not.toBeInTheDocument();

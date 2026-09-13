@@ -494,12 +494,9 @@ export function TrailCyclePage({
             <TrailButton disabled={!writable} onClick={openAddIssues}>Add issues</TrailButton>
           ) : undefined}
           breadcrumb={(
-            <>
-              <TrailPageBreadcrumbButton onClick={onCyclesActivate}>
-                Cycles
-              </TrailPageBreadcrumbButton>
-              <span aria-hidden="true" className="trail-cycle-page__breadcrumb-separator">/</span>
-            </>
+            <TrailPageBreadcrumbButton onClick={onCyclesActivate}>
+              Cycles
+            </TrailPageBreadcrumbButton>
           )}
           title={title}
         />

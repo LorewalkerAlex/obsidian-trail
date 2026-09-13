@@ -36,7 +36,7 @@ Do not reopen already-closed Product/UI decisions because older code or tests ex
 Known alignment debt now centers on:
 
 1. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
-2. Project lifecycle/Bulk/Delete transient presentation remains a deliberate final Linear-faithful calibration target for Stage 12; Stage 9 behavior and semantics are closed.
+2. one deliberate full-system visual/UI calibration remains reserved for Stage 12 after Product content/workflows are complete and functional validation is green. That pass includes previously deferred Project lifecycle/Bulk/Delete transient micro-calibration plus typography, hierarchy, density, spacing, alignment, chrome, and cross-surface consistency across the finished V1 surface set.
 
 These are implementation/calibration gaps, not design questions. Stage 8 established the shared Collection Selection, Peek, Action Registry, Context Menu, and Bulk Bar mechanics; Stage 9 reused those owners and closed Sidebar Search plus Default Project host evidence without creating parallel systems. No human-readable Workflow Issue identifier is planned merely to support row spacing.
 
@@ -741,8 +741,14 @@ Home adds Page-specific visualization/composition, not another foundational inte
 
 ### Stage 12 — Full-system calibration and V1 exit
 
+Stage 12 begins only after the planned V1 Product surfaces/workflows are implemented and their functional owner/direct-consumer tests plus required host behavior are green. Earlier stages may still correct visual defects that block usability, containment, or host correctness, but broad aesthetic polish must not become a moving feature-stage target.
+
+The Stage 12 visual pass is one final integration calibration over the completed product. It must reuse the accepted production owners and Linear-faithful Trail grammar rather than introduce Page-local styling systems or reopen closed Product/Domain semantics.
+
 Complete:
 
+- one final full-system visual/UI calibration across Product Pages, collections, Inspectors, Sidebar, transient surfaces, and shell chrome;
+- typography, hierarchy, density, spacing, alignment, interaction chrome, and cross-surface consistency calibration against the Linear benchmark and the accepted Trail production grammar;
 - runtime/Data-Issue feedback placement;
 - responsive calibration across representative pane sizes;
 - keyboard/focus conflict calibration;
@@ -750,7 +756,8 @@ Complete:
 - Foundation visual regression sweep;
 - whole-shell Obsidian integration;
 - evidence-driven performance/virtualization where required;
-- final full validation/release checkpoint.
+- re-run affected functional/host regression after visual calibration so aesthetic changes cannot silently break behavior;
+- final repository-wide validation/release checkpoint and GitHub verification.
 
 ## 9. Active Slice
 

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -33,6 +33,13 @@ function readyCycleStore() {
     statusDefinitionId: "project-started",
     title: "Project Alpha",
   };
+  const history = {
+    endedAt: Date.UTC(2026, 7, 17),
+    id: "cycle-history",
+    issueIds: [],
+    plannedEnd: Date.UTC(2026, 7, 17),
+    startedAt: Date.UTC(2026, 7, 4),
+  };
   const cycle = {
     id: "cycle-current",
     issueIds: [],
@@ -54,20 +61,21 @@ function readyCycleStore() {
         sourcePath: "Trail/Projects/0001 Project Alpha.md",
       },
       {
-        cycles: [cycle],
+        cycles: [history, cycle],
         kind: "cycles",
         sourcePath: "Trail/Collections/Cycles.md",
       },
     ],
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
-  return { cycle, store };
+  return { cycle, history, store };
 }
 
 function actions(): TrailUiActions {
   return {
     cycles: {
       changeMembership: vi.fn(),
+      start: vi.fn(),
     },
     issues: {
       changeStatus: vi.fn(),
@@ -98,6 +106,30 @@ describe("TrailApp Cycle route", () => {
     expect(screen.getAllByRole("button", { name: "Add issues" })).not.toHaveLength(0);
     expect(screen.getByRole("region", { name: "Current cycle board" })).toBeInTheDocument();
     expect(screen.queryByText("This page has not been implemented yet.")).not.toBeInTheDocument();
+    expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-scroll", "nested");
+    expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-inset", "none");
+  });
+
+  it("mounts the Cycles root and routes Previous Cycle rows through the shell boundary", () => {
+    const { history, store } = readyCycleStore();
+    const navigationStore = createTrailNavigationStore({ kind: "cycles" });
+    const onNavigate = vi.fn();
+    const { container } = render(
+      <TrailApp
+        actions={actions()}
+        navigationStore={navigationStore}
+        onNavigate={onNavigate}
+        renderMarkdown={renderMarkdown}
+        runtimeStore={store}
+        showDevelopment={false}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 1, name: "Cycles" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Previous" })).toBeInTheDocument();
+    expect(screen.queryByText("This page has not been implemented yet.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: /Aug 4.*Aug 17/ }));
+    expect(onNavigate).toHaveBeenCalledWith({ cycleId: history.id, kind: "cycle" });
     expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-scroll", "nested");
     expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-inset", "none");
   });

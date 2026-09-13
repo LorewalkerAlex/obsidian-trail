@@ -4,6 +4,7 @@ import type { TrailRuntimeStore } from "../../runtime/store/trail-runtime-store"
 import { TRAIL_DEVELOPMENT_UI_ENABLED } from "../../trail-build-flags";
 import { TrailFoundationLab } from "../foundation/trail-foundation-lab";
 import { TrailCyclePage } from "../pages/cycles/trail-cycle-page";
+import { TrailCyclesPage } from "../pages/cycles/trail-cycles-page";
 import { TrailIssueFullItemPage } from "../pages/issues/trail-issue-full-item-page";
 import { TrailInitiativePage } from "../pages/projects/trail-initiative-page";
 import { TrailProjectWorkspacePage } from "../pages/projects/trail-project-workspace-page";
@@ -153,6 +154,16 @@ export function TrailApp({
               }}
               projectId={currentLocation.projectId}
               renderMarkdown={renderMarkdown}
+              runtimeStore={runtimeStore}
+            />
+          </TrailPageSurface>
+        ) : currentLocation.kind === "cycles" ? (
+          <TrailPageSurface>
+            <TrailCyclesPage
+              actions={{ start: actions.cycles.start }}
+              onCycleActivate={(cycleId) => {
+                onNavigate({ cycleId, kind: "cycle" });
+              }}
               runtimeStore={runtimeStore}
             />
           </TrailPageSurface>
