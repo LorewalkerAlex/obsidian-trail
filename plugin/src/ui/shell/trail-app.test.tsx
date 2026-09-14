@@ -112,7 +112,7 @@ function expectSharedChassis(
 }
 
 describe("TrailApp", () => {
-  it("renders Home on the shared Page Surface instead of falling back to Foundation", () => {
+  it("renders the real Home consumer on the shared Page Surface instead of a placeholder", () => {
     const navigationStore = createTrailNavigationStore();
     const { container } = render(
       <TrailApp
@@ -120,13 +120,15 @@ describe("TrailApp", () => {
         navigationStore={navigationStore}
         onNavigate={vi.fn()}
         renderMarkdown={renderMarkdown}
-        runtimeStore={createTrailRuntimeStore()}
+        runtimeStore={createTrailTestRuntimeStore()}
         showDevelopment={false}
       />,
     );
 
     expect(navigationStore.getState().location).toEqual({ kind: "home" });
     expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "This week" })).toBeInTheDocument();
+    expect(screen.queryByText("This page has not been implemented yet.")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
     expectSharedChassis(container, { inset: "page", scroll: "page" });
   });

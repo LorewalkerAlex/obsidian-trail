@@ -166,7 +166,11 @@ export function TrailHomeWidgetSpecimens() {
         title="Home widget · Work trend · 2×1 candidate"
       >
         <div className="trail-home-widget-work-trend-candidate">
-          <TrailWorkTrendWidget days={WORK_TREND_DAYS} />
+          <TrailWorkTrendWidget
+            days={WORK_TREND_DAYS}
+            hasHistory
+            rangeLabel="Jul–Sep"
+          />
         </div>
       </LabSpecimenRow>
     </>

@@ -1,3 +1,55 @@
+/* Home Page consumes the same production widgets proven in Foundation. */
+.trail-home-page {
+  box-sizing: border-box;
+  min-width: 0;
+  padding-bottom: var(--trail-space-12);
+}
+
+.trail-home-page__widgets {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--trail-space-6);
+  padding: var(--trail-space-4) var(--trail-space-8) 0;
+}
+
+.trail-home-page__slot {
+  min-width: 0;
+}
+
+.trail-home-page__slot[data-home-slot="this-week"] {
+  grid-column: span 1;
+}
+
+.trail-home-page__slot[data-home-slot="lifecycle"] {
+  grid-column: 1 / -1;
+}
+
+.trail-home-page__slot[data-home-slot="work-trend"] {
+  grid-column: span 2;
+}
+
+@container (max-width: 840px) {
+  .trail-home-page__widgets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trail-home-page__slot[data-home-slot="lifecycle"],
+  .trail-home-page__slot[data-home-slot="work-trend"] {
+    grid-column: 1 / -1;
+  }
+}
+
+@container (max-width: 520px) {
+  .trail-home-page__widgets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trail-home-page__slot[data-home-slot="this-week"] {
+    grid-column: 1;
+  }
+}
+
 /* Home widget production family: fixed physical footprints with size-aware content. */
 .trail-home-widget {
   box-sizing: border-box;
@@ -6,9 +58,11 @@
   min-width: 0;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid var(--trail-border-subtle);
+  border: 1px solid transparent;
   border-radius: var(--trail-radius-lg);
-  background: var(--trail-surface-very-quiet);
+  background:
+    linear-gradient(var(--trail-surface-very-quiet), var(--trail-surface-very-quiet)) padding-box,
+    linear-gradient(145deg, var(--trail-border-default) 0%, var(--trail-border-subtle) 38%, transparent 78%) border-box;
   color: var(--trail-text-secondary);
 }
 
@@ -257,11 +311,21 @@
 }
 
 /* Work trend is a shape-first stock/throughput chart with one shared time axis. */
-.trail-home-work-trend {
+.trail-home-work-trend,
+.trail-home-work-trend__empty {
   display: grid;
   height: 100%;
   min-height: 0;
+}
+
+.trail-home-work-trend {
   grid-template-rows: minmax(0, 1fr);
+}
+
+.trail-home-work-trend__empty {
+  place-items: center;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-supporting);
 }
 
 .trail-home-work-trend__chart {

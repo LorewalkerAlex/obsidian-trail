@@ -100,8 +100,12 @@ function TooltipRow({
 
 export function TrailWorkTrendWidget({
   days,
+  hasHistory,
+  rangeLabel,
 }: {
   readonly days: readonly TrailWorkTrendWidgetDay[];
+  readonly hasHistory: boolean;
+  readonly rangeLabel: string;
 }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const maxInventory = Math.max(
@@ -152,104 +156,108 @@ export function TrailWorkTrendWidget({
   }
 
   return (
-    <TrailHomeWidgetFrame meta="Jul–Sep" size="wide" title="Work trend">
-      <div className="trail-home-work-trend">
-        <div
-          className="trail-home-work-trend__chart"
-          onPointerLeave={() => setActiveIndex(null)}
-          onPointerMove={handlePointerMove}
-        >
-          <svg
-            aria-label="Work trend chart"
-            className="trail-home-work-trend__svg"
-            preserveAspectRatio="none"
-            role="img"
-            viewBox="0 0 100 100"
+    <TrailHomeWidgetFrame meta={rangeLabel} size="wide" title="Work trend">
+      {!hasHistory || days.length === 0 ? (
+        <div className="trail-home-work-trend__empty">No workflow history yet</div>
+      ) : (
+        <div className="trail-home-work-trend">
+          <div
+            className="trail-home-work-trend__chart"
+            onPointerLeave={() => setActiveIndex(null)}
+            onPointerMove={handlePointerMove}
           >
-            <path
-              className="trail-home-work-trend__area"
-              data-series="backlog"
-              d={backlogAreaPath}
-            />
-            <path
-              className="trail-home-work-trend__area"
-              data-series="active"
-              d={activeAreaPath}
-            />
-            <path
-              className="trail-home-work-trend__area"
-              data-series="completed"
-              d={completedAreaPath}
-            />
-
-            <line
-              className="trail-home-work-trend__axis"
-              x1="0"
-              x2="100"
-              y1={AXIS_Y}
-              y2={AXIS_Y}
-            />
-
-            <path
-              className="trail-home-work-trend__line"
-              data-series="inventory"
-              d={inventoryPath}
-            />
-            <path
-              className="trail-home-work-trend__line"
-              data-series="active"
-              d={activePath}
-            />
-            <path
-              className="trail-home-work-trend__line"
-              data-series="completed"
-              d={completedPath}
-            />
-
-            {activeIndex === null ? null : (
-              <line
-                className="trail-home-work-trend__cursor"
-                x1={activeX}
-                x2={activeX}
-                y1="4"
-                y2="96"
-              />
-            )}
-          </svg>
-
-          <div className="trail-home-work-trend__focus-layer" aria-label="Work trend daily values">
-            {days.map((day, index) => (
-              <span
-                className="trail-home-work-trend__focus-day"
-                key={day.id}
-                onBlur={() => setActiveIndex(null)}
-                onFocus={() => setActiveIndex(index)}
-                style={{
-                  "--trail-home-work-trend-index": index,
-                  "--trail-home-work-trend-total": days.length,
-                } as CSSProperties}
-                tabIndex={0}
-              >
-                <span className="trail-home-work-trend__sr-only">{dayDetail(day)}</span>
-              </span>
-            ))}
-          </div>
-
-          {activeDay === undefined ? null : (
-            <div
-              aria-hidden="true"
-              className="trail-home-work-trend__tooltip"
-              data-side={activeX > 62 ? "left" : "right"}
-              style={{ "--trail-home-work-trend-x": `${activeX}%` } as CSSProperties}
+            <svg
+              aria-label="Work trend chart"
+              className="trail-home-work-trend__svg"
+              preserveAspectRatio="none"
+              role="img"
+              viewBox="0 0 100 100"
             >
-              <span className="trail-home-work-trend__tooltip-date">{activeDay.dateLabel}</span>
-              <TooltipRow label="Backlog" series="backlog" value={activeDay.backlogStock} />
-              <TooltipRow label="Active" series="active" value={activeDay.activeStock} />
-              <TooltipRow label="Completed 7d" series="completed" value={activeDay.completed7dCount} />
+              <path
+                className="trail-home-work-trend__area"
+                data-series="backlog"
+                d={backlogAreaPath}
+              />
+              <path
+                className="trail-home-work-trend__area"
+                data-series="active"
+                d={activeAreaPath}
+              />
+              <path
+                className="trail-home-work-trend__area"
+                data-series="completed"
+                d={completedAreaPath}
+              />
+
+              <line
+                className="trail-home-work-trend__axis"
+                x1="0"
+                x2="100"
+                y1={AXIS_Y}
+                y2={AXIS_Y}
+              />
+
+              <path
+                className="trail-home-work-trend__line"
+                data-series="inventory"
+                d={inventoryPath}
+              />
+              <path
+                className="trail-home-work-trend__line"
+                data-series="active"
+                d={activePath}
+              />
+              <path
+                className="trail-home-work-trend__line"
+                data-series="completed"
+                d={completedPath}
+              />
+
+              {activeIndex === null ? null : (
+                <line
+                  className="trail-home-work-trend__cursor"
+                  x1={activeX}
+                  x2={activeX}
+                  y1="4"
+                  y2="96"
+                />
+              )}
+            </svg>
+
+            <div className="trail-home-work-trend__focus-layer" aria-label="Work trend daily values">
+              {days.map((day, index) => (
+                <span
+                  className="trail-home-work-trend__focus-day"
+                  key={day.id}
+                  onBlur={() => setActiveIndex(null)}
+                  onFocus={() => setActiveIndex(index)}
+                  style={{
+                    "--trail-home-work-trend-index": index,
+                    "--trail-home-work-trend-total": days.length,
+                  } as CSSProperties}
+                  tabIndex={0}
+                >
+                  <span className="trail-home-work-trend__sr-only">{dayDetail(day)}</span>
+                </span>
+              ))}
             </div>
-          )}
+
+            {activeDay === undefined ? null : (
+              <div
+                aria-hidden="true"
+                className="trail-home-work-trend__tooltip"
+                data-side={activeX > 62 ? "left" : "right"}
+                style={{ "--trail-home-work-trend-x": `${activeX}%` } as CSSProperties}
+              >
+                <span className="trail-home-work-trend__tooltip-date">{activeDay.dateLabel}</span>
+                <TooltipRow label="Backlog" series="backlog" value={activeDay.backlogStock} />
+                <TooltipRow label="Active" series="active" value={activeDay.activeStock} />
+                <TooltipRow label="Completed 7d" series="completed" value={activeDay.completed7dCount} />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </TrailHomeWidgetFrame>
   );
 }
