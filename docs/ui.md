@@ -1463,7 +1463,7 @@ Triage Review Due
 Workflow Issue Due
 ```
 
-Today is highlighted. The visual is a compact week grid/strip with sparse dots and count compression at higher density. It does not include Project/Initiative/Milestone Due and does not drill down on click.
+The visual is a compact date-first week matrix: weekday/date headers carry the primary scan, the Triage and Issues rows stay quiet, zero counts recede, and non-zero counts remain directly readable. Today uses a restrained marker rather than a table-like selected column. It does not include Project/Initiative/Milestone Due and does not drill down on click.
 
 ### 12.2 Lifecycle Activity
 
@@ -1478,11 +1478,11 @@ activity(D)
 + count(Workflow Issue terminalAt on D)
 ```
 
-All three event kinds have equal weight. One hue varies by total daily intensity. Hover/focus may show date and event counts. No click drill-down.
+All three event kinds have equal weight. One hue varies by total daily intensity. Empty cells recede so the activity field and intensity pattern remain primary. Hover/focus may show date and event counts. No click drill-down. Foundation may study a longer annual geometry for visual calibration, but that study does not change the accepted three-calendar-month Product horizon.
 
 ### 12.3 Work Trend
 
-Work Trend uses the same rolling three-calendar-month horizon.
+Work Trend uses the same rolling three-calendar-month horizon and compares unfinished stock with recent completion throughput.
 
 For each day D:
 
@@ -1496,14 +1496,17 @@ Active stock
 = Workflow Issues whose firstStartedAt has occurred by D
   and terminalAt has not occurred by D
 
-Completed flow
-= Workflow Issues whose terminalAt falls on D
+Completed 7d
+= Workflow Issues whose terminalAt falls within
+  the inclusive local-date window D-6 through D
   and whose current terminal category is Completed
 ```
 
-Backlog and Active are stock lines. Completed is day-local flow bars, not a third cumulative-looking line. Trail does not persist daily snapshots solely for this chart; retrospective projection may change if retained lifecycle evidence changes.
+The chart uses one shared time axis with two non-negative visual regions. Above the axis, Active sits adjacent to the axis and Backlog occupies the remaining stacked unfinished inventory; the outer silhouette therefore represents `Backlog + Active`. Below the same axis, Completed 7d is a filled throughput area that grows downward only to separate the two semantic regions spatially; it does not represent a negative value. The stock region and throughput region may use independent vertical scales because they measure different quantities.
 
-No-history state keeps chart frame/legend plus quiet `No workflow history yet`. No global Issue drill-down is invented.
+Default presentation is shape-first rather than KPI-first: there is no permanent row of current Backlog/Active/Completed numbers. Hover/focus at a date exposes that date plus Backlog, Active, and Completed 7d exact values through the chart's own detail treatment. No global Issue drill-down is invented.
+
+Trail does not persist daily snapshots solely for this chart; retrospective projection may change if retained lifecycle evidence changes. No-history state keeps the chart frame plus quiet `No workflow history yet`.
 
 ### 12.4 Weekly Meeting Notes
 

@@ -1584,17 +1584,18 @@ No Trail Inspector.
 
 **This week**
 
-Current Monday-Sunday strip with exactly two Due sources:
+Current Monday-Sunday matrix with exactly two Due sources:
 
 ```text
               Mon   Tue   Wed   Thu   Fri   Sat   Sun
-Triage         .     o     .    oo     .     .     .
-Issues         o     .    oo     o    oo     .     .
-                                   ^
-                                 Today
+               14    15    16    17    18    19    20
+Triage          .     1     .     2     .     .     1
+Issues          1     .     2     1     3     .     .
+                ^
+              Today
 ```
 
-Informational only; no hidden drill-down. High density may compress to dot + count.
+Informational only; no hidden drill-down. Weekday/date headers are the primary scan, zero values recede, and Today uses a restrained marker rather than a selected-column treatment.
 
 **Lifecycle activity**
 
@@ -1604,21 +1605,30 @@ GitHub contribution-calendar geometry adapted to Trail visual tokens:
 - one cell per local day;
 - rolling three calendar months ending today;
 - daily equal-weight count of `createdAt + firstStartedAt + terminalAt`;
-- one hue with intensity steps;
+- one hue with intensity steps; empty cells visually recede so density carries the shape;
 - hover/focus -> date and Created/Started/Terminal counts;
-- no click drill-down.
+- no click drill-down;
+- a longer annual Foundation specimen may be used only to study geometry; Product keeps the three-calendar-month horizon.
 
 **Work trend**
 
-Same rolling three-calendar-month horizon:
+Same rolling three-calendar-month horizon, using one shared time axis:
 
 ```text
-Backlog stock   -> line
-Active stock    -> line
-Completed flow  -> day-local bars
+             unfinished inventory
+Backlog      neutral outer stock area
+Active       warm stock area adjacent to axis
+--------------------------------------------- time
+Completed 7d cool throughput area below axis
 ```
 
-No global Issue destination is invented for chart drill-down. No-history state keeps the chart frame/legend plus quiet copy.
+- upper field stacks Backlog + Active; the outer silhouette is total unfinished inventory;
+- lower field is the rolling seven-day Completed sum and grows downward only as spatial separation, not negative meaning;
+- stock and throughput regions may scale independently;
+- no fixed KPI/legend row is required in the default state;
+- hover/focus at one x-position -> date + Backlog + Active + Completed 7d;
+- no global Issue destination is invented for chart drill-down;
+- no-history state keeps the chart frame plus quiet copy.
 
 **Weekly Meeting Notes**
 

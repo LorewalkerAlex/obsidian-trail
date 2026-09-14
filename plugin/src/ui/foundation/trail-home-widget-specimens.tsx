@@ -85,6 +85,7 @@ const LIFECYCLE_MONTHS = buildLifecycleMonths();
 
 function buildWorkTrendDays(): readonly TrailWorkTrendWidgetDay[] {
   const days: TrailWorkTrendWidgetDay[] = [];
+  const completedWindow = [0, 0, 0, 0, 0, 0];
   let backlogStock = 8;
   let activeStock = 2;
 
@@ -95,19 +96,22 @@ function buildWorkTrendDays(): readonly TrailWorkTrendWidgetDay[] {
       activeStock += 1;
     }
 
-    let completedFlow = 0;
+    let completedToday = 0;
     if (index % 9 === 4 && activeStock > 0) {
       activeStock -= 1;
-      completedFlow += 1;
+      completedToday += 1;
     }
     if (index % 23 === 11 && activeStock > 0) {
       activeStock -= 1;
-      completedFlow += 1;
+      completedToday += 1;
     }
     if (timestamp === Date.UTC(2026, 8, 14) && activeStock > 0) {
       activeStock -= 1;
-      completedFlow += 1;
+      completedToday += 1;
     }
+
+    completedWindow.push(completedToday);
+    if (completedWindow.length > 7) completedWindow.shift();
 
     const date = new Date(timestamp);
     const month = MONTH_NAMES[date.getUTCMonth()];
@@ -116,7 +120,7 @@ function buildWorkTrendDays(): readonly TrailWorkTrendWidgetDay[] {
     days.push({
       activeStock,
       backlogStock,
-      completedFlow,
+      completed7dCount: completedWindow.reduce((sum, value) => sum + value, 0),
       dateLabel: `${month} ${dayOfMonth}, ${date.getUTCFullYear()}`,
       id: `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(dayOfMonth).padStart(2, "0")}`,
     });
@@ -131,7 +135,7 @@ export function TrailHomeWidgetSpecimens() {
   return (
     <>
       <LabSpecimenRow
-        description="This week stays at 1×1, but the internal hierarchy is recalibrated: left-aligned title, month-only context, larger date numerals, right-aligned source labels, quiet dashes for zero counts, and a quieter Today treatment."
+        description="This week stays at 1×1 and follows the Home chart family: strong title, quiet month context, date-first scanning, low-noise zero states, and a restrained current-day marker instead of a table-like selected column."
         kind="composition-gallery"
         owner="TrailHomeWidgetFrame + TrailThisWeekWidget"
         title="Home widget · This week · 1×1 typography candidate"
@@ -142,7 +146,7 @@ export function TrailHomeWidgetSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="Lifecycle now studies a full-row 4×1 footprint with a rolling twelve-calendar-month calendar. The heatmap is the content rather than a small chart surrounded by summary blocks; exact Created/Started/Terminal counts remain on every focusable day cell."
+        description="Annual geometry remains a Foundation-only visual study; the accepted product horizon is still rolling three calendar months. The study now treats the activity field as the content: empty cells recede, intensity carries the shape, labels stay quiet, and exact Created/Started/Terminal counts remain on each focusable day."
         kind="composition-gallery"
         owner="TrailHomeWidgetFrame + TrailLifecycleWidget"
         title="Home widget · Lifecycle · full-row annual candidate"
@@ -156,24 +160,13 @@ export function TrailHomeWidgetSpecimens() {
       </LabSpecimenRow>
 
       <LabSpecimenRow
-        description="Same Jul–Sep fixture in 2×1 and 2×2. Compare whether extra chart height earns the larger footprint."
+        description="The size study resolves at 2×1: the wide footprint already makes the inventory/throughput relationship readable, while 2×2 only magnifies the same information. Backlog + Active share the upper stock field, Completed uses a rolling 7-day sum below the shared time axis, and exact values appear only at the hovered or focused date."
         kind="composition-gallery"
         owner="TrailHomeWidgetFrame + TrailWorkTrendWidget"
-        title="Home widget · Work trend · size study"
+        title="Home widget · Work trend · 2×1 candidate"
       >
-        <div className="trail-home-widget-work-trend-study">
-          <div>
-            <div className="trail-home-widget-study-label">Wide · 2×1</div>
-            <div className="trail-home-widget-work-trend-candidate">
-              <TrailWorkTrendWidget days={WORK_TREND_DAYS} size="wide" />
-            </div>
-          </div>
-          <div>
-            <div className="trail-home-widget-study-label">Large · 2×2</div>
-            <div className="trail-home-widget-work-trend-candidate">
-              <TrailWorkTrendWidget days={WORK_TREND_DAYS} size="large" />
-            </div>
-          </div>
+        <div className="trail-home-widget-work-trend-candidate">
+          <TrailWorkTrendWidget days={WORK_TREND_DAYS} />
         </div>
       </LabSpecimenRow>
     </>

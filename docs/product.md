@@ -179,7 +179,7 @@ shared Home creation affordance
 
 Work Pulse stays lightweight and routes into the existing work surfaces. Current Cycle uses the current period and Progress projection; Triage summarizes active intake pressure; In Progress Projects summarizes Projects in the Started lifecycle category with their existing Progress projection.
 
-Lifecycle Activity Heatmap derives daily density from currently retained Workflow Issue `createdAt`, `firstStartedAt`, and `terminalAt` lifecycle facts. Work Trend derives Backlog stock, Active stock, and day-local Completed flow from those retained lifecycle facts. Temporal Orientation provides current date/week context plus near-term Triage Review Due and Workflow Issue Due distribution.
+Lifecycle Activity Heatmap derives daily density from currently retained Workflow Issue `createdAt`, `firstStartedAt`, and `terminalAt` lifecycle facts. Work Trend derives Backlog stock, Active stock, and rolling seven-day Completed throughput from those retained lifecycle facts so Home can compare unfinished inventory with recent completion throughput without introducing a productivity score. Temporal Orientation provides current date/week context plus near-term Triage Review Due and Workflow Issue Due distribution.
 
 Weekly Meeting Notes remains the existing Trail-managed Weekly Update utility with Current + Archive/History and the small Open/Read, Edit Current, and Archive/Next workflow. The shared Home creation affordance routes into the standard Triage, Issue, Project, and Initiative creation flows rather than defining Home-specific creation semantics.
 

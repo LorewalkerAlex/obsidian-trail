@@ -1,10 +1,10 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { TrailFoundationLab } from "./trail-foundation-lab";
 
 describe("Trail Home widget specimens", () => {
-  it("keeps This week compact and studies Lifecycle as a full-row annual calendar", () => {
+  it("keeps the Home widget family low-noise while preserving exact focus detail", () => {
     const { container } = render(
       <TrailFoundationLab control={{ kind: "ready" }} revision={13} />,
     );
@@ -44,18 +44,28 @@ describe("Trail Home widget specimens", () => {
     expect(container.querySelectorAll(".trail-home-lifecycle__cell[tabindex='0']")).toHaveLength(349);
 
     const workTrend = within(screen.getByRole("group", {
-      name: "Home widget · Work trend · size study",
+      name: "Home widget · Work trend · 2×1 candidate",
     }));
-    const trendRegions = workTrend.getAllByRole("region", { name: "Work trend" });
+    const trendRegion = workTrend.getByRole("region", { name: "Work trend" });
 
-    expect(trendRegions).toHaveLength(2);
-    expect(trendRegions[0]).toHaveAttribute("data-home-widget-size", "wide");
-    expect(trendRegions[1]).toHaveAttribute("data-home-widget-size", "large");
-    expect(workTrend.getAllByRole("img", { name: "Work trend chart" })).toHaveLength(2);
-    expect(workTrend.getAllByText("Jul–Sep")).toHaveLength(2);
-    expect(workTrend.getAllByText("Backlog")).toHaveLength(2);
-    expect(workTrend.getAllByText("Active")).toHaveLength(2);
-    expect(workTrend.getAllByText("Completed today")).toHaveLength(2);
-    expect(container.querySelectorAll(".trail-home-work-trend__focus-day[tabindex='0']")).toHaveLength(152);
+    expect(trendRegion).toHaveAttribute("data-home-widget-size", "wide");
+    expect(workTrend.getByRole("img", { name: "Work trend chart" })).toBeInTheDocument();
+    expect(workTrend.getByText("Jul–Sep")).toBeInTheDocument();
+    expect(workTrend.queryByText("Completed today")).not.toBeInTheDocument();
+    expect(container.querySelectorAll('.trail-home-work-trend__area[data-series="backlog"]')).toHaveLength(1);
+    expect(container.querySelectorAll('.trail-home-work-trend__area[data-series="active"]')).toHaveLength(1);
+    expect(container.querySelectorAll('.trail-home-work-trend__area[data-series="completed"]')).toHaveLength(1);
+
+    const focusDays = container.querySelectorAll<HTMLElement>(
+      ".trail-home-work-trend__focus-day[tabindex='0']",
+    );
+    expect(focusDays).toHaveLength(76);
+    expect(focusDays[0].textContent).toContain("Completed 7d");
+    expect(focusDays[0]).not.toHaveAttribute("aria-label");
+
+    fireEvent.focus(focusDays[0]);
+    expect(within(trendRegion).getByText("Completed 7d")).toBeInTheDocument();
+    expect(within(trendRegion).getByText("Backlog")).toBeInTheDocument();
+    expect(within(trendRegion).getByText("Active")).toBeInTheDocument();
   }, 30_000);
 });

@@ -9,20 +9,7 @@
   max-width: 100%;
 }
 
-.trail-home-widget-work-trend-study {
-  display: grid;
-  max-width: 100%;
-  gap: var(--trail-space-11);
-}
-
 .trail-home-widget-work-trend-candidate {
   width: 552px;
   max-width: 100%;
-}
-
-.trail-home-widget-study-label {
-  margin: 0 0 var(--trail-space-4);
-  color: var(--trail-text-muted);
-  font-size: var(--trail-font-size-caption);
-  font-weight: var(--trail-weight-medium);
 }

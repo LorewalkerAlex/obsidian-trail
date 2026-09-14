@@ -59,14 +59,14 @@
   padding: var(--trail-space-5) var(--trail-space-10) var(--trail-space-10);
 }
 
-/* This week is intentionally a single 1x1 matrix. */
+/* This week is intentionally a single 1x1 temporal matrix. */
 .trail-home-this-week {
   display: grid;
   height: 100%;
   min-width: 0;
   min-height: 0;
-  grid-template-columns: 40px repeat(7, minmax(0, 1fr));
-  grid-template-rows: 44px 24px 24px;
+  grid-template-columns: 42px repeat(7, minmax(0, 1fr));
+  grid-template-rows: 42px 23px 23px;
   align-content: center;
   align-items: stretch;
   column-gap: 1px;
@@ -87,20 +87,27 @@
   place-content: center;
   justify-items: center;
   gap: 3px;
+  border-radius: var(--trail-radius-xs);
   color: var(--trail-text-secondary);
   line-height: 1;
+  outline: none;
+}
+
+.trail-home-this-week__day:focus-visible {
+  background: var(--trail-state-hover);
+  box-shadow: inset 0 0 0 1px var(--trail-focus-border);
 }
 
 .trail-home-this-week__day[data-today="true"]::before {
   position: absolute;
   top: 1px;
-  right: 4px;
-  left: 4px;
+  right: 5px;
+  left: 5px;
   height: 2px;
   border-radius: var(--trail-radius-pill);
   background: var(--trail-accent);
   content: "";
-  opacity: 0.7;
+  opacity: 0.78;
 }
 
 .trail-home-this-week__weekday {
@@ -112,9 +119,9 @@
 
 .trail-home-this-week__day strong {
   color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-body);
-  font-weight: var(--trail-weight-medium);
-  letter-spacing: -0.015em;
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-emphasis);
+  letter-spacing: -0.02em;
 }
 
 .trail-home-this-week__day[data-today="true"] strong {
@@ -144,13 +151,14 @@
 .trail-home-this-week__count[data-value="0"] {
   color: var(--trail-text-faint);
   font-weight: var(--trail-weight-regular);
+  opacity: 0.72;
 }
 
-.trail-home-this-week__count[data-today="true"] {
-  background: color-mix(in srgb, var(--trail-accent) 5%, transparent);
+.trail-home-this-week__count[data-today="true"]:not([data-value="0"]) {
+  color: var(--trail-text-primary);
 }
 
-/* Lifecycle activity uses a full-row annual contribution-calendar footprint. */
+/* Lifecycle activity uses contribution-calendar geometry; horizon is supplied by the consumer. */
 .trail-home-lifecycle {
   display: grid;
   height: 100%;
@@ -214,32 +222,32 @@
   box-sizing: border-box;
   width: var(--trail-home-lifecycle-cell);
   height: var(--trail-home-lifecycle-cell);
-  border: 1px solid var(--trail-border-subtle);
+  border: 0;
   border-radius: 2px;
-  background: transparent;
+  background: var(--trail-surface-quiet);
+  outline: none;
 }
 
+.trail-home-lifecycle__cell:hover,
 .trail-home-lifecycle__cell:focus-visible {
-  outline: 1px solid var(--trail-focus-border);
-  outline-offset: 1px;
+  box-shadow: 0 0 0 1px var(--trail-focus-border);
 }
 
 .trail-home-lifecycle__cell[data-level="1"] {
-  background: color-mix(in srgb, var(--trail-accent) 20%, transparent);
+  background: color-mix(in srgb, var(--trail-accent) 18%, transparent);
 }
 
 .trail-home-lifecycle__cell[data-level="2"] {
-  background: color-mix(in srgb, var(--trail-accent) 36%, transparent);
+  background: color-mix(in srgb, var(--trail-accent) 32%, transparent);
 }
 
 .trail-home-lifecycle__cell[data-level="3"] {
-  background: color-mix(in srgb, var(--trail-accent) 54%, transparent);
+  background: color-mix(in srgb, var(--trail-accent) 50%, transparent);
 }
 
 .trail-home-lifecycle__cell[data-level="4"] {
-  background: color-mix(in srgb, var(--trail-accent) 74%, transparent);
+  background: color-mix(in srgb, var(--trail-accent) 70%, transparent);
 }
-
 
 @media (max-width: 760px) {
   .trail-home-lifecycle__calendar {
@@ -248,55 +256,12 @@
   }
 }
 
-/* Work trend compares a 2x1 and 2x2 footprint with one shared visual language. */
+/* Work trend is a shape-first stock/throughput chart with one shared time axis. */
 .trail-home-work-trend {
   display: grid;
   height: 100%;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--trail-space-5);
-}
-
-.trail-home-work-trend__metrics {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: var(--trail-space-10);
-  color: var(--trail-text-faint);
-  font-size: var(--trail-font-size-caption);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.trail-home-work-trend__metric {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: var(--trail-space-3);
-  white-space: nowrap;
-}
-
-.trail-home-work-trend__metric i {
-  display: inline-block;
-  flex: 0 0 auto;
-  width: 10px;
-  height: 2px;
-  border-radius: var(--trail-radius-pill);
-  background: var(--trail-text-faint);
-}
-
-.trail-home-work-trend__metric i[data-series="active"] {
-  background: var(--trail-accent);
-}
-
-.trail-home-work-trend__metric i[data-series="completed"] {
-  height: 5px;
-  background: var(--trail-state-hover-strong);
-}
-
-.trail-home-work-trend__metric strong {
-  color: var(--trail-text-secondary);
-  font-weight: var(--trail-weight-medium);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .trail-home-work-trend__chart {
@@ -304,40 +269,71 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  border-radius: var(--trail-radius-sm);
 }
 
 .trail-home-work-trend__svg {
+  position: relative;
+  z-index: 0;
   display: block;
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.trail-home-work-trend__guide {
-  stroke: var(--trail-row-divider);
+.trail-home-work-trend__area {
+  stroke: none;
+}
+
+.trail-home-work-trend__area[data-series="backlog"] {
+  fill: color-mix(in srgb, var(--trail-text-primary) 4.5%, transparent);
+}
+
+.trail-home-work-trend__area[data-series="active"] {
+  fill: color-mix(in srgb, var(--trail-progress) 17%, transparent);
+}
+
+.trail-home-work-trend__area[data-series="completed"] {
+  fill: color-mix(in srgb, var(--trail-accent) 18%, transparent);
+}
+
+.trail-home-work-trend__axis {
+  stroke: var(--trail-border-default);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
-.trail-home-work-trend__flow {
-  fill: var(--trail-state-hover-strong);
-}
-
 .trail-home-work-trend__line {
   fill: none;
-  stroke: var(--trail-text-faint);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.25;
   vector-effect: non-scaling-stroke;
 }
 
+.trail-home-work-trend__line[data-series="inventory"] {
+  stroke: var(--trail-text-muted);
+}
+
 .trail-home-work-trend__line[data-series="active"] {
+  stroke: var(--trail-progress);
+  opacity: 0.78;
+}
+
+.trail-home-work-trend__line[data-series="completed"] {
   stroke: var(--trail-accent);
+  opacity: 0.92;
+}
+
+.trail-home-work-trend__cursor {
+  stroke: var(--trail-text-faint);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 
 .trail-home-work-trend__focus-layer {
   position: absolute;
+  z-index: 1;
   inset: 0;
 }
 
@@ -351,6 +347,81 @@
 }
 
 .trail-home-work-trend__focus-day:focus-visible {
-  border-left: 1px solid var(--trail-focus-border);
-  background: color-mix(in srgb, var(--trail-accent) 3%, transparent);
+  background: color-mix(in srgb, var(--trail-accent) 2.5%, transparent);
+  box-shadow: inset 1px 0 0 var(--trail-focus-border);
+}
+
+.trail-home-work-trend__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  white-space: nowrap;
+}
+
+.trail-home-work-trend__tooltip {
+  position: absolute;
+  z-index: 3;
+  top: var(--trail-space-2);
+  left: var(--trail-home-work-trend-x);
+  display: grid;
+  min-width: 112px;
+  gap: var(--trail-space-3);
+  padding: var(--trail-space-5) var(--trail-space-6);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-sm);
+  background: var(--trail-surface-overlay);
+  box-shadow: var(--trail-shadow-tooltip);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  pointer-events: none;
+}
+
+.trail-home-work-trend__tooltip[data-side="right"] {
+  transform: translateX(var(--trail-space-6));
+}
+
+.trail-home-work-trend__tooltip[data-side="left"] {
+  transform: translateX(calc(-100% - var(--trail-space-6)));
+}
+
+.trail-home-work-trend__tooltip-date {
+  margin-bottom: var(--trail-space-1);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-meta);
+  white-space: nowrap;
+}
+
+.trail-home-work-trend__tooltip-row {
+  display: grid;
+  grid-template-columns: 7px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--trail-space-3);
+  white-space: nowrap;
+}
+
+.trail-home-work-trend__tooltip-row i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--trail-text-muted);
+}
+
+.trail-home-work-trend__tooltip-row i[data-series="active"] {
+  background: var(--trail-progress);
+}
+
+.trail-home-work-trend__tooltip-row i[data-series="completed"] {
+  background: var(--trail-accent);
+}
+
+.trail-home-work-trend__tooltip-row strong {
+  color: var(--trail-text-primary);
+  font-weight: var(--trail-weight-medium);
 }

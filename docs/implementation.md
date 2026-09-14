@@ -747,6 +747,14 @@ Implement after its major source projections are stable:
 
 Home adds Page-specific visualization/composition, not another foundational interaction system.
 
+Current status:
+
+- **Home widget visual foundation is Lab-proven** — production-owned This Week, Lifecycle Activity, and Work Trend widgets are exercised from Foundation semantic fixtures; the real Home Read Model/Page consumer is still pending, so these owners are not yet Consumer-proven Stage 11 Product completion.
+- **This Week visual calibration is resolved** — the 1x1 specimen uses date-first scanning, quiet Due-source rows, receding zero values, and a restrained current-day marker instead of a table-like selected column.
+- **Lifecycle visual calibration is resolved without changing Product history semantics** — the activity field is the visual content, empty cells recede, and the annual full-row specimen remains Foundation-only geometry evidence. The accepted Product horizon remains rolling three calendar months.
+- **Work Trend visual/semantic calibration is resolved for the next Query/Page slice** — the selected 2x1 candidate uses a shared time axis with Backlog + Active unfinished stock above the axis and rolling seven-day Completed throughput below it; exact values are hover/focus detail rather than a permanent KPI row. The larger 2x2 study did not add useful information and is removed from the active specimen set.
+- **Host tooltip duplication is deferred to the next shared calibration checkpoint** — the current Home checkpoint records the host behavior but does not add a Work-Trend-local workaround. The follow-up should separate accessible naming from opt-in visual tooltip presentation at the shared owner boundary.
+
 ### Stage 12 — Full-system calibration and V1 exit
 
 Stage 12 begins only after the planned V1 Product surfaces/workflows are implemented and their functional owner/direct-consumer tests plus required host behavior are green. Earlier stages may still correct visual defects that block usability, containment, or host correctness, but broad aesthetic polish must not become a moving feature-stage target.
