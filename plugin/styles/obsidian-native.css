@@ -6,6 +6,24 @@
  * sufficient. A host consumer is styled once in this section.
  * -------------------------------------------------------------------------- */
 
+/*
+ * Obsidian can derive a visual tooltip from an accessible name. Trail keeps
+ * accessible naming independent: host tooltips are disabled across Trail-owned
+ * surfaces and are restored only by an explicit opt-in on the target element.
+ */
+.trail-view,
+.trail-navigation-view,
+.trail-inspector-view,
+.trail-composer__content,
+.trail-confirmation__content,
+.trail-view-popover {
+  --no-tooltip: true;
+}
+
+[data-trail-host-tooltip="true"] {
+  --no-tooltip: initial;
+}
+
 body .app-container,
 body .horizontal-main-container,
 body .workspace {
