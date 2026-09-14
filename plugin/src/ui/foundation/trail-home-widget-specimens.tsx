@@ -11,6 +11,9 @@ import {
   TrailWorkTrendWidget,
   type TrailWorkTrendWidgetDay,
 } from "../pages/home/trail-work-trend-widget";
+import { TrailWeeklyMeetingNotesWidget } from "../pages/home/trail-weekly-meeting-notes-widget";
+import type { TrailMarkdownRender } from "../patterns/trail-page-narrative";
+import type { TrailUiActions } from "../shell/trail-ui-actions";
 import { LabSpecimenRow } from "./trail-lab-showroom";
 
 const THIS_WEEK_DAYS: readonly TrailThisWeekWidgetDay[] = [
@@ -131,6 +134,34 @@ function buildWorkTrendDays(): readonly TrailWorkTrendWidgetDay[] {
 
 const WORK_TREND_DAYS = buildWorkTrendDays();
 
+const WEEKLY_NOTE_FIXTURE = {
+  archives: [
+    { content: "Reviewed launch risks and agreed on the next milestone.", date: "2026-09-07" },
+    { content: "Confirmed the Home temporal overview and follow-up owners.", date: "2026-09-14" },
+  ],
+  current: "Capture decisions, follow-ups, and open questions for the next weekly review.",
+} as const;
+
+const WEEKLY_NOTE_ACTIONS: TrailUiActions["weeklyNote"] = {
+  archiveCurrent: async (_expectedCurrent, current) => ({
+    archives: [...WEEKLY_NOTE_FIXTURE.archives, { content: current, date: "2026-09-21" }],
+    current: "",
+  }),
+  load: async () => WEEKLY_NOTE_FIXTURE,
+  replaceCurrent: async (_expectedCurrent, current) => ({
+    archives: WEEKLY_NOTE_FIXTURE.archives,
+    current,
+  }),
+};
+
+const WEEKLY_NOTE_RENDER_MARKDOWN: TrailMarkdownRender = (markdown, container) => {
+  container.textContent = markdown;
+  return {
+    completion: Promise.resolve(),
+    dispose: () => container.replaceChildren(),
+  };
+};
+
 export function TrailHomeWidgetSpecimens() {
   return (
     <>
@@ -170,6 +201,20 @@ export function TrailHomeWidgetSpecimens() {
             days={WORK_TREND_DAYS}
             hasHistory
             rangeLabel="Jul–Sep"
+          />
+        </div>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="Weekly meeting notes pairs with Work Trend at 2x1. Current is read-oriented by default, Edit keeps a module-local draft, Archive / next is unavailable during edit, and History stays inside the module instead of creating a Page or modal."
+        kind="composition-gallery"
+        owner="TrailHomeWidgetFrame + TrailWeeklyMeetingNotesWidget"
+        title={"Home widget \u00b7 Weekly meeting notes \u00b7 2\u00d71 candidate"}
+      >
+        <div className="trail-home-widget-wide-candidate">
+          <TrailWeeklyMeetingNotesWidget
+            actions={WEEKLY_NOTE_ACTIONS}
+            renderMarkdown={WEEKLY_NOTE_RENDER_MARKDOWN}
           />
         </div>
       </LabSpecimenRow>

@@ -101,7 +101,11 @@ export function TrailApp({
           </TrailPageSurface>
         ) : currentLocation.kind === "home" ? (
           <TrailPageSurface inset="page" scroll="page">
-            <TrailHomePage runtimeStore={runtimeStore} />
+            <TrailHomePage
+              actions={actions.weeklyNote}
+              renderMarkdown={renderMarkdown}
+              runtimeStore={runtimeStore}
+            />
           </TrailPageSurface>
         ) : currentLocation.kind === "triage" ? (
           <TrailPageSurface>

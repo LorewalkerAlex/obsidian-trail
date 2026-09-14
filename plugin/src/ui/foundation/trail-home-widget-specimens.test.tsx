@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { TrailFoundationLab } from "./trail-foundation-lab";
 
 describe("Trail Home widget specimens", () => {
-  it("keeps the Home widget family low-noise while preserving exact focus detail", () => {
+  it("keeps the Home widget family low-noise while preserving exact focus detail", async () => {
     const { container } = render(
       <TrailFoundationLab control={{ kind: "ready" }} revision={13} />,
     );
@@ -67,5 +67,24 @@ describe("Trail Home widget specimens", () => {
     expect(within(trendRegion).getByText("Completed 7d")).toBeInTheDocument();
     expect(within(trendRegion).getByText("Backlog")).toBeInTheDocument();
     expect(within(trendRegion).getByText("Active")).toBeInTheDocument();
+
+    const weeklyNotes = within(screen.getByRole("group", {
+      name: "Home widget \u00b7 Weekly meeting notes \u00b7 2\u00d71 candidate",
+    }));
+    const weeklyRegion = weeklyNotes.getByRole("region", { name: "Weekly meeting notes" });
+
+    expect(weeklyRegion).toHaveAttribute("data-home-widget-size", "wide");
+    expect(await weeklyNotes.findByText(
+      "Capture decisions, follow-ups, and open questions for the next weekly review.",
+    )).toBeInTheDocument();
+    fireEvent.click(weeklyNotes.getByRole("button", { name: "Edit" }));
+    expect(weeklyNotes.getByRole("textbox", { name: "Current weekly meeting notes" }))
+      .toBeInTheDocument();
+    expect(weeklyNotes.queryByRole("button", { name: "Archive / next" }))
+      .not.toBeInTheDocument();
+    fireEvent.click(weeklyNotes.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(weeklyNotes.getByRole("button", { name: "History" }));
+    expect(weeklyNotes.getByRole("button", { name: "2026-09-14" }))
+      .toHaveAttribute("aria-pressed", "true");
   }, 30_000);
 });

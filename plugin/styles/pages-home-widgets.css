@@ -25,7 +25,8 @@
   grid-column: 1 / -1;
 }
 
-.trail-home-page__slot[data-home-slot="work-trend"] {
+.trail-home-page__slot[data-home-slot="work-trend"],
+.trail-home-page__slot[data-home-slot="weekly-notes"] {
   grid-column: span 2;
 }
 
@@ -35,7 +36,8 @@
   }
 
   .trail-home-page__slot[data-home-slot="lifecycle"],
-  .trail-home-page__slot[data-home-slot="work-trend"] {
+  .trail-home-page__slot[data-home-slot="work-trend"],
+  .trail-home-page__slot[data-home-slot="weekly-notes"] {
     grid-column: 1 / -1;
   }
 }
@@ -488,4 +490,183 @@
 .trail-home-work-trend__tooltip-row strong {
   color: var(--trail-text-primary);
   font-weight: var(--trail-weight-medium);
+}
+/* Weekly Meeting Notes remains a compact Home-local utility surface over Weekly Update.md. */
+.trail-home-weekly-notes {
+  display: grid;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--trail-space-4);
+}
+
+.trail-home-weekly-notes__main,
+.trail-home-weekly-notes__history,
+.trail-home-weekly-notes__history-content {
+  min-width: 0;
+  min-height: 0;
+}
+
+.trail-home-weekly-notes__main,
+.trail-home-weekly-notes__history-content {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.trail-home-weekly-notes__markdown {
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+  line-height: 1.42;
+}
+
+.trail-home-weekly-notes__markdown > :first-child {
+  margin-top: 0;
+}
+
+.trail-home-weekly-notes__markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.trail-home-weekly-notes__markdown p,
+.trail-home-weekly-notes__markdown ul,
+.trail-home-weekly-notes__markdown ol,
+.trail-home-weekly-notes__markdown blockquote {
+  margin-top: 0;
+  margin-bottom: var(--trail-space-4);
+}
+
+.trail-home-weekly-notes__markdown h3,
+.trail-home-weekly-notes__markdown h4,
+.trail-home-weekly-notes__markdown h5,
+.trail-home-weekly-notes__markdown h6 {
+  margin-top: var(--trail-space-5);
+  margin-bottom: var(--trail-space-3);
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-supporting);
+  font-weight: var(--trail-weight-strong);
+  line-height: 1.3;
+}
+
+.trail-home-weekly-notes__empty,
+.trail-home-weekly-notes__status {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  place-items: center;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-supporting);
+}
+
+.trail-home-weekly-notes__load-error {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--trail-space-6);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-supporting);
+}
+
+.trail-home-weekly-notes__load-error span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-home-weekly-notes__feedback {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-warning);
+  font-size: var(--trail-font-size-caption);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-home-weekly-notes__footer,
+.trail-home-weekly-notes__actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-3);
+}
+
+.trail-home-weekly-notes__footer {
+  justify-content: space-between;
+}
+
+.trail-home-weekly-notes__actions {
+  justify-content: flex-end;
+}
+
+.trail-home-weekly-notes[data-mode="edit"] {
+  grid-template-rows: minmax(0, 1fr) auto auto;
+}
+
+.trail-home-weekly-notes[data-mode="edit"] .trail-textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  resize: none;
+  background: color-mix(in srgb, var(--trail-surface-canvas) 74%, transparent);
+}
+
+.trail-home-weekly-notes__history {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--trail-space-6);
+  overflow: hidden;
+}
+
+.trail-home-weekly-notes__history-list {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  align-content: start;
+  gap: var(--trail-space-1);
+  overflow: auto;
+  padding-right: var(--trail-space-4);
+  border-right: 1px solid var(--trail-border-subtle);
+}
+
+body button.trail-home-weekly-notes__history-date {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 22px;
+  margin: 0;
+  padding: 0 var(--trail-space-4);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--trail-radius-xs);
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--trail-text-faint);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--trail-font-size-caption);
+  line-height: 1;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body button.trail-home-weekly-notes__history-date:hover,
+body button.trail-home-weekly-notes__history-date:focus-visible {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-secondary);
+}
+
+body button.trail-home-weekly-notes__history-date:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--trail-focus-border);
+}
+
+body button.trail-home-weekly-notes__history-date[data-selected="true"] {
+  background: var(--trail-state-selected);
+  color: var(--trail-text-primary);
 }

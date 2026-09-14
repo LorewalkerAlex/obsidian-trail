@@ -91,6 +91,11 @@ function uiActions(edit = vi.fn()): TrailUiActions {
       delete: vi.fn(),
       edit,
     },
+    weeklyNote: {
+      archiveCurrent: vi.fn(async () => ({ archives: [], current: "" })),
+      load: vi.fn(async () => ({ archives: [], current: "" })),
+      replaceCurrent: vi.fn(async (_expectedCurrent: string, current: string) => ({ archives: [], current })),
+    },
   } as unknown as TrailUiActions;
 }
 

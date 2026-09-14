@@ -9,7 +9,8 @@
   max-width: 100%;
 }
 
-.trail-home-widget-work-trend-candidate {
+.trail-home-widget-work-trend-candidate,
+.trail-home-widget-wide-candidate {
   width: 552px;
   max-width: 100%;
 }
