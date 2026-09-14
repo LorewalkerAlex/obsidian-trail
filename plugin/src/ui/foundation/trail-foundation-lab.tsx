@@ -36,6 +36,7 @@ import {
   LabSpecimenRow,
   LabStateGrid,
 } from "./trail-lab-showroom";
+import { TrailHomeWidgetSpecimens } from "./trail-home-widget-specimens";
 import { TrailProjectPatternSpecimens } from "./trail-project-pattern-specimens";
 import { TrailProjectProductionSpecimens } from "./trail-project-production-specimens";
 import { TrailProjectTimelineSpecimen } from "./trail-project-timeline-specimen";
@@ -213,6 +214,8 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
         id="visual-foundations"
         title="Visual Foundations"
       >
+        <TrailHomeWidgetSpecimens />
+
         <LabSpecimenRow
           kind="state-gallery"
           owner="design tokens"

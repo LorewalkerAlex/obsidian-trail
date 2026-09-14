@@ -1,0 +1,356 @@
+/* Home widget production family: fixed physical footprints with size-aware content. */
+.trail-home-widget {
+  box-sizing: border-box;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--trail-border-subtle);
+  border-radius: var(--trail-radius-lg);
+  background: var(--trail-surface-very-quiet);
+  color: var(--trail-text-secondary);
+}
+
+.trail-home-widget[data-home-widget-size="compact"],
+.trail-home-widget[data-home-widget-size="wide"],
+.trail-home-widget[data-home-widget-size="banner"] {
+  height: 160px;
+}
+
+.trail-home-widget[data-home-widget-size="tall"],
+.trail-home-widget[data-home-widget-size="large"] {
+  height: 332px;
+}
+
+.trail-home-widget__header {
+  display: flex;
+  min-width: 0;
+  min-height: 38px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--trail-space-8);
+  padding: var(--trail-space-9) var(--trail-space-10) 0;
+}
+
+.trail-home-widget__title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-strong);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-home-widget__meta {
+  flex: 0 0 auto;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.trail-home-widget__content {
+  min-width: 0;
+  min-height: 0;
+  padding: var(--trail-space-5) var(--trail-space-10) var(--trail-space-10);
+}
+
+/* This week is intentionally a single 1x1 matrix. */
+.trail-home-this-week {
+  display: grid;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: 40px repeat(7, minmax(0, 1fr));
+  grid-template-rows: 44px 24px 24px;
+  align-content: center;
+  align-items: stretch;
+  column-gap: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-home-this-week__corner,
+.trail-home-this-week__day,
+.trail-home-this-week__source-label,
+.trail-home-this-week__count {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.trail-home-this-week__day {
+  position: relative;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 3px;
+  color: var(--trail-text-secondary);
+  line-height: 1;
+}
+
+.trail-home-this-week__day[data-today="true"]::before {
+  position: absolute;
+  top: 1px;
+  right: 4px;
+  left: 4px;
+  height: 2px;
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-accent);
+  content: "";
+  opacity: 0.7;
+}
+
+.trail-home-this-week__weekday {
+  color: var(--trail-text-faint);
+  font-size: 9.5px;
+  font-weight: var(--trail-weight-medium);
+  letter-spacing: 0.01em;
+}
+
+.trail-home-this-week__day strong {
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-body);
+  font-weight: var(--trail-weight-medium);
+  letter-spacing: -0.015em;
+}
+
+.trail-home-this-week__day[data-today="true"] strong {
+  color: var(--trail-text-accent);
+}
+
+.trail-home-this-week__source-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: var(--trail-space-5);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  line-height: 1;
+}
+
+.trail-home-this-week__count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1;
+}
+
+.trail-home-this-week__count[data-value="0"] {
+  color: var(--trail-text-faint);
+  font-weight: var(--trail-weight-regular);
+}
+
+.trail-home-this-week__count[data-today="true"] {
+  background: color-mix(in srgb, var(--trail-accent) 5%, transparent);
+}
+
+/* Lifecycle activity uses a full-row annual contribution-calendar footprint. */
+.trail-home-lifecycle {
+  display: grid;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  align-content: center;
+}
+
+.trail-home-lifecycle__calendar {
+  --trail-home-lifecycle-cell: 10px;
+  --trail-home-lifecycle-gap: 3px;
+  display: grid;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  justify-self: center;
+  grid-template-columns: 26px auto;
+  grid-template-rows: 11px auto;
+  gap: 3px var(--trail-space-5);
+}
+
+.trail-home-lifecycle__months {
+  display: grid;
+  grid-column: 2;
+  grid-row: 1;
+  grid-template-columns: repeat(var(--trail-home-lifecycle-weeks), var(--trail-home-lifecycle-cell));
+  column-gap: var(--trail-home-lifecycle-gap);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-meta);
+  line-height: 1;
+}
+
+.trail-home-lifecycle__months span {
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.trail-home-lifecycle__weekdays {
+  display: grid;
+  grid-column: 1;
+  grid-row: 2;
+  grid-template-rows: repeat(7, var(--trail-home-lifecycle-cell));
+  row-gap: var(--trail-home-lifecycle-gap);
+  align-items: center;
+  color: var(--trail-text-faint);
+  font-size: 8.5px;
+  line-height: 1;
+}
+
+.trail-home-lifecycle__cells {
+  display: grid;
+  grid-column: 2;
+  grid-row: 2;
+  grid-template-columns: repeat(var(--trail-home-lifecycle-weeks), var(--trail-home-lifecycle-cell));
+  grid-template-rows: repeat(7, var(--trail-home-lifecycle-cell));
+  gap: var(--trail-home-lifecycle-gap);
+}
+
+.trail-home-lifecycle__cell {
+  box-sizing: border-box;
+  width: var(--trail-home-lifecycle-cell);
+  height: var(--trail-home-lifecycle-cell);
+  border: 1px solid var(--trail-border-subtle);
+  border-radius: 2px;
+  background: transparent;
+}
+
+.trail-home-lifecycle__cell:focus-visible {
+  outline: 1px solid var(--trail-focus-border);
+  outline-offset: 1px;
+}
+
+.trail-home-lifecycle__cell[data-level="1"] {
+  background: color-mix(in srgb, var(--trail-accent) 20%, transparent);
+}
+
+.trail-home-lifecycle__cell[data-level="2"] {
+  background: color-mix(in srgb, var(--trail-accent) 36%, transparent);
+}
+
+.trail-home-lifecycle__cell[data-level="3"] {
+  background: color-mix(in srgb, var(--trail-accent) 54%, transparent);
+}
+
+.trail-home-lifecycle__cell[data-level="4"] {
+  background: color-mix(in srgb, var(--trail-accent) 74%, transparent);
+}
+
+
+@media (max-width: 760px) {
+  .trail-home-lifecycle__calendar {
+    --trail-home-lifecycle-cell: 8px;
+    --trail-home-lifecycle-gap: 2px;
+  }
+}
+
+/* Work trend compares a 2x1 and 2x2 footprint with one shared visual language. */
+.trail-home-work-trend {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--trail-space-5);
+}
+
+.trail-home-work-trend__metrics {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-10);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.trail-home-work-trend__metric {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--trail-space-3);
+  white-space: nowrap;
+}
+
+.trail-home-work-trend__metric i {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 2px;
+  border-radius: var(--trail-radius-pill);
+  background: var(--trail-text-faint);
+}
+
+.trail-home-work-trend__metric i[data-series="active"] {
+  background: var(--trail-accent);
+}
+
+.trail-home-work-trend__metric i[data-series="completed"] {
+  height: 5px;
+  background: var(--trail-state-hover-strong);
+}
+
+.trail-home-work-trend__metric strong {
+  color: var(--trail-text-secondary);
+  font-weight: var(--trail-weight-medium);
+}
+
+.trail-home-work-trend__chart {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trail-home-work-trend__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.trail-home-work-trend__guide {
+  stroke: var(--trail-row-divider);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.trail-home-work-trend__flow {
+  fill: var(--trail-state-hover-strong);
+}
+
+.trail-home-work-trend__line {
+  fill: none;
+  stroke: var(--trail-text-faint);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.trail-home-work-trend__line[data-series="active"] {
+  stroke: var(--trail-accent);
+}
+
+.trail-home-work-trend__focus-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.trail-home-work-trend__focus-day {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((var(--trail-home-work-trend-index) / var(--trail-home-work-trend-total)) * 100%);
+  width: calc(100% / var(--trail-home-work-trend-total));
+  outline: none;
+}
+
+.trail-home-work-trend__focus-day:focus-visible {
+  border-left: 1px solid var(--trail-focus-border);
+  background: color-mix(in srgb, var(--trail-accent) 3%, transparent);
+}

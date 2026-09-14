@@ -30,8 +30,10 @@ const stylesheetSources = [
   "plugin/styles/pages-project-workspace-execution.css",
   "plugin/styles/pages-project-workspace-actions.css",
   "plugin/styles/pages-issues.css",
+  "plugin/styles/pages-home-widgets.css",
   "plugin/styles/shell.css",
   "plugin/styles/foundation.css",
+  "plugin/styles/foundation-home-widgets.css",
 ];
 
 async function copyStaticFiles() {
