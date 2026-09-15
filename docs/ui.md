@@ -1440,17 +1440,16 @@ Membership is the retained final `issueIds`; displayed Issue properties are curr
 
 Home is a modular, visual-first global orientation/routing Page, not a generic dashboard builder or reduced execution collection.
 
-Accepted V1 order:
+Accepted V1 reading/composition order:
 
 ```text
 Home
--> This week
+-> This week + Work pulse
 -> Lifecycle activity
 -> Work trend + Weekly meeting notes
--> Work pulse
 ```
 
-Wide Main View may place Work Trend and Weekly Meeting Notes side by side. Constrained Main View reflows vertically while preserving semantic order.
+Wide Main View pairs the compact This Week module with a lightweight Work Pulse summary in the first row. Work Pulse stays content-dense instead of stretching to consume all available width. Work Trend and Weekly Meeting Notes may share the later row. Constrained Main View reflows vertically in the same reading order.
 
 Home top-right owns one compact `+` creation menu from Section 6.8. Home has no persistent Inspector.
 
@@ -1521,13 +1520,13 @@ Normal operations are Open/Read, Edit Current, Archive/Next. Current is the norm
 
 ### 12.5 Work Pulse
 
-Work Pulse is last and stays lightweight.
+Work Pulse stays lightweight and shares the first wide/normal Home row with This Week. It is an orientation summary, not a top KPI banner, and does not add extra Health/ranking metrics.
 
-**Current Cycle** — period + shared compact Progress. Click routes to Current Cycle. If none exists, `Start cycle` invokes the normal Start Cycle flow.
+**Current Cycle** — period + shared compact Progress. The whole Current Cycle region routes to Current Cycle. If none exists, `Start cycle` invokes the normal Start Cycle flow.
 
-**Triage** — segmented `[Overdue][Remain]`; click routes to Triage without mutating its Filter. If zero, show `0 active` rather than an empty CTA.
+**Triage** — the shared Segmented Summary presents `[Overdue][Remain]` inline. The whole Triage region routes to Triage without mutating its Filter. If zero, show `0 active` rather than an empty CTA.
 
-**In Progress Projects** — Started-category Projects only, using shared Project Progress micro-bars. Module title routes to Projects Root. Overflow may use `+N more` over stable ordinary ordering. No hidden Home Health/focus ranking is introduced.
+**In Progress Projects** — Started-category Projects only, using shared Project Progress micro-bars. Each visible Project row routes to that Project; the section heading and `+N more` route to Projects Root. Overflow preserves stable ordinary ordering. No hidden Home Health/focus ranking is introduced.
 
 ## 13. Responsive Composition
 
@@ -1549,7 +1548,7 @@ The containment invariant from Section 2.5 applies at every responsive step. Con
 
 | Surface | Wide / normal | Constrained |
 | --- | --- | --- |
-| Home | multiple modules; Work Trend + Weekly Notes may share a row | vertical semantic order; keep three-month history horizon |
+| Home | This Week + compact Work Pulse share the first row; Work Trend + Weekly Notes may share a later row | reflow vertically in reading order; keep three-month history horizon |
 | Triage | Queue + Review split | focused Review; preserve Queue/Filter/Order session state |
 | Projects / Initiative List | more Project metadata | progressively remove secondary metadata; preserve title + Status longest |
 | Project / Cycle List | more Issue metadata | reduce secondary metadata; preserve Title + necessary scope identity |

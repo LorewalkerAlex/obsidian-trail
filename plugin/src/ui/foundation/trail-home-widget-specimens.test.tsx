@@ -86,5 +86,26 @@ describe("Trail Home widget specimens", () => {
     fireEvent.click(weeklyNotes.getByRole("button", { name: "History" }));
     expect(weeklyNotes.getByRole("button", { name: "2026-09-14" }))
       .toHaveAttribute("aria-pressed", "true");
+
+    const workPulse = within(screen.getByRole("group", {
+      name: "Home widget · Work pulse · 3×1 candidate",
+    }));
+    const pulseRegion = workPulse.getByRole("region", { name: "Work pulse" });
+
+    expect(pulseRegion).toHaveAttribute("data-home-widget-size", "banner");
+    expect(workPulse.getByText("Current cycle")).toBeInTheDocument();
+    expect(workPulse.getByText("Triage")).toBeInTheDocument();
+    expect(workPulse.getByText("In progress projects")).toBeInTheDocument();
+    const triagePressure = workPulse.getByRole("group", { name: "Triage pressure" });
+    expect(triagePressure).toHaveClass("trail-segmented-summary--inline");
+    expect(within(triagePressure).getByLabelText("overdue: 2"))
+      .toHaveAttribute("data-tone", "attention");
+    expect(within(triagePressure).getByLabelText("remain: 5")).toBeInTheDocument();
+    expect(workPulse.getByRole("progressbar", { name: "Current cycle progress" }))
+      .toHaveClass("trail-progress--compact");
+    expect(workPulse.getByRole("progressbar", { name: "Plugin shell progress" }))
+      .toHaveClass("trail-progress--micro");
+    expect(workPulse.getAllByText(/%$/).length).toBeGreaterThan(0);
+    expect(workPulse.getByText("+1 more")).toBeInTheDocument();
   }, 30_000);
 });

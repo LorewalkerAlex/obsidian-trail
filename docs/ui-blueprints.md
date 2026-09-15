@@ -1555,15 +1555,16 @@ True empty adds zero-state guidance for the same standard Triage creation intent
 
 ### 7.8 Home
 
-Semantic reading order:
+Semantic reading/composition order:
 
 ```text
 Home
--> This week
+-> This week + Work pulse
 -> Lifecycle activity
 -> Work trend + Weekly meeting notes
--> Work pulse
 ```
+
+Wide/normal Home composes the compact This Week module beside a content-dense Work Pulse summary. Work Pulse does not stretch merely to consume all remaining width.
 
 Header:
 
@@ -1636,13 +1637,13 @@ Read-oriented by default with module-local Edit and Archive/Next. Edit uses a lo
 
 **Work pulse**
 
-Last, not top KPI banner:
+Shares the first wide/normal row with This Week and stays lightweight rather than becoming a KPI banner:
 
-- Current Cycle -> period + shared compact Progress; click routes to Current Cycle; when none, `Start cycle` invokes standard Start Cycle;
-- Triage -> Overdue + Remain segmented summary; click routes to Triage without mutating Filter;
-- In Progress Projects -> Started Projects only, shared Project Progress micro-bars; module title routes to Projects Root; `+N more` preserves stable ordering; no hidden Health/ranking score.
+- Current Cycle -> period + shared compact Progress; the whole region activates Current Cycle; when none, `Start cycle` invokes standard Start Cycle;
+- Triage -> shared Segmented Summary owner in inline presentation for Overdue + Remain; the whole region activates Triage without mutating Filter;
+- In Progress Projects -> Started Projects only with shared Project Progress micro-bars; each visible Project row activates that Project, while the section heading and `+N more` activate Projects Root; stable ordering is preserved and no hidden Health/ranking score is introduced.
 
-Constrained Home reflows in the same semantic order. Historical modules keep the three-calendar-month horizon rather than shortening it to fit width.
+Constrained Home reflows in the same reading order. Historical modules keep the three-calendar-month horizon rather than shortening it to fit width.
 
 ### 7.9 Issue Full Item
 
@@ -1828,7 +1829,7 @@ A surface may recompose, wrap, truncate, or omit secondary information as capaci
 
 | Surface | Wide / normal | Constrained |
 | --- | --- | --- |
-| Home | multiple modules share width; Work Trend + Weekly Notes may sit side by side | reflow vertically in semantic order; keep historical horizon |
+| Home | This Week + compact Work Pulse share the first row; Work Trend + Weekly Notes may sit side by side later | reflow vertically in reading order; keep historical horizon |
 | Triage | Queue + Review split | focused Review; preserve Queue/Filter/Order session state |
 | Projects / Initiative List | more project metadata | remove secondary metadata; keep title + Status glyph longest |
 | Project / Cycle List | more Issue metadata | reduce secondary metadata; preserve Title and necessary scope identity |

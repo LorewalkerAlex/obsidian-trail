@@ -36,6 +36,19 @@ function readyHomeStore() {
     statusDefinitionId: "project-started",
     title: "Project A",
   };
+  const projectEarlier: TrailProject = {
+    due: singaporeTimestamp(2026, 8, 30),
+    id: "project-b",
+    labelIds: [],
+    statusDefinitionId: "project-started",
+    title: "Project B",
+  };
+  const projectUnstarted: TrailProject = {
+    id: "project-c",
+    labelIds: [],
+    statusDefinitionId: "project-unstarted",
+    title: "Project C",
+  };
   const workflowIssues: readonly TrailWorkflowIssue[] = [
     {
       context: "workflow",
@@ -95,6 +108,13 @@ function readyHomeStore() {
   const triageIssues: readonly TrailTriageIssue[] = [
     {
       context: "triage",
+      due: singaporeTimestamp(2026, 8, 13),
+      id: "triage-overdue",
+      labelIds: [],
+      title: "Overdue review",
+    },
+    {
+      context: "triage",
       due: singaporeTimestamp(2026, 8, 14),
       id: "triage-monday",
       labelIds: [],
@@ -108,6 +128,12 @@ function readyHomeStore() {
       title: "Tuesday review",
     },
   ];
+  const currentCycle = {
+    id: "cycle-current",
+    issueIds: ["issue-active", "issue-completed-recent", "issue-canceled"],
+    plannedEnd: singaporeTimestamp(2026, 8, 20, 23),
+    startedAt: singaporeTimestamp(2026, 8, 7, 9),
+  };
   const store = createTrailRuntimeStore();
 
   publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
@@ -122,6 +148,25 @@ function readyHomeStore() {
         milestones: [],
         project,
         sourcePath: "Trail/Projects/0001 Project A.md",
+      },
+      {
+        issues: [],
+        kind: "project",
+        milestones: [],
+        project: projectEarlier,
+        sourcePath: "Trail/Projects/0002 Project B.md",
+      },
+      {
+        issues: [],
+        kind: "project",
+        milestones: [],
+        project: projectUnstarted,
+        sourcePath: "Trail/Projects/0003 Project C.md",
+      },
+      {
+        cycles: [currentCycle],
+        kind: "cycles",
+        sourcePath: "Trail/Collections/Cycles.md",
       },
       {
         issues: triageIssues,
@@ -145,7 +190,7 @@ describe("Trail Home query", () => {
     )).toBeNull();
   });
 
-  it("derives the accepted week, lifecycle, and work-trend projections from one Runtime snapshot", () => {
+  it("derives temporal orientation and Work Pulse from one coherent Runtime snapshot", () => {
     const store = readyHomeStore();
     const readModel = selectTrailHomeReadModel(
       store.getState(),
@@ -221,6 +266,26 @@ describe("Trail Home query", () => {
       backlogStock: 1,
       completed7dCount: 1,
       id: "2026-09-14",
+    });
+
+    expect(readModel.workPulse.timezone).toBe("Asia/Singapore");
+    expect(readModel.workPulse.triage).toEqual({
+      activeCount: 3,
+      overdueCount: 1,
+      remainCount: 2,
+    });
+    expect(readModel.workPulse.currentCycle).toMatchObject({
+      id: "cycle-current",
+      progress: { max: 2, value: 1 },
+    });
+    expect(readModel.workPulse.inProgressProjects.map(({ title }) => title)).toEqual([
+      "Project B",
+      "Project A",
+    ]);
+    expect(readModel.workPulse.inProgressProjects[0]?.progress).toEqual({ unavailable: true });
+    expect(readModel.workPulse.inProgressProjects[1]?.progress).toEqual({
+      max: 4,
+      value: 2,
     });
   });
 });

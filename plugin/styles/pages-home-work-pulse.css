@@ -1,0 +1,253 @@
+/* Work Pulse is the wide orientation companion to This Week, not a nested dashboard. */
+.trail-home-page__slot[data-home-slot="work-pulse"] {
+  grid-column: span 3;
+}
+
+.trail-home-page__slot[data-home-slot="work-pulse"] > .trail-home-widget {
+  max-width: 720px;
+  margin-left: 0;
+}
+
+.trail-home-work-pulse {
+  display: grid;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 0.8fr) minmax(0, 1.25fr);
+}
+
+.trail-home-work-pulse__module {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+}
+
+.trail-home-work-pulse__module + .trail-home-work-pulse__module {
+  border-left: 1px solid var(--trail-border-subtle);
+}
+
+.trail-home-work-pulse__module-route,
+.trail-home-work-pulse__module-static {
+  box-sizing: border-box;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  align-content: center;
+  gap: var(--trail-space-5);
+  padding: 0 var(--trail-space-8);
+}
+
+.trail-home-work-pulse__module-route--cycle,
+.trail-home-work-pulse__module-static--cycle {
+  padding-left: 0;
+}
+
+.trail-home-work-pulse__module-static--projects {
+  padding-right: 0;
+}
+
+.trail-home-work-pulse__module-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body button.trail-home-work-pulse__module-route,
+body button.trail-home-work-pulse__module-title--route,
+body button.trail-home-work-pulse__project,
+body button.trail-home-work-pulse__more {
+  appearance: none;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-radius: var(--trail-radius-xs);
+  outline: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+body button.trail-home-work-pulse__module-route:hover,
+body button.trail-home-work-pulse__project:hover,
+body button.trail-home-work-pulse__module-title--route:hover,
+body button.trail-home-work-pulse__more:hover {
+  background: var(--trail-state-hover);
+  color: var(--trail-text-primary);
+}
+
+body button.trail-home-work-pulse__module-route:focus-visible,
+body button.trail-home-work-pulse__project:focus-visible,
+body button.trail-home-work-pulse__module-title--route:focus-visible,
+body button.trail-home-work-pulse__more:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--trail-focus-border);
+}
+
+body button.trail-home-work-pulse__module-route {
+  padding: 0 var(--trail-space-8);
+}
+
+body button.trail-home-work-pulse__module-route--cycle {
+  padding-left: 0;
+}
+
+body button.trail-home-work-pulse__module-title--route {
+  width: 100%;
+  padding: var(--trail-space-2);
+  margin: calc(-1 * var(--trail-space-2));
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-medium);
+  line-height: 1.2;
+}
+
+.trail-home-work-pulse__cycle-summary {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--trail-space-5);
+}
+
+.trail-home-work-pulse__cycle-summary > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-supporting);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-home-work-pulse__cycle-summary > span:last-child {
+  flex: 0 0 auto;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trail-home-work-pulse__module-route .trail-progress {
+  width: 100%;
+}
+
+.trail-home-work-pulse__cycle-empty {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--trail-space-5);
+}
+
+.trail-home-work-pulse__cycle-empty > span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-supporting);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-home-work-pulse__zero-route {
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-supporting);
+}
+
+.trail-home-work-pulse__projects {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+}
+
+body button.trail-home-work-pulse__project {
+  display: grid;
+  width: calc(100% + (2 * var(--trail-space-2)));
+  min-height: 22px;
+  margin-left: calc(-1 * var(--trail-space-2));
+  padding: 0 var(--trail-space-2);
+  grid-template-columns: minmax(0, 1fr) minmax(48px, 0.55fr) 34px;
+  align-items: center;
+  gap: var(--trail-space-4);
+}
+
+.trail-home-work-pulse__project-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-home-work-pulse__project .trail-progress {
+  min-width: 0;
+}
+
+.trail-home-work-pulse__project-value {
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+body button.trail-home-work-pulse__more {
+  width: fit-content;
+  margin-top: var(--trail-space-2);
+  padding: var(--trail-space-2);
+  margin-left: calc(-1 * var(--trail-space-2));
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+}
+
+.trail-home-work-pulse__projects-empty {
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-supporting);
+}
+
+@container (max-width: 840px) {
+  .trail-home-page__slot[data-home-slot="this-week"],
+  .trail-home-page__slot[data-home-slot="work-pulse"] {
+    grid-column: 1 / -1;
+  }
+
+  .trail-home-page__slot[data-home-slot="work-pulse"] > .trail-home-widget {
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+@container (max-width: 620px) {
+  .trail-home-page__slot[data-home-slot="work-pulse"] .trail-home-widget[data-home-widget-size="banner"] {
+    height: 292px;
+  }
+
+  .trail-home-work-pulse {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+
+  .trail-home-work-pulse__module + .trail-home-work-pulse__module {
+    border-top: 1px solid var(--trail-border-subtle);
+    border-left: 0;
+  }
+
+  .trail-home-work-pulse__module-route,
+  .trail-home-work-pulse__module-static,
+  body button.trail-home-work-pulse__module-route {
+    padding: var(--trail-space-5) 0;
+  }
+}

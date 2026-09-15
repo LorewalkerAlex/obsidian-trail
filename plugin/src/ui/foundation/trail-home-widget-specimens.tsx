@@ -7,11 +7,12 @@ import {
   TrailThisWeekWidget,
   type TrailThisWeekWidgetDay,
 } from "../pages/home/trail-this-week-widget";
+import { TrailWeeklyMeetingNotesWidget } from "../pages/home/trail-weekly-meeting-notes-widget";
+import { TrailWorkPulseWidget } from "../pages/home/trail-work-pulse-widget";
 import {
   TrailWorkTrendWidget,
   type TrailWorkTrendWidgetDay,
 } from "../pages/home/trail-work-trend-widget";
-import { TrailWeeklyMeetingNotesWidget } from "../pages/home/trail-weekly-meeting-notes-widget";
 import type { TrailMarkdownRender } from "../patterns/trail-page-narrative";
 import type { TrailUiActions } from "../shell/trail-ui-actions";
 import { LabSpecimenRow } from "./trail-lab-showroom";
@@ -162,6 +163,13 @@ const WEEKLY_NOTE_RENDER_MARKDOWN: TrailMarkdownRender = (markdown, container) =
   };
 };
 
+const WORK_PULSE_PROJECTS = [
+  { id: "project-a", progress: { max: 8, unavailable: false as const, value: 5 }, title: "Plugin shell" },
+  { id: "project-b", progress: { max: 5, unavailable: false as const, value: 2 }, title: "Home dashboard" },
+  { id: "project-c", progress: { unavailable: true as const }, title: "Release notes" },
+  { id: "project-d", progress: { max: 6, unavailable: false as const, value: 1 }, title: "Documentation pass" },
+] as const;
+
 export function TrailHomeWidgetSpecimens() {
   return (
     <>
@@ -215,6 +223,32 @@ export function TrailHomeWidgetSpecimens() {
           <TrailWeeklyMeetingNotesWidget
             actions={WEEKLY_NOTE_ACTIONS}
             renderMarkdown={WEEKLY_NOTE_RENDER_MARKDOWN}
+          />
+        </div>
+      </LabSpecimenRow>
+
+      <LabSpecimenRow
+        description="Work pulse is the wide orientation companion to This week: Current Cycle shows period plus explicit completion, Triage stays open and number-first without nested card chrome, and Started Projects pair micro Progress with readable percentages. No Health, focus ranking, or score is introduced."
+        kind="composition-gallery"
+        owner="TrailHomeWidgetFrame + TrailWorkPulseWidget + TrailProgress"
+        title="Home widget · Work pulse · 3×1 candidate"
+      >
+        <div className="trail-home-widget-pulse-candidate">
+          <TrailWorkPulseWidget
+            currentCycle={{
+              id: "cycle-current",
+              plannedEnd: Date.UTC(2026, 8, 20, 15, 59),
+              progress: { max: 9, unavailable: false, value: 5 },
+              startedAt: Date.UTC(2026, 8, 7, 16),
+            }}
+            onCurrentCycleActivate={() => undefined}
+            onProjectActivate={() => undefined}
+            onProjectsActivate={() => undefined}
+            onStartCycle={() => undefined}
+            onTriageActivate={() => undefined}
+            projects={WORK_PULSE_PROJECTS}
+            timezone="Asia/Singapore"
+            triage={{ activeCount: 7, overdueCount: 2, remainCount: 5 }}
           />
         </div>
       </LabSpecimenRow>

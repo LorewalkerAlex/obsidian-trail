@@ -1,0 +1,86 @@
+/* Shared mutually-exclusive count summary used by Project Attention and Home Triage pulse. */
+.trail-segmented-summary {
+  box-sizing: border-box;
+  min-width: 0;
+  color: var(--trail-text-secondary);
+}
+
+.trail-segmented-summary__segment {
+  min-width: 0;
+}
+
+.trail-segmented-summary__segment strong {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--trail-weight-medium);
+}
+
+.trail-segmented-summary--framed {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--trail-border-subtle);
+  border-radius: var(--trail-radius-sm);
+}
+
+.trail-segmented-summary--framed .trail-segmented-summary__segment {
+  display: grid;
+  gap: var(--trail-space-2);
+  padding: var(--trail-space-5);
+}
+
+.trail-segmented-summary--framed .trail-segmented-summary__segment + .trail-segmented-summary__segment {
+  border-left: 1px solid var(--trail-border-subtle);
+}
+
+.trail-segmented-summary--framed .trail-segmented-summary__segment > span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-segmented-summary--framed .trail-segmented-summary__segment strong {
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-font-size-body);
+}
+
+.trail-segmented-summary--inline {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: baseline;
+  gap: var(--trail-space-5);
+}
+
+.trail-segmented-summary--inline .trail-segmented-summary__segment {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--trail-space-2);
+  white-space: nowrap;
+}
+
+.trail-segmented-summary--inline .trail-segmented-summary__segment + .trail-segmented-summary__segment::before {
+  margin-right: var(--trail-space-3);
+  color: var(--trail-text-faint);
+  content: "\00b7";
+  font-size: var(--trail-font-size-caption);
+}
+
+.trail-segmented-summary--inline .trail-segmented-summary__segment strong {
+  color: var(--trail-text-primary);
+  font-size: var(--trail-font-size-section);
+  font-weight: var(--trail-weight-emphasis);
+}
+
+.trail-segmented-summary--inline .trail-segmented-summary__segment > span {
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
+}
+
+.trail-segmented-summary--inline .trail-segmented-summary__segment[data-tone="attention"]:not([data-value="0"]) strong {
+  color: var(--trail-warning);
+}

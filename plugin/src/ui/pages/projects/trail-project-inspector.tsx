@@ -13,6 +13,7 @@ import { TrailOptionalDuePropertySelect } from "../../entities/trail-optional-du
 import { TrailPriorityPropertySelect } from "../../entities/trail-priority-property-select";
 import { TrailRelationPropertySelect } from "../../entities/trail-relation-property-select";
 import { TrailStatusPropertySelect } from "../../entities/trail-status-property-select";
+import { TrailSegmentedSummary } from "../../patterns/trail-segmented-summary";
 import { TrailViewPopover } from "../../patterns/trail-view-popover";
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
@@ -343,20 +344,26 @@ export function TrailProjectInspector({
 
       <section aria-label="Project temporal attention" className="trail-project-inspector__section">
         <h3 className="trail-project-inspector__section-title">Attention</h3>
-        <div className="trail-project-inspector__attention">
-          <div className="trail-project-inspector__attention-segment">
-            <span>Overdue</span>
-            <strong>{readModel.attention.overdue}</strong>
-          </div>
-          <div className="trail-project-inspector__attention-segment">
-            <span>This week</span>
-            <strong>{readModel.attention.thisWeek}</strong>
-          </div>
-          <div className="trail-project-inspector__attention-segment">
-            <span>Later</span>
-            <strong>{readModel.attention.later}</strong>
-          </div>
-        </div>
+        <TrailSegmentedSummary
+          label="Project temporal attention summary"
+          segments={[
+            {
+              id: "overdue",
+              label: "Overdue",
+              value: readModel.attention.overdue,
+            },
+            {
+              id: "this-week",
+              label: "This week",
+              value: readModel.attention.thisWeek,
+            },
+            {
+              id: "later",
+              label: "Later",
+              value: readModel.attention.later,
+            },
+          ]}
+        />
       </section>
 
       <section aria-label="Project milestones" className="trail-project-inspector__section">

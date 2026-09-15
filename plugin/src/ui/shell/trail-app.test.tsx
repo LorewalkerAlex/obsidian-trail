@@ -83,6 +83,9 @@ function readyTriageStore() {
 
 function uiActions(edit = vi.fn()): TrailUiActions {
   return {
+    cycles: {
+      start: vi.fn(),
+    },
     projects: {
       createFromDraft: vi.fn(),
     },
@@ -117,13 +120,14 @@ function expectSharedChassis(
 }
 
 describe("TrailApp", () => {
-  it("renders the real Home consumer on the shared Page Surface instead of a placeholder", () => {
+  it("renders the real Home consumer and forwards Work Pulse navigation through the host boundary", () => {
     const navigationStore = createTrailNavigationStore();
+    const onNavigate = vi.fn();
     const { container } = render(
       <TrailApp
         actions={uiActions()}
         navigationStore={navigationStore}
-        onNavigate={vi.fn()}
+        onNavigate={onNavigate}
         renderMarkdown={renderMarkdown}
         runtimeStore={createTrailTestRuntimeStore()}
         showDevelopment={false}
@@ -133,6 +137,10 @@ describe("TrailApp", () => {
     expect(navigationStore.getState().location).toEqual({ kind: "home" });
     expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "This week" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Work pulse" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open Triage" }));
+    expect(onNavigate).toHaveBeenCalledWith({ kind: "triage" });
+    expect(navigationStore.getState().location).toEqual({ kind: "home" });
     expect(screen.queryByText("This page has not been implemented yet.")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
     expectSharedChassis(container, { inset: "page", scroll: "page" });

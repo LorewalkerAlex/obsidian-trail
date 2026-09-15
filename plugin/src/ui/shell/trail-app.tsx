@@ -102,7 +102,22 @@ export function TrailApp({
         ) : currentLocation.kind === "home" ? (
           <TrailPageSurface inset="page" scroll="page">
             <TrailHomePage
-              actions={actions.weeklyNote}
+              actions={{
+                cycles: { start: actions.cycles.start },
+                weeklyNote: actions.weeklyNote,
+              }}
+              onCycleActivate={(cycleId) => {
+                onNavigate({ cycleId, kind: "cycle" });
+              }}
+              onProjectActivate={(projectId) => {
+                onNavigate({ kind: "project", projectId });
+              }}
+              onProjectsActivate={() => {
+                onNavigate({ kind: "projects" });
+              }}
+              onTriageActivate={() => {
+                onNavigate({ kind: "triage" });
+              }}
               renderMarkdown={renderMarkdown}
               runtimeStore={runtimeStore}
             />

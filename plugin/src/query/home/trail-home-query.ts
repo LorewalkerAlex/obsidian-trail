@@ -1,12 +1,22 @@
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
+import { resolveTrailStatusDefinition } from "../../domain/rules/trail-status-rules";
 import {
   addTrailCalendarDays,
   readTrailZonedDateTimeParts,
   resolveTrailZonedDateTimeParts,
 } from "../../domain/rules/trail-temporal-rules";
-import { resolveTrailStatusDefinition } from "../../domain/rules/trail-status-rules";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
+import {
+  compareTrailProjectOrder,
+  createTrailProjectSummaryReadModel,
+  requireTrailProjectStatus,
+  selectTrailWorkflowIssuesForProject,
+} from "../projects/trail-project-collection-query";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
+import {
+  selectTrailWorkflowIssueProgress,
+  type TrailProgressReadModel,
+} from "../shared/trail-progress-query";
 
 const MONTH_LABELS = [
   "Jan",
@@ -68,6 +78,12 @@ export interface TrailHomeWorkTrendDayReadModel {
   readonly id: string;
 }
 
+export interface TrailHomeWorkPulseProjectReadModel {
+  readonly id: string;
+  readonly progress: TrailProgressReadModel;
+  readonly title: string;
+}
+
 export interface TrailHomeReadModel {
   readonly lifecycle: {
     readonly days: readonly TrailHomeLifecycleDayReadModel[];
@@ -76,6 +92,21 @@ export interface TrailHomeReadModel {
   readonly thisWeek: {
     readonly days: readonly TrailHomeThisWeekDayReadModel[];
     readonly monthLabel: string;
+  };
+  readonly workPulse: {
+    readonly currentCycle?: {
+      readonly id: string;
+      readonly plannedEnd: number;
+      readonly progress: TrailProgressReadModel;
+      readonly startedAt: number;
+    };
+    readonly inProgressProjects: readonly TrailHomeWorkPulseProjectReadModel[];
+    readonly timezone: string;
+    readonly triage: {
+      readonly activeCount: number;
+      readonly overdueCount: number;
+      readonly remainCount: number;
+    };
   };
   readonly workTrend: {
     readonly days: readonly TrailHomeWorkTrendDayReadModel[];
@@ -180,7 +211,7 @@ function incrementCount(map: Map<string, number>, id: string): void {
 
 /**
  * Home is a disposable projection of current Runtime facts. It acquires one
- * readable snapshot for the complete temporal surface and persists no history.
+ * readable snapshot for the complete surface and persists no history or score.
  */
 export function selectTrailHomeReadModel(
   state: TrailRuntimeState,
@@ -210,6 +241,53 @@ export function selectTrailHomeReadModel(
 
   const workflowIssues = [...readable.authoritative.domain.issuesById.values()]
     .filter((issue): issue is TrailWorkflowIssue => issue.context === "workflow");
+
+  const triageIssues = [...readable.authoritative.domain.issuesById.values()]
+    .filter((issue) => issue.context === "triage");
+  const triageOverdueCount = triageIssues.reduce(
+    (count, issue) => issue.due < todayStart ? count + 1 : count,
+    0,
+  );
+
+  let currentCycle: TrailHomeReadModel["workPulse"]["currentCycle"];
+  const currentCycleId = readable.indexes.currentCycleId;
+  if (currentCycleId !== undefined) {
+    const cycle = readable.authoritative.domain.cyclesById.get(currentCycleId);
+    if (cycle === undefined || cycle.endedAt !== undefined) return null;
+    const issues: TrailWorkflowIssue[] = [];
+    for (const issueId of cycle.issueIds) {
+      const issue = readable.authoritative.domain.issuesById.get(issueId);
+      if (issue?.context !== "workflow") return null;
+      issues.push(issue);
+    }
+    const progress = selectTrailWorkflowIssueProgress(configuration, issues);
+    if (progress === null) return null;
+    currentCycle = {
+      id: cycle.id,
+      plannedEnd: cycle.plannedEnd,
+      progress,
+      startedAt: cycle.startedAt,
+    };
+  }
+
+  const inProgressProjects = [...readable.authoritative.domain.projectsById.values()]
+    .filter((project) => (
+      requireTrailProjectStatus(configuration, project).category === "started"
+    ))
+    .sort((left, right) => compareTrailProjectOrder(configuration, left, right))
+    .map((project) => {
+      const status = requireTrailProjectStatus(configuration, project);
+      const summary = createTrailProjectSummaryReadModel(
+        project,
+        status,
+        selectTrailWorkflowIssuesForProject(readable, configuration, project.id),
+      );
+      return {
+        id: summary.id,
+        progress: summary.progress,
+        title: summary.title,
+      };
+    });
 
   const triageDueByDay = new Map<string, number>();
   const workflowDueByDay = new Map<string, number>();
@@ -353,6 +431,16 @@ export function selectTrailHomeReadModel(
         weekday: day.weekday,
       })),
       monthLabel: monthRangeLabel(firstWeekDay, lastWeekDay),
+    },
+    workPulse: {
+      currentCycle,
+      inProgressProjects,
+      timezone,
+      triage: {
+        activeCount: triageIssues.length,
+        overdueCount: triageOverdueCount,
+        remainCount: triageIssues.length - triageOverdueCount,
+      },
     },
     workTrend: {
       days: workTrendDays,
