@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import { validateTrailWorkspaceGraph } from "../domain/validation/trail-workspace-validation";
 import {
-  isTrailPluginDataSnapshot,
-  parseTrailPluginData,
-} from "../persistence/plugin-data/trail-plugin-data-codec";
+  parseCyclesMarkdown,
+  type TrailCyclesSourceDocument,
+} from "../markdown/codecs/trail-cycles-codec";
 import {
   parseInitiativeMarkdown,
   type TrailInitiativeSourceDocument,
@@ -14,6 +14,14 @@ import {
   parseProjectMarkdown,
   type TrailProjectSourceDocument,
 } from "../markdown/codecs/trail-project-codec";
+import {
+  parseTriageMarkdown,
+  type TrailTriageSourceDocument,
+} from "../markdown/codecs/trail-triage-codec";
+import {
+  isTrailPluginDataSnapshot,
+  parseTrailPluginData,
+} from "../persistence/plugin-data/trail-plugin-data-codec";
 import { parseTrailTestYaml } from "./trail-test-fixtures";
 
 function markdownPaths(directory: string): readonly string[] {
@@ -21,6 +29,17 @@ function markdownPaths(directory: string): readonly string[] {
     .filter((name) => name.endsWith(".md"))
     .sort()
     .map((name) => `${directory}/${name}`);
+}
+
+function readCyclesSource(sourcePath: string): TrailCyclesSourceDocument {
+  const parsed = parseCyclesMarkdown({
+    markdown: readFileSync(sourcePath, "utf8"),
+    parseYaml: parseTrailTestYaml,
+    sourcePath,
+  });
+  expect(parsed.issues, sourcePath).toEqual([]);
+  if (parsed.document === undefined) throw new Error(`Cycles source was rejected: ${sourcePath}`);
+  return parsed.document;
 }
 
 function readInitiativeSource(sourcePath: string): TrailInitiativeSourceDocument {
@@ -42,6 +61,17 @@ function readProjectSource(sourcePath: string): TrailProjectSourceDocument {
   });
   expect(parsed.issues, sourcePath).toEqual([]);
   if (parsed.document === undefined) throw new Error(`Project source was rejected: ${sourcePath}`);
+  return parsed.document;
+}
+
+function readTriageSource(sourcePath: string): TrailTriageSourceDocument {
+  const parsed = parseTriageMarkdown({
+    markdown: readFileSync(sourcePath, "utf8"),
+    parseYaml: parseTrailTestYaml,
+    sourcePath,
+  });
+  expect(parsed.issues, sourcePath).toEqual([]);
+  if (parsed.document === undefined) throw new Error(`Triage source was rejected: ${sourcePath}`);
   return parsed.document;
 }
 
@@ -74,7 +104,9 @@ function readPluginData() {
 }
 
 describe("checked-in development sources", () => {
-  it("keeps Initiative and Project fixtures parseable by the production codecs", () => {
+  it("keeps managed Domain fixtures parseable by the production codecs", () => {
+    readCyclesSource("Trail/Collections/Cycles.md");
+    readTriageSource("Trail/Collections/Triage.md");
     for (const sourcePath of markdownPaths("Trail/Initiatives")) {
       readInitiativeSource(sourcePath);
     }
@@ -83,17 +115,20 @@ describe("checked-in development sources", () => {
     }
   });
 
-  it("keeps the checked-in Initiative and Project graph valid with plugin configuration", () => {
+  it("keeps the checked-in Workspace graph valid with plugin configuration", () => {
     const pluginData = readPluginData();
+    const cycles = readCyclesSource("Trail/Collections/Cycles.md");
+    const triage = readTriageSource("Trail/Collections/Triage.md");
     const initiatives = markdownPaths("Trail/Initiatives").map(readInitiativeSource);
     const projects = markdownPaths("Trail/Projects").map(readProjectSource);
     const milestones = projects.flatMap((document) => document.milestones);
-    const issues = projects.flatMap((document) => document.issues);
+    const workflowIssues = projects.flatMap((document) => document.issues);
+    const issues = [...workflowIssues, ...triage.issues];
 
     expect(validateTrailWorkspaceGraph({
       configuration: pluginData.configuration,
       domain: {
-        cyclesById: new Map(),
+        cyclesById: new Map(cycles.cycles.map((cycle) => [cycle.id, cycle])),
         initiativesById: new Map(
           initiatives.map((document) => [document.initiative.id, document.initiative]),
         ),
