@@ -174,7 +174,6 @@ export function TrailIssueInspector({
                   void settleIssue((latest) => actions.issues.changeStatus(
                     latest.expectedIssue,
                     statusDefinitionId,
-                    latest.estimate,
                   ));
                 }}
                 options={readModel.statusOptionGroups}

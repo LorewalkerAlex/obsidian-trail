@@ -150,6 +150,17 @@ describe("TrailIssueInspector", () => {
     expect(uiActions.issues.editProperties).not.toHaveBeenCalled();
   });
 
+  it("does not pass the stored Estimate as input for a non-Completed Status change", () => {
+    const { issue, store } = fixture("issue-backlog");
+    const uiActions = actions();
+    render(<TrailIssueInspector actions={uiActions} issueId={issue.id} runtimeStore={store} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Status: backlog" }));
+    fireEvent.click(within(screen.getByLabelText("Status")).getByRole("button", { name: "unstarted" }));
+
+    expect(uiActions.issues.changeStatus).toHaveBeenCalledWith(issue, "issue-unstarted");
+  });
+
   it("uses a required searchable Project relation and the existing Move application intent", () => {
     const { issue, store } = fixture();
     const uiActions = actions();
