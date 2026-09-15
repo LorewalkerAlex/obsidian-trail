@@ -36,7 +36,7 @@ Do not reopen already-closed Product/UI decisions because older code or tests ex
 Known alignment debt now centers on:
 
 1. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
-2. one deliberate full-system visual/UI calibration remains reserved for Stage 12 after Product content/workflows are complete and functional validation is green. That pass includes previously deferred Project lifecycle/Bulk/Delete transient micro-calibration plus typography, hierarchy, density, spacing, alignment, chrome, and cross-surface consistency across the finished V1 surface set.
+2. one deliberate full-system visual/UI calibration remains reserved for Stage 12B after the Stage 12A functional acceptance baseline is green. That pass includes previously deferred Project lifecycle/Bulk/Delete transient micro-calibration plus typography, hierarchy, density, spacing, alignment, chrome, and cross-surface consistency across the finished V1 surface set.
 
 These are implementation/calibration gaps, not design questions. Stage 8 established the shared Collection Selection, Peek, Action Registry, Context Menu, and Bulk Bar mechanics; Stage 9 reused those owners and closed Sidebar Search plus Default Project host evidence without creating parallel systems. No human-readable Workflow Issue identifier is planned merely to support row spacing.
 
@@ -770,9 +770,30 @@ Current status:
 
 Stage 12 begins only after the planned V1 Product surfaces/workflows are implemented and their functional owner/direct-consumer tests plus required host behavior are green. That entry condition is now satisfied by Stage 11 closure. Earlier stages may still correct visual defects that block usability, containment, or host correctness, but broad aesthetic polish must not become a moving feature-stage target.
 
-The Stage 12 visual pass is one final integration calibration over the completed product. It must reuse the accepted production owners and Linear-faithful Trail grammar rather than introduce Page-local styling systems or reopen closed Product/Domain semantics.
+Stage 12 is split into a functional acceptance baseline followed by one final visual/integration calibration. Stage 12A must be green before Stage 12B begins; neither substage reopens closed Product, Domain, data, architecture, UI, or ownership decisions without new repository evidence.
 
-Complete:
+#### Stage 12A — Functional acceptance baseline
+
+Complete in order:
+
+1. **12A.1 — Baseline documentation and cleanup**
+   - record the Stage 12 execution split in this implementation plan;
+   - remove known host-validation residue from the development Vault before expanding fixtures;
+   - preserve unrelated machine-local Obsidian/plugin-toggle state outside the intended cleanup set.
+2. **12A.2 — Longitudinal development fixture**
+   - expand the versioned development Vault with coherent multi-month Product history and representative current work so Home temporal reports, Progress, lifecycle/history surfaces, filtering, relation targets, and realistic collection density can be inspected together;
+   - keep the fixture as development evidence rather than Product truth;
+   - validate checked-in Trail sources and host/plugin-data fixtures through the existing production codecs and workspace-graph development-source gate before using them for host calibration.
+3. **12A.3 — Whole-product E2E regression**
+   - exercise the complete V1 workflow chain in real Obsidian over the accepted production owners rather than isolated demo paths;
+   - prefer a diagnostics-enabled build and `Trail: Copy validation evidence` for Runtime/diagnostic/managed-source evidence;
+   - use ordinary Git diff as an additional persistence observation channel for versioned Vault writes;
+   - record host-only behavior such as navigation/history, Inspector targeting, focus/Esc layering, drag/drop, and transient dismissal through direct Obsidian observation where persisted evidence cannot prove it;
+   - repair deterministic functional defects before starting broad visual calibration.
+
+#### Stage 12B — Visual calibration, detail fixes, and V1 exit
+
+After Stage 12A is functionally green, complete:
 
 - one final full-system visual/UI calibration across Product Pages, collections, Inspectors, Sidebar, transient surfaces, and shell chrome;
 - typography, hierarchy, density, spacing, alignment, interaction chrome, and cross-surface consistency calibration against the Linear benchmark and the accepted Trail production grammar;
@@ -788,7 +809,7 @@ Complete:
 
 ## 9. Active Slice
 
-Stages 0 through 11 are closed. Stage 12 — Full-system calibration and V1 exit is active. The accepted Stage 5 executable checkpoint is `5049156861edd0b357efb70053797726c3877b71` (`refactor: align shared visual grammar`). Do not reopen Stage 5 unless later repository evidence creates a concrete contradiction with its frozen Product/UI/ownership contracts.
+Stages 0 through 11 are closed. Stage 12A.1 — Baseline documentation and cleanup is active. Stage 12A.2 will establish the longitudinal development fixture, Stage 12A.3 will run whole-product E2E regression, and Stage 12B will perform final visual calibration/detail fixes before V1 exit. The accepted Stage 5 executable checkpoint is `5049156861edd0b357efb70053797726c3877b71` (`refactor: align shared visual grammar`). Do not reopen Stage 5 unless later repository evidence creates a concrete contradiction with its frozen Product/UI/ownership contracts.
 
 ### Stage 5 closed — Triage vertical
 
