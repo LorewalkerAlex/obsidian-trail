@@ -190,13 +190,15 @@ export default class TrailPlugin extends Plugin {
     );
     const actions: TrailUiActions = {
       ...domainActions,
-      projects: {
-        ...domainActions.projects,
-        delete: (expectedProject, replacementProjectId) => applicationSession.projects.delete(
-          expectedProject,
-          replacementProjectId,
-        ),
-      },
+      projects: __TRAIL_DIAGNOSTICS_ENABLED__
+        ? {
+            ...domainActions.projects,
+            delete: (expectedProject, replacementProjectId) => applicationSession.projects.delete(
+              expectedProject,
+              replacementProjectId,
+            ),
+          }
+        : applicationSession.projects,
       weeklyNote,
     };
     this.addSettingTab(new TrailWorkspaceSettingsTab(

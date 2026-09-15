@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type {
+  TrailInitiative,
   TrailProject,
   TrailTriageIssue,
   TrailWorkflowIssue,
 } from "../../domain/model/trail-entities";
+import { resolveTrailTriageDefaultDue } from "../../domain/rules/trail-temporal-rules";
 import {
   buildTrailCommittedRuntimeCandidate,
   publishTrailCommittedRuntime,
@@ -30,8 +32,14 @@ function singaporeTimestamp(
 
 function readyHomeStore() {
   const configuration = createTrailTestConfiguration();
+  const initiative: TrailInitiative = {
+    id: "initiative-a",
+    labelIds: [],
+    title: "Initiative A",
+  };
   const project: TrailProject = {
     id: "project-a",
+    initiativeId: initiative.id,
     labelIds: [],
     statusDefinitionId: "project-started",
     title: "Project A",
@@ -143,6 +151,11 @@ function readyHomeStore() {
     },
     sources: [
       {
+        initiative,
+        kind: "initiative",
+        sourcePath: "Trail/Initiatives/0001 Initiative A.md",
+      },
+      {
         issues: workflowIssues,
         kind: "project",
         milestones: [],
@@ -190,15 +203,28 @@ describe("Trail Home query", () => {
     )).toBeNull();
   });
 
-  it("derives temporal orientation and Work Pulse from one coherent Runtime snapshot", () => {
+  it("derives temporal orientation, creation context, and Work Pulse from one coherent Runtime snapshot", () => {
     const store = readyHomeStore();
-    const readModel = selectTrailHomeReadModel(
-      store.getState(),
-      singaporeTimestamp(2026, 8, 14, 16),
-    );
+    const now = singaporeTimestamp(2026, 8, 14, 16);
+    const readModel = selectTrailHomeReadModel(store.getState(), now);
 
     expect(readModel).not.toBeNull();
     if (readModel === null) throw new Error("Expected Home read model");
+
+    expect(readModel.creation.configuration.temporal.timezone).toBe("Asia/Singapore");
+    expect(readModel.creation.issue.defaultProjectId).toBe("project-a");
+    expect(readModel.creation.issue.projects.map(({ title }) => title)).toEqual([
+      "Project A",
+      "Project B",
+      "Project C",
+    ]);
+    expect(readModel.creation.project.initiatives).toEqual([{
+      id: "initiative-a",
+      title: "Initiative A",
+    }]);
+    expect(readModel.creation.triage.defaultDue).toBe(
+      resolveTrailTriageDefaultDue(now, "Asia/Singapore"),
+    );
 
     expect(readModel.thisWeek.monthLabel).toBe("Sep");
     expect(readModel.thisWeek.days).toHaveLength(7);

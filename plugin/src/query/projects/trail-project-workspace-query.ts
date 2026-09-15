@@ -22,7 +22,10 @@ import {
   matchesTrailSetDiscreteFilter,
 } from "../shared/trail-collection-filter";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
-import { selectTrailWorkflowIssueCreationProjectsFromReadableSnapshot } from "../shared/trail-project-target-query";
+import {
+  selectTrailWorkflowIssueCreationContextFromReadableSnapshot,
+  type TrailWorkflowIssueCreationProjectTargetReadModel,
+} from "../shared/trail-project-target-query";
 import { selectTrailStatusOptionGroups } from "../shared/trail-status-query";
 import {
   compareTrailWorkflowIssueCollectionOrder,
@@ -57,10 +60,8 @@ export interface TrailProjectWorkspaceNamedTargetReadModel {
   readonly title: string;
 }
 
-export interface TrailProjectWorkspaceCreationTargetReadModel
-  extends TrailProjectWorkspaceNamedTargetReadModel {
-  readonly milestones: readonly TrailProjectWorkspaceNamedTargetReadModel[];
-}
+export type TrailProjectWorkspaceCreationTargetReadModel =
+  TrailWorkflowIssueCreationProjectTargetReadModel;
 
 export type TrailWorkflowIssueSummaryReadModel = TrailWorkflowIssuePresentationReadModel;
 
@@ -155,16 +156,6 @@ function milestoneTargets(
     .map(namedMilestone);
 }
 
-function creationTargets(
-  readable: ReturnType<typeof selectTrailReadableRuntimeSnapshot>,
-): readonly TrailProjectWorkspaceCreationTargetReadModel[] {
-  return selectTrailWorkflowIssueCreationProjectsFromReadableSnapshot(readable).map((project) => ({
-    id: project.id,
-    milestones: milestoneTargets(project.id, readable),
-    title: project.title,
-  }));
-}
-
 export function selectTrailProjectWorkspaceReadModel(
   state: TrailRuntimeState,
   input: TrailProjectWorkspaceReadInput,
@@ -225,7 +216,7 @@ export function selectTrailProjectWorkspaceReadModel(
   return {
     canCreateIssue: canTrailProjectAcceptWorkflowIssue(projectStatus, backlogStatus),
     configuration,
-    creationTargets: creationTargets(readable),
+    creationTargets: selectTrailWorkflowIssueCreationContextFromReadableSnapshot(readable).projects,
     emptyKind: allIssues.length === 0
       ? "true"
       : visibleIssues.length === 0 && activeFilter

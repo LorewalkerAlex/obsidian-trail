@@ -12,10 +12,12 @@ import {
   createTrailTestConfiguration,
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
+import { selectTrailReadableRuntimeSnapshot } from "./trail-effective-query";
 import {
   selectTrailDefaultTriageAcceptProjectId,
   selectTrailReadableDefaultProject,
   selectTrailTriageAcceptProjectIds,
+  selectTrailWorkflowIssueCreationContextFromReadableSnapshot,
   selectTrailWorkflowIssueMoveProjectIds,
 } from "./trail-project-target-query";
 
@@ -36,6 +38,11 @@ function readyStore(input: {
     labelIds: [],
     statusDefinitionId: input.projectBStatus ?? "project-completed",
     title: "Alpha",
+  };
+  const milestoneA = {
+    id: "milestone-a",
+    projectId: projectA.id,
+    title: "Milestone A",
   };
   const workflow = {
     context: "workflow" as const,
@@ -60,7 +67,7 @@ function readyStore(input: {
       {
         issues: [workflow],
         kind: "project",
-        milestones: [],
+        milestones: [milestoneA],
         project: projectA,
         sourcePath: "Trail/Projects/0001 Zulu.md",
       },
@@ -76,13 +83,29 @@ function readyStore(input: {
     ],
   }), { sourceIssuesByPath: {} });
   setTrailRuntimeControl(store, { kind: "ready" });
-  return { projectA, projectB, store, workflow };
+  return { milestoneA, projectA, projectB, store, workflow };
 }
 
 describe("Project target Query", () => {
   it("resolves Default Project by stable Workspace reference without title semantics", () => {
     const { projectA, store } = readyStore({ defaultProjectId: "project-a" });
     expect(selectTrailReadableDefaultProject(store.getState())).toBe(projectA);
+  });
+
+  it("owns standard Workflow Issue creation targets, Milestones, and legal default", () => {
+    const { milestoneA, projectA, store } = readyStore({ defaultProjectId: "project-a" });
+    const context = selectTrailWorkflowIssueCreationContextFromReadableSnapshot(
+      selectTrailReadableRuntimeSnapshot(store.getState()),
+    );
+
+    expect(context).toEqual({
+      defaultProjectId: projectA.id,
+      projects: [{
+        id: projectA.id,
+        milestones: [{ id: milestoneA.id, title: milestoneA.title }],
+        title: projectA.title,
+      }],
+    });
   });
 
   it("offers only Projects that can accept the Backlog Issue created by Triage Accept", () => {
@@ -99,6 +122,9 @@ describe("Project target Query", () => {
     });
     expect(selectTrailReadableDefaultProject(terminal.store.getState())).toBe(terminal.projectB);
     expect(selectTrailDefaultTriageAcceptProjectId(terminal.store.getState())).toBeUndefined();
+    expect(selectTrailWorkflowIssueCreationContextFromReadableSnapshot(
+      selectTrailReadableRuntimeSnapshot(terminal.store.getState()),
+    ).defaultProjectId).toBeUndefined();
   });
 
   it("offers only legal explicit Project destinations for a Workflow Issue move", () => {

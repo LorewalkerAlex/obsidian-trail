@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -24,6 +25,12 @@ import {
   createTrailTestWorkspaceState,
 } from "../../test/trail-test-fixtures";
 import { createTrailTestRuntimeStore } from "../../test/trail-runtime-test-harness";
+import type {
+  TrailActionMenuPosition,
+  TrailActionMenuPresenter,
+  TrailActionMenuRequest,
+} from "../interactions/trail-action-menu";
+import { TrailActionMenuProvider } from "../interactions/trail-action-menu-context";
 import type { TrailMarkdownRender } from "../patterns/trail-page-narrative";
 import { TrailApp } from "./trail-app";
 import { createTrailNavigationStore } from "./trail-navigation-state";
@@ -36,6 +43,44 @@ const renderMarkdown: TrailMarkdownRender = (markdown, container) => {
     dispose: () => container.replaceChildren(),
   };
 };
+
+function mutationReceipt(entityId: string) {
+  return {
+    commandId: `command-${entityId}`,
+    completion: Promise.resolve(),
+    entityId,
+  };
+}
+
+function homeCreationMenuPresenter() {
+  let selectTriage: (() => void | Promise<void>) | null = null;
+  const presenter: TrailActionMenuPresenter = {
+    showAtMouseEvent<TActionId extends string>(
+      _event: MouseEvent,
+      _request: TrailActionMenuRequest<TActionId>,
+    ): void {
+      // Home uses the button-position path.
+    },
+    showAtPosition<TActionId extends string>(
+      _position: TrailActionMenuPosition,
+      request: TrailActionMenuRequest<TActionId>,
+    ): void {
+      selectTriage = () => {
+        const item = request.items.find(({ id }) => id === "triage");
+        if (item === undefined) throw new Error("Expected Home Triage creation action");
+        return request.onSelect(item.id);
+      };
+    },
+  };
+
+  return {
+    presenter,
+    selectTriage: () => {
+      if (selectTriage === null) throw new Error("Expected Home creation menu request");
+      return selectTriage();
+    },
+  };
+}
 
 function readyTriageStore() {
   const configuration = createTrailTestConfiguration();
@@ -86,10 +131,17 @@ function uiActions(edit = vi.fn()): TrailUiActions {
     cycles: {
       start: vi.fn(),
     },
+    initiatives: {
+      create: vi.fn(),
+    },
+    issues: {
+      createFromDraft: vi.fn(),
+    },
     projects: {
       createFromDraft: vi.fn(),
     },
     triage: {
+      create: vi.fn(),
       defer: vi.fn(),
       delete: vi.fn(),
       edit,
@@ -144,6 +196,54 @@ describe("TrailApp", () => {
     expect(screen.queryByText("This page has not been implemented yet.")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Foundation lab" })).not.toBeInTheDocument();
     expectSharedChassis(container, { inset: "page", scroll: "page" });
+  });
+
+  it("preserves UI action owner receivers when Home consumes the shared action surface", async () => {
+    const navigationStore = createTrailNavigationStore();
+    const baseActions = uiActions();
+    const createTriage = vi.fn();
+    const triageOwner = {
+      ...baseActions.triage,
+      ownerMarker: "triage-owner",
+      create(input: Parameters<TrailUiActions["triage"]["create"]>[0]) {
+        if (this.ownerMarker !== "triage-owner") {
+          throw new Error("Triage action receiver was not preserved");
+        }
+        createTriage(input);
+        return mutationReceipt("triage-new");
+      },
+    };
+    const actions = { ...baseActions, triage: triageOwner } as TrailUiActions;
+    const actionMenu = homeCreationMenuPresenter();
+
+    render(
+      <TrailActionMenuProvider presenter={actionMenu.presenter}>
+        <TrailApp
+          actions={actions}
+          navigationStore={navigationStore}
+          onNavigate={vi.fn()}
+          renderMarkdown={renderMarkdown}
+          runtimeStore={createTrailTestRuntimeStore()}
+          showDevelopment={false}
+        />
+      </TrailActionMenuProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    act(() => {
+      void actionMenu.selectTriage();
+    });
+
+    const dialog = screen.getByRole("dialog", { name: "Triage" });
+    fireEvent.change(screen.getByRole("textbox", { name: "Triage title" }), {
+      target: { value: "Capture through TrailApp" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Create" }));
+
+    await waitFor(() => expect(createTriage).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Capture through TrailApp",
+    })));
+    expect(navigationStore.getState().location).toEqual({ kind: "home" });
   });
 
   it("mounts Foundation on the same Page Surface only for the explicit development location", () => {

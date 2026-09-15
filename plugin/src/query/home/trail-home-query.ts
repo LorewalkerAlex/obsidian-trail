@@ -1,8 +1,10 @@
+import type { TrailConfiguration } from "../../domain/model/trail-configuration";
 import type { TrailWorkflowIssue } from "../../domain/model/trail-entities";
 import { resolveTrailStatusDefinition } from "../../domain/rules/trail-status-rules";
 import {
   addTrailCalendarDays,
   readTrailZonedDateTimeParts,
+  resolveTrailTriageDefaultDue,
   resolveTrailZonedDateTimeParts,
 } from "../../domain/rules/trail-temporal-rules";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
@@ -10,9 +12,15 @@ import {
   compareTrailProjectOrder,
   createTrailProjectSummaryReadModel,
   requireTrailProjectStatus,
+  selectTrailInitiativeTargets,
   selectTrailWorkflowIssuesForProject,
+  type TrailInitiativeTargetReadModel,
 } from "../projects/trail-project-collection-query";
 import { selectTrailReadableRuntimeSnapshot } from "../shared/trail-effective-query";
+import {
+  selectTrailWorkflowIssueCreationContextFromReadableSnapshot,
+  type TrailWorkflowIssueCreationContextReadModel,
+} from "../shared/trail-project-target-query";
 import {
   selectTrailWorkflowIssueProgress,
   type TrailProgressReadModel,
@@ -85,6 +93,16 @@ export interface TrailHomeWorkPulseProjectReadModel {
 }
 
 export interface TrailHomeReadModel {
+  readonly creation: {
+    readonly configuration: TrailConfiguration;
+    readonly issue: TrailWorkflowIssueCreationContextReadModel;
+    readonly project: {
+      readonly initiatives: readonly TrailInitiativeTargetReadModel[];
+    };
+    readonly triage: {
+      readonly defaultDue: number;
+    };
+  };
   readonly lifecycle: {
     readonly days: readonly TrailHomeLifecycleDayReadModel[];
     readonly months: readonly TrailHomeLifecycleMonthReadModel[];
@@ -222,6 +240,8 @@ export function selectTrailHomeReadModel(
   if (configuration === null) return null;
 
   const timezone = configuration.temporal.timezone;
+  const issueCreation = selectTrailWorkflowIssueCreationContextFromReadableSnapshot(readable);
+  const initiatives = selectTrailInitiativeTargets(readable);
   const todayStart = localDayStart(now, timezone);
   const todayId = localDateId(todayStart, timezone);
   const today = buildLocalDay(todayStart, timezone, todayId, now);
@@ -417,6 +437,14 @@ export function selectTrailHomeReadModel(
   });
 
   return {
+    creation: {
+      configuration,
+      issue: issueCreation,
+      project: { initiatives },
+      triage: {
+        defaultDue: resolveTrailTriageDefaultDue(now, timezone),
+      },
+    },
     lifecycle: {
       days: lifecycleDays,
       months: lifecycleMonths,

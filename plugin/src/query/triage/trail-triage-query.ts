@@ -2,10 +2,7 @@ import type {
   TrailConfiguration,
   TrailLabel,
 } from "../../domain/model/trail-configuration";
-import type {
-  TrailMilestone,
-  TrailTriageIssue,
-} from "../../domain/model/trail-entities";
+import type { TrailTriageIssue } from "../../domain/model/trail-entities";
 import {
   TRAIL_PRIORITIES,
   type TrailPriority,
@@ -14,6 +11,7 @@ import {
 import { addTrailCalendarDays } from "../../domain/rules/trail-temporal-rules";
 import type { TrailEffectiveRuntimeSnapshot } from "../../runtime/projection/trail-runtime-projection";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
+import { selectTrailInitiativeTargets } from "../projects/trail-project-collection-query";
 import {
   type TrailCollectionFilterClause,
   type TrailCollectionFilterState,
@@ -28,8 +26,8 @@ import {
   selectTrailTriageIssueIdsFromReadableSnapshot,
 } from "../shared/trail-effective-query";
 import {
-  selectTrailDefaultTriageAcceptProjectIdFromReadableSnapshot,
-  selectTrailTriageAcceptProjectsFromReadableSnapshot,
+  selectTrailWorkflowIssueCreationContextFromReadableSnapshot,
+  type TrailWorkflowIssueCreationProjectTargetReadModel,
 } from "../shared/trail-project-target-query";
 
 const TRAIL_TRIAGE_REVIEW_HORIZON_DAYS = 7;
@@ -58,9 +56,8 @@ export interface TrailTriageNamedTargetReadModel {
   readonly title: string;
 }
 
-export interface TrailTriageAcceptProjectTargetReadModel extends TrailTriageNamedTargetReadModel {
-  readonly milestones: readonly TrailTriageNamedTargetReadModel[];
-}
+export type TrailTriageAcceptProjectTargetReadModel =
+  TrailWorkflowIssueCreationProjectTargetReadModel;
 
 export interface TrailTriagePageReadModel {
   readonly accept: {
@@ -234,30 +231,14 @@ export function selectTrailTriagePageReadModel(
   const filterActive = isTrailCollectionFilterActive(input.filter);
   const showReviewBoundary = !filterActive && input.ordering === "review-due";
   const labelsById = new Map(configuration.labels.map((label) => [label.id, label] as const));
-  const acceptProjects = selectTrailTriageAcceptProjectsFromReadableSnapshot(readable);
-  const initiatives = [...readable.authoritative.domain.initiativesById.values()]
-    .sort((left, right) => {
-      const titleOrder = left.title.localeCompare(right.title);
-      return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
-    })
-    .map(({ id, title }) => ({ id, title }));
+  const issueCreation = selectTrailWorkflowIssueCreationContextFromReadableSnapshot(readable);
+  const initiatives = selectTrailInitiativeTargets(readable);
 
   return {
     accept: {
       issue: {
-        defaultProjectId: selectTrailDefaultTriageAcceptProjectIdFromReadableSnapshot(readable),
-        projects: acceptProjects.map((project) => ({
-          id: project.id,
-          milestones: (readable.indexes.milestonesByProjectId.get(project.id) ?? [])
-            .map((milestoneId) => readable.authoritative.domain.milestonesById.get(milestoneId))
-            .filter((milestone): milestone is TrailMilestone => milestone !== undefined)
-            .sort((left, right) => {
-              const titleOrder = left.title.localeCompare(right.title);
-              return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
-            })
-            .map(({ id, title }) => ({ id, title })),
-          title: project.title,
-        })),
+        defaultProjectId: issueCreation.defaultProjectId,
+        projects: issueCreation.projects,
       },
       project: { initiatives },
     },

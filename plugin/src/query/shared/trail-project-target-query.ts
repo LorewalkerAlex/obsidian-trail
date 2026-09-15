@@ -1,4 +1,7 @@
-import type { TrailProject } from "../../domain/model/trail-entities";
+import type {
+  TrailMilestone,
+  TrailProject,
+} from "../../domain/model/trail-entities";
 import { canTrailProjectAcceptWorkflowIssue } from "../../domain/rules/trail-project-rules";
 import {
   resolveTrailDefaultStatusDefinition,
@@ -8,9 +11,50 @@ import type { TrailEffectiveRuntimeSnapshot } from "../../runtime/projection/tra
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
 import { selectTrailReadableRuntimeSnapshot } from "./trail-effective-query";
 
+export interface TrailWorkflowIssueCreationProjectTargetReadModel {
+  readonly id: string;
+  readonly milestones: readonly {
+    readonly id: string;
+    readonly title: string;
+  }[];
+  readonly title: string;
+}
+
+export interface TrailWorkflowIssueCreationContextReadModel {
+  readonly defaultProjectId?: string;
+  readonly projects: readonly TrailWorkflowIssueCreationProjectTargetReadModel[];
+}
+
 function compareProjects(left: TrailProject, right: TrailProject): number {
   const titleOrder = left.title.localeCompare(right.title);
   return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
+}
+
+function compareMilestones(left: TrailMilestone, right: TrailMilestone): number {
+  const titleOrder = left.title.localeCompare(right.title);
+  return titleOrder !== 0 ? titleOrder : left.id.localeCompare(right.id);
+}
+
+function defaultCreationProjectId(
+  readable: TrailEffectiveRuntimeSnapshot,
+  projects: readonly TrailProject[],
+): string | undefined {
+  const defaultProject = selectTrailReadableDefaultProjectFromReadableSnapshot(readable);
+  if (defaultProject === undefined) return undefined;
+  return projects.some((project) => project.id === defaultProject.id)
+    ? defaultProject.id
+    : undefined;
+}
+
+function creationMilestoneTargets(
+  readable: TrailEffectiveRuntimeSnapshot,
+  projectId: string,
+): TrailWorkflowIssueCreationProjectTargetReadModel["milestones"] {
+  return (readable.indexes.milestonesByProjectId.get(projectId) ?? [])
+    .map((milestoneId) => readable.authoritative.domain.milestonesById.get(milestoneId))
+    .filter((milestone): milestone is TrailMilestone => milestone !== undefined)
+    .sort(compareMilestones)
+    .map(({ id, title }) => ({ id, title }));
 }
 
 /** Resolves the Workspace reference as an ordinary readable Project, if present. */
@@ -56,6 +100,24 @@ export function selectTrailWorkflowIssueCreationProjectsFromReadableSnapshot(
 }
 
 /**
+ * Shared relation/default projection for any standard Workflow Issue Composer.
+ * Project lifecycle legality remains canonical here; consumers only choose a seed.
+ */
+export function selectTrailWorkflowIssueCreationContextFromReadableSnapshot(
+  readable: TrailEffectiveRuntimeSnapshot,
+): TrailWorkflowIssueCreationContextReadModel {
+  const projects = selectTrailWorkflowIssueCreationProjectsFromReadableSnapshot(readable);
+  return {
+    defaultProjectId: defaultCreationProjectId(readable, projects),
+    projects: projects.map((project) => ({
+      id: project.id,
+      milestones: creationMilestoneTargets(readable, project.id),
+      title: project.title,
+    })),
+  };
+}
+
+/**
  * Triage Accept creates the same Backlog Workflow Issue as standard creation,
  * so it reuses the canonical creation-destination projection.
  */
@@ -77,12 +139,8 @@ export function selectTrailTriageAcceptProjectIds(
 export function selectTrailDefaultTriageAcceptProjectIdFromReadableSnapshot(
   readable: TrailEffectiveRuntimeSnapshot,
 ): string | undefined {
-  const defaultProject = selectTrailReadableDefaultProjectFromReadableSnapshot(readable);
-  if (defaultProject === undefined) return undefined;
-  return selectTrailTriageAcceptProjectsFromReadableSnapshot(readable)
-    .some((project) => project.id === defaultProject.id)
-    ? defaultProject.id
-    : undefined;
+  const projects = selectTrailTriageAcceptProjectsFromReadableSnapshot(readable);
+  return defaultCreationProjectId(readable, projects);
 }
 
 export function selectTrailDefaultTriageAcceptProjectId(

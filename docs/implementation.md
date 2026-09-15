@@ -14,7 +14,7 @@ Published Stage 10 checkpoints leading into closure include:
 
 These checkpoints establish the Current Cycle collection, membership flows, Cycles root/history browser, and the reusable Cycle interaction chain over the already accepted Project/Issue/collection/navigation owners. The closing lifecycle slice adds the standard Start Cycle and close-first Start-next flow without reopening Product, Domain, or persistence semantics.
 
-Stages 5 through 10 are closed. Stage 11 is active: Home now builds on the closed Triage/Projects/Issue/Cycles foundation. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+Stages 5 through 11 are closed. Stage 12 is active: full-system calibration and V1 exit now operate over the complete V1 Product surface/workflow set. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -297,7 +297,7 @@ The architectural contract is frozen by `architecture.md` + `design-to-code-map.
 
 Concrete Page Read Models are implemented just in time with their consumers; Stage 0 does not require rewriting every current Query selector before Host/UI construction starts.
 
-**Stages 0 through 10 are closed. Stage 11 is the active implementation stage.**
+**Stages 0 through 11 are closed. Stage 12 is the active implementation stage.**
 
 ## 6. Foundation Lab Contract
 
@@ -498,7 +498,8 @@ Current key status:
 | Initiative Focus Read Model / Page + Initiative Inspector | Accepted / Consumer-proven / Host-proven | preserve scoped flat Project collection, clean Initiative-prefilled Project creation, and compact structured Inspector properties |
 | Workflow Issue Row | Accepted / Lab-proven / Consumer-proven / Host-proven | preserve `Selection | Priority | Status + Title | soft semantic columns` and reuse the same production owner in later Issue collections |
 | Project Workspace Read Model / Page + Project Inspector | Accepted / Consumer-proven / Host-proven | preserve Status-first List composition, scoped filter/order semantics, clean Project-prefilled Issue creation, structured Inspector properties, derived Progress/Attention, and Milestones |
-| Progress | Accepted / Lab-proven / Consumer-proven / Host-proven | normal/compact/micro/unavailable contract aligned; reuse the same owner in later Cycle/Home surfaces |
+| Progress | Accepted / Lab-proven / Consumer-proven / Host-proven | preserve the shared normal/compact/micro/unavailable owner across Project, Cycle, and Home during Stage 12 calibration |
+| Home Read Model / Page + creation action | Accepted / Consumer-proven / Host-proven | preserve modular Home composition, shared Work Pulse owners, Weekly Update utility ownership, and standard creation routing during Stage 12; no Home-specific creation system |
 | Normal-flow layout containment | Accepted / Host-proven | preserve direct-child ownership and explicit overflow responsibility in later Pages |
 | Picker / Popover / Confirmation / Composer | Accepted / Lab-proven / Consumer-proven / Host-proven | consume the accepted shared grammar in later Pages; do not reintroduce Page-local geometry or density overrides |
 | Collection Selection | Implemented / Consumer-proven / Host-proven | preserve visible-projection reconciliation, shared gutter, Shift range, `X` toggle, and top-layer-aware `Esc`; reuse in later selectable collections |
@@ -711,7 +712,7 @@ Current status:
 - **Validation is green** — the earlier execution slice passed its focused suites plus production/diagnostics builds and representative real-Obsidian Board/drag evidence. The Project lifecycle/action checkpoint then passed focused Project collection/delete/settings tests, typecheck, diagnostics build, and GitHub CI #205 on `00cadd26da8c3d3a2111776dd7f899aad451a236`. The final Sidebar Search checkpoint `7da0821d93d2080a11bedff33ec25922ceeadb7c` is also green in GitHub CI #207; its `Run project checks` step executes repository-wide `npm run check`.
 - **Representative host evidence closes the remaining Stage 9 presentation checks** — real Obsidian evidence covers the Project lifecycle/action workflow, Sidebar Search replacement composition with the current Main View left in place, and the host-native Default Project `FuzzySuggestModal` including focus, candidate density, and a deliberately long Project title. Project Delete/Bulk transient micro-calibration remains a deliberate Stage 12 target rather than a semantic or Stage 9 blocker.
 
-Stage 9 is closed. Stage 10 — Cycles is now also closed; Stage 11 — Home is active. Project lifecycle/Bulk/Delete micro-calibration may continue in Stage 12 full-system calibration; it does not justify reopening the resolved Product/UI semantics.
+Stages 9, 10, and 11 are closed. Stage 12 — Full-system calibration and V1 exit is active. Project lifecycle/Bulk/Delete micro-calibration may continue there; it does not justify reopening the resolved Product/UI semantics.
 
 Projects Timeline is no longer deferred to Stage 9. Its presentation owner, derived Query projection, and real Projects Root integration belong to Stage 6 so the Projects Root List/Timeline contract is completed as one Product surface.
 ### Stage 10 — Cycles
@@ -733,7 +734,7 @@ Current status:
 - **Cycle lifecycle complete** — Start Cycle uses the configured default-end suggestion with an explicit editable planned end and optional membership. `Close and start next` is a close-first UI convenience: the old Cycle persists Closed before Start-next opens, canceling afterward does not roll it back, and open members from the previous Cycle are computed from live Issue facts and only preselected as editable convenience candidates.
 - **Cycle Inspector and history complete** — Current Cycle lifecycle/progress/planned-end facts use the established Right Sidebar carrier; Cycles Root provides the no-current Start entry plus compact chronological Previous browser, and Historical Cycle remains read-only/List-only with live current Issue fields.
 - **Validation is green** — the closing lifecycle candidate passes repository-wide `npm run check`: 202 test files / 677 tests, ESLint with zero warnings, production typecheck, and production build. Earlier real-Obsidian evidence covers Current Cycle Board/List, membership selection/Bulk geometry, Cycles Root/Previous navigation, and Historical Cycle composition. The closing Inspector-to-Main navigation reuses the already Host-proven stable `activateView` boundary, so no destructive close/start mutation is required merely to repeat host navigation evidence.
-- **Stage 10 is closed** — remaining typography/density/aesthetic calibration is deliberately deferred to the Stage 12 full-system pass after Home and functional validation are complete.
+- **Stage 10 is closed** — remaining typography/density/aesthetic calibration is deliberately deferred to the now-active Stage 12 full-system pass.
 
 ### Stage 11 — Home
 
@@ -760,11 +761,14 @@ Current status:
 - **Work Pulse is Consumer-proven / Host-proven** — the Home Read Model now derives Current Cycle, active Triage pressure, and Started-category Project summaries from the same coherent readable Runtime snapshot. Wide/normal Home pairs the compact This Week module with a content-dense Work Pulse summary; constrained composition reflows by Main View capacity without inventing new metrics.
 - **Work Pulse reuse and navigation ownership is closed** — Cycle and Project summaries reuse shared Progress, Home Triage reuses the same Segmented Summary production owner as Project Attention with an inline presentation, and the navigable Cycle/Triage regions plus visible Project rows expose full-region hit targets while preserving Projects Root access from the section heading/overflow.
 - **Work Pulse validation is green** — the closing shared-owner coverage passes 5 test files / 10 tests, with ESLint, diagnostics typecheck/build, and diff sanity green. Representative real-Obsidian verification covers wide and narrower Home composition plus whole-region Cycle/Triage/Project navigation.
-- **Stage 11 remains active** — only the shared Home creation action still needs real Product wiring.
+- **Home creation action is Consumer-proven / Host-proven** — the Home Page Header owns one compact `+` action, presented through the existing host-native Action Menu, and routes Triage, Issue, Project, and Initiative to the accepted Standard Composer owners. Successful creation closes the Composer and keeps Home as the stable Page without adding Trail navigation/history or retargeting the Inspector.
+- **Creation ownership is closed** — Workflow Issue legal Project/default selection plus Milestone targets are shared from Query rather than copied into Home; Initiative candidates reuse the existing shared target projection; Shell wiring preserves the original Application action owners instead of copying unbound class methods.
+- **Creation validation is green** — lint, Home/Shell focused suites, production typecheck/build, and diff sanity pass. One earlier repository-wide run had a single existing Project Composer timeout; that test passed immediately in isolation. Real Obsidian verification covers dirty-discard behavior plus successful Triage and Project creation returning to Home.
+- **Stage 11 is closed** — Home now satisfies the frozen V1 composition, Work Pulse, Weekly Meeting Notes, and shared creation contracts. Stage 12 is active.
 
 ### Stage 12 — Full-system calibration and V1 exit
 
-Stage 12 begins only after the planned V1 Product surfaces/workflows are implemented and their functional owner/direct-consumer tests plus required host behavior are green. Earlier stages may still correct visual defects that block usability, containment, or host correctness, but broad aesthetic polish must not become a moving feature-stage target.
+Stage 12 begins only after the planned V1 Product surfaces/workflows are implemented and their functional owner/direct-consumer tests plus required host behavior are green. That entry condition is now satisfied by Stage 11 closure. Earlier stages may still correct visual defects that block usability, containment, or host correctness, but broad aesthetic polish must not become a moving feature-stage target.
 
 The Stage 12 visual pass is one final integration calibration over the completed product. It must reuse the accepted production owners and Linear-faithful Trail grammar rather than introduce Page-local styling systems or reopen closed Product/Domain semantics.
 
@@ -784,7 +788,7 @@ Complete:
 
 ## 9. Active Slice
 
-Stages 0 through 10 are closed. Stage 11 — Home is active. The accepted Stage 5 executable checkpoint is `5049156861edd0b357efb70053797726c3877b71` (`refactor: align shared visual grammar`). Do not reopen Stage 5 unless later repository evidence creates a concrete contradiction with its frozen Product/UI/ownership contracts.
+Stages 0 through 11 are closed. Stage 12 — Full-system calibration and V1 exit is active. The accepted Stage 5 executable checkpoint is `5049156861edd0b357efb70053797726c3877b71` (`refactor: align shared visual grammar`). Do not reopen Stage 5 unless later repository evidence creates a concrete contradiction with its frozen Product/UI/ownership contracts.
 
 ### Stage 5 closed — Triage vertical
 
@@ -926,7 +930,7 @@ Closure facts:
 - Inspector mutation feedback stays local and quiet instead of disabling and repainting the entire property surface. Each Inspector intent resolves against the latest effective Issue projection so rapid sequential edits continue from optimistic Runtime state rather than a stale UI closure;
 - the final Stage 8 closure candidate passed repository-wide `npm run check` with 174 test files / 593 tests and production typecheck/build. The final host repair also passed its focused Body Editor + Issue Inspector suite (2 files / 10 tests), lint, and diagnostics typecheck/build. Representative real-Obsidian verification covered Full Item + Issue Inspector composition, property editing without whole-Inspector flashing, and preservation of CodeMirror draft plus undo/cancel semantics across Main View / Right Sidebar focus changes.
 
-Stage 8 is closed. **Stages 9 and 10 are also closed; Stage 11 — Home is active.** Published Stage 9 checkpoints cover Project Workspace List/Board, Workflow Issue Status drag, Project deletion/Default Project Settings integration, Project collection Action Registry/Context Menu/Bulk consumers, and final Sidebar Search. Stage 10 adds the Current/Historical Cycle collection chain, canonical membership flows, Cycle Inspector, Cycles Root/history, and close-first Start-next lifecycle over those shared owners. Remaining Product-wide visual micro-calibration belongs to Stage 12 rather than reopening closed Product/Domain/UI semantics.
+Stage 8 is closed. **Stages 9 through 11 are also closed; Stage 12 is active.** Published Stage 9 checkpoints cover Project Workspace List/Board, Workflow Issue Status drag, Project deletion/Default Project Settings integration, Project collection Action Registry/Context Menu/Bulk consumers, and final Sidebar Search. Stage 10 adds the Current/Historical Cycle collection chain, canonical membership flows, Cycle Inspector, Cycles Root/history, and close-first Start-next lifecycle over those shared owners. Stage 11 completes the Home temporal/utility projections, Work Pulse, and shared creation action over existing production owners. Remaining Product-wide visual micro-calibration belongs to Stage 12 rather than reopening closed Product/Domain/UI semantics.
 
 ## 10. Slice Definition of Done
 
