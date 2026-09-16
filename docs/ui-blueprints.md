@@ -1473,14 +1473,15 @@ Close confirmation:
 +------------------------------------------------------+
 | Close cycle?                                         |
 | Aug 25 - Sep 7                                       |
-| 12 issues will remain associated with this cycle.    |
+| 12 issues are currently in this cycle.               |
 | 5 issues are still open.                             |
-| Closing does not change any Issue properties.        |
+| Close keeps the current membership in history.       |
+| Close and start next lets you choose transfers first.|
 |             Cancel   Close   Close and start next    |
 +------------------------------------------------------+
 ```
 
-`Close and start next` is a UI convenience over close-first semantics. If Start-next is canceled afterward, the old Cycle remains Closed and no new Cycle exists.
+`Close` commits the ordinary close immediately. `Close and start next` instead opens successor planning while the source remains Open. The Start-next surface reuses the normal planned-end and Issue-selection mechanics, with current non-terminal source members initially selected as editable candidates. Cancel returns to the unchanged Open source Cycle. Final confirmation performs the explicit membership transfer, source close, and successor start as one logical lifecycle intent.
 
 History is a chronological compact browser; Historical Cycle is flat List-only, immutable membership, live current Issue fields, no historical Progress claim.
 

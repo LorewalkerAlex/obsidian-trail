@@ -1360,27 +1360,30 @@ Starting with no members is valid. No future start date or future Cycle object i
 
 ### 11.6 Close Cycle and Start next
 
-Close Cycle explicitly records:
+Ordinary Close explicitly records:
 
 ```text
 endedAt = now
-keep final issueIds
+keep membership present at close
 change no Issue facts
 Current Cycle = none
 ```
 
-Closing does not automatically start another Cycle.
+Ordinary Close does not automatically start another Cycle.
 
-Confirmation may offer `Close and start next` as convenience composition:
+Confirmation may offer `Close and start next` as a compound planning convenience:
 
 ```text
-close Current Cycle first
--> open Start-next surface
+choose Close and start next
+-> keep Current Cycle Open
+-> open Start-next planning surface
+-> edit successor membership / planned end
+-> confirm transfer + close + start
 ```
 
-The old Cycle is already Closed before Start-next opens. Canceling Start-next does not roll the close back; it leaves no Current Cycle.
+Start-next initially selects currently non-terminal members of the source Cycle as convenience candidates. Candidate state is computed from current live Issue facts and remains editable; the user may deselect source members or add other legal Workflow Issues. Cancel closes the planning surface and leaves the source Cycle Open and unchanged.
 
-Start next uses the normal Start Cycle flow, with currently open members of the previous Cycle initially selected as convenience candidates. Candidate state is computed from current Issue facts when the flow opens. No close-time unfinished snapshot or automatic rollover is persisted.
+On final confirmation, every selected successor Issue that is still a source member is transferred out of the source membership first; the source then closes with the remaining membership, and the successor starts with the full confirmed selection. The compound flow changes no Issue properties and must settle as one logical lifecycle intent so the UI never exposes a close-first intermediate state. No close-time unfinished Issue snapshot is persisted, and rollover never occurs without explicit confirmation.
 
 ### 11.7 Cycle Progress and Effort
 

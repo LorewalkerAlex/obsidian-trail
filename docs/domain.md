@@ -252,7 +252,9 @@ Cycle membership does not imply or change Status, Project, Milestone, Priority, 
 
 UI candidate discovery may intentionally surface a narrower set for a particular planning entry point, such as unfinished work from Started Projects in a Cycle-level Add flow. That is read-side/product selection policy, not a Domain membership invariant. A Backlog Issue in an Unstarted Project remains a legal Open-Cycle member when the user explicitly adds it from that Project context.
 
-Closed Cycle membership is retained as a minimal historical fact. A Workflow Issue can therefore appear in multiple historical Cycles over time; Cycle membership is not represented as a single `cycleId` on Issue.
+`Close and start next` may perform an explicit pre-close membership transfer. When the user confirms a successor selection, any selected Issue that is still a member of the Open source Cycle is removed from that source membership before the source closes and is included in the successor membership. This transfer changes only Cycle membership and no Issue fact.
+
+Closed Cycle membership is retained as a minimal historical fact after any such pre-close transfer. A Workflow Issue can still appear in multiple historical Cycles over time when it is actually a member at the close of each Cycle; Cycle membership is not represented as a single `cycleId` on Issue.
 
 ## 4. State & Lifecycle
 
@@ -449,9 +451,11 @@ Starting a Cycle records its actual start and a concrete planned end. The config
 
 While a Cycle is Open, membership changes are explicit Cycle mutations and may add/remove any Workflow Issue. They do not change member Issue facts. Reaching `plannedEnd` does not automatically close the Cycle.
 
-Closing a Cycle sets actual `endedAt` and freezes normal planning membership. Closing does not mutate any member Issue fact and does not automatically start a successor.
+Ordinary Close sets actual `endedAt` and freezes the membership that is present when Close commits. It does not mutate any member Issue fact and does not automatically start a successor.
 
-A separate Start next Cycle flow may use the previous Cycle's final membership as a discovery input. Previous members that are currently non-terminal may be initially selected as next-Cycle candidates; the user may deselect any candidates, add other Workflow Issues, or cancel the flow entirely, leaving no Current Cycle. Candidate selection is evaluated from current Issue facts when the flow runs; Trail does not persist an unfinished-at-close snapshot or perform automatic rollover.
+`Close and start next` begins successor planning while the source Cycle is still Open. Current non-terminal source members may be initially selected as candidates, but the user may deselect them, add other Workflow Issues, or cancel. Cancel leaves the source Cycle Open with its membership unchanged. Confirming the flow is one logical compound lifecycle intent: first remove from the source every still-present source member selected for the successor, then close the source with that remaining membership, then start the successor with the full confirmed selection. Candidate selection is evaluated from current Issue facts when the flow runs. Trail does not persist an unfinished-at-close Issue snapshot, and it does not perform rollover without the user's explicit confirmation.
+
+The committed result must preserve the invariant that at most one Cycle is Open. The UI must not publish a state in which the source has already become Historical before the user has confirmed the successor plan.
 
 ### 4.12 Delete relation resolution
 

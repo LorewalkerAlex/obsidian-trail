@@ -61,7 +61,7 @@ Runtime
 | Transient interaction stack | topmost Esc/outside-click/focus ownership | `ui/interactions` | interaction tests + host focus where needed |
 | Current Cycle collection | Open Cycle membership + live Issue facts | `query/cycles` Current Cycle Read Model, `ui/pages/cycles`, shared Issue collection/Filter/Selection/Peek | Query + UI |
 | Cycle membership | Cycle owns membership; orthogonal to Issue properties | Domain planning, `application/cycles`, Query target/candidate selectors, shared actions | planner/application + Query/UI |
-| Cycle lifecycle | Start / Close / Start-next; at most one Open; no automatic rollover | Domain planning, `application/cycles`, `query/cycles`, `ui/pages/cycles` | planner/application + UI |
+| Cycle lifecycle | Start / ordinary Close / pre-close transfer + Start-next; at most one Open; no automatic rollover | Domain planning, `application/cycles`, `query/cycles`, `ui/pages/cycles` | planner/application + UI |
 | Cycle Progress / Effort | Progress Completed/non-Canceled; Effort configured Estimate weights | `query/derived`, Cycle Read Models/Page/Inspector, shared Progress | Query + UI |
 | Historical Cycle | retained final membership + current live Issue fields; no close-time snapshot | `query/cycles` Historical Cycle Read Model, `ui/pages/cycles`, shared Issue Row/Filter/Peek | Query + UI |
 | Home | current temporal/runtime facts + Weekly Update utility; no snapshot/score Domain | `query/home` Home Read Model, `ui/pages/home`, utility persistence, shared Progress/segmented/creation owners | Query + UI |

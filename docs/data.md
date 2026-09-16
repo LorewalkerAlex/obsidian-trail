@@ -155,7 +155,7 @@ CycleRecord {
 
 `endedAt` absent means Open; present means Closed.
 
-The Cycle owns Issue membership because Closed Cycles retain final membership as minimal historical data. Issue therefore does not persist a single `cycleId`.
+The Cycle owns Issue membership because Closed Cycles retain the membership that is present when their close commits as minimal historical data. An explicit `Close and start next` transfer removes selected overlapping members from the Open source before that close, so those transferred members are not part of the source Cycle's final `issueIds`. Issue therefore does not persist a single `cycleId`.
 
 ### 1.7 Status configuration
 
@@ -340,7 +340,7 @@ Inverse/reverse collections are runtime projections.
 
 ### 2.3 Cycle membership exception
 
-Cycle membership is stored as `Cycle.issueIds` so Closed Cycles retain historical membership even after an Issue later joins another Cycle.
+Cycle membership is stored as `Cycle.issueIds`. A Closed Cycle retains the final membership present when its close commits, after any explicit pre-close transfer. If an Issue later independently joins another Cycle, it may therefore appear in multiple historical Cycles over time; a `Close and start next` transfer itself does not duplicate that Issue into both source and successor final memberships.
 
 Runtime may derive `issuesByCycleId`, `cyclesByIssueId`, and `currentCycleId`, but those are not a second persistence authority.
 

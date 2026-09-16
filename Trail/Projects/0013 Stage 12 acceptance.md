@@ -61,7 +61,7 @@ Final visual calibration, detail repairs, and V1 release gate.
 <!-- data {"id":"ce72e6b4-59b4-5e02-a262-0580844d33df","context":"workflow","statusDefinitionId":"354abdb1-31fb-4ffb-95cc-40f65c6d3525","projectId":"1d334a6b-452c-5b59-9485-08a20b76fa79","milestoneId":"486b56c7-f1be-5d85-94b9-cf66c1043a01","priority":"high","due":1792144800000,"labelIds":["3657346d-9af7-4724-af42-1134d467c6f8","f245d514-a6c0-495c-a3e1-b820c2446f72"],"createdAt":1789434000000} -->
 
 ## E2E 12A3 full item
-<!-- data {"id":"05c146e4-8c8c-49e5-9b1a-8865c7a78365","context":"workflow","statusDefinitionId":"883278b3-f713-4466-80bf-1b8584282806","projectId":"1d334a6b-452c-5b59-9485-08a20b76fa79","milestoneId":"cc779a9e-f7a8-59b3-af73-c328d79122a5","priority":"urgent","estimate":"small","labelIds":["3657346d-9af7-4724-af42-1134d467c6f8","f245d514-a6c0-495c-a3e1-b820c2446f72"],"createdAt":1789486609928,"firstStartedAt":1789488044613,"terminalAt":1789488209741} -->
+<!-- data {"id":"05c146e4-8c8c-49e5-9b1a-8865c7a78365","context":"workflow","statusDefinitionId":"cba07486-3fbf-4b88-bf50-8fc4f6dbf7a0","projectId":"1d334a6b-452c-5b59-9485-08a20b76fa79","milestoneId":"cc779a9e-f7a8-59b3-af73-c328d79122a5","priority":"urgent","estimate":"small","labelIds":["3657346d-9af7-4724-af42-1134d467c6f8","f245d514-a6c0-495c-a3e1-b820c2446f72"],"createdAt":1789486609928,"firstStartedAt":1789488044613} -->
 
 Created from Home for end-to-end acceptance.
 Review edit persisted.

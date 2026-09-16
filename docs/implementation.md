@@ -12,9 +12,9 @@ Published Stage 10 checkpoints leading into closure include:
 117f0c91e7b5fd7cb0bb2a1935271a9ec206940c  feat: add cycles root and history
 ```
 
-These checkpoints establish the Current Cycle collection, membership flows, Cycles root/history browser, and the reusable Cycle interaction chain over the already accepted Project/Issue/collection/navigation owners. The closing lifecycle slice adds the standard Start Cycle and close-first Start-next flow without reopening Product, Domain, or persistence semantics.
+These checkpoints establish the Current Cycle collection, membership flows, Cycles root/history browser, and the reusable Cycle interaction chain over the already accepted Project/Issue/collection/navigation owners. The Stage 10 closing lifecycle slice implemented a close-first Start-next flow. Stage 12A.3 real-Obsidian E2E later exposed a concrete contradiction with the intended transfer semantics, so that specific lifecycle ordering is reopened for alignment while the rest of the Stage 10 ownership and persistence model remains closed.
 
-Stages 5 through 11 are closed. Stage 12 is active: full-system calibration and V1 exit now operate over the complete V1 Product surface/workflow set. Existing executable code remains reusable evidence rather than authority over the frozen Product/UI target.
+Stages 5 through 11 are closed. Stage 12 is active: full-system calibration and V1 exit now operate over the complete V1 Product surface/workflow set. Existing executable code remains reusable evidence rather than authority over the resolved Product/Domain/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -35,10 +35,11 @@ Do not reopen already-closed Product/UI decisions because older code or tests ex
 
 Known alignment debt now centers on:
 
-1. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
-2. one deliberate full-system visual/UI calibration remains reserved for Stage 12B after the Stage 12A functional acceptance baseline is green. That pass includes previously deferred Project lifecycle/Bulk/Delete transient micro-calibration plus typography, hierarchy, density, spacing, alignment, chrome, and cross-surface consistency across the finished V1 surface set.
+1. Stage 12A.3 exposed one Cycle lifecycle semantic mismatch: the current `Close and start next` implementation closes the source before successor planning, while the resolved contract requires successor planning first and one confirmed pre-close transfer -> source close -> successor start logical intent. The existing close-first code/tests are implementation evidence to replace, not authority.
+2. nested Query selectors can still reacquire/rebuild readable Effective Runtime independently. Target: one readable snapshot per top-level Read Model evaluation before considering any cache framework.
+3. one deliberate full-system visual/UI calibration remains reserved for Stage 12B after the Stage 12A functional acceptance baseline is green. That pass includes the observed unselected-row Delete -> Esc focus-visible checkbox ambiguity plus previously deferred Project lifecycle/Bulk/Delete transient micro-calibration, typography, hierarchy, density, spacing, alignment, chrome, and cross-surface consistency across the finished V1 surface set.
 
-These are implementation/calibration gaps, not design questions. Stage 8 established the shared Collection Selection, Peek, Action Registry, Context Menu, and Bulk Bar mechanics; Stage 9 reused those owners and closed Sidebar Search plus Default Project host evidence without creating parallel systems. No human-readable Workflow Issue identifier is planned merely to support row spacing.
+The Cycle item is an active functional acceptance blocker; the remaining items are implementation/calibration gaps rather than reasons to introduce new Product concepts. Stage 8 established the shared Collection Selection, Peek, Action Registry, Context Menu, and Bulk Bar mechanics; Stage 9 reused those owners and closed Sidebar Search plus Default Project host evidence without creating parallel systems. No human-readable Workflow Issue identifier is planned merely to support row spacing.
 
 ## 3. Established Foundations
 
@@ -53,7 +54,7 @@ The following lower layers are already established and should be consumed rather
 - Query ownership of derived facts, ordering, legal targets, capabilities, and presentation projections;
 - Application ownership of semantic use cases;
 - fixed T-Shirt Estimate levels and configurable numeric weights;
-- explicit Cycle Start/Close/Start-next semantics;
+- established Cycle Start/Close owners plus the shared Mutation infrastructure needed for the active Stage 12A.3 Start-next ordering repair;
 - canonical Project/Milestone/Cycle Progress semantics;
 - modular stylesheet ownership and deterministic Obsidian stylesheet assembly;
 - existing production primitives/patterns/entities already proven through current consumers and Foundation Lab;
@@ -731,8 +732,8 @@ Cycle should be a high-reuse vertical; it must not create parallel Issue/Filter/
 Current status:
 
 - **Current Cycle collection complete** — List and Project-swimlane Board reuse the shared Workflow Issue collection/card/filter/selection/Peek/status-drag owners; Add Issues and selection/Bulk Remove mutate Cycle membership through the canonical Cycle Application intent.
-- **Cycle lifecycle complete** — Start Cycle uses the configured default-end suggestion with an explicit editable planned end and optional membership. `Close and start next` is a close-first UI convenience: the old Cycle persists Closed before Start-next opens, canceling afterward does not roll it back, and open members from the previous Cycle are computed from live Issue facts and only preselected as editable convenience candidates.
-- **Cycle Inspector and history complete** — Current Cycle lifecycle/progress/planned-end facts use the established Right Sidebar carrier; Cycles Root provides the no-current Start entry plus compact chronological Previous browser, and Historical Cycle remains read-only/List-only with live current Issue fields.
+- **Stage 10 lifecycle implementation was complete against its then-recorded contract** — Start Cycle uses the configured default-end suggestion with an explicit editable planned end and optional membership. The shipped `Close and start next` path is close-first. Stage 12A.3 real-host evidence later proved that ordering contradicts the intended transfer workflow, so only this specific lifecycle contract is reopened: successor planning must keep the source Open until final confirmation, then commit pre-close transfer -> source close -> successor start as one logical intent.
+- **Cycle Inspector and history complete outside that ordering defect** — Current Cycle lifecycle/progress/planned-end facts use the established Right Sidebar carrier; Cycles Root provides the no-current Start entry plus compact chronological Previous browser, and Historical Cycle remains read-only/List-only with live current Issue fields.
 - **Validation is green** — the closing lifecycle candidate passes repository-wide `npm run check`: 202 test files / 677 tests, ESLint with zero warnings, production typecheck, and production build. Earlier real-Obsidian evidence covers Current Cycle Board/List, membership selection/Bulk geometry, Cycles Root/Previous navigation, and Historical Cycle composition. The closing Inspector-to-Main navigation reuses the already Host-proven stable `activateView` boundary, so no destructive close/start mutation is required merely to repeat host navigation evidence.
 - **Stage 10 is closed** — remaining typography/density/aesthetic calibration is deliberately deferred to the now-active Stage 12 full-system pass.
 
@@ -809,7 +810,7 @@ After Stage 12A is functionally green, complete:
 
 ## 9. Active Slice
 
-Stages 0 through 11 are closed. Stage 12A.1 — Baseline documentation and cleanup is active. Stage 12A.2 will establish the longitudinal development fixture, Stage 12A.3 will run whole-product E2E regression, and Stage 12B will perform final visual calibration/detail fixes before V1 exit. The accepted Stage 5 executable checkpoint is `5049156861edd0b357efb70053797726c3877b71` (`refactor: align shared visual grammar`). Do not reopen Stage 5 unless later repository evidence creates a concrete contradiction with its frozen Product/UI/ownership contracts.
+Stages 0 through 11 are closed. Stage 12A.1 baseline cleanup/documentation and Stage 12A.2 longitudinal fixture are complete; the published fixture baseline is `46eb8694c61cd18a467418e4900ca34fb44ffa1f`. Stage 12A.3 whole-product E2E regression is active. The published `eeeb85e8ab3de653bcdfc42f1babac40b5575f7a` checkpoint fixes Issue Inspector Status changes so an existing Estimate is retained without being resubmitted as illegal non-Completed input. Real-Obsidian E2E is green across Triage -> Issue acceptance, Full Item/Inspector editing, Issue lifecycle reopen/complete behavior, Project List/Board drag, Filter, Peek/Selection, Sidebar Search, native Back/Forward, Current/Historical Cycle collection behavior, Projects/Initiative navigation, Composer dismissal, destructive confirmation, and Triage Delete. The active functional blocker is the newly evidenced `Close and start next` ordering mismatch: the current implementation closed the source first and therefore duplicated carried work across Historical and Current memberships, while the resolved contract requires explicit pre-close transfer before the source closes. The current development-Vault state intentionally preserves that observed host outcome as handoff evidence until the repair is implemented and the affected Cycle lifecycle E2E is rerun. The unselected-row Delete -> Esc focus-restoration checkbox appearance is recorded for Stage 12B visual calibration, not as a functional blocker. Stage 12B begins only after this Cycle repair and the remaining 12A.3 functional acceptance are green.
 
 ### Stage 5 closed — Triage vertical
 
@@ -951,7 +952,7 @@ Closure facts:
 - Inspector mutation feedback stays local and quiet instead of disabling and repainting the entire property surface. Each Inspector intent resolves against the latest effective Issue projection so rapid sequential edits continue from optimistic Runtime state rather than a stale UI closure;
 - the final Stage 8 closure candidate passed repository-wide `npm run check` with 174 test files / 593 tests and production typecheck/build. The final host repair also passed its focused Body Editor + Issue Inspector suite (2 files / 10 tests), lint, and diagnostics typecheck/build. Representative real-Obsidian verification covered Full Item + Issue Inspector composition, property editing without whole-Inspector flashing, and preservation of CodeMirror draft plus undo/cancel semantics across Main View / Right Sidebar focus changes.
 
-Stage 8 is closed. **Stages 9 through 11 are also closed; Stage 12 is active.** Published Stage 9 checkpoints cover Project Workspace List/Board, Workflow Issue Status drag, Project deletion/Default Project Settings integration, Project collection Action Registry/Context Menu/Bulk consumers, and final Sidebar Search. Stage 10 adds the Current/Historical Cycle collection chain, canonical membership flows, Cycle Inspector, Cycles Root/history, and close-first Start-next lifecycle over those shared owners. Stage 11 completes the Home temporal/utility projections, Work Pulse, and shared creation action over existing production owners. Remaining Product-wide visual micro-calibration belongs to Stage 12 rather than reopening closed Product/Domain/UI semantics.
+Stage 8 is closed. **Stages 9 through 11 are also closed; Stage 12 is active.** Published Stage 9 checkpoints cover Project Workspace List/Board, Workflow Issue Status drag, Project deletion/Default Project Settings integration, Project collection Action Registry/Context Menu/Bulk consumers, and final Sidebar Search. Stage 10 adds the Current/Historical Cycle collection chain, canonical membership flows, Cycle Inspector, Cycles Root/history, and the original close-first Start-next implementation over those shared owners; Stage 12A.3 has since reopened only that ordering contract after concrete real-host evidence. Stage 11 completes the Home temporal/utility projections, Work Pulse, and shared creation action over existing production owners. Remaining Product-wide visual micro-calibration belongs to Stage 12 rather than reopening unrelated closed semantics.
 
 ## 10. Slice Definition of Done
 
