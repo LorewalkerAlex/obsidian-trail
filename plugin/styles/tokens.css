@@ -20,13 +20,13 @@
  * -------------------------------------------------------------------------- */
 
 body {
-  /* Linear March 2026 dark reference anchors. */
-  --trail-reference-canvas: #0e1012;
-  --trail-reference-sidebar: #060708;
-  --trail-reference-hover: #141517;
+  /* Stage 12B full-shell calibration anchors, sampled against the accepted Linear reference. */
+  --trail-reference-canvas: #17191b;
+  --trail-reference-sidebar: #121416;
+  --trail-reference-hover: #202225;
   --trail-reference-accent: #5e6ad2;
-  --trail-reference-elevated: lch(7.66% 2.41 265.732);
-  --trail-reference-overlay: lch(9.66% 2.41 265.732);
+  --trail-reference-elevated: #1b1d20;
+  --trail-reference-overlay: #1f2124;
 
   /* Semantic surfaces. */
   --trail-surface-canvas: var(--trail-reference-canvas);
@@ -36,20 +36,20 @@ body {
   --trail-surface-overlay: var(--trail-reference-overlay);
 
   /* Semantic text. */
-  --trail-text-primary: rgba(255, 255, 255, 0.9);
-  --trail-text-secondary: rgba(255, 255, 255, 0.68);
+  --trail-text-primary: rgba(255, 255, 255, 0.92);
+  --trail-text-secondary: rgba(255, 255, 255, 0.64);
   --trail-text-muted: rgba(255, 255, 255, 0.43);
-  --trail-text-faint: rgba(255, 255, 255, 0.27);
+  --trail-text-faint: rgba(255, 255, 255, 0.28);
   --trail-text-on-accent: #ffffff;
   --trail-text-accent: #aeb5ef;
 
   /* Semantic lines and states. */
   --trail-border-subtle: rgba(255, 255, 255, 0.045);
   --trail-border-default: rgba(255, 255, 255, 0.075);
-  --trail-state-hover: rgba(255, 255, 255, 0.045);
-  --trail-state-hover-strong: rgba(255, 255, 255, 0.065);
-  --trail-state-pressed: rgba(255, 255, 255, 0.08);
-  --trail-state-selected: rgba(255, 255, 255, 0.05);
+  --trail-state-hover: rgba(255, 255, 255, 0.05);
+  --trail-state-hover-strong: rgba(255, 255, 255, 0.075);
+  --trail-state-pressed: rgba(255, 255, 255, 0.095);
+  --trail-state-selected: rgba(255, 255, 255, 0.06);
   --trail-state-accent-soft: rgba(94, 106, 210, 0.1);
   --trail-focus-border: rgba(130, 143, 255, 0.45);
   --trail-focus-ring: rgba(94, 106, 210, 0.35);
@@ -75,11 +75,11 @@ body {
   --trail-navigation-mark-fill: rgba(255, 255, 255, 0.075);
 
   /* Shared neutral-control contract. */
-  --trail-control-surface: rgba(255, 255, 255, 0.022);
-  --trail-control-surface-hover: rgba(255, 255, 255, 0.05);
-  --trail-control-surface-pressed: rgba(255, 255, 255, 0.075);
-  --trail-control-border: rgba(255, 255, 255, 0.055);
-  --trail-control-border-hover: rgba(255, 255, 255, 0.085);
+  --trail-control-surface: rgba(255, 255, 255, 0.018);
+  --trail-control-surface-hover: rgba(255, 255, 255, 0.055);
+  --trail-control-surface-pressed: rgba(255, 255, 255, 0.085);
+  --trail-control-border: rgba(255, 255, 255, 0.06);
+  --trail-control-border-hover: rgba(255, 255, 255, 0.1);
   --trail-control-disabled-surface: rgba(255, 255, 255, 0.012);
 
   /* Semantic colors. */
@@ -100,18 +100,18 @@ body {
 
   /* Typography. */
   --trail-font-ui: Inter, var(--font-interface), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --trail-font-size-meta: 10px;
-  --trail-font-size-caption: 10.5px;
-  --trail-font-size-supporting: 11.5px;
-  --trail-font-size-control: 12px;
-  --trail-font-size-body: 12.5px;
-  --trail-font-size-section: 13.5px;
-  --trail-font-size-subtitle: 15px;
-  --trail-font-size-page: 19px;
-  --trail-weight-regular: 450;
+  --trail-font-size-meta: 10.5px;
+  --trail-font-size-caption: 11px;
+  --trail-font-size-supporting: 12px;
+  --trail-font-size-control: 12.5px;
+  --trail-font-size-body: 13px;
+  --trail-font-size-section: 14px;
+  --trail-font-size-subtitle: 16px;
+  --trail-font-size-page: 20px;
+  --trail-weight-regular: 440;
   --trail-weight-medium: 500;
-  --trail-weight-emphasis: 560;
-  --trail-weight-strong: 580;
+  --trail-weight-emphasis: 550;
+  --trail-weight-strong: 600;
   --trail-weight-heading: 650;
 
   /* Spacing and geometry. */
@@ -136,25 +136,25 @@ body {
   --trail-radius-md: 8px;
   --trail-radius-lg: 10px;
   --trail-radius-pill: 999px;
-  --trail-control-height-sm: 24px;
-  --trail-control-height-md: 28px;
-  --trail-control-height-lg: 32px;
-  --trail-icon-size-sm: 12px;
-  --trail-icon-size-md: 14px;
-  --trail-icon-size-lg: 16px;
+  --trail-control-height-sm: 22px;
+  --trail-control-height-md: 26px;
+  --trail-control-height-lg: 30px;
+  --trail-icon-size-sm: 11px;
+  --trail-icon-size-md: 13px;
+  --trail-icon-size-lg: 15px;
 
   /* Shared scanning-row grammar. */
-  --trail-collection-row-gap: var(--trail-space-7);
+  --trail-collection-row-gap: var(--trail-space-6);
 
   /* Elevation and motion. */
-  --trail-shadow-overlay: 0 14px 38px rgba(0, 0, 0, 0.44), 0 0 0 1px rgba(255, 255, 255, 0.045);
-  --trail-shadow-tooltip: 0 7px 20px rgba(0, 0, 0, 0.28);
+  --trail-shadow-overlay: 0 16px 40px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --trail-shadow-tooltip: 0 8px 22px rgba(0, 0, 0, 0.24);
   --trail-motion-fast: 90ms ease;
 
   /* Shared menu visual contract. */
   --trail-menu-surface: var(--trail-surface-overlay);
   --trail-menu-border: var(--trail-border-default);
-  --trail-menu-shadow: 0 12px 32px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.025);
+  --trail-menu-shadow: 0 14px 34px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.045);
   --trail-menu-radius: var(--trail-radius-md);
   --trail-menu-padding: var(--trail-space-2);
   --trail-menu-content-max-width: 36ch;

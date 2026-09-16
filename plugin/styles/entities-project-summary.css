@@ -1,21 +1,68 @@
 /* Project Summary rows keep one lifecycle glyph and stable scan columns without duplicate Status text. */
+.trail-collection-row[data-project-summary-row="true"] {
+  min-height: 32px;
+  padding-right: var(--trail-space-8);
+  padding-left: var(--trail-space-8);
+  border-bottom-color: transparent;
+}
+
 .trail-project-summary-row__content {
   grid-template-columns:
-    minmax(240px, 2.7fr)
-    24px
-    minmax(96px, 0.75fr)
-    minmax(72px, 0.55fr);
+    minmax(240px, 3.2fr)
+    18px
+    minmax(92px, 0.72fr)
+    minmax(58px, 0.42fr);
+  gap: var(--trail-space-7);
+}
+
+.trail-project-summary-row__title {
+  font-weight: var(--trail-weight-emphasis);
+  letter-spacing: -0.006em;
+}
+
+.trail-project-summary-row__priority {
+  width: 12px;
+  height: 12px;
+  color: var(--trail-text-faint);
+}
+
+.trail-project-summary-row__priority .trail-priority-glyph {
+  width: 11px;
+  height: 11px;
+}
+
+.trail-project-summary-row__progress {
+  opacity: 0.8;
+}
+
+.trail-project-summary-row__due {
+  justify-self: end;
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  text-align: right;
+}
+
+.trail-collection-row[data-project-summary-row="true"]:hover .trail-project-summary-row__priority,
+.trail-collection-row[data-project-summary-row="true"]:focus-visible .trail-project-summary-row__priority,
+.trail-collection-row[data-project-summary-row="true"][data-highlighted="true"] .trail-project-summary-row__priority {
+  color: var(--trail-text-muted);
+}
+
+.trail-collection-row[data-project-summary-row="true"]:hover .trail-project-summary-row__progress,
+.trail-collection-row[data-project-summary-row="true"]:focus-visible .trail-project-summary-row__progress,
+.trail-collection-row[data-project-summary-row="true"][data-highlighted="true"] .trail-project-summary-row__progress {
+  opacity: 1;
 }
 
 @container (max-width: 760px) {
   .trail-project-summary-row__content {
-    grid-template-columns: minmax(0, 1fr) 24px minmax(72px, 92px) minmax(64px, 72px);
+    grid-template-columns: minmax(0, 1fr) 18px minmax(72px, 88px) minmax(54px, 64px);
   }
 }
 
 @container (max-width: 620px) {
   .trail-project-summary-row__content {
-    grid-template-columns: minmax(0, 1fr) 24px minmax(64px, 72px);
+    grid-template-columns: minmax(0, 1fr) 18px minmax(54px, 64px);
   }
 
   .trail-project-summary-row__progress {
@@ -25,7 +72,7 @@
 
 @container (max-width: 480px) {
   .trail-project-summary-row__content {
-    grid-template-columns: minmax(0, 1fr) 24px;
+    grid-template-columns: minmax(0, 1fr) 18px;
   }
 
   .trail-project-summary-row__due {

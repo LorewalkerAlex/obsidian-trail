@@ -1,6 +1,8 @@
 /* Workflow Issue scanning presentation. Priority leads the Status + Title identity; Status stays visible even inside Status sections. */
 .trail-collection-row[data-workflow-issue-row="true"] {
-  min-height: 30px;
+  min-height: 32px;
+  padding-right: var(--trail-space-8);
+  padding-left: var(--trail-space-8);
   border-bottom-color: transparent;
 }
 
@@ -11,61 +13,61 @@
 .trail-workflow-issue-row__content {
   display: grid;
   min-width: 0;
-  grid-template-columns: 14px minmax(0, 1fr) auto;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: var(--trail-space-9);
+  column-gap: var(--trail-space-7);
   overflow: hidden;
 }
 
 .trail-workflow-issue-row__content--project {
-  grid-template-columns: 14px minmax(0, 1fr) minmax(124px, 160px) auto;
+  grid-template-columns: 12px minmax(0, 1fr) minmax(108px, 148px) auto;
 }
 
 .trail-workflow-issue-row__project {
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: var(--trail-space-4);
-  color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-supporting);
-  font-weight: var(--trail-weight-medium);
+  gap: var(--trail-space-3);
+  color: var(--trail-text-muted);
+  font-size: var(--trail-font-size-caption);
+  font-weight: var(--trail-weight-regular);
 }
 
 .trail-workflow-issue-row__project-icon {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   flex: 0 0 auto;
-  color: var(--trail-text-muted);
+  color: var(--trail-text-faint);
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 1.25;
+  stroke-width: 1.2;
 }
 
 .trail-workflow-issue-row__priority {
   display: inline-grid;
-  width: 14px;
-  height: var(--trail-icon-size-sm);
+  width: 12px;
+  height: 10px;
   place-items: center;
-  color: var(--trail-text-muted);
+  color: var(--trail-text-faint);
 }
 
 .trail-workflow-issue-row__priority .trail-priority-glyph {
-  width: var(--trail-icon-size-sm);
-  height: var(--trail-icon-size-sm);
+  width: 10px;
+  height: 10px;
 }
 
 .trail-workflow-issue-row__identity {
   display: grid;
   min-width: 0;
-  grid-template-columns: var(--trail-icon-size-sm) minmax(0, 1fr);
+  grid-template-columns: 12px minmax(0, 1fr);
   align-items: center;
   column-gap: var(--trail-space-5);
 }
 
 .trail-workflow-issue-row__identity .trail-status-glyph {
-  width: var(--trail-icon-size-sm);
-  height: var(--trail-icon-size-sm);
+  width: 12px;
+  height: 12px;
 }
 
 .trail-workflow-issue-row__title,
@@ -83,20 +85,21 @@
 .trail-workflow-issue-row__title {
   color: var(--trail-text-primary);
   font-size: var(--trail-font-size-body);
-  font-weight: var(--trail-weight-medium);
-  line-height: 1.25;
+  font-weight: var(--trail-weight-emphasis);
+  line-height: 1.2;
+  letter-spacing: -0.006em;
 }
 
 .trail-workflow-issue-row__metadata {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(76px, 116px) 42px 20px 54px;
+  grid-template-columns: minmax(64px, 100px) 34px 18px 48px;
   align-items: center;
-  column-gap: var(--trail-space-7);
+  column-gap: var(--trail-space-6);
 }
 
 .trail-workflow-issue-row__metadata--cycle {
-  grid-template-columns: minmax(76px, 116px) 42px 60px 20px 54px;
+  grid-template-columns: minmax(64px, 100px) 34px 52px 18px 48px;
 }
 
 .trail-workflow-issue-row__labels,
@@ -112,7 +115,7 @@
 .trail-workflow-issue-row__cycle,
 .trail-workflow-issue-row__estimate,
 .trail-workflow-issue-row__due {
-  color: var(--trail-text-muted);
+  color: var(--trail-text-faint);
   font-size: var(--trail-font-size-caption);
 }
 
@@ -125,6 +128,7 @@
 
 .trail-workflow-issue-row__labels {
   overflow: hidden;
+  opacity: 0.82;
 }
 
 .trail-workflow-issue-row__estimate {
@@ -133,7 +137,26 @@
 
 .trail-workflow-issue-row__due {
   justify-content: flex-end;
+  color: var(--trail-text-muted);
   text-align: right;
+}
+
+.trail-collection-row[data-workflow-issue-row="true"]:hover .trail-workflow-issue-row__project,
+.trail-collection-row[data-workflow-issue-row="true"]:focus-visible .trail-workflow-issue-row__project,
+.trail-collection-row[data-workflow-issue-row="true"][data-highlighted="true"] .trail-workflow-issue-row__project {
+  color: var(--trail-text-secondary);
+}
+
+.trail-collection-row[data-workflow-issue-row="true"]:hover .trail-workflow-issue-row__milestone,
+.trail-collection-row[data-workflow-issue-row="true"]:hover .trail-workflow-issue-row__cycle,
+.trail-collection-row[data-workflow-issue-row="true"]:hover .trail-workflow-issue-row__estimate,
+.trail-collection-row[data-workflow-issue-row="true"]:focus-visible .trail-workflow-issue-row__milestone,
+.trail-collection-row[data-workflow-issue-row="true"]:focus-visible .trail-workflow-issue-row__cycle,
+.trail-collection-row[data-workflow-issue-row="true"]:focus-visible .trail-workflow-issue-row__estimate,
+.trail-collection-row[data-workflow-issue-row="true"][data-highlighted="true"] .trail-workflow-issue-row__milestone,
+.trail-collection-row[data-workflow-issue-row="true"][data-highlighted="true"] .trail-workflow-issue-row__cycle,
+.trail-collection-row[data-workflow-issue-row="true"][data-highlighted="true"] .trail-workflow-issue-row__estimate {
+  color: var(--trail-text-muted);
 }
 
 .trail-estimate-value {
@@ -148,11 +171,11 @@
 
 @container (max-width: 840px) {
   .trail-workflow-issue-row__metadata {
-    grid-template-columns: 42px 20px 54px;
+    grid-template-columns: 34px 18px 48px;
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: 14px minmax(0, 1fr) minmax(116px, 148px) auto;
+    grid-template-columns: 12px minmax(0, 1fr) minmax(104px, 136px) auto;
   }
 
   .trail-workflow-issue-row__milestone,
@@ -163,11 +186,11 @@
 
 @container (max-width: 620px) {
   .trail-workflow-issue-row__metadata {
-    grid-template-columns: 20px 54px;
+    grid-template-columns: 18px 48px;
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: 14px minmax(0, 1fr) minmax(108px, 136px) auto;
+    grid-template-columns: 12px minmax(0, 1fr) minmax(96px, 124px) auto;
   }
 
   .trail-workflow-issue-row__labels {
@@ -177,11 +200,11 @@
 
 @container (max-width: 500px) {
   .trail-workflow-issue-row__metadata {
-    grid-template-columns: 54px;
+    grid-template-columns: 48px;
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: 14px minmax(0, 1fr) minmax(96px, 124px) auto;
+    grid-template-columns: 12px minmax(0, 1fr) minmax(92px, 116px) auto;
   }
 
   .trail-workflow-issue-row__estimate {
@@ -192,11 +215,11 @@
 @container (max-width: 420px) {
   .trail-workflow-issue-row__content {
     grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: var(--trail-space-7);
+    column-gap: var(--trail-space-6);
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: minmax(0, 1fr) minmax(92px, 116px) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(88px, 108px) auto;
   }
 
   .trail-workflow-issue-row__priority {
@@ -206,7 +229,7 @@
 
 @container (max-width: 360px) {
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: minmax(0, 1fr) minmax(92px, 112px);
+    grid-template-columns: minmax(0, 1fr) minmax(88px, 104px);
   }
 
   .trail-workflow-issue-row__content--project .trail-workflow-issue-row__metadata {

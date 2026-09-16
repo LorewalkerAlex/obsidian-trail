@@ -1,0 +1,41 @@
+{
+  "captured": "2026-09-16",
+  "sourcePolicy": "Official Linear only: linear.app and webassets.linear.app",
+  "references": [
+    {
+      "file": "01-header-system.png",
+      "page": "https://linear.app/now/behind-the-latest-design-refresh",
+      "url": "https://webassets.linear.app/images/ornj730p/production/b15d343ed41c5e938c26f9e2f5a61c7b63285caa-3904x2160.png"
+    },
+    {
+      "file": "02-sidebar-refresh.png",
+      "page": "https://linear.app/now/behind-the-latest-design-refresh",
+      "url": "https://webassets.linear.app/images/ornj730p/production/b6d6be14c96978b10553cfb9205be1065087e793-3904x2720.png"
+    },
+    {
+      "file": "03-view-structure.png",
+      "page": "https://linear.app/now/behind-the-latest-design-refresh",
+      "url": "https://webassets.linear.app/images/ornj730p/production/67561baa677fbc429d94edd080e95aecabb6bae2-3904x2720.png"
+    },
+    {
+      "file": "04-my-issues.png",
+      "page": "https://linear.app/docs/my-issues",
+      "url": "https://webassets.linear.app/images/ornj730p/production/70c22a56e776bfbffa920091b64a28845ca8eaeb-1864x842.png"
+    },
+    {
+      "file": "05-issue-sidebar.png",
+      "page": "https://linear.app/changelog/2026-07-23-agent-assisted-editing",
+      "url": "https://webassets.linear.app/images/ornj730p/production/fdbe518ba5882edab1681f7410f9af78716021f2-3600x2058.png"
+    },
+    {
+      "file": "06-issue-composer.png",
+      "page": "https://linear.app/docs/creating-issues",
+      "url": "https://webassets.linear.app/images/ornj730p/production/25ae979891503f4780b6e837aaa71b5027c67281-1224x534.png"
+    },
+    {
+      "file": "07-project-overview.png",
+      "page": "https://linear.app/docs/project-overview",
+      "url": "https://webassets.linear.app/images/ornj730p/production/6f0a51a748dfb751052a8dc0e0b67670c845ab6c-2296x2006.png"
+    }
+  ]
+}
