@@ -32,9 +32,24 @@ export interface CloseTrailCycleCommand {
   readonly expectedCycle: TrailCycle;
 }
 
+export interface CloseAndStartNextTrailCycleCommand {
+  readonly commandId: string;
+  readonly cycleId: string;
+  readonly effectiveAt: TrailTimestamp;
+  readonly expectedCycle: TrailCycle;
+  readonly issueIds: readonly string[];
+  readonly plannedEnd: TrailTimestamp;
+}
+
 export interface TrailCyclePlan {
   readonly cycle: TrailCycle;
   readonly plan: TrailMutationPlan;
+}
+
+export interface TrailCycleRolloverPlan {
+  readonly nextCycle: TrailCycle;
+  readonly plan: TrailMutationPlan;
+  readonly sourceCycle: TrailCycle;
 }
 
 interface TrailCycleMembershipResolution {
@@ -226,5 +241,61 @@ export function planCloseTrailCycle(
       }],
       intent: "planning.cycle.close",
     }),
+  });
+}
+
+export function planCloseAndStartNextTrailCycle(
+  state: TrailPlanningState,
+  command: CloseAndStartNextTrailCycleCommand,
+): TrailPlanResult<TrailCycleRolloverPlan> {
+  if (trailPlanningEntityExists(state.domain, command.cycleId)) {
+    return rejectTrailPlan("entity-id-conflict", `Trail entity ID already exists: ${command.cycleId}`);
+  }
+
+  const currentResult = currentTrailCycle(state, command.expectedCycle);
+  if (currentResult.kind !== "ready") return currentResult;
+  const current = currentResult.plan;
+  if (!isTrailCycleOpen(current)) {
+    return rejectTrailPlan("cycle-closed", `Cycle is already closed: ${current.id}`);
+  }
+
+  const membership = resolveTrailCycleMembership(state, command.issueIds);
+  if (membership.rejection !== undefined) {
+    return rejectTrailPlan(membership.rejection.code, membership.rejection.message);
+  }
+  const issues = membership.issues ?? [];
+  const nextIssueIds = issues.map(({ id }) => id).sort();
+  const transferIds = new Set(nextIssueIds);
+  const sourceCycle: TrailCycle = {
+    ...current,
+    endedAt: command.effectiveAt,
+    issueIds: current.issueIds.filter((issueId) => !transferIds.has(issueId)).sort(),
+  };
+  const nextCycle: TrailCycle = {
+    id: command.cycleId,
+    issueIds: nextIssueIds,
+    plannedEnd: command.plannedEnd,
+    startedAt: command.effectiveAt,
+  };
+
+  return readyTrailPlan({
+    nextCycle,
+    plan: createTrailMutationPlan({
+      commandId: command.commandId,
+      effects: [
+        {
+          after: { kind: "cycle", value: sourceCycle },
+          before: { kind: "cycle", value: current },
+          kind: "replace-entity",
+        },
+        { after: { kind: "cycle", value: nextCycle }, kind: "create-entity" },
+      ],
+      intent: "planning.cycle.close-and-start-next",
+      preconditions: issues.map((issue) => ({
+        entity: { kind: "issue" as const, value: issue },
+        kind: "entity-equals" as const,
+      })),
+    }),
+    sourceCycle,
   });
 }

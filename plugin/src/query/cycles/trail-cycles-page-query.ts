@@ -1,4 +1,5 @@
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
+import type { TrailCycle } from "../../domain/model/trail-entities";
 import {
   resolveTrailCycleDefaultEndDate,
   type TrailCalendarDate,
@@ -27,6 +28,7 @@ export interface TrailCycleStartReadModel {
   readonly canStart: boolean;
   readonly candidates: readonly TrailWorkflowIssuePresentationReadModel[];
   readonly configuration: TrailConfiguration;
+  readonly expectedSourceCycle?: TrailCycle;
   readonly initialIssueIds: readonly string[];
   readonly suggestedPlannedEndDate?: TrailCalendarDate;
 }
@@ -54,7 +56,7 @@ export function selectTrailCyclesPageReadModel(
 
 /**
  * Start Cycle is one Page-local flow for both ordinary Start and Start-next.
- * Start-next preselection is derived from live Issue facts when this selector is evaluated.
+ * Start-next plans while its source is still the current open Cycle.
  */
 export function selectTrailCycleStartReadModel(
   state: TrailRuntimeState,
@@ -65,9 +67,15 @@ export function selectTrailCycleStartReadModel(
   const configuration = readable.authoritative.configuration;
   if (configuration === null) return null;
 
+  let expectedSourceCycle: TrailCycle | undefined;
   if (sourceCycleId !== undefined) {
     const sourceCycle = readable.authoritative.domain.cyclesById.get(sourceCycleId);
-    if (sourceCycle === undefined || sourceCycle.endedAt === undefined) return null;
+    if (
+      sourceCycle === undefined
+      || sourceCycle.endedAt !== undefined
+      || readable.indexes.currentCycleId !== sourceCycleId
+    ) return null;
+    expectedSourceCycle = sourceCycle;
   }
 
   const candidateIds = selectTrailCyclePlanningIssueIdsFromReadableSnapshot(readable);
@@ -82,11 +90,16 @@ export function selectTrailCycleStartReadModel(
     candidates.push(presentation);
   }
 
-  const canStart = readable.indexes.currentCycleId === undefined && state.control.kind === "ready";
+  const canStart = state.control.kind === "ready" && (
+    sourceCycleId === undefined
+      ? readable.indexes.currentCycleId === undefined
+      : readable.indexes.currentCycleId === sourceCycleId
+  );
   return {
     canStart,
     candidates,
     configuration,
+    expectedSourceCycle,
     initialIssueIds: sourceCycleId === undefined
       ? []
       : selectTrailNextCycleCandidateIssueIdsFromReadableSnapshot(readable, sourceCycleId),

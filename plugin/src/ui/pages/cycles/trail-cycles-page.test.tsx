@@ -77,7 +77,10 @@ function startAction(entityId = "cycle-new") {
 }
 
 function cycleActions(start = startAction()) {
-  return { start } as unknown as Pick<TrailUiActions["cycles"], "start">;
+  return { start } as unknown as Pick<
+    TrailUiActions["cycles"],
+    "closeAndStartNext" | "start"
+  >;
 }
 
 describe("TrailCyclesPage", () => {

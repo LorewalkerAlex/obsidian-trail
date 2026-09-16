@@ -3,6 +3,7 @@ import type {
   TrailWorkflowIssue,
 } from "../../domain/model/trail-entities";
 import type { TrailTimestamp } from "../../domain/model/trail-values";
+import { resolveTrailNextCycleCandidateIssueIds } from "../../domain/rules/trail-cycle-rules";
 import {
   isTrailTerminalStatusDefinition,
   resolveTrailStatusDefinition,
@@ -117,17 +118,22 @@ export function selectTrailNextCycleCandidateIssueIdsFromReadableSnapshot(
   readable: TrailEffectiveRuntimeSnapshot,
   cycleId: string,
 ): readonly string[] {
+  const configuration = readable.authoritative.configuration;
   const cycle = readable.authoritative.domain.cyclesById.get(cycleId);
-  if (cycle === undefined || cycle.endedAt === undefined) return [];
-  return cycle.issueIds
-    .map((issueId) => readable.authoritative.domain.issuesById.get(issueId))
-    .filter((issue): issue is TrailWorkflowIssue => issue?.context === "workflow")
-    .filter((issue) => !isTerminalWorkflowIssue(readable, issue))
-    .sort((left, right) => compareCyclePlanningIssues(readable, left, right))
-    .map((issue) => issue.id);
+  if (configuration === null || cycle === undefined || cycle.endedAt !== undefined) return [];
+  return [...resolveTrailNextCycleCandidateIssueIds(
+    configuration,
+    cycle,
+    readable.authoritative.domain.issuesById,
+  )].sort((leftId, rightId) => {
+    const left = readable.authoritative.domain.issuesById.get(leftId);
+    const right = readable.authoritative.domain.issuesById.get(rightId);
+    if (left?.context !== "workflow" || right?.context !== "workflow") return 0;
+    return compareCyclePlanningIssues(readable, left, right);
+  });
 }
 
-/** Start-next candidates are current non-terminal members of the source Cycle. */
+/** Start-next candidates are current non-terminal members of the open source Cycle. */
 export function selectTrailNextCycleCandidateIssueIds(
   state: TrailRuntimeState,
   cycleId: string,

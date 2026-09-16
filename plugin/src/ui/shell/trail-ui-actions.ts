@@ -5,7 +5,7 @@ import type { TrailWeeklyNoteApplication } from "../../application/workspace/tra
 export interface TrailUiActions {
   readonly cycles: Pick<
     TrailApplicationSession["cycles"],
-    "changeMembership" | "changePlannedEnd" | "close" | "start"
+    "changeMembership" | "changePlannedEnd" | "close" | "closeAndStartNext" | "start"
   >;
   readonly initiatives: Pick<
     TrailApplicationSession["initiatives"],

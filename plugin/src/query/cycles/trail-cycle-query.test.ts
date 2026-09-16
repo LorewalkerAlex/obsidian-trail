@@ -117,13 +117,13 @@ describe("Trail Cycle page Query", () => {
     ]);
   });
 
-  it("selects current non-terminal members as next-Cycle candidates", () => {
+  it("selects current non-terminal members from the open source Cycle for Start-next", () => {
     const { active, completed, newerClosed, openCycle, store } = readyStore();
 
-    expect(selectTrailNextCycleCandidateIssueIds(store.getState(), openCycle.id)).toEqual([]);
-    expect(newerClosed.issueIds).toContain(completed.id);
-    expect(selectTrailNextCycleCandidateIssueIds(store.getState(), newerClosed.id)).toEqual([
+    expect(openCycle.issueIds).toContain(completed.id);
+    expect(selectTrailNextCycleCandidateIssueIds(store.getState(), openCycle.id)).toEqual([
       active.id,
     ]);
+    expect(selectTrailNextCycleCandidateIssueIds(store.getState(), newerClosed.id)).toEqual([]);
   });
 });

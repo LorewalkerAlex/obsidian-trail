@@ -74,7 +74,7 @@ function harness() {
     createId: () => `command-${id += 1}`,
     now: () => 1_800_050_000_000,
   });
-  return { application, cycle, submitted };
+  return { application, cycle, issue, submitted };
 }
 
 describe("TrailCycleApplication", () => {
@@ -107,5 +107,49 @@ describe("TrailCycleApplication", () => {
       kind: "unchanged",
     });
     expect(submitted).toEqual([]);
+  });
+
+  it("submits close-and-start-next as one compound Cycle mutation", async () => {
+    const { application, cycle, issue, submitted } = harness();
+    const plannedEnd = cycle.plannedEnd + 86_400_000;
+    const receipt = application.closeAndStartNext(cycle, {
+      issueIds: [issue.id],
+      plannedEnd,
+    });
+
+    await receipt.completion;
+
+    expect(receipt.entityId).toBe("command-2");
+    expect(submitted).toHaveLength(1);
+    expect(submitted[0]).toMatchObject({
+      commandId: "command-1",
+      intent: "planning.cycle.close-and-start-next",
+      effects: [
+        {
+          after: {
+            kind: "cycle",
+            value: {
+              ...cycle,
+              endedAt: 1_800_050_000_000,
+              issueIds: [],
+            },
+          },
+          before: { kind: "cycle", value: cycle },
+          kind: "replace-entity",
+        },
+        {
+          after: {
+            kind: "cycle",
+            value: {
+              id: "command-2",
+              issueIds: [issue.id],
+              plannedEnd,
+              startedAt: 1_800_050_000_000,
+            },
+          },
+          kind: "create-entity",
+        },
+      ],
+    });
   });
 });

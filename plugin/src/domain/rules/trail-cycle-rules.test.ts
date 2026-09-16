@@ -63,35 +63,35 @@ describe("Trail Cycle rules", () => {
     expect(findTrailOpenCycle([closed, open])).toBe(open);
   });
 
-  it("offers every current non-terminal member from a closed Cycle", () => {
-    const closed: TrailCycle = {
-      endedAt: 30,
-      id: "cycle-closed",
+  it("offers every current non-terminal member from an open source Cycle", () => {
+    const open: TrailCycle = {
+      id: "cycle-open",
       issueIds: ["issue-completed", "issue-active", "issue-canceled"],
       plannedEnd: 20,
       startedAt: 1,
     };
     expect(resolveTrailNextCycleCandidateIssueIds(
       createTrailTestConfiguration(),
-      closed,
+      open,
       issues(),
     )).toEqual(["issue-active"]);
   });
 
-  it("requires closed and internally legal Cycle membership for candidate resolution", () => {
-    const open: TrailCycle = {
-      id: "cycle-open",
+  it("requires open and internally legal Cycle membership for candidate resolution", () => {
+    const closed: TrailCycle = {
+      endedAt: 30,
+      id: "cycle-closed",
       issueIds: ["issue-active"],
       plannedEnd: 20,
       startedAt: 1,
     };
     expect(() => resolveTrailNextCycleCandidateIssueIds(
       createTrailTestConfiguration(),
-      open,
+      closed,
       issues(),
-    )).toThrow("closed Cycle");
+    )).toThrow("open Cycle");
 
-    const missing: TrailCycle = { ...open, endedAt: 30, issueIds: ["missing"] };
+    const missing: TrailCycle = { ...closed, endedAt: undefined, issueIds: ["missing"] };
     expect(() => resolveTrailNextCycleCandidateIssueIds(
       createTrailTestConfiguration(),
       missing,

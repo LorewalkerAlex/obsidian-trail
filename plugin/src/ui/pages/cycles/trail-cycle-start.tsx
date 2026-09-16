@@ -17,7 +17,22 @@ import { TrailCheckbox } from "../../primitives/trail-checkbox";
 import { TrailInput } from "../../primitives/trail-input";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
-type TrailCycleStartActions = Pick<TrailUiActions["cycles"], "start">;
+type TrailCycleStartBaseProps = {
+  readonly onDismiss: () => void;
+  readonly onStarted: (cycleId: string) => void;
+  readonly runtimeStore: TrailRuntimeStore;
+};
+
+type TrailCycleStartProps = TrailCycleStartBaseProps & (
+  | {
+      readonly actions: Pick<TrailUiActions["cycles"], "start">;
+      readonly sourceCycleId?: undefined;
+    }
+  | {
+      readonly actions: Pick<TrailUiActions["cycles"], "closeAndStartNext">;
+      readonly sourceCycleId: string;
+    }
+);
 
 function twoDigits(value: number): string {
   return String(value).padStart(2, "0");
@@ -69,19 +84,8 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function TrailCycleStart({
-  actions,
-  onDismiss,
-  onStarted,
-  runtimeStore,
-  sourceCycleId,
-}: {
-  readonly actions: TrailCycleStartActions;
-  readonly onDismiss: () => void;
-  readonly onStarted: (cycleId: string) => void;
-  readonly runtimeStore: TrailRuntimeStore;
-  readonly sourceCycleId?: string;
-}) {
+export function TrailCycleStart(props: TrailCycleStartProps) {
+  const { onDismiss, onStarted, runtimeStore, sourceCycleId } = props;
   const controlKind = useStore(runtimeStore, (state) => state.control.kind);
   const [referenceNow] = useState(() => Date.now());
   const [initialModel] = useState(() => selectTrailCycleStartReadModel(
@@ -142,11 +146,23 @@ export function TrailCycleStart({
 
     setPending(true);
     try {
-      const receipt = actions.start({ issueIds, plannedEnd });
+      let receipt: ReturnType<TrailUiActions["cycles"]["start"]>;
+      if (props.sourceCycleId === undefined) {
+        receipt = props.actions.start({ issueIds, plannedEnd });
+      } else {
+        if (initialModel.expectedSourceCycle === undefined) {
+          throw new Error("The source cycle is no longer available for Start-next");
+        }
+        receipt = props.actions.closeAndStartNext(
+          initialModel.expectedSourceCycle,
+          { issueIds, plannedEnd },
+        );
+      }
       await receipt.completion;
       onStarted(receipt.entityId);
     } catch (error: unknown) {
-      setFeedback(`Cycle start failed: ${errorMessage(error)}`);
+      const label = sourceCycleId === undefined ? "Cycle start" : "Close and start next";
+      setFeedback(`${label} failed: ${errorMessage(error)}`);
       setPending(false);
     }
   };
@@ -174,7 +190,7 @@ export function TrailCycleStart({
             <Dialog.Description className="trail-cycle-add-issues__description">
               {sourceCycleId === undefined
                 ? "Select issues now or start empty and add issues later."
-                : "Open issues from the previous cycle are preselected. Adjust them before starting if needed."}
+                : "Current non-terminal issues from this cycle are preselected. Adjust them before starting the next cycle."}
             </Dialog.Description>
           </header>
 

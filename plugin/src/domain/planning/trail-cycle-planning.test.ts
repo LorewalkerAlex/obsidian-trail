@@ -5,6 +5,7 @@ import { createTrailTestConfiguration, createTrailTestWorkspaceState } from "../
 import {
   planChangeTrailCycleMembership,
   planChangeTrailCyclePlannedEnd,
+  planCloseAndStartNextTrailCycle,
   planCloseTrailCycle,
   planOpenTrailCycle,
 } from "./trail-cycle-planning";
@@ -12,7 +13,9 @@ import type { TrailPlanningState } from "./trail-planning-state";
 
 function state(): TrailPlanningState & {
   readonly activeIssue: Extract<TrailIssue, { context: "workflow" }>;
+  readonly backlogIssue: Extract<TrailIssue, { context: "workflow" }>;
   readonly closedCycle: TrailCycle;
+  readonly nextIssue: Extract<TrailIssue, { context: "workflow" }>;
   readonly triageIssue: Extract<TrailIssue, { context: "triage" }>;
 } {
   const activeIssue: Extract<TrailIssue, { context: "workflow" }> = {
@@ -23,6 +26,18 @@ function state(): TrailPlanningState & {
     projectId: "project-a",
     statusDefinitionId: "issue-unstarted",
     title: "Active Issue",
+  };
+  const backlogIssue: Extract<TrailIssue, { context: "workflow" }> = {
+    ...activeIssue,
+    createdAt: 2,
+    id: "issue-backlog",
+    title: "Backlog Issue",
+  };
+  const nextIssue: Extract<TrailIssue, { context: "workflow" }> = {
+    ...activeIssue,
+    createdAt: 3,
+    id: "issue-next",
+    title: "Next Issue",
   };
   const triageIssue: Extract<TrailIssue, { context: "triage" }> = {
     context: "triage",
@@ -40,6 +55,7 @@ function state(): TrailPlanningState & {
   };
   return {
     activeIssue,
+    backlogIssue,
     closedCycle,
     configuration: createTrailTestConfiguration(),
     domain: {
@@ -47,11 +63,14 @@ function state(): TrailPlanningState & {
       initiativesById: new Map(),
       issuesById: new Map<string, TrailIssue>([
         [activeIssue.id, activeIssue],
+        [backlogIssue.id, backlogIssue],
+        [nextIssue.id, nextIssue],
         [triageIssue.id, triageIssue],
       ]),
       milestonesById: new Map(),
       projectsById: new Map(),
     },
+    nextIssue,
     triageIssue,
     workspaceState: createTrailTestWorkspaceState(),
   };
@@ -203,6 +222,71 @@ describe("Cycle planning", () => {
       commandId: "command-close-again",
       effectiveAt: 100,
       expectedCycle: planning.closedCycle,
+    })).toMatchObject({ kind: "rejected", reason: { code: "cycle-closed" } });
+  });
+
+  it("transfers overlap before close and starts the successor as one logical intent", () => {
+    const planning = state();
+    const source: TrailCycle = {
+      id: "cycle-open",
+      issueIds: [planning.activeIssue.id, planning.backlogIssue.id],
+      plannedEnd: 100,
+      startedAt: 60,
+    };
+    const cyclesWithOpen = new Map(planning.domain.cyclesById);
+    cyclesWithOpen.set(source.id, source);
+    const withOpen = { ...planning, domain: { ...planning.domain, cyclesById: cyclesWithOpen } };
+
+    const result = planCloseAndStartNextTrailCycle(withOpen, {
+      commandId: "command-rollover",
+      cycleId: "cycle-next",
+      effectiveAt: 90,
+      expectedCycle: source,
+      issueIds: [planning.activeIssue.id, planning.nextIssue.id],
+      plannedEnd: 200,
+    });
+
+    expect(result.kind).toBe("ready");
+    if (result.kind !== "ready") return;
+    expect(result.plan.sourceCycle).toEqual({
+      ...source,
+      endedAt: 90,
+      issueIds: [planning.backlogIssue.id],
+    });
+    expect(result.plan.nextCycle).toEqual({
+      id: "cycle-next",
+      issueIds: [planning.activeIssue.id, planning.nextIssue.id],
+      plannedEnd: 200,
+      startedAt: 90,
+    });
+    expect(result.plan.plan.intent).toBe("planning.cycle.close-and-start-next");
+    expect(result.plan.plan.effects).toEqual([
+      {
+        after: { kind: "cycle", value: result.plan.sourceCycle },
+        before: { kind: "cycle", value: source },
+        kind: "replace-entity",
+      },
+      { after: { kind: "cycle", value: result.plan.nextCycle }, kind: "create-entity" },
+    ]);
+    expect(result.plan.plan.preconditions).toContainEqual({
+      entity: { kind: "issue", value: planning.activeIssue },
+      kind: "entity-equals",
+    });
+    expect(result.plan.plan.preconditions).toContainEqual({
+      entity: { kind: "issue", value: planning.nextIssue },
+      kind: "entity-equals",
+    });
+  });
+
+  it("requires an open source Cycle for close-and-start-next", () => {
+    const planning = state();
+    expect(planCloseAndStartNextTrailCycle(planning, {
+      commandId: "command-rollover-closed",
+      cycleId: "cycle-next",
+      effectiveAt: 90,
+      expectedCycle: planning.closedCycle,
+      issueIds: [],
+      plannedEnd: 200,
     })).toMatchObject({ kind: "rejected", reason: { code: "cycle-closed" } });
   });
 });

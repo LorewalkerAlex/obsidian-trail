@@ -2,6 +2,7 @@ import type { TrailCycle } from "../../domain/model/trail-entities";
 import {
   planChangeTrailCycleMembership,
   planChangeTrailCyclePlannedEnd,
+  planCloseAndStartNextTrailCycle,
   planCloseTrailCycle,
   planOpenTrailCycle,
 } from "../../domain/planning/trail-cycle-planning";
@@ -51,6 +52,35 @@ export class TrailCycleApplication {
     const planned = resolveTrailApplicationPlan(result);
     if (planned.kind === "needs-input") throw new Error("Cycle start unexpectedly requires input");
     return submitTrailApplicationPlan(this.sourceSync, planned.value.plan, planned.value.cycle.id);
+  }
+
+  public closeAndStartNext(
+    expectedCycle: TrailCycle,
+    input: {
+      readonly issueIds?: readonly string[];
+      readonly plannedEnd: number;
+    },
+  ): TrailEntityMutationReceipt {
+    const state = readTrailPlanningState(this.runtimeStore);
+    const commandId = normalizeTrailCommandId(this.environment.createId(), "Command ID");
+    const effectiveAt = normalizeTrailCommandTime(this.environment);
+    const result = planCloseAndStartNextTrailCycle(state, {
+      commandId,
+      cycleId: normalizeTrailCommandId(this.environment.createId(), "Cycle ID"),
+      effectiveAt,
+      expectedCycle,
+      issueIds: normalizeIssueIds(input.issueIds ?? []),
+      plannedEnd: normalizeTrailCommandTimestamp(input.plannedEnd, "Cycle planned end"),
+    });
+    const planned = resolveTrailApplicationPlan(result);
+    if (planned.kind === "needs-input") {
+      throw new Error("Close and start next unexpectedly requires input");
+    }
+    return submitTrailApplicationPlan(
+      this.sourceSync,
+      planned.value.plan,
+      planned.value.nextCycle.id,
+    );
   }
 
   public changeMembership(

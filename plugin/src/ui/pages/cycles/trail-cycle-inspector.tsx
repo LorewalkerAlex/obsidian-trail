@@ -21,7 +21,7 @@ import { TrailCycleStart } from "./trail-cycle-start";
 
 type TrailCycleInspectorActions = Pick<
   TrailUiActions["cycles"],
-  "changePlannedEnd" | "close" | "start"
+  "changePlannedEnd" | "close" | "closeAndStartNext" | "start"
 >;
 
 const TRAIL_DAY_MS = 24 * 60 * 60 * 1000;
@@ -245,7 +245,7 @@ export function TrailCycleInspector({
     }
   };
 
-  const closeCycle = async (startNext: boolean) => {
+  const closeCycle = async () => {
     if (readModel.kind !== "current" || pending) return;
     setFeedback(undefined);
     let receipt: ReturnType<TrailCycleInspectorActions["close"]>;
@@ -258,7 +258,6 @@ export function TrailCycleInspector({
     setPending(true);
     try {
       await receipt.completion;
-      if (startNext) setStartNextOpen(true);
     } catch (error: unknown) {
       setFeedback(`Close failed: ${errorMessage(error)}`);
     } finally {
@@ -267,6 +266,7 @@ export function TrailCycleInspector({
   };
 
   const issueLabel = `${readModel.issueCount} ${readModel.issueCount === 1 ? "issue" : "issues"}`;
+  const issueRelation = `${issueLabel} ${readModel.issueCount === 1 ? "is" : "are"} currently in this cycle.`;
 
   return (
     <>
@@ -372,7 +372,7 @@ export function TrailCycleInspector({
           alternateConfirm={{
             disabled: pending,
             label: "Close and start next",
-            onConfirm: () => { void closeCycle(true); },
+            onConfirm: () => setStartNextOpen(true),
             tone: "danger",
           }}
           confirmDisabled={pending}
@@ -380,14 +380,15 @@ export function TrailCycleInspector({
           description={(
             <span className="trail-cycle-inspector__close-description">
               <strong>{range}</strong>
-              <span>{issueLabel} will remain associated with this cycle.</span>
+              <span>{issueRelation}</span>
               <span>
                 {readModel.unfinishedIssueCount} {readModel.unfinishedIssueCount === 1 ? "issue is" : "issues are"} still open.
               </span>
-              <span>Closing does not change any Issue properties.</span>
+              <span>Close keeps the current membership in history.</span>
+              <span>Close and start next lets you choose transfers first.</span>
             </span>
           )}
-          onConfirm={() => { void closeCycle(false); }}
+          onConfirm={() => { void closeCycle(); }}
           onOpenChange={setCloseOpen}
           open={closeOpen}
           title="Close cycle?"

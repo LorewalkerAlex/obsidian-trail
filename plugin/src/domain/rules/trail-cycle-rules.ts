@@ -18,26 +18,26 @@ export function findTrailOpenCycle(cycles: Iterable<TrailCycle>): TrailCycle | u
 }
 
 /**
- * Resolves the initially selected Issues for the explicit Create Next Cycle flow.
- * Membership has set semantics, so the result is stable ID order rather than history order.
+ * Resolves the initially selected Issues for the explicit Close-and-start-next flow.
+ * Membership has set semantics, so the result is stable ID order rather than source order.
  */
 export function resolveTrailNextCycleCandidateIssueIds(
   configuration: TrailConfiguration,
-  closedCycle: TrailCycle,
+  sourceCycle: TrailCycle,
   issuesById: ReadonlyMap<string, TrailIssue>,
 ): readonly string[] {
-  if (isTrailCycleOpen(closedCycle)) {
-    throw new Error("Next-cycle candidates require a closed Cycle");
+  if (!isTrailCycleOpen(sourceCycle)) {
+    throw new Error("Next-cycle candidates require an open Cycle");
   }
 
   const candidates: string[] = [];
-  for (const issueId of closedCycle.issueIds) {
+  for (const issueId of sourceCycle.issueIds) {
     const issue = issuesById.get(issueId);
     if (issue === undefined) {
-      throw new Error(`Closed Cycle references a missing Issue: ${issueId}`);
+      throw new Error(`Cycle references a missing Issue: ${issueId}`);
     }
     if (issue.context !== "workflow") {
-      throw new Error(`Closed Cycle references a Triage Issue: ${issueId}`);
+      throw new Error(`Cycle references a Triage Issue: ${issueId}`);
     }
     const status = resolveTrailStatusDefinition(
       configuration,

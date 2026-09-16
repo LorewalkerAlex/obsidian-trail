@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { TrailCycle } from "../../../domain/model/trail-entities";
 import {
   readTrailZonedDateTimeParts,
 } from "../../../domain/rules/trail-temporal-rules";
@@ -22,7 +23,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function readyStore() {
+function readyStore(includeCurrent = true) {
   const project = {
     id: "project-a",
     labelIds: [],
@@ -58,11 +59,15 @@ function readyStore() {
     title: "Completed issue",
   };
   const sourceCycle = {
-    endedAt: Date.UTC(2026, 7, 3),
-    id: "cycle-history",
+    id: "cycle-current",
     issueIds: [active.id, completed.id],
-    plannedEnd: Date.UTC(2026, 7, 3),
-    startedAt: Date.UTC(2026, 6, 21),
+    plannedEnd: Date.UTC(2026, 8, 20),
+    startedAt: Date.UTC(2026, 8, 7),
+  };
+  const historicalCycle = {
+    ...sourceCycle,
+    endedAt: Date.UTC(2026, 7, 31, 4),
+    id: "cycle-history",
   };
   const store = createTrailRuntimeStore();
   publishTrailCommittedRuntime(store, buildTrailCommittedRuntimeCandidate({
@@ -79,7 +84,7 @@ function readyStore() {
         sourcePath: "Trail/Projects/0001 Project Alpha.md",
       },
       {
-        cycles: [sourceCycle],
+        cycles: [includeCurrent ? sourceCycle : historicalCycle],
         kind: "cycles",
         sourcePath: "Trail/Collections/Cycles.md",
       },
@@ -89,24 +94,33 @@ function readyStore() {
   return { active, backlog, completed, sourceCycle, store };
 }
 
-function startAction() {
-  return vi.fn((_input: { readonly issueIds?: readonly string[]; readonly plannedEnd: number }) => ({
+function actions() {
+  const start = vi.fn((_input: { readonly issueIds?: readonly string[]; readonly plannedEnd: number }) => ({
     commandId: "command-cycle-start",
     completion: Promise.resolve(),
     entityId: "cycle-new",
   }));
+  const closeAndStartNext = vi.fn((
+    _expectedCycle: TrailCycle,
+    _input: { readonly issueIds?: readonly string[]; readonly plannedEnd: number },
+  ) => ({
+    commandId: "command-cycle-rollover",
+    completion: Promise.resolve(),
+    entityId: "cycle-next",
+  }));
+  return { closeAndStartNext, start };
 }
 
 describe("TrailCycleStart", () => {
   it("starts an ordinary Cycle empty by default with an editable configured planned end", async () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 8, 10, 4));
-    const { store } = readyStore();
-    const start = startAction();
+    const { store } = readyStore(false);
+    const cycleActions = actions();
     const onStarted = vi.fn();
 
     render(
       <TrailCycleStart
-        actions={{ start }}
+        actions={cycleActions}
         onDismiss={vi.fn()}
         onStarted={onStarted}
         runtimeStore={store}
@@ -120,8 +134,9 @@ describe("TrailCycleStart", () => {
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Start cycle" }));
 
-    await waitFor(() => expect(start).toHaveBeenCalledTimes(1));
-    const input = start.mock.calls[0]?.[0];
+    await waitFor(() => expect(cycleActions.start).toHaveBeenCalledTimes(1));
+    expect(cycleActions.closeAndStartNext).not.toHaveBeenCalled();
+    const input = cycleActions.start.mock.calls[0]?.[0];
     expect(input?.issueIds).toEqual([]);
     const plannedEnd = input?.plannedEnd;
     expect(plannedEnd).toBeTypeOf("number");
@@ -139,14 +154,14 @@ describe("TrailCycleStart", () => {
     await waitFor(() => expect(onStarted).toHaveBeenCalledWith("cycle-new"));
   });
 
-  it("preselects only currently open members for Start-next and allows explicit adjustment", async () => {
+  it("plans Start-next from the still-open source and submits one compound action", async () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 8, 10, 4));
     const { active, backlog, sourceCycle, store } = readyStore();
-    const start = startAction();
+    const cycleActions = actions();
 
     render(
       <TrailCycleStart
-        actions={{ start }}
+        actions={cycleActions}
         onDismiss={vi.fn()}
         onStarted={vi.fn()}
         runtimeStore={store}
@@ -157,23 +172,27 @@ describe("TrailCycleStart", () => {
     const dialog = screen.getByRole("dialog", { name: "Start cycle" });
     expect(within(dialog).getByLabelText(`Deselect ${active.title}`)).toBeChecked();
     expect(within(dialog).getByLabelText(`Select ${backlog.title}`)).not.toBeChecked();
+    expect(store.getState().committed.authoritative.domain.cyclesById.get(sourceCycle.id)?.endedAt)
+      .toBeUndefined();
 
     fireEvent.click(within(dialog).getByLabelText(`Deselect ${active.title}`));
     fireEvent.click(within(dialog).getByLabelText(`Select ${backlog.title}`));
     fireEvent.click(within(dialog).getByRole("button", { name: "Start cycle" }));
 
-    await waitFor(() => expect(start).toHaveBeenCalledTimes(1));
-    expect(start.mock.calls[0]?.[0].issueIds).toEqual([backlog.id]);
+    await waitFor(() => expect(cycleActions.closeAndStartNext).toHaveBeenCalledTimes(1));
+    expect(cycleActions.start).not.toHaveBeenCalled();
+    expect(cycleActions.closeAndStartNext.mock.calls[0]?.[0]).toEqual(sourceCycle);
+    expect(cycleActions.closeAndStartNext.mock.calls[0]?.[1].issueIds).toEqual([backlog.id]);
   });
 
-  it("cancels Start-next without starting a Cycle", () => {
+  it("cancels Start-next without mutating the open source Cycle", () => {
     const { sourceCycle, store } = readyStore();
-    const start = startAction();
+    const cycleActions = actions();
     const onDismiss = vi.fn();
 
     render(
       <TrailCycleStart
-        actions={{ start }}
+        actions={cycleActions}
         onDismiss={onDismiss}
         onStarted={vi.fn()}
         runtimeStore={store}
@@ -183,6 +202,8 @@ describe("TrailCycleStart", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
-    expect(start).not.toHaveBeenCalled();
+    expect(cycleActions.start).not.toHaveBeenCalled();
+    expect(cycleActions.closeAndStartNext).not.toHaveBeenCalled();
+    expect(store.getState().committed.authoritative.domain.cyclesById.get(sourceCycle.id)).toEqual(sourceCycle);
   });
 });

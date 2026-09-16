@@ -92,35 +92,34 @@ function readyCycleStore(closed = false) {
   const store = createTrailRuntimeStore();
   publishCycleFixture(store, project, [active, completed], cycle);
   setTrailRuntimeControl(store, { kind: "ready" });
-  const closeCommitted = () => {
-    publishCycleFixture(store, project, [active, completed], {
-      ...cycle,
-      endedAt: Date.UTC(2026, 7, 31, 4),
-    });
-  };
-  return { active, closeCommitted, completed, cycle, store };
+  return { active, completed, cycle, store };
 }
 
-function actions(onClose?: () => void) {
+function actions() {
   const changePlannedEnd = vi.fn(() => ({ entityId: "cycle-a", kind: "unchanged" as const }));
-  const close = vi.fn(() => {
-    onClose?.();
-    return {
-      commandId: "command-close",
-      completion: Promise.resolve(),
-      entityId: "cycle-a",
-    };
-  });
+  const close = vi.fn(() => ({
+    commandId: "command-close",
+    completion: Promise.resolve(),
+    entityId: "cycle-a",
+  }));
+  const closeAndStartNext = vi.fn((
+    _expectedCycle: TrailCycle,
+    _input: { readonly issueIds?: readonly string[]; readonly plannedEnd: number },
+  ) => ({
+    commandId: "command-rollover",
+    completion: Promise.resolve(),
+    entityId: "cycle-next",
+  }));
   const start = vi.fn((_input: { readonly issueIds?: readonly string[]; readonly plannedEnd: number }) => ({
     commandId: "command-start",
     completion: Promise.resolve(),
     entityId: "cycle-next",
   }));
-  const value = { changePlannedEnd, close, start } as unknown as Pick<
+  const value = { changePlannedEnd, close, closeAndStartNext, start } as unknown as Pick<
     TrailUiActions["cycles"],
-    "changePlannedEnd" | "close" | "start"
+    "changePlannedEnd" | "close" | "closeAndStartNext" | "start"
   >;
-  return { changePlannedEnd, close, start, value };
+  return { changePlannedEnd, close, closeAndStartNext, start, value };
 }
 
 describe("TrailCycleInspector", () => {
@@ -158,25 +157,26 @@ describe("TrailCycleInspector", () => {
     );
   });
 
-  it("confirms close with retained membership and unfinished-work facts", async () => {
+  it("confirms ordinary close with retained membership and distinguishes Start-next transfer planning", async () => {
     const { cycle, store } = readyCycleStore();
     const { close, value } = actions();
     render(<TrailCycleInspector actions={value} cycleId={cycle.id} runtimeStore={store} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Close cycle" }));
     expect(screen.getByText("Close cycle?")).toBeInTheDocument();
-    expect(screen.getByText("2 issues will remain associated with this cycle.")).toBeInTheDocument();
+    expect(screen.getByText("2 issues are currently in this cycle.")).toBeInTheDocument();
     expect(screen.getByText("1 issue is still open.")).toBeInTheDocument();
-    expect(screen.getByText("Closing does not change any Issue properties.")).toBeInTheDocument();
+    expect(screen.getByText("Close keeps the current membership in history.")).toBeInTheDocument();
+    expect(screen.getByText("Close and start next lets you choose transfers first.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close and start next" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(close).toHaveBeenCalledWith(cycle));
   });
 
-  it("closes first, opens Start-next with live open members selected, and cancel does not roll back close", async () => {
-    const { active, closeCommitted, cycle, store } = readyCycleStore();
-    const { close, start, value } = actions(closeCommitted);
+  it("opens Start-next while the source remains open and cancel leaves it unchanged", async () => {
+    const { active, cycle, store } = readyCycleStore();
+    const { close, closeAndStartNext, start, value } = actions();
 
     render(
       <TrailCycleInspector
@@ -190,19 +190,22 @@ describe("TrailCycleInspector", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close cycle" }));
     fireEvent.click(screen.getByRole("button", { name: "Close and start next" }));
 
-    await waitFor(() => expect(close).toHaveBeenCalledWith(cycle));
     const dialog = await screen.findByRole("dialog", { name: "Start cycle" });
     expect(within(dialog).getByLabelText(`Deselect ${active.title}`)).toBeChecked();
     expect(within(dialog).queryByText("Completed issue")).not.toBeInTheDocument();
+    expect(close).not.toHaveBeenCalled();
+    expect(closeAndStartNext).not.toHaveBeenCalled();
+    expect(start).not.toHaveBeenCalled();
+    expect(store.getState().committed.authoritative.domain.cyclesById.get(cycle.id)).toEqual(cycle);
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(start).not.toHaveBeenCalled();
-    expect(store.getState().committed.authoritative.domain.cyclesById.get(cycle.id)?.endedAt).toBeDefined();
+    expect(closeAndStartNext).not.toHaveBeenCalled();
+    expect(store.getState().committed.authoritative.domain.cyclesById.get(cycle.id)).toEqual(cycle);
   });
 
-  it("starts the next Cycle through the normal Start action and activates it after persistence", async () => {
-    const { active, closeCommitted, cycle, store } = readyCycleStore();
-    const { start, value } = actions(closeCommitted);
+  it("confirms Start-next through one compound Cycle action and activates the successor", async () => {
+    const { active, cycle, store } = readyCycleStore();
+    const { close, closeAndStartNext, start, value } = actions();
     const onCycleActivate = vi.fn();
 
     render(
@@ -219,8 +222,11 @@ describe("TrailCycleInspector", () => {
     const dialog = await screen.findByRole("dialog", { name: "Start cycle" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Start cycle" }));
 
-    await waitFor(() => expect(start).toHaveBeenCalledTimes(1));
-    expect(start.mock.calls[0]?.[0].issueIds).toEqual([active.id]);
+    await waitFor(() => expect(closeAndStartNext).toHaveBeenCalledTimes(1));
+    expect(closeAndStartNext.mock.calls[0]?.[0]).toEqual(cycle);
+    expect(closeAndStartNext.mock.calls[0]?.[1].issueIds).toEqual([active.id]);
+    expect(close).not.toHaveBeenCalled();
+    expect(start).not.toHaveBeenCalled();
     await waitFor(() => expect(onCycleActivate).toHaveBeenCalledWith("cycle-next"));
   });
 

@@ -68,7 +68,7 @@ function cycleStore(includeCurrent: boolean) {
   };
   const current = {
     id: "cycle-current",
-    issueIds: [],
+    issueIds: [active.id, completed.id],
     plannedEnd: Date.UTC(2026, 8, 20),
     startedAt: Date.UTC(2026, 8, 7),
   };
@@ -126,7 +126,7 @@ describe("Cycles Page query", () => {
     });
   });
 
-  it("suppresses Start Cycle while one Current Cycle exists", () => {
+  it("suppresses ordinary Start Cycle while one Current Cycle exists", () => {
     const { current, store } = cycleStore(true);
     const model = selectTrailCyclesPageReadModel(
       store.getState(),
@@ -138,28 +138,35 @@ describe("Cycles Page query", () => {
     expect(model?.suggestedPlannedEndDate).toBeUndefined();
   });
 
-  it("projects one Start flow with empty ordinary selection and live Start-next preselection", () => {
-    const { active, backlog, completed, historicalNewer, store } = cycleStore(false);
+  it("projects ordinary Start and Start-next against their distinct current-Cycle preconditions", () => {
     const now = Date.UTC(2026, 8, 10, 4);
-
-    const ordinary = selectTrailCycleStartReadModel(store.getState(), now);
+    const withoutCurrent = cycleStore(false);
+    const ordinary = selectTrailCycleStartReadModel(withoutCurrent.store.getState(), now);
     expect(ordinary?.canStart).toBe(true);
     expect(ordinary?.candidates.map(({ id }) => id)).toEqual([
-      active.id,
-      backlog.id,
+      withoutCurrent.active.id,
+      withoutCurrent.backlog.id,
     ]);
     expect(ordinary?.initialIssueIds).toEqual([]);
+    expect(ordinary?.expectedSourceCycle).toBeUndefined();
 
+    const withCurrent = cycleStore(true);
     const startNext = selectTrailCycleStartReadModel(
-      store.getState(),
+      withCurrent.store.getState(),
       now,
-      historicalNewer.id,
+      withCurrent.current.id,
     );
-    expect(historicalNewer.issueIds).toContain(completed.id);
+    expect(startNext?.canStart).toBe(true);
+    expect(startNext?.expectedSourceCycle).toEqual(withCurrent.current);
     expect(startNext?.candidates.map(({ id }) => id)).toEqual([
-      active.id,
-      backlog.id,
+      withCurrent.active.id,
+      withCurrent.backlog.id,
     ]);
-    expect(startNext?.initialIssueIds).toEqual([active.id]);
+    expect(startNext?.initialIssueIds).toEqual([withCurrent.active.id]);
+    expect(selectTrailCycleStartReadModel(
+      withCurrent.store.getState(),
+      now,
+      withCurrent.historicalNewer.id,
+    )).toBeNull();
   });
 });
