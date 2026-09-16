@@ -221,6 +221,238 @@ Keep these local rather than extracting universal components:
 - Issue Full Item editor;
 - Page-specific breadcrumb/title/action sets.
 
+### 4.4 Page / Surface Composition and Consumer Impact Map
+
+This section is the durable UI calibration impact map. It records which production owners are shared, which compositions remain local, and which Product surfaces must be rechecked when a shared owner changes. It is traceability, not a second UI specification: `docs/ui.md` owns behavior/presentation semantics and `docs/ui-blueprints.md` owns the accepted V1 composition blueprint.
+
+Use these scope labels:
+
+- **[G] Global shared** — reused across multiple Product areas; visual changes have broad regression scope.
+- **[C] Cluster shared** — reused inside one coherent Product/entity/workflow cluster.
+- **[L] Local** — Page/surface-specific composition that should remain local unless a real shared responsibility emerges.
+- **[D] Development only** — Foundation showroom/calibration composition; never a production owner.
+
+A surface counts as a consumer when a production-owner visual change can reach it either directly or through a shared child owner. This is intentionally broader than import-only dependency tracking because the purpose is calibration impact analysis.
+
+#### 4.4.1 Production composition tree
+
+```text
+Obsidian host
+├─ Left Sidebar
+│  ├─ TrailNavigation                                      [G shell]
+│  └─ Sidebar Search                                       [L shell composition]
+│     └─ TrailInput                                        [G primitive]
+│
+├─ Main View
+│  └─ TrailWorkspaceFrame -> TrailPageSurface              [G shell]
+│     │
+│     ├─ Home                                              [L Page]
+│     │  ├─ TrailPageHeader                                [G pattern]
+│     │  ├─ TrailHomeWidgetFrame                           [C Home]
+│     │  │  ├─ This Week                                   [L]
+│     │  │  ├─ Work Pulse                                  [L]
+│     │  │  │  ├─ TrailProgress                            [G]
+│     │  │  │  └─ TrailSegmentedSummary                   [G]
+│     │  │  ├─ Lifecycle Activity                          [L]
+│     │  │  ├─ Work Trend                                  [L]
+│     │  │  └─ Weekly Meeting Notes                        [L]
+│     │  │     └─ TrailMarkdownContent                     [G]
+│     │  ├─ shared Standard Composer family                [C creation]
+│     │  └─ TrailCycleStart                                [C Cycle]
+│     │
+│     ├─ Triage                                            [L Page]
+│     │  ├─ Page-owned Triage header                       [L]
+│     │  ├─ TrailTriageViewControls                        [C Triage]
+│     │  │  └─ TrailViewBar                                [G]
+│     │  │     ├─ TrailCollectionFilter                    [G]
+│     │  │     └─ Order -> TrailViewPopover                [G]
+│     │  ├─ Queue                                           [L]
+│     │  │  └─ TrailTriageRow                              [C Triage entity]
+│     │  │     └─ TrailCollectionRow                       [G]
+│     │  │        └─ Priority / Labels / Due               [G semantic UI]
+│     │  ├─ TrailTriageReviewSurface                       [L]
+│     │  └─ shared Standard Composer family                [C creation]
+│     │
+│     ├─ Projects Root                                     [L Page]
+│     │  ├─ TrailPageHeader                                [G]
+│     │  ├─ TrailProjectsViewControls                      [C Projects]
+│     │  │  └─ TrailViewBar                                [G]
+│     │  │     ├─ TrailCollectionFilter                    [G]
+│     │  │     └─ TrailViewLayoutSwitch                    [G]
+│     │  ├─ List                                            [L]
+│     │  │  ├─ TrailGroupHeader                            [G]
+│     │  │  └─ TrailProjectSummaryRow                      [C Project collection]
+│     │  │     └─ TrailCollectionRow                       [G]
+│     │  │        └─ Project Status / Priority / Progress / Due
+│     │  ├─ TrailProjectTimeline                           [L]
+│     │  ├─ Selection / Project actions / TrailBulkBar     [C/G interactions]
+│     │  └─ TrailProjectComposer                           [C creation]
+│     │
+│     ├─ Initiative Focus                                  [L Page]
+│     │  ├─ TrailPageHeader + breadcrumb                   [G]
+│     │  ├─ TrailPageNarrative                             [G]
+│     │  ├─ TrailInitiativeViewControls                    [C Projects]
+│     │  │  └─ TrailViewBar -> TrailCollectionFilter      [G]
+│     │  ├─ TrailProjectSummaryRow                         [C Project collection]
+│     │  ├─ Selection / Project actions / TrailBulkBar     [C/G interactions]
+│     │  └─ TrailProjectComposer                           [C creation]
+│     │
+│     ├─ Project Workspace                                 [L Page]
+│     │  ├─ TrailPageHeader + breadcrumb                   [G]
+│     │  ├─ TrailPageNarrative                             [G]
+│     │  ├─ TrailProjectWorkspaceViewControls              [C Issue collection]
+│     │  │  └─ TrailViewBar                                [G]
+│     │  │     ├─ TrailCollectionFilter                    [G]
+│     │  │     └─ TrailViewLayoutSwitch                    [G]
+│     │  ├─ List                                            [L]
+│     │  │  ├─ TrailGroupHeader                            [G]
+│     │  │  └─ TrailWorkflowIssueRow                       [C Workflow Issue]
+│     │  │     └─ TrailCollectionRow                       [G]
+│     │  ├─ Board                                           [C Project Workspace]
+│     │  │  └─ TrailBoard / TrailBoardColumn               [G Board pattern]
+│     │  │     └─ TrailWorkflowIssueCard                   [C Workflow Issue]
+│     │  ├─ Selection / Status drag / Action Menu          [G interactions]
+│     │  ├─ TrailIssuePeek                                 [C Workflow Issue]
+│     │  ├─ TrailBulkBar / TrailConfirmation               [G patterns]
+│     │  ├─ TrailWorkflowIssueComposer                     [C creation]
+│     │  └─ Project Delete flow                            [L]
+│     │
+│     ├─ Cycles Root                                       [L Page]
+│     │  ├─ TrailPageHeader                                [G]
+│     │  ├─ TrailEmptyState                                [G]
+│     │  ├─ Previous -> TrailCollectionRow                 [G]
+│     │  └─ TrailCycleStart                                [C Cycle]
+│     │
+│     ├─ Cycle                                             [L Page]
+│     │  ├─ TrailPageHeader + breadcrumb                   [G]
+│     │  ├─ Cycle summary                                  [L]
+│     │  ├─ TrailCycleViewControls                         [C Cycle]
+│     │  │  └─ TrailViewBar                                [G]
+│     │  │     ├─ TrailCollectionFilter                    [G]
+│     │  │     └─ TrailViewLayoutSwitch                    [G; current only]
+│     │  ├─ Current List                                   [L]
+│     │  │  ├─ TrailGroupHeader                            [G]
+│     │  │  └─ TrailWorkflowIssueRow                       [C Workflow Issue]
+│     │  ├─ Current Board                                  [L Cycle geometry]
+│     │  │  └─ TrailCycleBoard                             [L]
+│     │  │     ├─ Project swimlanes                        [L]
+│     │  │     ├─ TrailStatusGlyph                         [G]
+│     │  │     └─ TrailWorkflowIssueCard                   [C Workflow Issue]
+│     │  ├─ Historical List                                [L]
+│     │  │  └─ TrailWorkflowIssueRow                       [C Workflow Issue]
+│     │  ├─ Selection / Status drag / TrailBulkBar         [G interactions/pattern]
+│     │  ├─ TrailIssuePeek                                 [C Workflow Issue]
+│     │  └─ TrailCycleAddIssues                            [C Cycle]
+│     │     └─ Filter / CollectionRow / Checkbox / semantic UI
+│     │
+│     ├─ Issue Full Item                                   [L Page]
+│     │  ├─ Page-owned breadcrumb                          [L composition]
+│     │  │  └─ TrailPageBreadcrumbButton                  [G]
+│     │  ├─ inline title editor                            [L]
+│     │  ├─ TrailMarkdownContent                           [G]
+│     │  └─ TrailIssueBodyEditor                           [L]
+│     │
+│     └─ Foundation Lab                                    [D]
+│        └─ consumes production owners for showroom/calibration only
+│
+└─ Right Sidebar
+   └─ TrailInspector carrier                               [G shell]
+      ├─ Initiative Inspector                              [L composition]
+      │  └─ Priority / Label / Optional Due property selects [G semantic controls]
+      ├─ Project Inspector                                 [L composition]
+      │  ├─ Status / Relation / Priority / Label / Due     [G semantic controls]
+      │  ├─ TrailProgress                                  [G]
+      │  └─ TrailSegmentedSummary                          [G]
+      ├─ Issue Inspector                                   [L composition]
+      │  └─ Status / Relation / Priority / Label / Due / Estimate [G semantic controls]
+      └─ Cycle Inspector                                   [L composition]
+         ├─ TrailProgress                                  [G]
+         ├─ TrailPropertyControl / TrailViewPopover        [G]
+         ├─ TrailConfirmation                              [G]
+         └─ TrailCycleStart                                [C Cycle]
+```
+
+The Board distinction is deliberate: Project Workspace Board consumes the shared `TrailBoard` / `TrailBoardColumn` geometry, while Current Cycle Board owns a separate two-dimensional Project-swimlane composition and only reuses lower-level semantic/card owners. A `TrailBoard` geometry change therefore does not imply that Current Cycle Board changes automatically; a `TrailWorkflowIssueCard` change does affect both.
+
+#### 4.4.2 Page composition matrix
+
+`Shared` lists production owners whose visual calibration can affect more than the Page-local wrapper. `Local` lists compositions that should not be generalized merely to make Pages look structurally similar.
+
+| Product Page | Shared shell/header | Shared collection/entity composition | Shared interaction/transient composition | Page-local composition |
+| --- | --- | --- | --- | --- |
+| Home | Workspace Frame / Page Surface; Page Header | Progress; Segmented Summary; Markdown content | Action Menu; Standard Composer family; Cycle Start | Home grid; This Week; Work Pulse arrangement; Lifecycle Activity; Work Trend; Weekly Meeting Notes workflow |
+| Triage | Workspace Frame / Page Surface; custom Page-owned header | View Bar; Collection Filter; Triage Row -> Collection Row; Priority/Labels/Due | View Popover; Standard Composer family | Queue/Review split; Review progression; review boundary/summary |
+| Projects Root | Workspace Frame / Page Surface; Page Header | View Bar; Filter; Layout Switch; Group Header; Project Summary Row -> Collection Row; Empty State | Selection; Project Action Registry; Context Menu; Bulk Bar; Project Composer | Initiative grouping composition; Project Timeline |
+| Initiative Focus | Workspace Frame / Page Surface; Page Header/breadcrumb; Page Narrative | View Bar; Filter; Project Summary Row -> Collection Row; Empty State | Selection; Project Action Registry; Context Menu; Bulk Bar; Project Composer | Initiative-scoped flat Project composition |
+| Project Workspace | Workspace Frame / Page Surface; Page Header/breadcrumb; Page Narrative | View Bar; Filter; Layout Switch; Group Header; Workflow Issue Row/Card; Collection Row; Board; Empty State | Selection; Status drag; Action Registry/Menu; Peek; Bulk Bar; Confirmation; Issue Composer | Project lifecycle composition; Project Delete flow; List-vs-Board assembly |
+| Cycles Root | Workspace Frame / Page Surface; Page Header | Collection Row; Empty State | Cycle Start | Current/Previous Cycle root composition |
+| Cycle | Workspace Frame / Page Surface; Page Header/breadcrumb | View Bar; Filter; Layout Switch; Group Header; Workflow Issue Row/Card; Collection Row; Empty State | Selection; Status drag; Peek; Bulk Bar; Add Issues | Cycle summary; Current Cycle Project-swimlane Board; Historical-vs-current assembly |
+| Issue Full Item | Workspace Frame / Page Surface; shared breadcrumb button only | Markdown content | shared host/editor mechanics only where adopted | document layout; inline title editing; body editor/read transition; save/error presentation |
+
+Persistent Inspector compositions are separate Right Sidebar surfaces rather than Main View Pages. The carrier is shared, while Initiative/Project/Issue/Cycle Inspector section composition remains surface-local and reuses shared property controls, Progress, Segmented Summary, Popover, Confirmation, and other lower-level owners where applicable.
+
+#### 4.4.3 Shared-owner regression map
+
+Use this reverse map before calibrating a shared owner. Every listed consumer is part of the visual regression surface for that owner even when consumption is nested through another production component.
+
+| Production owner | Scope | Product consumers to recheck |
+| --- | --- | --- |
+| Workspace Frame / Page Surface | [G] | every Main View Page; Foundation as development consumer |
+| Page Header | [G] | Home; Projects Root; Initiative Focus; Project Workspace; Cycles Root; Cycle |
+| Page Breadcrumb Button | [G] | Initiative Focus; Project Workspace; Cycle; Issue Full Item |
+| View Bar | [G] | Triage; Projects Root; Initiative Focus; Project Workspace; Cycle |
+| Collection Filter | [G] | Triage; Projects Root; Initiative Focus; Project Workspace; Cycle; Cycle Add Issues |
+| View Layout Switch | [G] | Projects Root; Project Workspace; Current Cycle |
+| Collection Row | [G] | Triage Queue through Triage Row; Projects Root/Initiative through Project Summary Row; Project/Cycle Lists through Workflow Issue Row; Cycles history; Cycle Start/Add Issues candidates |
+| Group Header | [G] | Projects Root Initiative groups; Project Workspace Status sections; Current Cycle List Status sections |
+| Empty State | [G] | Projects Root; Initiative Focus; Project Workspace; Cycles Root; Cycle |
+| Workflow Issue Row | [C Workflow Issue] | Project Workspace List; Current Cycle List; Historical Cycle List |
+| Workflow Issue Card | [C Workflow Issue] | Project Workspace Board; Current Cycle Board |
+| Project Summary Row | [C Project collection] | Projects Root; Initiative Focus |
+| Triage Row | [C Triage] | Triage Queue |
+| Progress | [G] | Projects Root/Initiative through Project Summary Row; Home Work Pulse; Project Inspector; Cycle Inspector |
+| Segmented Summary | [G] | Home Work Pulse; Project Inspector |
+| Status/Priority/Due/Label/Estimate semantic UI | [G] | collection rows/cards, relevant Filters, Standard Composers, and relevant Inspectors |
+| Standard Composer family | [C creation] | Home creation; Triage creation/Accept; Projects Root; Initiative Focus; Project Workspace |
+| Issue Peek | [C Workflow Issue] | Project Workspace; Cycle |
+| Bulk Bar | [G] | Projects Root; Initiative Focus; Project Workspace; Current Cycle |
+| Confirmation | [G] | destructive/lifecycle workflows that compose it, including Project Workspace Issue delete and Cycle close |
+| TrailBoard / TrailBoardColumn | [C Board] | Project Workspace Board only; Current Cycle Board does not consume this geometry owner |
+| TrailCycleStart | [C Cycle] | Home ordinary Start; Cycles Root ordinary Start; Cycle Inspector Close-and-start-next |
+| TrailHomeWidgetFrame | [C Home] | This Week; Work Pulse; Lifecycle Activity; Work Trend; Weekly Meeting Notes |
+| TrailInspector carrier | [G shell] | Initiative, Project, Issue, and Cycle Inspectors |
+| shared Inspector property controls | [G semantic controls] | Initiative, Project, and Issue Inspectors; corresponding Standard Composer/property-picker consumers where the same semantic control is reused |
+
+#### 4.4.4 Calibration impact rule
+
+For Stage 12 visual calibration and later UI maintenance:
+
+1. locate the visible defect in the Page composition tree;
+2. walk upward to the highest owner that actually owns the faulty semantic or mechanical responsibility;
+3. if multiple Pages share that owner, calibrate the shared owner and recheck every consumer listed above;
+4. if the defect belongs only to a Page-local composition, keep the change local rather than creating a universal abstraction;
+5. visually similar surfaces with different semantic/mechanical responsibilities remain separate and may only reuse lower-level owners;
+6. when a shared owner changes, Foundation should expose a representative production specimen where one exists, but Foundation never becomes the authority for Product behavior or Page composition.
+
+Examples:
+
+```text
+Project Workspace List + Cycle List both have wrong Issue row density
+-> inspect WorkflowIssueRow / CollectionRow before Page-local CSS
+
+Project Board + Cycle Board cards both have wrong metadata rhythm
+-> inspect WorkflowIssueCard / semantic owners
+
+only Current Cycle swimlane headers are wrong
+-> keep the correction inside TrailCycleBoard
+
+Triage and Issue Full Item headers differ from other Pages
+-> first decide whether the difference follows their accepted Page-local composition
+-> do not force TrailPageHeader merely for visual uniformity
+```
+
+Update this map when a production owner gains or loses a real consumer, when ownership moves between shared and local layers, or when an accepted composition changes. Pure pixel/color calibration that preserves ownership does not require rewriting the map.
+
 ## 5. Target Code Trees
 
 ### 5.1 Query
