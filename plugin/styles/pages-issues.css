@@ -268,15 +268,14 @@ body .trail-issue-full-item__body-editor.markdown-source-view.mod-cm6 .cm-gutter
   display: grid;
   min-width: 0;
   min-height: var(--trail-control-height-lg);
-  grid-template-columns: minmax(64px, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(64px, 72px) minmax(0, 1fr);
   align-items: center;
-  gap: var(--trail-space-6);
-  border-bottom: 1px solid var(--trail-row-divider);
+  gap: var(--trail-space-4);
 }
 
 .trail-issue-inspector__context-empty {
   min-width: 0;
-  justify-self: end;
+  justify-self: start;
   overflow: hidden;
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-supporting);
@@ -287,14 +286,16 @@ body .trail-issue-full-item__body-editor.markdown-source-view.mod-cm6 .cm-gutter
 .trail-issue-inspector__cycle-context {
   display: flex;
   min-width: 0;
+  width: 100%;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--trail-space-4);
+  justify-content: flex-start;
+  gap: var(--trail-space-3);
 }
 
 .trail-issue-inspector__cycle-range {
   display: flex;
   min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
   gap: var(--trail-space-2);
   overflow: hidden;

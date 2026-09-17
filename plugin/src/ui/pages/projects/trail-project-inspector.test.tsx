@@ -3,6 +3,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -57,9 +58,13 @@ describe("TrailProjectInspector", () => {
     expect(
       screen.getByRole("progressbar", { name: "Project progress" }),
     ).toHaveAttribute("aria-valuetext", "Unavailable");
-    expect(screen.getByText("Overdue").nextElementSibling).toHaveTextContent("0");
-    expect(screen.getByText("This week").nextElementSibling).toHaveTextContent("0");
-    expect(screen.getByText("Later").nextElementSibling).toHaveTextContent("0");
+    const attention = screen.getByRole("group", {
+      name: "Project temporal attention summary",
+    });
+    expect(attention).toHaveClass("trail-segmented-summary--inline");
+    expect(within(attention).getByLabelText("Overdue: 0")).toBeInTheDocument();
+    expect(within(attention).getByLabelText("This week: 0")).toBeInTheDocument();
+    expect(within(attention).getByLabelText("Later: 0")).toBeInTheDocument();
     expect(screen.getByText("No milestones")).toBeInTheDocument();
     expect(screen.queryByText("Project narrative")).not.toBeInTheDocument();
   });

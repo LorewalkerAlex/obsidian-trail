@@ -16,7 +16,7 @@
   box-shadow: none;
 }
 
-/* Persistent entity Inspectors share the same structured property geometry over shared controls. */
+/* Persistent entity Inspectors share one quiet metadata rhythm over shared controls. */
 .trail-initiative-inspector__section,
 .trail-project-inspector__section,
 .trail-issue-inspector__section {
@@ -45,18 +45,17 @@
   display: grid;
   min-width: 0;
   min-height: var(--trail-control-height-lg);
-  grid-template-columns: minmax(64px, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(64px, 72px) minmax(0, 1fr);
   align-items: center;
-  gap: var(--trail-space-6);
-  border-bottom: 1px solid var(--trail-row-divider);
+  gap: var(--trail-space-4);
 }
 
 .trail-initiative-inspector__property-label,
 .trail-project-inspector__property-label,
 .trail-issue-inspector__property-label {
   min-width: 0;
-  color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-supporting);
+  color: var(--trail-text-faint);
+  font-size: var(--trail-font-size-caption);
 }
 
 .trail-initiative-inspector__property-control,
@@ -64,7 +63,7 @@
 .trail-issue-inspector__property-control {
   display: flex;
   min-width: 0;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .trail-initiative-inspector__property-control > .trail-property-control,
@@ -72,6 +71,22 @@
 .trail-issue-inspector__property-control > .trail-property-control {
   max-width: 100%;
   min-width: 0;
+  padding-inline: 0 var(--trail-space-2);
+}
+
+body .trail-initiative-inspector__property-control > .trail-property-control:not(:hover):not(:focus-visible):not(:active):not([data-state="open"]),
+body .trail-project-inspector__property-control > .trail-property-control:not(:hover):not(:focus-visible):not(:active):not([data-state="open"]),
+body .trail-issue-inspector__property-control > .trail-property-control:not(:hover):not(:focus-visible):not(:active):not([data-state="open"]) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+body .trail-initiative-inspector__property-control > .trail-property-control:disabled,
+body .trail-project-inspector__property-control > .trail-property-control:disabled,
+body .trail-issue-inspector__property-control > .trail-property-control:disabled {
+  border-color: transparent;
+  background: transparent;
 }
 
 .trail-initiative-inspector__feedback,

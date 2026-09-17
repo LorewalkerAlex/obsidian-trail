@@ -345,6 +345,7 @@ export function TrailProjectInspector({
       <section aria-label="Project temporal attention" className="trail-project-inspector__section">
         <h3 className="trail-project-inspector__section-title">Attention</h3>
         <TrailSegmentedSummary
+          appearance="inline"
           label="Project temporal attention summary"
           segments={[
             {
