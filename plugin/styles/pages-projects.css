@@ -4,7 +4,7 @@
 }
 
 .trail-projects-page__group + .trail-projects-page__group {
-  margin-top: var(--trail-space-8);
+  margin-top: 0;
 }
 
 .trail-initiative-page__content {
@@ -113,25 +113,14 @@
 
 .trail-project-workspace-page__sections {
   display: grid;
-  gap: var(--trail-space-2);
+  gap: 0;
 }
 
 .trail-project-workspace-page__status-section {
   min-width: 0;
 }
 
-.trail-project-workspace-page__status-section > .trail-group-header {
-  min-height: 30px;
-  padding-right: var(--trail-space-8);
-  padding-left: var(--trail-space-7);
-  border-bottom: 0;
-}
-
-.trail-project-workspace-page__status-section > .trail-group-header .trail-group-header__identity {
-  color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-supporting);
-  font-weight: var(--trail-weight-medium);
-}
+/* TrailGroupHeader owns structural-band geometry and identity typography. */
 
 .trail-project-workspace-page__status-section[data-empty="true"] > .trail-group-header .trail-group-header__identity,
 .trail-project-workspace-page__status-section[data-empty="true"] > .trail-group-header .trail-group-header__disclosure {

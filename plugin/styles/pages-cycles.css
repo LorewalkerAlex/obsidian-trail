@@ -261,25 +261,14 @@ body button.trail-cycle-board__lane-title--action:focus-visible {
 
 .trail-cycle-page__sections {
   display: grid;
-  gap: var(--trail-space-2);
+  gap: 0;
 }
 
 .trail-cycle-page__status-section {
   min-width: 0;
 }
 
-.trail-cycle-page__status-section > .trail-group-header {
-  min-height: 30px;
-  padding-right: var(--trail-space-8);
-  padding-left: var(--trail-space-7);
-  border-bottom: 0;
-}
-
-.trail-cycle-page__status-section > .trail-group-header .trail-group-header__identity {
-  color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-supporting);
-  font-weight: var(--trail-weight-medium);
-}
+/* TrailGroupHeader owns structural-band geometry and identity typography. */
 
 .trail-cycle-page__status-section[data-empty="true"] > .trail-group-header .trail-group-header__identity,
 .trail-cycle-page__status-section[data-empty="true"] > .trail-group-header .trail-group-header__disclosure {

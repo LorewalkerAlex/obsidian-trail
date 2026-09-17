@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 type NativeGroupHeaderProps = Omit<
   ComponentPropsWithRef<"div">,
@@ -9,6 +9,7 @@ export type TrailGroupHeaderProps = NativeGroupHeaderProps & {
   readonly count: number;
   readonly expanded: boolean;
   readonly label: string;
+  readonly leading?: ReactNode;
   readonly onExpandedChange: (expanded: boolean) => void;
   readonly onIdentityActivate?: () => void;
 };
@@ -30,6 +31,7 @@ export function TrailGroupHeader({
   count,
   expanded,
   label,
+  leading,
   onExpandedChange,
   onIdentityActivate,
   ...props
@@ -50,19 +52,23 @@ export function TrailGroupHeader({
         <TrailGroupDisclosureIcon />
       </button>
 
-      {onIdentityActivate === undefined ? (
-        <span className="trail-group-header__identity">{label}</span>
-      ) : (
-        <button
-          className="trail-group-header__identity trail-group-header__identity--action"
-          onClick={onIdentityActivate}
-          type="button"
-        >
-          {label}
-        </button>
-      )}
-
-      <span className="trail-group-header__count">{count}</span>
+      <div className="trail-group-header__summary">
+        {leading === undefined || leading === null ? null : (
+          <span className="trail-group-header__leading">{leading}</span>
+        )}
+        {onIdentityActivate === undefined ? (
+          <span className="trail-group-header__identity">{label}</span>
+        ) : (
+          <button
+            className="trail-group-header__identity trail-group-header__identity--action"
+            onClick={onIdentityActivate}
+            type="button"
+          >
+            {label}
+          </button>
+        )}
+        <span className="trail-group-header__count">{count}</span>
+      </div>
     </div>
   );
 }

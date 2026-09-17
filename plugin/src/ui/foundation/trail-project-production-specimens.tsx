@@ -269,6 +269,7 @@ export function TrailProjectProductionSpecimens() {
               count={3}
               expanded
               label="In progress"
+              leading={<TrailStatusGlyph category="started" decorative />}
               onExpandedChange={() => { /* static composition */ }}
             />
             <TrailWorkflowIssueRow
@@ -312,6 +313,7 @@ export function TrailProjectProductionSpecimens() {
               count={0}
               expanded
               label="Todo"
+              leading={<TrailStatusGlyph category="unstarted" decorative />}
               onExpandedChange={() => { /* static composition */ }}
             />
           </section>
@@ -329,6 +331,7 @@ export function TrailProjectProductionSpecimens() {
             count={2}
             expanded
             label="In progress"
+            leading={<TrailStatusGlyph category="started" decorative />}
             onExpandedChange={() => { /* static composition */ }}
           />
           <TrailWorkflowIssueRow

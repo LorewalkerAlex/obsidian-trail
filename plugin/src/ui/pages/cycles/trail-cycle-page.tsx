@@ -16,6 +16,7 @@ import {
   type TrailWorkflowIssueStatusDragItemReadModel,
 } from "../../../query/shared/trail-workflow-issue-status-drag-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
+import { TrailStatusGlyph } from "../../entities/trail-status";
 import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
 import {
@@ -136,6 +137,7 @@ function TrailCycleStatusSection({
         count={section.issues.length}
         expanded={!collapsed}
         label={section.label}
+        leading={<TrailStatusGlyph category={section.category} decorative />}
         onExpandedChange={onExpandedChange}
       />
       {collapsed ? null : section.issues.map((issue) => (
