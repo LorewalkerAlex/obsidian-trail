@@ -228,8 +228,9 @@ body button.trail-triage-row__title-button:focus-visible {
 .trail-triage-row__due {
   flex: 0 0 48px;
   justify-content: flex-start;
-  color: var(--trail-text-muted);
-  font-size: var(--trail-font-size-caption);
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-collection-secondary-font-size);
+  opacity: var(--trail-collection-secondary-opacity);
 }
 
 .trail-label-select,

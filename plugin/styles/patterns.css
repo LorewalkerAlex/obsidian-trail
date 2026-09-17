@@ -9,11 +9,22 @@
   --trail-collection-identity-line-height: 1.25;
   --trail-collection-identity-letter-spacing: -0.003em;
   --trail-collection-semantic-slot-size: 18px;
+  --trail-collection-primary-opacity: 0.97;
+  --trail-collection-group-opacity: 0.92;
+  --trail-collection-secondary-font-size: var(--trail-font-size-control);
+  --trail-collection-secondary-opacity: 0.9;
+  --trail-collection-hover-surface: var(--trail-control-surface-hover);
+  --trail-collection-group-surface: var(--trail-surface-disabled);
+  --trail-collection-surface-inset: var(--trail-space-2);
+  --trail-collection-surface-radius: var(--trail-radius-sm);
+  --trail-collection-group-surface-radius: var(--trail-radius-xs);
   --trail-semantic-glyph-size: var(--trail-icon-size-lg);
 }
 
 .trail-collection-row {
   box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
   display: flex;
   min-width: 0;
   min-height: 40px;
@@ -21,9 +32,28 @@
   gap: var(--trail-collection-row-gap);
   padding: 0 var(--trail-space-8);
   border-bottom: 1px solid transparent;
+  outline: 0;
+  background: transparent;
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-supporting);
-  transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
+  transition: color var(--trail-motion-fast);
+}
+
+.trail-collection-row::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0 var(--trail-collection-surface-inset);
+  border-radius: var(--trail-collection-surface-radius);
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+  transition: background-color var(--trail-motion-fast), box-shadow var(--trail-motion-fast);
+}
+
+.trail-collection-row > * {
+  position: relative;
+  z-index: 1;
 }
 
 .trail-collection-row__primary-identity,
@@ -34,17 +64,37 @@ body button.trail-collection-row__primary-identity {
   font-weight: var(--trail-collection-identity-font-weight);
   letter-spacing: var(--trail-collection-identity-letter-spacing);
   line-height: var(--trail-collection-identity-line-height);
+  opacity: var(--trail-collection-primary-opacity);
+  transition: color var(--trail-motion-fast), opacity var(--trail-motion-fast);
 }
 
 .trail-collection-row:hover,
 .trail-collection-row[data-trail-visual-state="hover"],
 .trail-collection-row[data-highlighted="true"],
 .trail-collection-row:focus-visible {
-  background: var(--trail-state-hover);
   color: var(--trail-text-secondary);
 }
 
-.trail-collection-row[data-selected="true"] {
+.trail-collection-row:hover::before,
+.trail-collection-row[data-trail-visual-state="hover"]::before,
+.trail-collection-row[data-highlighted="true"]::before,
+.trail-collection-row:focus-visible::before {
+  background: var(--trail-collection-hover-surface);
+}
+
+.trail-collection-row:hover .trail-collection-row__primary-identity,
+.trail-collection-row[data-trail-visual-state="hover"] .trail-collection-row__primary-identity,
+.trail-collection-row[data-highlighted="true"] .trail-collection-row__primary-identity,
+.trail-collection-row[data-selected="true"] .trail-collection-row__primary-identity,
+.trail-collection-row:focus-visible .trail-collection-row__primary-identity {
+  opacity: 1;
+}
+
+.trail-collection-row:focus-visible::before {
+  box-shadow: inset 0 0 0 1px var(--trail-focus-ring-quiet);
+}
+
+.trail-collection-row[data-selected="true"]::before {
   background: var(--trail-state-accent-soft);
 }
 
@@ -920,9 +970,11 @@ body [data-trail-transient-layer="modal-child"].trail-due-select {
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.035);
 }
 
-/* Group headers are tonal structural planes. Their semantic identity aligns with the row's leading scan anchor. */
+/* Group headers are inset tonal planes from the same surface family as row interaction states. */
 .trail-group-header {
   box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
   display: grid;
   min-width: 0;
   min-height: 36px;
@@ -930,9 +982,24 @@ body [data-trail-transient-layer="modal-child"].trail-due-select {
   align-items: center;
   gap: var(--trail-space-6);
   padding: 0 var(--trail-space-8);
-  background: var(--trail-surface-elevated);
+  background: transparent;
   box-shadow: none;
   color: var(--trail-text-primary);
+}
+
+.trail-group-header::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: var(--trail-space-1) var(--trail-collection-surface-inset) 0;
+  border-radius: var(--trail-collection-group-surface-radius);
+  background: var(--trail-collection-group-surface);
+  pointer-events: none;
+}
+
+.trail-group-header > * {
+  position: relative;
+  z-index: 1;
 }
 
 body button.trail-group-header__disclosure,
@@ -1018,7 +1085,9 @@ body button.trail-group-header__identity--action {
   font-weight: var(--trail-collection-identity-font-weight);
   letter-spacing: var(--trail-collection-identity-letter-spacing);
   line-height: var(--trail-collection-identity-line-height);
+  opacity: var(--trail-collection-group-opacity);
   text-overflow: ellipsis;
+  transition: color var(--trail-motion-fast), opacity var(--trail-motion-fast);
   white-space: nowrap;
 }
 
@@ -1032,14 +1101,16 @@ body button.trail-group-header__identity--action {
 body button.trail-group-header__identity--action:hover,
 body button.trail-group-header__identity--action:focus-visible {
   color: var(--trail-text-primary);
+  opacity: 1;
 }
 
 .trail-group-header__count {
   flex: 0 0 auto;
-  color: var(--trail-text-muted);
+  color: var(--trail-text-secondary);
   font-size: var(--trail-font-size-control);
   font-variant-numeric: tabular-nums;
   font-weight: var(--trail-weight-regular);
+  opacity: 0.82;
 }
 
 /* Empty-state geometry is shared; Page/Query own why the collection is empty and what recovery means. */
