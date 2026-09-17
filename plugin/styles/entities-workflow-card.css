@@ -4,31 +4,41 @@
   box-sizing: border-box;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--trail-border-subtle);
-  border-radius: var(--trail-radius-sm);
+  border: 1px solid var(--trail-border-default);
+  border-radius: var(--trail-radius-md);
   outline: 0;
-  background: var(--trail-control-surface);
+  background: var(--trail-surface-elevated);
   color: var(--trail-text-secondary);
-  transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), opacity var(--trail-motion-fast);
+  transition: background-color var(--trail-motion-fast), border-color var(--trail-motion-fast), box-shadow var(--trail-motion-fast), opacity var(--trail-motion-fast);
 }
 
 .trail-workflow-issue-card:hover,
-.trail-workflow-issue-card[data-highlighted="true"],
-.trail-workflow-issue-card:focus-visible {
+.trail-workflow-issue-card[data-highlighted="true"] {
   border-color: var(--trail-control-border-hover);
-  background: var(--trail-control-surface-hover);
+  background: var(--trail-surface-hover);
+}
+
+.trail-workflow-issue-card:focus-visible {
+  border-color: var(--trail-focus-border);
+  background: var(--trail-surface-hover);
+  box-shadow: 0 0 0 2px var(--trail-focus-ring-quiet);
 }
 
 .trail-workflow-issue-card[data-selected="true"] {
-  border-color: var(--trail-control-border);
+  border-color: var(--trail-accent-border);
   background: var(--trail-state-accent-soft);
+}
+
+.trail-workflow-issue-card[data-selected="true"]:hover,
+.trail-workflow-issue-card[data-selected="true"][data-highlighted="true"] {
+  border-color: var(--trail-accent-border-hover);
 }
 
 .trail-workflow-issue-card__selection {
   position: absolute;
   z-index: 1;
-  top: var(--trail-space-4);
-  right: var(--trail-space-4);
+  top: var(--trail-space-6);
+  right: var(--trail-space-6);
   display: inline-grid;
   width: var(--trail-icon-size-md);
   height: var(--trail-icon-size-md);
@@ -50,30 +60,15 @@
 .trail-workflow-issue-card__drag-surface {
   display: grid;
   min-width: 0;
-  gap: var(--trail-space-7);
-  padding: var(--trail-space-6);
+  min-height: 88px;
+  align-content: space-between;
+  gap: var(--trail-space-8);
+  padding: var(--trail-space-8) var(--trail-space-9) var(--trail-space-8);
 }
 
 .trail-workflow-issue-card__heading {
-  display: grid;
   min-width: 0;
-  grid-template-columns: 14px minmax(0, 1fr);
-  align-items: start;
-  gap: var(--trail-space-5);
-  padding-right: var(--trail-space-8);
-}
-
-.trail-workflow-issue-card__priority {
-  display: inline-grid;
-  width: 14px;
-  height: var(--trail-icon-size-sm);
-  place-items: center;
-  color: var(--trail-text-muted);
-}
-
-.trail-workflow-issue-card__priority .trail-priority-glyph {
-  width: var(--trail-icon-size-sm);
-  height: var(--trail-icon-size-sm);
+  padding-right: var(--trail-space-14);
 }
 
 .trail-workflow-issue-card__title {
@@ -90,45 +85,75 @@
 }
 
 .trail-workflow-issue-card__metadata {
-  display: grid;
+  display: flex;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+  min-height: 22px;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--trail-space-4);
+  align-content: flex-start;
+  gap: var(--trail-space-3);
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-caption);
+  line-height: 1;
 }
 
-.trail-workflow-issue-card__milestone,
-.trail-workflow-issue-card__labels,
-.trail-workflow-issue-card__cycle,
-.trail-workflow-issue-card__estimate,
-.trail-workflow-issue-card__due {
+.trail-workflow-issue-card__property {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-width: 0;
+  height: 22px;
+  max-width: 100%;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--trail-space-3);
+  padding: 0 var(--trail-space-4);
+  overflow: hidden;
+  border: 1px solid var(--trail-border-subtle);
+  border-radius: var(--trail-radius-xs);
+  background: var(--trail-control-surface);
+  color: var(--trail-text-muted);
+  white-space: nowrap;
+}
+
+.trail-workflow-issue-card__property--priority {
+  width: 22px;
+  flex: 0 0 22px;
+  justify-content: center;
+  padding: 0;
+}
+
+.trail-workflow-issue-card__property--priority .trail-priority-glyph {
+  width: var(--trail-icon-size-sm);
+  height: var(--trail-icon-size-sm);
+}
+
+.trail-workflow-issue-card__property--labels {
+  max-width: min(148px, 56%);
+}
+
+.trail-workflow-issue-card__property--labels .trail-label-dots {
+  flex: 0 0 auto;
+}
+
+.trail-workflow-issue-card__property--milestone {
+  max-width: min(168px, 68%);
+}
+
+.trail-workflow-issue-card__property--cycle,
+.trail-workflow-issue-card__property--estimate,
+.trail-workflow-issue-card__property--due {
+  flex: 0 0 auto;
+}
+
+.trail-workflow-issue-card__property--estimate {
+  justify-content: center;
+}
+
+.trail-workflow-issue-card__property-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.trail-workflow-issue-card__milestone {
-  min-height: 1em;
-}
-
-.trail-workflow-issue-card__labels,
-.trail-workflow-issue-card__cycle,
-.trail-workflow-issue-card__estimate,
-.trail-workflow-issue-card__due {
-  display: inline-flex;
-  align-items: center;
-}
-
-.trail-workflow-issue-card__estimate {
-  justify-content: center;
-}
-
-.trail-workflow-issue-card__due {
-  justify-content: flex-end;
-  text-align: right;
 }
 
 [data-status-drag-enabled="true"] [data-status-drag-available="true"] {

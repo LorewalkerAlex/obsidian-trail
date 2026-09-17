@@ -8,14 +8,17 @@ import { describe, expect, it, vi } from "vitest";
 import { TrailWorkflowIssueCard } from "./trail-workflow-issue-card";
 
 describe("TrailWorkflowIssueCard", () => {
-  it("keeps Board scanning detail compact and leaves Status to the enclosing column", () => {
+  it("keeps Status in the enclosing column and presents Board properties in a passive rail", () => {
     const { container } = render(
       <TrailWorkflowIssueCard
         due={Date.UTC(2026, 8, 18, 9)}
         estimate="large"
         inCurrentCycle
         issueId="issue-a"
-        labels={[{ groupId: "group-a", id: "label-a", name: "Design" }]}
+        labels={[
+          { groupId: "group-a", id: "label-a", name: "Design" },
+          { groupId: "group-a", id: "label-b", name: "Navigation" },
+        ]}
         milestoneTitle="Workspace pass"
         priority="urgent"
         timezone="UTC"
@@ -25,27 +28,34 @@ describe("TrailWorkflowIssueCard", () => {
 
     expect(screen.getByText("Build the Project board")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Urgent priority" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Labels: Design, Navigation" })).toBeInTheDocument();
+    expect(screen.getByText("Design +1")).toBeInTheDocument();
     expect(screen.getByText("Workspace pass")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Labels: Design" })).toBeInTheDocument();
     expect(screen.getByLabelText("In current cycle")).toHaveTextContent("Current");
     expect(screen.getByLabelText("Large estimate")).toHaveTextContent("L");
     expect(screen.getByLabelText("September 18, 2026")).toBeInTheDocument();
+    expect(container.querySelector(".trail-workflow-issue-card__heading .trail-priority-glyph"))
+      .toBeNull();
+    expect(container.querySelector(".trail-workflow-issue-card__metadata .trail-priority-glyph"))
+      .not.toBeNull();
     expect(container.querySelector(".trail-status-glyph")).toBeNull();
     expect(container.querySelector("[data-workflow-issue-drag-handle='true']"))
       .not.toBeNull();
+    expect(container.querySelector(".trail-workflow-issue-card__metadata button")).toBeNull();
   });
 
-  it("separates selection, activation, Space preview, and X selection shortcut", () => {
+  it("keeps property badges inside ordinary Card activation while separating selection and shortcuts", () => {
     const onActivate = vi.fn();
     const onPreviewToggle = vi.fn();
     const onSelectionChange = vi.fn();
     const { container } = render(
       <TrailWorkflowIssueCard
         issueId="issue-a"
-        labels={[]}
+        labels={[{ groupId: "group-a", id: "label-a", name: "Design" }]}
         onActivate={onActivate}
         onPreviewToggle={onPreviewToggle}
         onSelectionChange={onSelectionChange}
+        priority="high"
         timezone="UTC"
         title="Interactive card"
       />,
@@ -62,6 +72,10 @@ describe("TrailWorkflowIssueCard", () => {
 
     fireEvent.click(screen.getByText("Interactive card"));
     expect(onActivate).toHaveBeenCalledTimes(1);
+    expect(card).toHaveFocus();
+
+    fireEvent.click(screen.getByText("Design"));
+    expect(onActivate).toHaveBeenCalledTimes(2);
     expect(card).toHaveFocus();
 
     fireEvent.keyDown(card, { key: " " });

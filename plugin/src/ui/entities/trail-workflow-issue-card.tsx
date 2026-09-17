@@ -35,6 +35,13 @@ export interface TrailWorkflowIssueCardProps {
   readonly title: string;
 }
 
+function orderedLabels(labels: readonly TrailLabel[]): readonly TrailLabel[] {
+  return [...labels].sort((left, right) => {
+    const nameOrder = left.name.localeCompare(right.name);
+    return nameOrder !== 0 ? nameOrder : left.id.localeCompare(right.id);
+  });
+}
+
 export function TrailWorkflowIssueCard({
   due,
   estimate,
@@ -52,6 +59,9 @@ export function TrailWorkflowIssueCard({
   title,
 }: TrailWorkflowIssueCardProps) {
   const interactive = onActivate !== undefined || onPreviewToggle !== undefined;
+  const cardLabels = orderedLabels(labels);
+  const firstLabel = cardLabels[0];
+  const labelNames = cardLabels.map((label) => label.name).join(", ");
   const handleActivate: MouseEventHandler<HTMLDivElement> = (event) => {
     event.currentTarget.closest<HTMLElement>("[data-workflow-issue-card='true']")
       ?.focus({ preventScroll: true });
@@ -109,37 +119,62 @@ export function TrailWorkflowIssueCard({
         onClick={onActivate === undefined ? undefined : handleActivate}
       >
         <div className="trail-workflow-issue-card__heading">
-          <span
-            className="trail-workflow-issue-card__priority"
-            title={priority === undefined
-              ? undefined
-              : getTrailPriorityPresentation(priority).label}
-          >
-            {priority === undefined ? null : <TrailPriorityGlyph priority={priority} />}
-          </span>
           <span className="trail-workflow-issue-card__title" title={title}>{title}</span>
         </div>
 
         <div className="trail-workflow-issue-card__metadata">
-          <span className="trail-workflow-issue-card__milestone" title={milestoneTitle}>
-            {milestoneTitle}
-          </span>
-          <span className="trail-workflow-issue-card__labels">
-            {labels.length === 0 ? null : <TrailLabelDots labels={labels} />}
-          </span>
-          <span className="trail-workflow-issue-card__cycle">
-            {inCurrentCycle ? (
-              <span aria-label="In current cycle" title="In current cycle">Current</span>
-            ) : null}
-          </span>
-          <span className="trail-workflow-issue-card__estimate">
-            {estimate === undefined ? null : <TrailEstimateValue estimate={estimate} />}
-          </span>
-          <span className="trail-workflow-issue-card__due">
-            {due === undefined ? null : (
+          {priority === undefined ? null : (
+            <span
+              className="trail-workflow-issue-card__property trail-workflow-issue-card__property--priority"
+              title={getTrailPriorityPresentation(priority).label}
+            >
+              <TrailPriorityGlyph priority={priority} />
+            </span>
+          )}
+
+          {firstLabel === undefined ? null : (
+            <span
+              className="trail-workflow-issue-card__property trail-workflow-issue-card__property--labels"
+              title={labelNames}
+            >
+              <TrailLabelDots labels={cardLabels} />
+              <span aria-hidden="true" className="trail-workflow-issue-card__property-text">
+                {firstLabel.name}
+                {cardLabels.length > 1 ? ` +${cardLabels.length - 1}` : null}
+              </span>
+            </span>
+          )}
+
+          {milestoneTitle === undefined ? null : (
+            <span
+              className="trail-workflow-issue-card__property trail-workflow-issue-card__property--milestone"
+              title={milestoneTitle}
+            >
+              <span className="trail-workflow-issue-card__property-text">{milestoneTitle}</span>
+            </span>
+          )}
+
+          {inCurrentCycle ? (
+            <span
+              aria-label="In current cycle"
+              className="trail-workflow-issue-card__property trail-workflow-issue-card__property--cycle"
+              title="In current cycle"
+            >
+              Current
+            </span>
+          ) : null}
+
+          {estimate === undefined ? null : (
+            <span className="trail-workflow-issue-card__property trail-workflow-issue-card__property--estimate">
+              <TrailEstimateValue estimate={estimate} />
+            </span>
+          )}
+
+          {due === undefined ? null : (
+            <span className="trail-workflow-issue-card__property trail-workflow-issue-card__property--due">
               <TrailDueDate timestamp={due} timezone={timezone} />
-            )}
-          </span>
+            </span>
+          )}
         </div>
       </div>
     </article>
