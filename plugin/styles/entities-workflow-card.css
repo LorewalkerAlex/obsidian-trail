@@ -75,8 +75,9 @@
   min-width: 0;
   overflow: hidden;
   color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-body);
+  font-size: var(--trail-font-size-section);
   font-weight: var(--trail-weight-medium);
+  letter-spacing: -0.003em;
   line-height: 1.35;
   text-overflow: ellipsis;
   display: -webkit-box;
