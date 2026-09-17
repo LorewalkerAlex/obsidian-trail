@@ -1,6 +1,17 @@
 /* Foundation can force pseudo-states through data-trail-visual-state for deterministic
  * visual comparison. Forced states always share the production selector declaration. */
 
+/* Collection roles expose one optical contract; entity rows choose content and metadata, not scale. */
+.trail-collection-row,
+.trail-group-header {
+  --trail-collection-identity-font-size: var(--trail-font-size-section);
+  --trail-collection-identity-font-weight: var(--trail-weight-medium);
+  --trail-collection-identity-line-height: 1.25;
+  --trail-collection-identity-letter-spacing: -0.003em;
+  --trail-collection-semantic-slot-size: 18px;
+  --trail-semantic-glyph-size: var(--trail-icon-size-lg);
+}
+
 .trail-collection-row {
   box-sizing: border-box;
   display: flex;
@@ -13,6 +24,16 @@
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-supporting);
   transition: background-color var(--trail-motion-fast), color var(--trail-motion-fast);
+}
+
+.trail-collection-row__primary-identity,
+body button.trail-collection-row__primary-identity {
+  color: var(--trail-text-primary);
+  font-family: inherit;
+  font-size: var(--trail-collection-identity-font-size);
+  font-weight: var(--trail-collection-identity-font-weight);
+  letter-spacing: var(--trail-collection-identity-letter-spacing);
+  line-height: var(--trail-collection-identity-line-height);
 }
 
 .trail-collection-row:hover,
@@ -30,9 +51,9 @@
 .trail-collection-row__selection,
 .trail-collection-row__leading {
   display: inline-grid;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
+  width: var(--trail-collection-semantic-slot-size);
+  height: var(--trail-collection-semantic-slot-size);
+  flex: 0 0 var(--trail-collection-semantic-slot-size);
   place-items: center;
 }
 
@@ -905,7 +926,7 @@ body [data-trail-transient-layer="modal-child"].trail-due-select {
   display: grid;
   min-width: 0;
   min-height: 36px;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr);
   align-items: center;
   gap: var(--trail-space-6);
   padding: 0 var(--trail-space-8);
@@ -924,13 +945,13 @@ body button.trail-group-header__identity--action {
   background: transparent;
   background-image: none;
   box-shadow: none;
-  font: inherit;
+  font-family: inherit;
 }
 
 body button.trail-group-header__disclosure {
   display: inline-grid;
-  width: 18px;
-  height: 18px;
+  width: var(--trail-collection-semantic-slot-size);
+  height: var(--trail-collection-semantic-slot-size);
   padding: 0;
   border-radius: var(--trail-radius-xs);
   color: var(--trail-text-muted);
@@ -974,45 +995,38 @@ body button.trail-group-header__identity--action:focus-visible {
 
 .trail-group-header__leading {
   display: inline-grid;
-  width: var(--trail-icon-size-lg);
-  height: var(--trail-icon-size-lg);
-  flex: 0 0 var(--trail-icon-size-lg);
+  width: var(--trail-collection-semantic-slot-size);
+  height: var(--trail-collection-semantic-slot-size);
+  flex: 0 0 var(--trail-collection-semantic-slot-size);
   color: var(--trail-text-secondary);
   place-items: center;
 }
 
 .trail-group-header__leading > svg {
-  width: 100%;
-  height: 100%;
+  width: var(--trail-semantic-glyph-size);
+  height: var(--trail-semantic-glyph-size);
 }
 
-.trail-group-header__identity {
+.trail-group-header__identity,
+body button.trail-group-header__identity--action {
   min-width: 0;
+  max-width: 100%;
   flex: 0 1 auto;
   overflow: hidden;
   color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-section);
-  font-weight: var(--trail-weight-medium);
-  line-height: 1.2;
+  font-size: var(--trail-collection-identity-font-size);
+  font-weight: var(--trail-collection-identity-font-weight);
+  letter-spacing: var(--trail-collection-identity-letter-spacing);
+  line-height: var(--trail-collection-identity-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 body button.trail-group-header__identity--action {
   display: block;
-  min-width: 0;
-  max-width: 100%;
-  flex: 0 1 auto;
   padding: 0;
-  overflow: hidden;
   border-radius: 2px;
-  color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-section);
-  font-weight: var(--trail-weight-medium);
-  line-height: 1.2;
   text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 body button.trail-group-header__identity--action:hover,

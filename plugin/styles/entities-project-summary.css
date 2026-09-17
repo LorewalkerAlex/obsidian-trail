@@ -1,46 +1,85 @@
-/* Project Summary rows use the same collection optical scale while progressively disclosing secondary scan facts. */
+/* Project Summary rows own Project-specific composition over the shared collection optical contract. */
 .trail-collection-row[data-project-summary-row="true"] {
   border-bottom-color: transparent;
 }
 
-.trail-collection-row[data-project-summary-row="true"] > .trail-collection-row__leading .trail-status-glyph {
-  width: var(--trail-icon-size-lg);
-  height: var(--trail-icon-size-lg);
-}
-
 .trail-project-summary-row__content {
-  grid-template-columns: minmax(0, 1fr) 18px minmax(72px, 88px) 56px;
+  display: grid;
+  min-width: 0;
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--trail-collection-semantic-slot-size)
+    minmax(72px, 88px)
+    56px;
+  align-items: center;
   gap: var(--trail-space-6);
 }
 
 .trail-project-summary-row__title {
-  color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-section);
-  font-weight: var(--trail-weight-medium);
-  letter-spacing: -0.003em;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body button.trail-project-summary-row__title-button {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+body button.trail-project-summary-row__title-button:focus-visible {
+  border-radius: var(--trail-radius-xs);
+  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
 }
 
 .trail-project-summary-row__priority {
-  width: var(--trail-icon-size-lg);
-  height: var(--trail-icon-size-lg);
+  display: inline-grid;
+  width: var(--trail-collection-semantic-slot-size);
+  height: var(--trail-collection-semantic-slot-size);
+  place-items: center;
   color: var(--trail-text-muted);
 }
 
-.trail-project-summary-row__priority .trail-priority-glyph {
-  width: var(--trail-icon-size-lg);
-  height: var(--trail-icon-size-lg);
-}
-
 .trail-project-summary-row__progress {
+  display: block;
+  width: 100%;
+  min-width: 0;
   opacity: 0.8;
 }
 
 .trail-project-summary-row__due {
+  min-width: 0;
+  overflow: hidden;
   justify-self: end;
   color: var(--trail-text-secondary);
   font-size: var(--trail-font-size-control);
+  font-variant-numeric: tabular-nums;
   opacity: 0.78;
   text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] .trail-project-summary-row__title {
+  color: var(--trail-text-secondary);
+}
+
+.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] .trail-project-summary-row__priority,
+.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] .trail-project-summary-row__progress {
+  opacity: 0.72;
 }
 
 .trail-collection-row[data-project-summary-row="true"]:hover .trail-project-summary-row__priority,
@@ -58,7 +97,10 @@
 /* In the common Obsidian work pane, Project identity, priority, and due scanning outrank the progress bar. */
 @container (max-width: 1080px) {
   .trail-project-summary-row__content {
-    grid-template-columns: minmax(0, 1fr) 18px 56px;
+    grid-template-columns:
+      minmax(0, 1fr)
+      var(--trail-collection-semantic-slot-size)
+      56px;
   }
 
   .trail-project-summary-row__progress {
@@ -68,7 +110,7 @@
 
 @container (max-width: 760px) {
   .trail-project-summary-row__content {
-    grid-template-columns: minmax(0, 1fr) 18px;
+    grid-template-columns: minmax(0, 1fr) var(--trail-collection-semantic-slot-size);
   }
 
   .trail-project-summary-row__due {

@@ -25,6 +25,8 @@ describe("TrailWorkflowIssueRow", () => {
     );
 
     expect(screen.getByText("Establish workspace page composition")).toBeInTheDocument();
+    expect(screen.getByText("Establish workspace page composition"))
+      .toHaveClass("trail-collection-row__primary-identity");
     expect(screen.getByRole("img", { name: "In Progress status" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Urgent priority" })).toBeInTheDocument();
     expect(screen.getByText("Workspace pass")).toBeInTheDocument();

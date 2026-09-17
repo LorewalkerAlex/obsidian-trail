@@ -56,10 +56,10 @@ export function TrailTriageRow({
     >
       <div className="trail-triage-row__content">
         {onActivate === undefined ? (
-          <span className="trail-triage-row__title">{title}</span>
+          <span className="trail-collection-row__primary-identity trail-triage-row__title">{title}</span>
         ) : (
           <button
-            className="trail-triage-row__title trail-triage-row__title-button"
+            className="trail-collection-row__primary-identity trail-triage-row__title trail-triage-row__title-button"
             onClick={activate}
             type="button"
           >

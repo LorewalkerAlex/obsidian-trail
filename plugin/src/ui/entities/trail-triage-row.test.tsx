@@ -18,6 +18,8 @@ describe("TrailTriageRow", () => {
 
     expect(row).toHaveClass("trail-collection-row");
     expect(row).toHaveAttribute("data-triage-row", "true");
+    expect(screen.getByText("Refine intake flow"))
+      .toHaveClass("trail-collection-row__primary-identity");
     expect(screen.getByRole("img", { name: "High priority" })).toBeInTheDocument();
     expect(screen.getByTitle("High")).toHaveClass("trail-triage-row__priority");
     expect(screen.getByText("Design")).toBeInTheDocument();

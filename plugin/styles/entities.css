@@ -2,8 +2,8 @@
 
 .trail-priority-glyph {
   display: block;
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
+  width: var(--trail-semantic-glyph-size, var(--trail-icon-size-md));
+  height: var(--trail-semantic-glyph-size, var(--trail-icon-size-md));
   flex: 0 0 auto;
   color: currentColor;
   overflow: visible;
@@ -170,15 +170,10 @@
 
 .trail-triage-row__priority {
   display: inline-grid;
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
+  width: var(--trail-collection-semantic-slot-size);
+  height: var(--trail-collection-semantic-slot-size);
   place-items: center;
   color: var(--trail-text-muted);
-}
-
-.trail-triage-row__priority .trail-priority-glyph {
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
 }
 
 .trail-triage-row__content {
@@ -192,10 +187,6 @@
   min-width: 0;
   flex: 1 1 auto;
   overflow: hidden;
-  color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-body);
-  font-weight: var(--trail-weight-medium);
-  line-height: 1.25;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -405,8 +396,8 @@ body button.trail-label-select__item:focus-visible {
 /* Status presentation follows Linear's observable lifecycle grammar while Trail keeps semantic ownership. */
 .trail-status-glyph {
   display: block;
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
+  width: var(--trail-semantic-glyph-size, var(--trail-icon-size-md));
+  height: var(--trail-semantic-glyph-size, var(--trail-icon-size-md));
   flex: 0 0 auto;
   overflow: visible;
   color: var(--trail-text-secondary);
@@ -483,89 +474,4 @@ body button.trail-label-select__item:focus-visible {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.65;
-}
-
-.trail-project-summary-row__content {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 104px) 20px minmax(42px, 80px) minmax(0, 60px);
-  align-items: center;
-  gap: var(--trail-space-8);
-}
-
-.trail-project-summary-row__title {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-body);
-  font-weight: var(--trail-weight-medium);
-  line-height: 1.25;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-body button.trail-project-summary-row__title-button {
-  appearance: none;
-  display: block;
-  width: 100%;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  background-image: none;
-  box-shadow: none;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-}
-
-body button.trail-project-summary-row__title-button:focus-visible {
-  border-radius: var(--trail-radius-xs);
-  box-shadow: 0 0 0 1px var(--trail-surface-canvas), 0 0 0 2px var(--trail-accent);
-}
-
-.trail-project-summary-row__status,
-.trail-project-summary-row__due {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--trail-text-muted);
-  font-size: var(--trail-font-size-supporting);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.trail-project-summary-row__priority {
-  display: inline-grid;
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
-  place-items: center;
-  color: var(--trail-text-secondary);
-}
-
-.trail-project-summary-row__priority .trail-priority-glyph {
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
-}
-
-.trail-project-summary-row__progress {
-  display: block;
-  width: 100%;
-  min-width: 0;
-}
-
-.trail-project-summary-row__due {
-  justify-self: start;
-  font-variant-numeric: tabular-nums;
-}
-
-.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] .trail-project-summary-row__title {
-  color: var(--trail-text-secondary);
-}
-
-.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] .trail-project-summary-row__priority,
-.trail-collection-row[data-project-summary-row="true"][data-terminal="true"] .trail-project-summary-row__progress {
-  opacity: 0.72;
 }

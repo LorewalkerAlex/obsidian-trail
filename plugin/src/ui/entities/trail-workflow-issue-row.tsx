@@ -149,7 +149,12 @@ export function TrailWorkflowIssueRow({
 
         <span className="trail-workflow-issue-row__identity">
           <TrailStatusGlyph category={statusCategory} label={statusLabel} />
-          <span className="trail-workflow-issue-row__title" title={title}>{title}</span>
+          <span
+            className="trail-collection-row__primary-identity trail-workflow-issue-row__title"
+            title={title}
+          >
+            {title}
+          </span>
         </span>
 
         {projectTitle === undefined ? null : (

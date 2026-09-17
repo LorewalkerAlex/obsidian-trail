@@ -21,6 +21,8 @@ describe("TrailProjectSummaryRow", () => {
 
     const row = screen.getByText("Foundation visual system").closest("[data-project-summary-row]");
     expect(row).toHaveClass("trail-collection-row");
+    expect(screen.getByText("Foundation visual system"))
+      .toHaveClass("trail-collection-row__primary-identity");
     expect(screen.getByRole("img", { name: "In Progress status" }))
       .toHaveAttribute("data-status-category", "started");
     expect(screen.getByRole("img", { name: "In Progress status" }))

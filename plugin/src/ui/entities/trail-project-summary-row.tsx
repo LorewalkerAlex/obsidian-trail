@@ -102,10 +102,10 @@ export function TrailProjectSummaryRow({
     >
       <div className="trail-project-summary-row__content">
         {onActivate === undefined ? (
-          <span className="trail-project-summary-row__title">{title}</span>
+          <span className="trail-collection-row__primary-identity trail-project-summary-row__title">{title}</span>
         ) : (
           <button
-            className="trail-project-summary-row__title trail-project-summary-row__title-button"
+            className="trail-collection-row__primary-identity trail-project-summary-row__title trail-project-summary-row__title-button"
             onClick={activate}
             type="button"
           >

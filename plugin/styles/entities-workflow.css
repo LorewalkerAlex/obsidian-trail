@@ -10,14 +10,14 @@
 .trail-workflow-issue-row__content {
   display: grid;
   min-width: 0;
-  grid-template-columns: var(--trail-icon-size-lg) minmax(0, 1fr) auto;
+  grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) auto;
   align-items: center;
   column-gap: var(--trail-space-6);
   overflow: hidden;
 }
 
 .trail-workflow-issue-row__content--project {
-  grid-template-columns: var(--trail-icon-size-lg) minmax(0, 1fr) minmax(104px, 144px) auto;
+  grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) minmax(104px, 144px) auto;
 }
 
 .trail-workflow-issue-row__project {
@@ -44,28 +44,18 @@
 
 .trail-workflow-issue-row__priority {
   display: inline-grid;
-  width: var(--trail-icon-size-lg);
-  height: var(--trail-icon-size-lg);
+  width: var(--trail-collection-semantic-slot-size);
+  height: var(--trail-collection-semantic-slot-size);
   place-items: center;
   color: var(--trail-text-muted);
-}
-
-.trail-workflow-issue-row__priority .trail-priority-glyph {
-  width: var(--trail-icon-size-lg);
-  height: var(--trail-icon-size-lg);
 }
 
 .trail-workflow-issue-row__identity {
   display: grid;
   min-width: 0;
-  grid-template-columns: var(--trail-icon-size-lg) minmax(0, 1fr);
+  grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr);
   align-items: center;
   column-gap: var(--trail-space-6);
-}
-
-.trail-workflow-issue-row__identity .trail-status-glyph {
-  width: var(--trail-icon-size-lg);
-  height: var(--trail-icon-size-lg);
 }
 
 .trail-workflow-issue-row__title,
@@ -78,14 +68,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.trail-workflow-issue-row__title {
-  color: var(--trail-text-primary);
-  font-size: var(--trail-font-size-section);
-  font-weight: var(--trail-weight-medium);
-  line-height: 1.25;
-  letter-spacing: -0.003em;
 }
 
 .trail-workflow-issue-row__metadata {
@@ -173,7 +155,7 @@
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: var(--trail-icon-size-lg) minmax(0, 1fr) minmax(104px, 136px) auto;
+    grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) minmax(104px, 136px) auto;
   }
 
   .trail-workflow-issue-row__milestone,
@@ -190,7 +172,7 @@
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: var(--trail-icon-size-lg) minmax(0, 1fr) minmax(96px, 124px) auto;
+    grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) minmax(96px, 124px) auto;
   }
 
   .trail-workflow-issue-row__labels {
@@ -204,7 +186,7 @@
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: var(--trail-icon-size-lg) minmax(0, 1fr) minmax(92px, 116px) 52px;
+    grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) minmax(92px, 116px) 52px;
   }
 }
 
