@@ -169,7 +169,6 @@ export function TrailCycleBoard({
                               issueId={issue.id}
                               key={issue.id}
                               labels={issue.labels}
-                              milestoneTitle={issue.milestone?.title}
                               onActivate={onIssuePeekOpen === undefined
                                 ? undefined
                                 : () => onIssuePeekOpen(issue.id)}

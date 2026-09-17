@@ -423,7 +423,7 @@ Every Status header remains visible even when its current filter-visible count i
 
 On Status-grouped Workflow Issue Lists that support Status drag, each concrete Status section remains the spatial Status target even when its visible count is zero or its body is collapsed. Disclosure controls visibility only; it does not change the section's Status identity.
 
-### 4.6 Shared Issue Row/Card hierarchy
+### 4.6 Workflow Issue Row
 
 Project Workspace row:
 
@@ -451,14 +451,38 @@ Rules:
 - Workflow Issue Rows retain the semantic Status glyph even when an enclosing Status section already expresses lifecycle grouping. The configured Status label remains available to accessibility, tooltip, picker, section-header, and detail contexts rather than becoming a duplicate visible row-text column.
 - Project is omitted when Page/lane scope already expresses it.
 - Current Cycle marker is omitted when Cycle Page scope already expresses membership.
-- Description/body stays out of scanning Row/Card.
+- Description/body stays out of scanning Row.
 - Milestone, Labels, Current Cycle, Estimate, and Due use stable soft semantic columns after the flexible identity region. Missing values leave their track visually empty rather than rendering placeholder text or causing later properties to shift into a different semantic position.
 - Soft columns provide repeated-property alignment without turning the Row into a rigid spreadsheet: bounded tracks may truncate and lower-priority tracks may disappear as capacity tightens, while Title absorbs ordinary width pressure first.
 - Labels remain compact stable-identity dots; ordinary future Due stays quiet while Today/Overdue may gain emphasis.
 - Trail does not introduce a human-readable Workflow Issue identifier merely to create visual spacing between Priority, Status, and Title. Layout solves that presentation problem without adding persisted business truth.
-- Board Cards do not become mini Full Item views; lane/column context may still suppress redundant Card metadata according to the Board composition.
+### 4.7 Workflow Issue Card
 
-### 4.7 Empty-state grammar
+Project Board and Current Cycle Board use one sparse Card hierarchy rather than inheriting the List Row soft-column set:
+
+```text
++------------------------------+
+| Issue title                  |
+| optional second title line   |
+|                              |
+| Priority  Label +N      M Due|
++------------------------------+
+```
+
+Rules:
+
+- Title is the primary Card identity and remains readable for up to two lines before truncation.
+- Priority moves into the compact lower property rail rather than occupying the Row's persistent leading identity track.
+- Board Labels collapse to one compact label chip plus a quiet `+N` overflow count when multiple Labels exist.
+- Estimate and Due remain quiet trailing facts.
+- Status is omitted because the Board column expresses it. Project is omitted because the Project Workspace Page or Current Cycle Project swimlane expresses it.
+- Milestone and Current Cycle are intentionally omitted from the Board Card scanning contract even when those facts exist. They remain available in List, detail, Inspector, Filter, and Picker contexts.
+- Missing optional Card facts collapse instead of reserving the Row's stable soft semantic tracks.
+- Selection remains a separate transient intent from Card activation and semantic properties.
+- Description/body and rarely scanned fields stay out; Board Cards do not become mini Full Item views.
+- Trail does not introduce a human-readable Workflow Issue identifier merely to create visual spacing inside the Card.
+
+### 4.8 Empty-state grammar
 
 Keep these states distinct:
 

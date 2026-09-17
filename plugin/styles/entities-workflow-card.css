@@ -89,13 +89,20 @@
   display: flex;
   min-width: 0;
   min-height: 22px;
-  flex-wrap: wrap;
   align-items: center;
-  align-content: flex-start;
-  gap: var(--trail-space-3);
+  gap: var(--trail-space-5);
   color: var(--trail-text-muted);
   font-size: var(--trail-font-size-caption);
   line-height: 1;
+}
+
+.trail-workflow-issue-card__property-rail {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--trail-space-3);
+  overflow: hidden;
 }
 
 .trail-workflow-issue-card__property {
@@ -129,24 +136,39 @@
 }
 
 .trail-workflow-issue-card__property--labels {
-  max-width: min(148px, 56%);
+  max-width: 160px;
 }
 
-.trail-workflow-issue-card__property--labels .trail-label-dots {
+.trail-workflow-issue-card__label-dot {
+  display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
 }
 
-.trail-workflow-issue-card__property--milestone {
-  max-width: min(168px, 68%);
+.trail-workflow-issue-card__label-dot .trail-label-dots {
+  gap: 0;
 }
 
-.trail-workflow-issue-card__property--cycle,
-.trail-workflow-issue-card__property--estimate,
-.trail-workflow-issue-card__property--due {
+.trail-workflow-issue-card__facts {
+  display: inline-flex;
+  min-width: 0;
   flex: 0 0 auto;
+  align-items: center;
+  gap: var(--trail-space-5);
+  margin-left: auto;
+  color: var(--trail-text-faint);
 }
 
-.trail-workflow-issue-card__property--estimate {
+.trail-workflow-issue-card__fact {
+  display: inline-flex;
+  min-width: 0;
+  height: 22px;
+  align-items: center;
+  color: var(--trail-text-muted);
+  white-space: nowrap;
+}
+
+.trail-workflow-issue-card__fact--estimate {
   justify-content: center;
 }
 

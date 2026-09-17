@@ -545,28 +545,30 @@ Rules:
 
 ### 4.7 Workflow Issue Card
 
-Project Board Card:
+Project Board and Current Cycle Board share the same sparse production Card skeleton:
 
 ```text
 +------------------------------+
-| Priority  Issue title        |
+| Issue title                  |
 | optional second title line   |
 |                              |
-| Milestone  Labels Cycle M Due|
+| Priority  Label +N      M Due|
 +------------------------------+
 ```
 
-Current Cycle Board Card removes Page/lane context already expressed:
+Composition rules:
 
-```text
-+------------------------------+
-| Priority  Issue title        |
-|                              |
-| Milestone  Labels  M  Due    |
-+------------------------------+
-```
+- Title owns the primary flexible Card region and may use a second line before truncation.
+- the lower property rail contains compact Priority plus at most one visible Label identity with a quiet `+N` overflow summary;
+- Estimate and Due are quiet trailing facts, not property chips;
+- Status is supplied by the Board column and is never repeated inside the Card;
+- Project is supplied by Project Workspace scope or the Current Cycle Project swimlane and is never repeated inside the Card;
+- Milestone and Current Cycle are deliberately outside the Board Card scanning contract, even when available in the source Read Model;
+- optional Card facts collapse when absent rather than reserving the List Row's stable soft-column tracks;
+- the selection affordance remains a separate transient interaction layer and does not become a persistent Card property;
+- Description/body, human-readable Issue identifiers, and rarely scanned detail fields stay out.
 
-Cards do not become mini Full Item views. Description and rarely scanned fields stay out.
+The Card therefore reuses semantic Priority, Label, Estimate, and Due owners without inheriting the Workflow Issue Row composition. Board workflow/lane structure remains Page/pattern-owned.
 
 ### 4.8 Project Summary Row
 

@@ -55,11 +55,9 @@ export function TrailProjectWorkspaceBoard({
               due={issue.due}
               estimate={issue.estimate}
               highlighted={peekTargetId === issue.id}
-              inCurrentCycle={issue.inCurrentCycle}
               issueId={issue.id}
               key={issue.id}
               labels={issue.labels}
-              milestoneTitle={issue.milestone?.title}
               onActivate={() => onIssuePeekOpen(issue.id)}
               onPreviewToggle={() => onIssuePeekToggle(issue.id)}
               onSelectionChange={(selected, extendRange) => {
