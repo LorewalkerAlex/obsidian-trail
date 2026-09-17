@@ -299,7 +299,7 @@ describe("TrailProjectWorkspacePage", () => {
     );
   });
 
-  it("guards context-menu Delete behind the shared confirmation", () => {
+  it("returns Esc focus to the Project surface after unselected context-menu Delete", async () => {
     const { store } = readyStore();
     const issueActions = actions();
     let invokeDelete: (() => void | Promise<void>) | undefined;
@@ -314,7 +314,7 @@ describe("TrailProjectWorkspacePage", () => {
           : () => request.onSelect(deleteAction.id);
       },
       showAtPosition(): void {
-        // This consumer proves context-menu destructive handoff only.
+        // This consumer proves unselected context-menu focus restoration.
       },
     };
 
@@ -335,18 +335,29 @@ describe("TrailProjectWorkspacePage", () => {
       .closest<HTMLElement>("[data-workflow-issue-row='true']");
     expect(row).not.toBeNull();
     if (row === null) return;
+    const page = row.closest<HTMLElement>(".trail-project-workspace-page");
+    expect(page).not.toBeNull();
+    if (page === null) return;
+
     fireEvent.contextMenu(row);
     expect(invokeDelete).toBeDefined();
     act(() => {
       void invokeDelete?.();
     });
 
-    expect(screen.getByRole("dialog")).toHaveTextContent("Delete issue?");
-    expect(screen.getByRole("dialog"))
-      .toHaveTextContent("Delete “Build the Project list” from Trail?");
+    const dialog = screen.getByRole("dialog", { name: "Delete issue?" });
+    expect(dialog).toHaveTextContent("Delete “Build the Project list” from Trail?");
     expect(issueActions.delete).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Delete issue?" })).not.toBeInTheDocument();
+      expect(page).toHaveFocus();
+    });
+    expect(row).not.toHaveFocus();
+    expect(screen.getByRole("checkbox", { name: "Select Build the Project list" }))
+      .not.toBeChecked();
     expect(issueActions.delete).not.toHaveBeenCalled();
   });
 

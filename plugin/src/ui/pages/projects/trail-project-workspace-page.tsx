@@ -421,9 +421,17 @@ export function TrailProjectWorkspacePage({
 
     event.preventDefault();
     event.stopPropagation();
+    const returnFocusTarget = selection.selectedIds.has(invokedIssueId)
+      ? row
+      : pageRef.current;
     actionMenu.showAtMouseEvent(event.nativeEvent, {
       items: context.actions,
-      onSelect: (actionId, targetId) => selectAction(context, actionId, targetId, row),
+      onSelect: (actionId, targetId) => selectAction(
+        context,
+        actionId,
+        targetId,
+        returnFocusTarget,
+      ),
       unavailableReason: context.unavailableReason,
     });
   };
