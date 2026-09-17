@@ -165,8 +165,8 @@ body .workspace-ribbon {
 }
 
 body .workspace-ribbon .side-dock-ribbon-action {
-  width: 26px;
-  height: 26px;
+  width: var(--trail-control-height-lg);
+  height: var(--trail-control-height-lg);
   margin: 1px auto;
   padding: var(--trail-space-3);
   border-radius: 5px;
@@ -180,8 +180,8 @@ body .workspace-ribbon .side-dock-ribbon-action.is-active {
 }
 
 body .workspace-ribbon .side-dock-ribbon-action svg {
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
+  width: var(--trail-icon-size-lg);
+  height: var(--trail-icon-size-lg);
   stroke-width: 1.65;
 }
 

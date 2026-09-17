@@ -98,15 +98,15 @@
 .trail-navigation__identity strong {
   overflow: hidden;
   color: var(--trail-text-primary);
-  font-size: 12px;
+  font-size: var(--trail-font-size-body);
   font-weight: var(--trail-weight-strong);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .trail-navigation__mark {
-  width: var(--trail-icon-size-sm);
-  height: var(--trail-icon-size-sm);
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
   flex: 0 0 auto;
   border-radius: 50%;
   background:
@@ -177,7 +177,7 @@ body button.trail-navigation__row {
   box-sizing: border-box;
   display: flex;
   width: 100%;
-  height: var(--trail-control-height-md);
+  height: var(--trail-control-height-lg);
   min-height: 0;
   align-items: center;
   justify-content: flex-start;
@@ -201,8 +201,8 @@ body button.trail-navigation__row {
 }
 
 .trail-navigation__row-icon {
-  width: var(--trail-icon-size-md);
-  height: var(--trail-icon-size-md);
+  width: var(--trail-icon-size-lg);
+  height: var(--trail-icon-size-lg);
   flex: 0 0 auto;
   color: var(--trail-text-muted);
 }
