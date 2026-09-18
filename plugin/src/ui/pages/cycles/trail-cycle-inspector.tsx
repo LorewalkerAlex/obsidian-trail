@@ -5,17 +5,13 @@ import {
   readTrailZonedDateTimeParts,
   resolveTrailZonedDateTimeParts,
 } from "../../../domain/rules/trail-temporal-rules";
-import {
-  selectTrailCycleInspectorReadModel,
-  type TrailCurrentCycleInspectorReadModel,
-} from "../../../query/cycles/trail-cycle-inspector-query";
+import { selectTrailCycleInspectorReadModel } from "../../../query/cycles/trail-cycle-inspector-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
 import { TrailConfirmation } from "../../patterns/trail-confirmation";
 import { TrailPropertyControl } from "../../patterns/trail-property-control";
 import { TrailViewPopover } from "../../patterns/trail-view-popover";
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailInput } from "../../primitives/trail-input";
-import { TrailProgress } from "../../primitives/trail-progress";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { TrailCycleStart } from "./trail-cycle-start";
 
@@ -23,8 +19,6 @@ type TrailCycleInspectorActions = Pick<
   TrailUiActions["cycles"],
   "changePlannedEnd" | "close" | "closeAndStartNext" | "start"
 >;
-
-const TRAIL_DAY_MS = 24 * 60 * 60 * 1000;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -46,24 +40,6 @@ function formatCycleRange(startedAt: number, plannedEnd: number, timezone: strin
     timeZone: timezone,
   }).format(new Date(timestamp));
   return `${short(startedAt)} – ${short(plannedEnd)}`;
-}
-
-function calendarDayOrdinal(timestamp: number, timezone: string): number {
-  const parts = readTrailZonedDateTimeParts(timestamp, timezone);
-  return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / TRAIL_DAY_MS);
-}
-
-function formatTimeRelation(plannedEnd: number, now: number, timezone: string): string {
-  const deltaDays = calendarDayOrdinal(plannedEnd, timezone) - calendarDayOrdinal(now, timezone);
-  if (deltaDays === 0) return "Ends today";
-  if (deltaDays > 0) return `${deltaDays} ${deltaDays === 1 ? "day" : "days"} left`;
-  const overdue = Math.abs(deltaDays);
-  return `${overdue} ${overdue === 1 ? "day" : "days"} overdue`;
-}
-
-function progressLabel(progress: TrailCurrentCycleInspectorReadModel["progress"]): string {
-  if (progress.unavailable === true) return "—";
-  return `${Math.round((progress.value / progress.max) * 100)}%`;
 }
 
 function twoDigits(value: number): string {
@@ -197,7 +173,6 @@ export function TrailCycleInspector({
   const [feedback, setFeedback] = useState<string>();
   const [closeOpen, setCloseOpen] = useState(false);
   const [startNextOpen, setStartNextOpen] = useState(false);
-  const now = Date.now();
 
   if (readModel === null) {
     return (
@@ -275,61 +250,22 @@ export function TrailCycleInspector({
         className="trail-inspector trail-cycle-inspector"
         data-target-kind="cycle"
       >
-        <header className="trail-inspector__header">
-          <span className="trail-inspector__eyebrow">Cycle</span>
-          <h2>{range}</h2>
-          <div className="trail-cycle-inspector__header-relation">
-            {readModel.kind === "current"
-              ? formatTimeRelation(readModel.plannedEnd, now, timezone)
-              : "Closed cycle"}
-          </div>
-        </header>
-
-        {readModel.kind === "current" ? (
-          <section aria-label="Cycle progress" className="trail-cycle-inspector__section">
-            <div className="trail-cycle-inspector__section-heading">
-              <h3 className="trail-cycle-inspector__section-title">Progress</h3>
-              <span className="trail-cycle-inspector__section-value">
-                {progressLabel(readModel.progress)}
-              </span>
+        <section aria-label="Cycle information" className="trail-inspector__section trail-cycle-inspector__section">
+          <h3 className="trail-inspector__section-title trail-cycle-inspector__section-title">Info</h3>
+          <div className="trail-inspector__metadata trail-cycle-inspector__properties">
+            <div className="trail-inspector__metadata-row trail-cycle-inspector__property-row">
+              <span className="trail-inspector__metadata-label trail-cycle-inspector__property-label">Effort</span>
+              <span className="trail-inspector__metadata-value trail-cycle-inspector__property-value">{readModel.effort}</span>
             </div>
-            {readModel.progress.unavailable === true ? (
-              <TrailProgress label="Cycle progress" unavailable />
-            ) : (
-              <TrailProgress
-                label="Cycle progress"
-                max={readModel.progress.max}
-                value={readModel.progress.value}
-              />
-            )}
-          </section>
-        ) : null}
-
-        <section aria-label="Cycle scope and effort" className="trail-cycle-inspector__section">
-          <div className="trail-cycle-inspector__properties">
-            <div className="trail-cycle-inspector__property-row">
-              <span className="trail-cycle-inspector__property-label">Scope</span>
-              <span className="trail-cycle-inspector__property-value">{issueLabel}</span>
-            </div>
-            <div className="trail-cycle-inspector__property-row">
-              <span className="trail-cycle-inspector__property-label">Effort</span>
-              <span className="trail-cycle-inspector__property-value">{readModel.effort}</span>
-            </div>
-          </div>
-        </section>
-
-        <section aria-label="Cycle information" className="trail-cycle-inspector__section">
-          <h3 className="trail-cycle-inspector__section-title">Info</h3>
-          <div className="trail-cycle-inspector__properties">
-            <div className="trail-cycle-inspector__property-row">
-              <span className="trail-cycle-inspector__property-label">Started</span>
-              <span className="trail-cycle-inspector__property-value">
+            <div className="trail-inspector__metadata-row trail-cycle-inspector__property-row">
+              <span className="trail-inspector__metadata-label trail-cycle-inspector__property-label">Started</span>
+              <span className="trail-inspector__metadata-value trail-cycle-inspector__property-value">
                 {formatCycleDate(readModel.startedAt, timezone)}
               </span>
             </div>
-            <div className="trail-cycle-inspector__property-row">
-              <span className="trail-cycle-inspector__property-label">Planned end</span>
-              <span className="trail-cycle-inspector__property-value">
+            <div className="trail-inspector__metadata-row trail-cycle-inspector__property-row">
+              <span className="trail-inspector__metadata-label trail-cycle-inspector__property-label">Planned end</span>
+              <span className="trail-inspector__metadata-value trail-cycle-inspector__property-value">
                 {readModel.kind === "current" ? (
                   <TrailCyclePlannedEndEditor
                     disabled={pending || state.control.kind !== "ready"}
@@ -341,9 +277,9 @@ export function TrailCycleInspector({
               </span>
             </div>
             {readModel.kind === "historical" ? (
-              <div className="trail-cycle-inspector__property-row">
-                <span className="trail-cycle-inspector__property-label">Closed</span>
-                <span className="trail-cycle-inspector__property-value">
+              <div className="trail-inspector__metadata-row trail-cycle-inspector__property-row">
+                <span className="trail-inspector__metadata-label trail-cycle-inspector__property-label">Closed</span>
+                <span className="trail-inspector__metadata-value trail-cycle-inspector__property-value">
                   {formatCycleDate(readModel.endedAt, timezone)}
                 </span>
               </div>
@@ -352,7 +288,7 @@ export function TrailCycleInspector({
         </section>
 
         {readModel.kind === "current" ? (
-          <section aria-label="Cycle actions" className="trail-cycle-inspector__section trail-cycle-inspector__actions">
+          <section aria-label="Cycle actions" className="trail-inspector__section trail-cycle-inspector__section trail-cycle-inspector__actions">
             <TrailButton
               disabled={pending || state.control.kind !== "ready"}
               onClick={() => setCloseOpen(true)}

@@ -58,7 +58,7 @@ function initiativeStore() {
 }
 
 describe("TrailInitiativeInspector", () => {
-  it("shows stable Initiative properties without duplicating Main View narrative", () => {
+  it("shows stable Initiative properties without repeating Main View identity or narrative", () => {
     const { store } = initiativeStore();
     const editProperties = vi.fn(() => ({
       entityId: "initiative-a",
@@ -72,8 +72,7 @@ describe("TrailInitiativeInspector", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 2, name: "Initiative Alpha" }))
-      .toBeInTheDocument();
+    expect(screen.queryByText("Initiative Alpha")).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Initiative properties" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Priority: High" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Labels: Work" })).toBeInTheDocument();

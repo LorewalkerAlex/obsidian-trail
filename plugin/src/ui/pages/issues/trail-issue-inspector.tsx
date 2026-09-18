@@ -154,17 +154,12 @@ export function TrailIssueInspector({
       className="trail-inspector trail-issue-inspector"
       data-target-kind="issue"
     >
-      <header className="trail-inspector__header">
-        <span className="trail-inspector__eyebrow">Issue</span>
-        <h2>{readModel.title}</h2>
-      </header>
-
-      <section aria-label="Issue properties" className="trail-issue-inspector__section">
-        <h3 className="trail-issue-inspector__section-title">Properties</h3>
-        <div className="trail-issue-inspector__properties">
-          <div className="trail-issue-inspector__property-row">
-            <span className="trail-issue-inspector__property-label">Status</span>
-            <span className="trail-issue-inspector__property-control">
+      <section aria-label="Issue properties" className="trail-inspector__section trail-issue-inspector__section">
+        <h3 className="trail-inspector__section-title trail-issue-inspector__section-title">Properties</h3>
+        <div className="trail-inspector__metadata trail-issue-inspector__properties">
+          <div className="trail-inspector__metadata-row trail-issue-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-issue-inspector__property-label">Status</span>
+            <span className="trail-inspector__metadata-value trail-issue-inspector__property-control">
               <TrailStatusPropertySelect
                 category={readModel.status.category}
                 disabled={!readModel.capabilities.canChangeStatus}
@@ -182,9 +177,9 @@ export function TrailIssueInspector({
             </span>
           </div>
 
-          <div className="trail-issue-inspector__property-row">
-            <span className="trail-issue-inspector__property-label">Project</span>
-            <span className="trail-issue-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-issue-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-issue-inspector__property-label">Project</span>
+            <span className="trail-inspector__metadata-value trail-issue-inspector__property-control">
               <TrailRelationPropertySelect
                 disabled={!readModel.capabilities.canMoveOut}
                 label="Project"
@@ -204,9 +199,9 @@ export function TrailIssueInspector({
             </span>
           </div>
 
-          <div className="trail-issue-inspector__property-row">
-            <span className="trail-issue-inspector__property-label">Priority</span>
-            <span className="trail-issue-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-issue-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-issue-inspector__property-label">Priority</span>
+            <span className="trail-inspector__metadata-value trail-issue-inspector__property-control">
               <TrailPriorityPropertySelect
                 disabled={!readModel.capabilities.canEditPlanningFields}
                 onValueChange={(priority) => { void saveProperty({ kind: "priority", value: priority }); }}
@@ -215,9 +210,9 @@ export function TrailIssueInspector({
             </span>
           </div>
 
-          <div className="trail-issue-inspector__property-row">
-            <span className="trail-issue-inspector__property-label">Milestone</span>
-            <span className="trail-issue-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-issue-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-issue-inspector__property-label">Milestone</span>
+            <span className="trail-inspector__metadata-value trail-issue-inspector__property-control">
               <TrailRelationPropertySelect
                 disabled={!readModel.capabilities.canAssignMilestone}
                 label="Milestone"
@@ -235,9 +230,9 @@ export function TrailIssueInspector({
             </span>
           </div>
 
-          <div className="trail-issue-inspector__property-row">
-            <span className="trail-issue-inspector__property-label">Labels</span>
-            <span className="trail-issue-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-issue-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-issue-inspector__property-label">Labels</span>
+            <span className="trail-inspector__metadata-value trail-issue-inspector__property-control">
               <TrailLabelPropertySelect
                 disabled={!readModel.capabilities.canEditPlanningFields}
                 entityType="issue"
@@ -249,9 +244,9 @@ export function TrailIssueInspector({
             </span>
           </div>
 
-          <div className="trail-issue-inspector__property-row">
-            <span className="trail-issue-inspector__property-label">Due</span>
-            <span className="trail-issue-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-issue-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-issue-inspector__property-label">Due</span>
+            <span className="trail-inspector__metadata-value trail-issue-inspector__property-control">
               <TrailOptionalDuePropertySelect
                 disabled={!readModel.capabilities.canEditPlanningFields}
                 onValueChange={(due) => { void saveProperty({ kind: "due", value: due }); }}
@@ -262,9 +257,9 @@ export function TrailIssueInspector({
             </span>
           </div>
 
-          <div className="trail-issue-inspector__property-row">
-            <span className="trail-issue-inspector__property-label">Estimate</span>
-            <span className="trail-issue-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-issue-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-issue-inspector__property-label">Estimate</span>
+            <span className="trail-inspector__metadata-value trail-issue-inspector__property-control">
               <TrailEstimatePropertySelect
                 disabled={!readModel.capabilities.canEditPlanningFields}
                 onValueChange={(estimate) => { void saveProperty({ kind: "estimate", value: estimate }); }}
@@ -276,10 +271,10 @@ export function TrailIssueInspector({
         </div>
       </section>
 
-      <section aria-label="Issue context" className="trail-issue-inspector__section">
-        <h3 className="trail-issue-inspector__section-title">Context</h3>
-        <div className="trail-issue-inspector__context-row">
-          <span className="trail-issue-inspector__property-label">Current cycle</span>
+      <section aria-label="Issue context" className="trail-inspector__section trail-issue-inspector__section">
+        <h3 className="trail-inspector__section-title trail-issue-inspector__section-title">Context</h3>
+        <div className="trail-inspector__metadata-row trail-issue-inspector__context-row">
+          <span className="trail-inspector__metadata-label trail-issue-inspector__property-label">Current cycle</span>
           {readModel.currentCycle === undefined ? (
             <span className="trail-issue-inspector__context-empty">No current cycle</span>
           ) : (

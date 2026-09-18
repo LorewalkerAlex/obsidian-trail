@@ -16,79 +16,7 @@
   box-shadow: none;
 }
 
-/* Persistent entity Inspectors share one quiet metadata rhythm over shared controls. */
-.trail-initiative-inspector__section,
-.trail-project-inspector__section,
-.trail-issue-inspector__section {
-  margin-top: var(--trail-space-12);
-}
-
-.trail-initiative-inspector__section-title,
-.trail-project-inspector__section-title,
-.trail-issue-inspector__section-title {
-  margin: 0 0 var(--trail-space-4);
-  color: var(--trail-text-muted);
-  font-size: var(--trail-font-size-caption);
-  font-weight: var(--trail-weight-medium);
-  line-height: 1.2;
-}
-
-.trail-initiative-inspector__properties,
-.trail-project-inspector__properties,
-.trail-issue-inspector__properties {
-  display: grid;
-}
-
-.trail-initiative-inspector__property-row,
-.trail-project-inspector__property-row,
-.trail-issue-inspector__property-row {
-  display: grid;
-  min-width: 0;
-  min-height: var(--trail-control-height-lg);
-  grid-template-columns: minmax(64px, 72px) minmax(0, 1fr);
-  align-items: center;
-  gap: var(--trail-space-4);
-}
-
-.trail-initiative-inspector__property-label,
-.trail-project-inspector__property-label,
-.trail-issue-inspector__property-label {
-  min-width: 0;
-  color: var(--trail-text-faint);
-  font-size: var(--trail-font-size-caption);
-}
-
-.trail-initiative-inspector__property-control,
-.trail-project-inspector__property-control,
-.trail-issue-inspector__property-control {
-  display: flex;
-  min-width: 0;
-  justify-content: flex-start;
-}
-
-.trail-initiative-inspector__property-control > .trail-property-control,
-.trail-project-inspector__property-control > .trail-property-control,
-.trail-issue-inspector__property-control > .trail-property-control {
-  max-width: 100%;
-  min-width: 0;
-  padding-inline: 0 var(--trail-space-2);
-}
-
-body .trail-initiative-inspector__property-control > .trail-property-control:not(:hover):not(:focus-visible):not(:active):not([data-state="open"]),
-body .trail-project-inspector__property-control > .trail-property-control:not(:hover):not(:focus-visible):not(:active):not([data-state="open"]),
-body .trail-issue-inspector__property-control > .trail-property-control:not(:hover):not(:focus-visible):not(:active):not([data-state="open"]) {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-}
-
-body .trail-initiative-inspector__property-control > .trail-property-control:disabled,
-body .trail-project-inspector__property-control > .trail-property-control:disabled,
-body .trail-issue-inspector__property-control > .trail-property-control:disabled {
-  border-color: transparent;
-  background: transparent;
-}
-
+/* Shared Inspector section and metadata presentation lives in shell.css; Projects keeps local compositions only. */
 .trail-initiative-inspector__feedback,
 .trail-project-inspector__feedback,
 .trail-issue-inspector__feedback {
@@ -189,7 +117,7 @@ body .trail-issue-inspector__property-control > .trail-property-control:disabled
   align-items: center;
   justify-content: space-between;
   gap: var(--trail-space-4);
-  margin-bottom: var(--trail-space-4);
+  margin-bottom: var(--trail-space-5);
 }
 
 .trail-project-inspector__section-heading .trail-project-inspector__section-title {
@@ -198,7 +126,7 @@ body .trail-issue-inspector__property-control > .trail-property-control:disabled
 
 .trail-project-inspector__section-value {
   color: var(--trail-text-secondary);
-  font-size: var(--trail-font-size-caption);
+  font-size: var(--trail-font-size-supporting);
   font-variant-numeric: tabular-nums;
 }
 

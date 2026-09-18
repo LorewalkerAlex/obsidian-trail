@@ -86,7 +86,7 @@ function readyStore() {
 }
 
 describe("Trail Cycle Inspector query", () => {
-  it("projects live Current Cycle progress, effort, scope, and unfinished count", () => {
+  it("projects only complementary Current Cycle facts needed by the Inspector", () => {
     const { current, store } = readyStore();
     const model = selectTrailCycleInspectorReadModel(store.getState(), current.id);
 
@@ -96,12 +96,12 @@ describe("Trail Cycle Inspector query", () => {
     expect(model).toMatchObject({
       effort: 3,
       issueCount: 2,
-      progress: { max: 2, value: 1 },
       unfinishedIssueCount: 1,
     });
+    expect(model).not.toHaveProperty("progress");
   });
 
-  it("keeps Historical Cycle Inspector read-only without historical progress", () => {
+  it("keeps Historical Cycle Inspector read-only without current-only projections", () => {
     const { historical, store } = readyStore();
     const model = selectTrailCycleInspectorReadModel(store.getState(), historical.id);
 

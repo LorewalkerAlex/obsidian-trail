@@ -110,20 +110,15 @@ export function TrailInitiativeInspector({
       className="trail-inspector trail-initiative-inspector"
       data-target-kind="initiative"
     >
-      <header className="trail-inspector__header">
-        <span className="trail-inspector__eyebrow">Initiative</span>
-        <h2>{readModel.title}</h2>
-      </header>
-
       <section
         aria-label="Initiative properties"
-        className="trail-initiative-inspector__section"
+        className="trail-inspector__section trail-initiative-inspector__section"
       >
-        <h3 className="trail-initiative-inspector__section-title">Properties</h3>
-        <div className="trail-initiative-inspector__properties">
-          <div className="trail-initiative-inspector__property-row">
-            <span className="trail-initiative-inspector__property-label">Priority</span>
-            <span className="trail-initiative-inspector__property-control">
+        <h3 className="trail-inspector__section-title trail-initiative-inspector__section-title">Properties</h3>
+        <div className="trail-inspector__metadata trail-initiative-inspector__properties">
+          <div className="trail-inspector__metadata-row trail-initiative-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-initiative-inspector__property-label">Priority</span>
+            <span className="trail-inspector__metadata-value trail-initiative-inspector__property-control">
               <TrailPriorityPropertySelect
                 disabled={pending}
                 onValueChange={(priority) => { void save({ kind: "priority", value: priority }); }}
@@ -131,9 +126,9 @@ export function TrailInitiativeInspector({
               />
             </span>
           </div>
-          <div className="trail-initiative-inspector__property-row">
-            <span className="trail-initiative-inspector__property-label">Labels</span>
-            <span className="trail-initiative-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-initiative-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-initiative-inspector__property-label">Labels</span>
+            <span className="trail-inspector__metadata-value trail-initiative-inspector__property-control">
               <TrailLabelPropertySelect
                 disabled={pending}
                 entityType="initiative"
@@ -144,9 +139,9 @@ export function TrailInitiativeInspector({
               />
             </span>
           </div>
-          <div className="trail-initiative-inspector__property-row">
-            <span className="trail-initiative-inspector__property-label">Due</span>
-            <span className="trail-initiative-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-initiative-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-initiative-inspector__property-label">Due</span>
+            <span className="trail-inspector__metadata-value trail-initiative-inspector__property-control">
               <TrailOptionalDuePropertySelect
                 disabled={pending}
                 onValueChange={(due) => { void save({ kind: "due", value: due }); }}

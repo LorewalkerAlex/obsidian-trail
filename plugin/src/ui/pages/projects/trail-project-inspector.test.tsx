@@ -42,7 +42,7 @@ function actions() {
 }
 
 describe("TrailProjectInspector", () => {
-  it("renders structured Project properties and derived zero states without duplicating narrative", () => {
+  it("renders complementary Project properties and insights without repeating Main View identity or narrative", () => {
     const { value } = actions();
     render(
       <TrailProjectInspector
@@ -52,7 +52,7 @@ describe("TrailProjectInspector", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 2, name: "Project A" })).toBeInTheDocument();
+    expect(screen.queryByText("Project A")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Status: unstarted" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Initiative: Initiative A" })).toBeInTheDocument();
     expect(

@@ -241,17 +241,12 @@ export function TrailProjectInspector({
       className="trail-inspector trail-project-inspector"
       data-target-kind="project"
     >
-      <header className="trail-inspector__header">
-        <span className="trail-inspector__eyebrow">Project</span>
-        <h2>{readModel.title}</h2>
-      </header>
-
-      <section aria-label="Project properties" className="trail-project-inspector__section">
-        <h3 className="trail-project-inspector__section-title">Properties</h3>
-        <div className="trail-project-inspector__properties">
-          <div className="trail-project-inspector__property-row">
-            <span className="trail-project-inspector__property-label">Status</span>
-            <span className="trail-project-inspector__property-control">
+      <section aria-label="Project properties" className="trail-inspector__section trail-project-inspector__section">
+        <h3 className="trail-inspector__section-title trail-project-inspector__section-title">Properties</h3>
+        <div className="trail-inspector__metadata trail-project-inspector__properties">
+          <div className="trail-inspector__metadata-row trail-project-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Status</span>
+            <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailStatusPropertySelect
                 category={readModel.status.category}
                 disabled={pending}
@@ -268,9 +263,9 @@ export function TrailProjectInspector({
               />
             </span>
           </div>
-          <div className="trail-project-inspector__property-row">
-            <span className="trail-project-inspector__property-label">Initiative</span>
-            <span className="trail-project-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-project-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Initiative</span>
+            <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailRelationPropertySelect
                 disabled={pending}
                 label="Initiative"
@@ -286,9 +281,9 @@ export function TrailProjectInspector({
               />
             </span>
           </div>
-          <div className="trail-project-inspector__property-row">
-            <span className="trail-project-inspector__property-label">Priority</span>
-            <span className="trail-project-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-project-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Priority</span>
+            <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailPriorityPropertySelect
                 disabled={pending}
                 onValueChange={(priority) => { void saveProperty({ kind: "priority", value: priority }); }}
@@ -296,9 +291,9 @@ export function TrailProjectInspector({
               />
             </span>
           </div>
-          <div className="trail-project-inspector__property-row">
-            <span className="trail-project-inspector__property-label">Labels</span>
-            <span className="trail-project-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-project-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Labels</span>
+            <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailLabelPropertySelect
                 disabled={pending}
                 entityType="project"
@@ -309,9 +304,9 @@ export function TrailProjectInspector({
               />
             </span>
           </div>
-          <div className="trail-project-inspector__property-row">
-            <span className="trail-project-inspector__property-label">Due</span>
-            <span className="trail-project-inspector__property-control">
+          <div className="trail-inspector__metadata-row trail-project-inspector__property-row">
+            <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Due</span>
+            <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailOptionalDuePropertySelect
                 disabled={pending}
                 onValueChange={(due) => { void saveProperty({ kind: "due", value: due }); }}
@@ -324,9 +319,9 @@ export function TrailProjectInspector({
         </div>
       </section>
 
-      <section aria-label="Project progress" className="trail-project-inspector__section">
+      <section aria-label="Project progress" className="trail-inspector__section trail-project-inspector__section">
         <div className="trail-project-inspector__section-heading">
-          <h3 className="trail-project-inspector__section-title">Progress</h3>
+          <h3 className="trail-inspector__section-title trail-project-inspector__section-title">Progress</h3>
           <span className="trail-project-inspector__section-value">
             {progressLabel(readModel.progress)}
           </span>
@@ -342,8 +337,8 @@ export function TrailProjectInspector({
         )}
       </section>
 
-      <section aria-label="Project temporal attention" className="trail-project-inspector__section">
-        <h3 className="trail-project-inspector__section-title">Attention</h3>
+      <section aria-label="Project temporal attention" className="trail-inspector__section trail-project-inspector__section">
+        <h3 className="trail-inspector__section-title trail-project-inspector__section-title">Attention</h3>
         <TrailSegmentedSummary
           appearance="inline"
           label="Project temporal attention summary"
@@ -367,9 +362,9 @@ export function TrailProjectInspector({
         />
       </section>
 
-      <section aria-label="Project milestones" className="trail-project-inspector__section">
+      <section aria-label="Project milestones" className="trail-inspector__section trail-project-inspector__section">
         <div className="trail-project-inspector__section-heading">
-          <h3 className="trail-project-inspector__section-title">Milestones</h3>
+          <h3 className="trail-inspector__section-title trail-project-inspector__section-title">Milestones</h3>
           <TrailMilestoneQuickCreate
             disabled={pending || state.control.kind !== "ready"}
             onCreate={async (title, due) => {

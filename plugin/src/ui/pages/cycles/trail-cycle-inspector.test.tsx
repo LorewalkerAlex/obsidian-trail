@@ -123,18 +123,16 @@ function actions() {
 }
 
 describe("TrailCycleInspector", () => {
-  it("renders Current Cycle period, progress, scope, effort, editable end, and close action", () => {
+  it("renders complementary Current Cycle facts without repeating Page range, progress, or scope", () => {
     const { cycle, store } = readyCycleStore();
     const { value } = actions();
     render(<TrailCycleInspector actions={value} cycleId={cycle.id} runtimeStore={store} />);
 
-    expect(screen.getByRole("heading", { level: 2, name: "Aug 18 – Aug 30" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 3, name: "Period" })).not.toBeInTheDocument();
-    const progress = screen.getByRole("progressbar", { name: "Cycle progress" });
-    expect(progress).toHaveAttribute("value", "1");
-    expect(progress).toHaveAttribute("max", "2");
-    expect(screen.getByText("Scope").nextElementSibling).toHaveTextContent("2 issues");
+    expect(screen.queryByText("Aug 18 – Aug 30")).not.toBeInTheDocument();
+    expect(screen.queryByRole("progressbar", { name: "Cycle progress" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Scope")).not.toBeInTheDocument();
     expect(screen.getByText("Effort").nextElementSibling).toHaveTextContent("0");
+    expect(screen.getByText("Started").nextElementSibling).not.toBeEmptyDOMElement();
     expect(screen.getByRole("button", { name: /^Planned end:/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close cycle" })).toBeInTheDocument();
   });
@@ -230,14 +228,16 @@ describe("TrailCycleInspector", () => {
     await waitFor(() => expect(onCycleActivate).toHaveBeenCalledWith("cycle-next"));
   });
 
-  it("renders Historical Cycle facts read-only without Progress or Close", () => {
+  it("renders Historical Cycle lifecycle facts without repeating Page identity or scope", () => {
     const { cycle, store } = readyCycleStore(true);
     const { value } = actions();
     render(<TrailCycleInspector actions={value} cycleId={cycle.id} runtimeStore={store} />);
 
-    expect(screen.getByRole("heading", { level: 2, name: "Aug 18 – Aug 30" })).toBeInTheDocument();
-    expect(screen.getByText("Closed cycle")).toBeInTheDocument();
+    expect(screen.queryByText("Aug 18 – Aug 30")).not.toBeInTheDocument();
+    expect(screen.queryByText("Closed cycle")).not.toBeInTheDocument();
+    expect(screen.queryByText("Scope")).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar", { name: "Cycle progress" })).not.toBeInTheDocument();
+    expect(screen.getByText("Effort").nextElementSibling).toHaveTextContent("0");
     expect(screen.queryByRole("button", { name: /^Planned end:/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Close cycle" })).not.toBeInTheDocument();
     expect(screen.getByText("Closed").nextElementSibling).not.toBeEmptyDOMElement();

@@ -114,7 +114,7 @@ function actions(): TrailIssueInspectorActions {
 }
 
 describe("TrailIssueInspector", () => {
-  it("renders the canonical property family and explicit Current Cycle membership action", () => {
+  it("renders the canonical property family and Current Cycle action without repeating Main View identity", () => {
     const { cycle, issue, store } = fixture();
     const uiActions = actions();
 
@@ -126,8 +126,7 @@ describe("TrailIssueInspector", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 2, name: "Inspect this issue" }))
-      .toBeInTheDocument();
+    expect(screen.queryByText("Inspect this issue")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Status: started" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Project: Project A" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Priority: High" })).toBeInTheDocument();

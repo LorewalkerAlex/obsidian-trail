@@ -1,7 +1,6 @@
 import type { TrailCycle } from "../../domain/model/trail-entities";
 import type { TrailTimestamp } from "../../domain/model/trail-values";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
-import type { TrailProgressReadModel } from "../shared/trail-progress-query";
 import { selectTrailCyclePageReadModel } from "./trail-cycle-page-query";
 
 interface TrailCycleInspectorReadModelBase {
@@ -16,7 +15,6 @@ interface TrailCycleInspectorReadModelBase {
 
 export interface TrailCurrentCycleInspectorReadModel extends TrailCycleInspectorReadModelBase {
   readonly kind: "current";
-  readonly progress: TrailProgressReadModel;
   readonly unfinishedIssueCount: number;
 }
 
@@ -63,7 +61,6 @@ export function selectTrailCycleInspectorReadModel(
   return {
     ...base,
     kind: "current",
-    progress: page.cycle.progress,
     unfinishedIssueCount,
   };
 }
