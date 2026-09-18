@@ -120,10 +120,9 @@ export function TrailConfirmation({
                 {alternateConfirm === undefined ? null : (
                   <Dialog.Close asChild>
                     <TrailButton
-                      data-confirmation-tone={alternateConfirm.tone ?? tone}
+                      data-confirmation-tone={alternateConfirm.tone}
                       disabled={alternateConfirm.disabled ?? false}
                       onClick={alternateConfirm.onConfirm}
-                      variant={(alternateConfirm.tone ?? tone) === "default" ? "primary" : undefined}
                     >
                       {alternateConfirm.label}
                     </TrailButton>

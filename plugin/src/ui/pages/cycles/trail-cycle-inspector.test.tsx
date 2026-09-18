@@ -157,19 +157,23 @@ describe("TrailCycleInspector", () => {
 
   it("confirms ordinary close with retained membership and distinguishes Start-next transfer planning", async () => {
     const { cycle, store } = readyCycleStore();
-    const { close, value } = actions();
+    const { close: closeAction, value } = actions();
     render(<TrailCycleInspector actions={value} cycleId={cycle.id} runtimeStore={store} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Close cycle" }));
     expect(screen.getByText("Close cycle?")).toBeInTheDocument();
-    expect(screen.getByText("2 issues are currently in this cycle.")).toBeInTheDocument();
-    expect(screen.getByText("1 issue is still open.")).toBeInTheDocument();
-    expect(screen.getByText("Close keeps the current membership in history.")).toBeInTheDocument();
-    expect(screen.getByText("Close and start next lets you choose transfers first.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Close and start next" })).toBeInTheDocument();
+    expect(screen.getByText("Aug 18 – Aug 30")).toBeInTheDocument();
+    expect(screen.getByText("2 issues · 1 open")).toBeInTheDocument();
+    expect(screen.queryByText(/keeps the current membership/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/lets you choose transfers/i)).not.toBeInTheDocument();
+    const closeButton = screen.getByRole("button", { name: "Close" });
+    const startNext = screen.getByRole("button", { name: "Close and start next" });
+    expect(closeButton).toHaveAttribute("data-confirmation-tone", "danger");
+    expect(startNext).not.toHaveAttribute("data-confirmation-tone");
+    expect(startNext).not.toHaveClass("trail-button--primary");
 
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    await waitFor(() => expect(close).toHaveBeenCalledWith(cycle));
+    fireEvent.click(closeButton);
+    await waitFor(() => expect(closeAction).toHaveBeenCalledWith(cycle));
   });
 
   it("opens Start-next while the source remains open and cancel leaves it unchanged", async () => {

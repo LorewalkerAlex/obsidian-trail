@@ -386,7 +386,7 @@ body button.trail-view-bar__action:disabled {
 .trail-view-popover__title,
 .trail-view-popover__group {
   padding: var(--trail-space-4) var(--trail-menu-item-padding-x);
-  color: var(--trail-text-faint);
+  color: var(--trail-text-muted);
   font-size: var(--trail-font-size-caption);
   font-weight: var(--trail-weight-medium);
 }

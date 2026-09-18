@@ -71,7 +71,7 @@ describe("TrailConfirmation", () => {
     });
   });
 
-  it("supports one alternate guarded action without redefining confirmation mechanics", () => {
+  it("supports one explicit destructive alternate action without redefining confirmation mechanics", () => {
     const onConfirm = vi.fn();
     const onAlternateConfirm = vi.fn();
     render(
@@ -90,9 +90,34 @@ describe("TrailConfirmation", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete and archive" }));
+    const alternate = screen.getByRole("button", { name: "Delete and archive" });
+    expect(alternate).toHaveAttribute("data-confirmation-tone", "danger");
+    fireEvent.click(alternate);
     expect(onAlternateConfirm).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("keeps a neutral alternate action visually secondary to the guarded confirm", () => {
+    render(
+      <TrailConfirmation
+        alternateConfirm={{
+          label: "Plan another action",
+          onConfirm: vi.fn(),
+        }}
+        confirmLabel="Delete"
+        description="Choose whether to commit or continue planning."
+        onConfirm={vi.fn()}
+        open
+        title="Delete this entry?"
+        tone="danger"
+      />,
+    );
+
+    const confirm = screen.getByRole("button", { name: "Delete" });
+    const alternate = screen.getByRole("button", { name: "Plan another action" });
+    expect(confirm).toHaveAttribute("data-confirmation-tone", "danger");
+    expect(alternate).not.toHaveAttribute("data-confirmation-tone");
+    expect(alternate).not.toHaveClass("trail-button--primary");
   });
 
   it("keeps the guarded action disabled until a composed workflow is ready", () => {

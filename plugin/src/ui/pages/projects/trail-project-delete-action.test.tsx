@@ -173,6 +173,8 @@ describe("Project Delete Action", () => {
       await menu.request()?.onSelect("project.delete");
     });
 
+    expect(screen.getByRole("dialog", { name: "Delete “Source”?" })).toBeInTheDocument();
+    expect(screen.getByText("1 issue moves")).toBeInTheDocument();
     const confirm = screen.getByRole("button", { name: "Delete project" });
     expect(confirm).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Replacement project: Select project" }));
@@ -210,12 +212,12 @@ describe("Project Delete Action", () => {
     await act(async () => {
       await menu.request()?.onSelect("project.delete");
     });
-    const dialog = screen.getByRole("dialog", { name: "Delete project" });
+    const dialog = screen.getByRole("dialog", { name: "Delete “Source”?" });
 
     fireEvent.keyDown(dialog, { key: "Escape" });
 
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Delete project" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Delete “Source”?" })).not.toBeInTheDocument();
       expect(page).toHaveFocus();
       expect(screen.getByRole("button", { name: "More project actions" })).not.toHaveFocus();
     });

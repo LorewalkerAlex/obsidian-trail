@@ -240,8 +240,9 @@ export function TrailCycleInspector({
     }
   };
 
-  const issueLabel = `${readModel.issueCount} ${readModel.issueCount === 1 ? "issue" : "issues"}`;
-  const issueRelation = `${issueLabel} ${readModel.issueCount === 1 ? "is" : "are"} currently in this cycle.`;
+  const issueSummary = readModel.kind === "current"
+    ? `${readModel.issueCount} ${readModel.issueCount === 1 ? "issue" : "issues"} · ${readModel.unfinishedIssueCount} open`
+    : undefined;
 
   return (
     <>
@@ -309,19 +310,13 @@ export function TrailCycleInspector({
             disabled: pending,
             label: "Close and start next",
             onConfirm: () => setStartNextOpen(true),
-            tone: "danger",
           }}
           confirmDisabled={pending}
           confirmLabel="Close"
           description={(
             <span className="trail-cycle-inspector__close-description">
               <strong>{range}</strong>
-              <span>{issueRelation}</span>
-              <span>
-                {readModel.unfinishedIssueCount} {readModel.unfinishedIssueCount === 1 ? "issue is" : "issues are"} still open.
-              </span>
-              <span>Close keeps the current membership in history.</span>
-              <span>Close and start next lets you choose transfers first.</span>
+              <span>{issueSummary}</span>
             </span>
           )}
           onConfirm={() => { void closeCycle(); }}

@@ -256,8 +256,6 @@
   min-width: 0;
   justify-content: flex-end;
   margin-top: var(--trail-space-11);
-  padding-top: var(--trail-space-6);
-  border-top: 1px solid var(--trail-border-subtle);
 }
 
 body .trail-issue-peek__footer button.trail-button {

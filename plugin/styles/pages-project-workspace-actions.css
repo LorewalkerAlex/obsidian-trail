@@ -54,46 +54,18 @@
   pointer-events: auto;
 }
 
-/* Project deletion is Page-local, but its geometry follows the shared Linear-faithful confirmation grammar. */
+/* Project deletion keeps only the extra width its migration content needs; shared Confirmation owns the rest. */
 .trail-confirmation__content:has(.trail-project-delete-flow) {
   width: min(420px, calc(100vw - 32px));
 }
 
 .trail-confirmation__surface:has(.trail-project-delete-flow) {
   width: 100%;
-  padding: var(--trail-space-8);
-  border: 1px solid var(--trail-border-default);
-  border-radius: var(--trail-menu-radius);
-}
-
-.trail-confirmation__surface:has(.trail-project-delete-flow) .trail-confirmation__title {
-  font-size: var(--trail-font-size-body);
-  line-height: 1.35;
-}
-
-.trail-confirmation__surface:has(.trail-project-delete-flow) .trail-confirmation__description {
-  margin-top: var(--trail-space-4);
-  font-size: var(--trail-font-size-supporting);
-  line-height: 1.45;
-}
-
-.trail-confirmation__surface:has(.trail-project-delete-flow) .trail-confirmation__actions {
-  gap: var(--trail-space-3);
-  margin-top: var(--trail-space-8);
 }
 
 .trail-project-delete-flow {
   display: grid;
   gap: var(--trail-space-3);
-}
-
-.trail-project-delete-flow__prompt {
-  color: var(--trail-text-secondary);
-}
-
-.trail-project-delete-flow__project-name {
-  color: var(--trail-text-primary);
-  font-weight: var(--trail-weight-medium);
 }
 
 .trail-project-delete-flow__consequence {

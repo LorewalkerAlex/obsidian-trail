@@ -29,20 +29,17 @@ function consequenceCopy(childIssueCount: number, milestoneCount: number): strin
   const consequences: string[] = [];
   if (childIssueCount > 0) {
     consequences.push(
-      `${childIssueCount} ${childIssueCount === 1 ? "issue" : "issues"} will move to the project you choose`,
+      `${childIssueCount} ${childIssueCount === 1 ? "issue moves" : "issues move"}`,
     );
   }
   if (milestoneCount > 0) {
     consequences.push(
-      `${milestoneCount} ${milestoneCount === 1 ? "milestone" : "milestones"} will be deleted`,
+      `${milestoneCount} ${milestoneCount === 1 ? "milestone" : "milestones"} deleted`,
     );
   }
-  if (childIssueCount > 0 && milestoneCount > 0) {
-    consequences.push("moved issues will no longer reference milestones from this project");
-  }
   return consequences.length === 0
-    ? "This project will be removed from Trail."
-    : `${consequences.join(". ")}.`;
+    ? "No issues or milestones."
+    : consequences.join(" · ");
 }
 
 export function TrailProjectDeleteAction({
@@ -109,11 +106,6 @@ export function TrailProjectDeleteAction({
           confirmLabel="Delete project"
           description={(
             <span className="trail-project-delete-flow">
-              <span className="trail-project-delete-flow__prompt">
-                Delete <span className="trail-project-delete-flow__project-name">
-                  “{deleteReadModel.expectedProject.title}”
-                </span>?
-              </span>
               <span className="trail-project-delete-flow__consequence">
                 {consequenceCopy(
                   deleteReadModel.childIssueCount,
@@ -163,7 +155,7 @@ export function TrailProjectDeleteAction({
           }}
           open
           returnFocusRef={returnFocusRef}
-          title="Delete project"
+          title={`Delete “${deleteReadModel.expectedProject.title}”?`}
           tone="danger"
         />
       )}
