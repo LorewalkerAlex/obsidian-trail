@@ -43,7 +43,9 @@ describe("TrailInspector", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 2, name: "Initiative A" }))
+    expect(screen.getByRole("complementary", { name: "Trail inspector" }))
+      .toHaveAttribute("data-target-kind", "initiative");
+    expect(screen.getByRole("region", { name: "Initiative properties" }))
       .toBeInTheDocument();
     expect(screen.queryByText("Inspector content has not been implemented yet."))
       .not.toBeInTheDocument();
@@ -64,7 +66,10 @@ describe("TrailInspector", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 2, name: "Project A" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Trail inspector" }))
+      .toHaveAttribute("data-target-kind", "project");
+    expect(screen.getByRole("region", { name: "Project properties" }))
+      .toBeInTheDocument();
     expect(screen.queryByText("Inspector content has not been implemented yet."))
       .not.toBeInTheDocument();
   });
