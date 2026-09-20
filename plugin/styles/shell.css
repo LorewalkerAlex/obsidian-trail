@@ -270,7 +270,8 @@ body button.trail-navigation__row[aria-current="page"]:hover {
 .trail-navigation__search-results {
   min-height: 0;
   flex: 1 1 auto;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-top: var(--trail-space-7);
 }
 
