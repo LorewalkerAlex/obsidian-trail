@@ -237,7 +237,7 @@ body button.trail-home-work-pulse__more {
 
   .trail-home-work-pulse {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto auto minmax(0, 1fr);
   }
 
   .trail-home-work-pulse__module + .trail-home-work-pulse__module {

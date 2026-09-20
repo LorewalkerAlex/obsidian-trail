@@ -60,7 +60,8 @@
 }
 
 .trail-page-surface[data-scroll="page"] {
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .trail-page-surface[data-inset="page"] {
