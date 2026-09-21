@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { readTrailZonedDateTimeParts } from "../../domain/rules/trail-temporal-rules";
@@ -17,8 +17,9 @@ describe("TrailDueDate", () => {
       />,
     );
 
-    const due = screen.getByText("Sep 3");
-    expect(due).toHaveAttribute("aria-label", "September 3, 2026");
+    const due = screen.getByLabelText("September 3, 2026");
+    expect(within(due).getByText("Sep")).toHaveClass("trail-due-date__month");
+    expect(within(due).getByText("3")).toHaveClass("trail-due-date__day");
     expect(due).toHaveAttribute("datetime", "2026-09-02T16:00:00.000Z");
     expect(due).toHaveAttribute("title", "September 3, 2026");
   });
@@ -61,6 +62,9 @@ describe("TrailDuePropertySelect", () => {
 
     const trigger = screen.getByRole("button", { name: "Review due" });
     expect(trigger).toHaveClass("trail-property-control");
-    expect(trigger).toHaveTextContent("Sep 3");
+    const due = trigger.querySelector(".trail-due-date");
+    expect(due).not.toBeNull();
+    expect(due?.querySelector(".trail-due-date__month")).toHaveTextContent("Sep");
+    expect(due?.querySelector(".trail-due-date__day")).toHaveTextContent("3");
   });
 });

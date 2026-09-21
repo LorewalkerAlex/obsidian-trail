@@ -35,10 +35,10 @@ function TrailCycleProjectIcon() {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="1.35"
+        strokeWidth="1.45"
       >
-        <rect height="10" rx="2" width="10" x="3" y="3" />
-        <path d="M6 6h4M6 8.75h4M6 11.5h2.5" />
+        <rect height="14" rx="2.25" width="14" x="1" y="1" />
+        <path d="M4.5 5h7M4.5 8h7M4.5 11h4.25" />
       </g>
     </svg>
   );

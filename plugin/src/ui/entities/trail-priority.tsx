@@ -128,13 +128,9 @@ export function TrailPriorityGlyph({
             x="1.3"
             y="1.3"
           />
-          <rect
+          <path
             className="trail-priority-glyph__urgent-mark"
-            height="4.8"
-            rx="0.7"
-            width="1.4"
-            x="7.3"
-            y="3.8"
+            d="M8 4.1v4.4"
           />
           <circle
             className="trail-priority-glyph__urgent-dot"

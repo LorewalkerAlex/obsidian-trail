@@ -5,24 +5,40 @@ export interface TrailDueDateProps {
   readonly timezone: string;
 }
 
-function formatDueDate(
+function formatLongDueDate(
   timestamp: TrailTimestamp,
   timezone: string,
-  dateStyle: "long" | "short",
 ): string {
   return new Intl.DateTimeFormat("en-US", {
     day: "numeric",
-    month: dateStyle === "long" ? "long" : "short",
+    month: "long",
     timeZone: timezone,
-    ...(dateStyle === "long" ? { year: "numeric" as const } : {}),
+    year: "numeric",
   }).format(timestamp);
+}
+
+function compactDueDateParts(
+  timestamp: TrailTimestamp,
+  timezone: string,
+): { readonly day: string; readonly month: string } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+    timeZone: timezone,
+  }).formatToParts(timestamp);
+
+  return {
+    day: parts.find((part) => part.type === "day")?.value ?? "",
+    month: parts.find((part) => part.type === "month")?.value ?? "",
+  };
 }
 
 export function TrailDueDate({
   timestamp,
   timezone,
 }: TrailDueDateProps) {
-  const accessibleLabel = formatDueDate(timestamp, timezone, "long");
+  const accessibleLabel = formatLongDueDate(timestamp, timezone);
+  const compact = compactDueDateParts(timestamp, timezone);
 
   return (
     <time
@@ -31,7 +47,8 @@ export function TrailDueDate({
       dateTime={new Date(timestamp).toISOString()}
       title={accessibleLabel}
     >
-      {formatDueDate(timestamp, timezone, "short")}
+      <span className="trail-due-date__month">{compact.month} </span>
+      <span className="trail-due-date__day">{compact.day}</span>
     </time>
   );
 }

@@ -211,6 +211,7 @@ body button.trail-navigation__row {
 .trail-navigation__row-label {
   min-width: 0;
   overflow: hidden;
+  line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

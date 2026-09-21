@@ -30,7 +30,13 @@
   opacity: 0.92;
 }
 
-.trail-priority-glyph__urgent-mark,
+.trail-priority-glyph__urgent-mark {
+  fill: none;
+  stroke: var(--trail-surface-canvas);
+  stroke-linecap: round;
+  stroke-width: 1.65;
+}
+
 .trail-priority-glyph__urgent-dot {
   fill: var(--trail-surface-canvas);
 }
@@ -118,10 +124,24 @@
 }
 
 .trail-due-date {
+  display: inline-grid;
+  grid-template-columns: 4ch 2ch;
+  align-items: baseline;
+  column-gap: 0;
   color: inherit;
   font: inherit;
+  font-family: var(--font-monospace, ui-monospace), "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.trail-due-date__month {
+  min-width: 0;
+}
+
+.trail-due-date__day {
+  min-width: 0;
+  text-align: right;
 }
 
 .trail-label-dots {

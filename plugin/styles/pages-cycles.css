@@ -138,8 +138,8 @@ body button.trail-cycle-board__lane-disclosure:focus-visible {
 }
 
 .trail-cycle-board__lane-project-icon {
-  width: var(--trail-icon-size-sm);
-  height: var(--trail-icon-size-sm);
+  width: var(--trail-icon-size-md);
+  height: var(--trail-icon-size-md);
   flex: 0 0 auto;
   color: var(--trail-text-muted);
 }

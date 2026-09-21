@@ -77,7 +77,7 @@
 }
 
 .trail-segmented-summary--inline .trail-segmented-summary__segment > span {
-  color: var(--trail-text-faint);
+  color: var(--trail-text-muted);
   font-size: var(--trail-font-size-caption);
 }
 
