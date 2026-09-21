@@ -56,7 +56,7 @@ Runtime
 | Action Registry | one action identity/context/capability authority | `ui/interactions`, existing Application intents, Query capabilities/targets, Obsidian binding adapter | shared UI + Application + host keybinding |
 | Context Menu / overflow / contextual Command Menu | presentations over Action Registry | Obsidian Menu adapter/mechanics + `ui/interactions` / `ui/patterns` | interaction + representative host |
 | Workflow Issue Peek | read-only transient preview; no navigation/Inspector retarget | `query` Issue presentation projection, `ui/interactions` + Peek surface pattern | Query + UI interaction + responsive/focus host evidence |
-| Picker family | shared select/search/multi/date mechanics; semantic legality outside generic shell | `ui/interactions`, `ui/patterns`, `ui/entities`, Query where target legality applies | shared interaction + semantic consumers |
+| Picker family | shared select/search/multi/date mechanics; semantic legality outside generic shell | `ui/patterns/trail-calendar-date-picker.tsx` + `styles/patterns-calendar.css` for temporal mechanics; `ui/entities` Due wrappers; `ui/interactions` Filter; Cycle consumers; Query where target legality applies | shared interaction + semantic consumers |
 | Confirmation | top-layer safe Cancel/confirm mechanics | `ui/interactions`, reusable confirmation pattern | interaction/focus + workflow consumer |
 | Transient interaction stack | topmost Esc/outside-click/focus ownership | `ui/interactions` | interaction tests + host focus where needed |
 | Current Cycle collection | Open Cycle membership + live Issue facts | `query/cycles` Current Cycle Read Model, `ui/pages/cycles`, shared Issue collection/Filter/Selection/Peek | Query + UI |
@@ -413,6 +413,7 @@ Use this reverse map before calibrating a shared owner. Every listed consumer is
 | Progress | [G] | Projects Root/Initiative through Project Summary Row; Home Work Pulse; Project Inspector; Cycle Inspector |
 | Segmented Summary | [G] | Home Work Pulse; Project Inspector |
 | Status/Priority/Due/Label/Estimate semantic UI | [G] | collection rows/cards, relevant Filters, Standard Composers, and relevant Inspectors |
+| Calendar Date Picker | [G temporal pattern] | Due/optional-Due property controls; Collection Filter custom date; Cycle Start planned end; Cycle Inspector planned end |
 | Standard Composer family | [C creation] | Home creation; Triage creation/Accept; Projects Root; Initiative Focus; Project Workspace |
 | Issue Peek | [C Workflow Issue] | Project Workspace; Cycle |
 | Bulk Bar | [G] | Projects Root; Initiative Focus; Project Workspace; Current Cycle |

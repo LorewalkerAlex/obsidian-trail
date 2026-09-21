@@ -53,7 +53,6 @@ export function TrailInitiativeInspector({
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
   const readModel = selectTrailInitiativeInspectorReadModel(state, initiativeId);
   const [feedback, setFeedback] = useState<string>();
-  const [pending, setPending] = useState(false);
 
   if (readModel === null) {
     return (
@@ -73,15 +72,21 @@ export function TrailInitiativeInspector({
     );
   }
 
+  const latestReadModel = (): TrailInitiativeInspectorReadModel => {
+    const latest = selectTrailInitiativeInspectorReadModel(runtimeStore.getState(), initiativeId);
+    if (latest === null) throw new Error("This initiative is no longer available.");
+    return latest;
+  };
+
   const save = async (patch: TrailInitiativePropertyPatch): Promise<void> => {
-    if (pending) return;
     setFeedback(undefined);
 
     let result: ReturnType<TrailInitiativeInspectorActions["editProperties"]>;
     try {
+      const latest = latestReadModel();
       result = actions.editProperties(
-        readModel.expectedInitiative,
-        nextInitiativeProperties(readModel, patch),
+        latest.expectedInitiative,
+        nextInitiativeProperties(latest, patch),
       );
     } catch (error: unknown) {
       setFeedback(`Save failed: ${errorMessage(error)}`);
@@ -94,15 +99,14 @@ export function TrailInitiativeInspector({
     }
     if (result.kind === "unchanged") return;
 
-    setPending(true);
     try {
       await result.receipt.completion;
     } catch (error: unknown) {
       setFeedback(`Save failed: ${errorMessage(error)}`);
-    } finally {
-      setPending(false);
     }
   };
+
+  const disabled = state.control.kind !== "ready";
 
   return (
     <aside
@@ -120,7 +124,7 @@ export function TrailInitiativeInspector({
             <span className="trail-inspector__metadata-label trail-initiative-inspector__property-label">Priority</span>
             <span className="trail-inspector__metadata-value trail-initiative-inspector__property-control">
               <TrailPriorityPropertySelect
-                disabled={pending}
+                disabled={disabled}
                 onValueChange={(priority) => { void save({ kind: "priority", value: priority }); }}
                 value={readModel.priority}
               />
@@ -130,7 +134,7 @@ export function TrailInitiativeInspector({
             <span className="trail-inspector__metadata-label trail-initiative-inspector__property-label">Labels</span>
             <span className="trail-inspector__metadata-value trail-initiative-inspector__property-control">
               <TrailLabelPropertySelect
-                disabled={pending}
+                disabled={disabled}
                 entityType="initiative"
                 groups={readModel.configuration.labelGroups}
                 labels={readModel.configuration.labels}
@@ -143,7 +147,7 @@ export function TrailInitiativeInspector({
             <span className="trail-inspector__metadata-label trail-initiative-inspector__property-label">Due</span>
             <span className="trail-inspector__metadata-value trail-initiative-inspector__property-control">
               <TrailOptionalDuePropertySelect
-                disabled={pending}
+                disabled={disabled}
                 onValueChange={(due) => { void save({ kind: "due", value: due }); }}
                 referenceTimestamp={Date.now()}
                 timezone={readModel.configuration.temporal.timezone}

@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -154,6 +155,53 @@ describe("TrailCycleInspector", () => {
       cycle,
       Date.UTC(2026, 8, 2, 4),
     );
+  });
+
+  it("keeps lifecycle chrome stable while a planned-end save settles", async () => {
+    const { cycle, store } = readyCycleStore();
+    let resolveCompletion = () => {};
+    const completion = new Promise<void>((resolve) => {
+      resolveCompletion = resolve;
+    });
+    const base = actions();
+    const changePlannedEnd = vi.fn(() => ({
+      kind: "submitted" as const,
+      receipt: {
+        commandId: "command-planned-end",
+        completion,
+        entityId: cycle.id,
+      },
+    }));
+    const value = {
+      changePlannedEnd,
+      close: base.close,
+      closeAndStartNext: base.closeAndStartNext,
+      start: base.start,
+    } as unknown as Pick<
+      TrailUiActions["cycles"],
+      "changePlannedEnd" | "close" | "closeAndStartNext" | "start"
+    >;
+
+    render(<TrailCycleInspector actions={value} cycleId={cycle.id} runtimeStore={store} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Planned end:/ }));
+    fireEvent.change(screen.getByLabelText("Planned end date"), {
+      target: { value: "2026-09-02" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(changePlannedEnd).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Close cycle" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    await act(async () => {
+      resolveCompletion();
+      await completion;
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    });
   });
 
   it("confirms ordinary close with retained membership and distinguishes Start-next transfer planning", async () => {

@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -92,6 +93,64 @@ describe("TrailProjectInspector", () => {
       expect.objectContaining({ id: "project-a" }),
       undefined,
     );
+  });
+
+  it("keeps Project Inspector chrome stable while an inline mutation settles", async () => {
+    const store = createTrailTestRuntimeStore();
+    let resolveCompletion = () => {};
+    const completion = new Promise<void>((resolve) => {
+      resolveCompletion = resolve;
+    });
+    const changeStatus = vi.fn(() => ({
+      kind: "submitted" as const,
+      receipt: {
+        commandId: "command-project-status",
+        completion,
+        entityId: "project-a",
+      },
+    }));
+    const value = {
+      milestones: {
+        create: vi.fn(() => ({
+          commandId: "command-milestone",
+          completion: Promise.resolve(),
+          entityId: "milestone-new",
+        })),
+      },
+      projects: {
+        changeInitiative: vi.fn(() => unchanged()),
+        changeStatus,
+        editProperties: vi.fn(() => unchanged()),
+      },
+    } as unknown as {
+      readonly milestones: Pick<TrailUiActions["milestones"], "create">;
+      readonly projects: Pick<
+        TrailUiActions["projects"],
+        "changeInitiative" | "changeStatus" | "editProperties"
+      >;
+    };
+
+    render(
+      <TrailProjectInspector
+        actions={value}
+        projectId="project-a"
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Status: unstarted" }));
+    fireEvent.click(screen.getByRole("button", { name: "completed" }));
+
+    expect(changeStatus).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Status: unstarted" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Initiative: Initiative A" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /^Due:/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Add milestone" })).toBeEnabled();
+
+    await act(async () => {
+      resolveCompletion();
+      await completion;
+    });
   });
 
   it("creates a Milestone with the owning Project implicit", async () => {

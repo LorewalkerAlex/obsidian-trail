@@ -6,7 +6,6 @@ import {
   useState,
 } from "react";
 
-import type { TrailCalendarDate } from "../../domain/rules/trail-temporal-rules";
 import {
   type TrailCollectionFilterState,
   type TrailDiscreteFilterClause,
@@ -14,6 +13,10 @@ import {
   type TrailFilterDiscreteValue,
   isTrailCollectionFilterActive,
 } from "../../query/shared/trail-collection-filter";
+import {
+  formatTrailCalendarDateInput,
+  TrailCalendarDatePicker,
+} from "../patterns/trail-calendar-date-picker";
 import { TrailViewBarAction } from "../patterns/trail-view-bar";
 import { TrailViewPopover } from "../patterns/trail-view-popover";
 
@@ -70,38 +73,13 @@ const DUE_PRESETS = [
   { label: "This month", value: { kind: "this-month" } },
 ] as const satisfies readonly { readonly label: string; readonly value: TrailDueFilterValue }[];
 
-function calendarDateToInputValue(date: TrailCalendarDate): string {
-  return [
-    String(date.year).padStart(4, "0"),
-    String(date.month).padStart(2, "0"),
-    String(date.day).padStart(2, "0"),
-  ].join("-");
-}
-
-function parseCalendarDate(value: string): TrailCalendarDate | undefined {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (match === null) return undefined;
-  const year = Number.parseInt(match[1], 10);
-  const month = Number.parseInt(match[2], 10);
-  const day = Number.parseInt(match[3], 10);
-  const normalized = new Date(Date.UTC(year, month - 1, day));
-  if (
-    normalized.getUTCFullYear() !== year
-    || normalized.getUTCMonth() + 1 !== month
-    || normalized.getUTCDate() !== day
-  ) {
-    return undefined;
-  }
-  return { day, month, year };
-}
-
 function dueValueLabel(value: TrailDueFilterValue): string {
   switch (value.kind) {
     case "overdue": return "Overdue";
     case "today": return "Today";
     case "this-week": return "This week";
     case "this-month": return "This month";
-    case "date": return calendarDateToInputValue(value.date);
+    case "date": return formatTrailCalendarDateInput(value.date);
   }
 }
 
@@ -158,6 +136,7 @@ export function TrailCollectionFilter<PropertyId extends string>({
   const [activePropertyId, setActivePropertyId] = useState<PropertyId | undefined>();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [dueDraft, setDueDraft] = useState("");
   const listFocusRef = useRef<HTMLButtonElement | null>(null);
   const detailFocusRef = useRef<HTMLElement | null>(null);
   const activeProperty = properties.find((property) => property.id === activePropertyId);
@@ -178,6 +157,7 @@ export function TrailCollectionFilter<PropertyId extends string>({
     if (!nextOpen) {
       setActivePropertyId(undefined);
       setSearch("");
+      setDueDraft("");
     }
   };
 
@@ -232,6 +212,12 @@ export function TrailCollectionFilter<PropertyId extends string>({
                   onClick={() => {
                     setActivePropertyId(property.id);
                     setSearch("");
+                    const due = property.kind === "due"
+                      ? selectedDueValue(state, property.id)
+                      : undefined;
+                    setDueDraft(due?.kind === "date"
+                      ? formatTrailCalendarDateInput(due.date)
+                      : "");
                   }}
                   ref={index === 0 ? listFocusRef : undefined}
                   type="button"
@@ -355,26 +341,16 @@ export function TrailCollectionFilter<PropertyId extends string>({
                   );
                 })}
                 <div className="trail-view-popover__separator" />
-                <label className="trail-view-popover__date-field">
-                  <span>Pick date…</span>
-                  <input
-                    aria-label="Filter through date"
-                    onChange={(event) => {
-                      const date = parseCalendarDate(event.currentTarget.value);
-                      if (date !== undefined) {
-                        onSetDueValue(activeProperty.id, { date, kind: "date" });
-                        handleOpenChange(false);
-                      }
-                    }}
-                    type="date"
-                    value={(() => {
-                      const current = selectedDueValue(state, activeProperty.id);
-                      return current?.kind === "date"
-                        ? calendarDateToInputValue(current.date)
-                        : "";
-                    })()}
-                  />
-                </label>
+                <div className="trail-view-popover__group">Pick date…</div>
+                <TrailCalendarDatePicker
+                  inputLabel="Filter through date"
+                  onDateSelect={(date) => {
+                    onSetDueValue(activeProperty.id, { date, kind: "date" });
+                    handleOpenChange(false);
+                  }}
+                  onValueChange={setDueDraft}
+                  value={dueDraft}
+                />
               </div>
             )}
             {state[activeProperty.id] === undefined ? null : (
@@ -382,7 +358,10 @@ export function TrailCollectionFilter<PropertyId extends string>({
                 <div className="trail-view-popover__separator" />
                 <button
                   className="trail-view-popover__item trail-view-popover__item--muted"
-                  onClick={() => onClearClause(activeProperty.id)}
+                  onClick={() => {
+                    onClearClause(activeProperty.id);
+                    if (activeProperty.kind === "due") setDueDraft("");
+                  }}
                   type="button"
                 >
                   Clear {activeProperty.label.toLocaleLowerCase()}
@@ -403,6 +382,12 @@ export function TrailCollectionFilter<PropertyId extends string>({
               onClick={() => {
                 setActivePropertyId(property.id);
                 setSearch("");
+                const due = property.kind === "due"
+                  ? selectedDueValue(state, property.id)
+                  : undefined;
+                setDueDraft(due?.kind === "date"
+                  ? formatTrailCalendarDateInput(due.date)
+                  : "");
                 setOpen(true);
               }}
               type="button"

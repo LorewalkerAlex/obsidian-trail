@@ -9,11 +9,14 @@ import {
 } from "../../../domain/rules/trail-temporal-rules";
 import { selectTrailCycleInspectorReadModel } from "../../../query/cycles/trail-cycle-inspector-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
+import {
+  parseTrailCalendarDateInput,
+  TrailCalendarDatePicker,
+} from "../../patterns/trail-calendar-date-picker";
 import { TrailConfirmation } from "../../patterns/trail-confirmation";
 import { TrailPropertyControl } from "../../patterns/trail-property-control";
 import { TrailViewPopover } from "../../patterns/trail-view-popover";
 import { TrailButton } from "../../primitives/trail-button";
-import { TrailInput } from "../../primitives/trail-input";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { TrailCycleStart } from "./trail-cycle-start";
 
@@ -26,35 +29,15 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function twoDigits(value: number): string {
-  return String(value).padStart(2, "0");
-}
-
-function dateInputValue(timestamp: number, timezone: string): string {
-  const parts = readTrailZonedDateTimeParts(timestamp, timezone);
-  return `${parts.year}-${twoDigits(parts.month)}-${twoDigits(parts.day)}`;
-}
-
 function replaceCalendarDate(
   timestamp: number,
   input: string,
   timezone: string,
 ): number {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
-  if (match === null) throw new Error("Choose a valid planned end date");
-  const year = Number.parseInt(match[1] ?? "", 10);
-  const month = Number.parseInt(match[2] ?? "", 10);
-  const day = Number.parseInt(match[3] ?? "", 10);
-  const normalized = new Date(Date.UTC(year, month - 1, day));
-  if (
-    normalized.getUTCFullYear() !== year
-    || normalized.getUTCMonth() + 1 !== month
-    || normalized.getUTCDate() !== day
-  ) {
-    throw new Error("Choose a valid planned end date");
-  }
+  const date = parseTrailCalendarDateInput(input);
+  if (date === undefined) throw new Error("Choose a valid planned end date");
   const current = readTrailZonedDateTimeParts(timestamp, timezone);
-  return resolveTrailZonedDateTimeParts({ ...current, day, month, year }, timezone);
+  return resolveTrailZonedDateTimeParts({ ...current, ...date }, timezone);
 }
 
 function TrailCyclePlannedEndEditor({
@@ -69,7 +52,7 @@ function TrailCyclePlannedEndEditor({
   readonly value: number;
 }) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(() => dateInputValue(value, timezone));
+  const [draft, setDraft] = useState(() => formatTrailCalendarDate(value, timezone));
   const [validation, setValidation] = useState<string>();
   const [saving, setSaving] = useState(false);
 
@@ -77,7 +60,7 @@ function TrailCyclePlannedEndEditor({
     if (saving) return;
     setOpen(nextOpen);
     if (nextOpen) {
-      setDraft(dateInputValue(value, timezone));
+      setDraft(formatTrailCalendarDate(value, timezone));
       setValidation(undefined);
     }
   };
@@ -101,6 +84,8 @@ function TrailCyclePlannedEndEditor({
   };
 
   const formatted = formatTrailCalendarDate(value, timezone);
+  const valueParts = readTrailZonedDateTimeParts(value, timezone);
+  const referenceDate = { day: valueParts.day, month: valueParts.month, year: valueParts.year };
   return (
     <TrailViewPopover
       align="end"
@@ -119,11 +104,11 @@ function TrailCyclePlannedEndEditor({
     >
       <div className="trail-cycle-inspector__planned-end-editor">
         <div className="trail-view-popover__title">Planned end</div>
-        <TrailInput
-          aria-label="Planned end date"
+        <TrailCalendarDatePicker
           disabled={saving}
-          onChange={(event) => setDraft(event.currentTarget.value)}
-          type="date"
+          inputLabel="Planned end date"
+          onValueChange={setDraft}
+          referenceDate={referenceDate}
           value={draft}
         />
         {validation === undefined ? null : (
@@ -153,7 +138,7 @@ export function TrailCycleInspector({
 }) {
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
   const readModel = selectTrailCycleInspectorReadModel(state, cycleId);
-  const [pending, setPending] = useState(false);
+  const [lifecyclePending, setLifecyclePending] = useState(false);
   const [feedback, setFeedback] = useState<string>();
   const [closeOpen, setCloseOpen] = useState(false);
   const [startNextOpen, setStartNextOpen] = useState(false);
@@ -177,12 +162,19 @@ export function TrailCycleInspector({
   const timezone = readModel.timezone;
   const cycleLabel = formatTrailCycleLabel(readModel.expectedCycle, timezone);
 
+  const latestCurrentReadModel = () => {
+    const latest = selectTrailCycleInspectorReadModel(runtimeStore.getState(), cycleId);
+    if (latest?.kind !== "current") throw new Error("This cycle is no longer current.");
+    return latest;
+  };
+
   const savePlannedEnd = async (plannedEnd: number): Promise<boolean> => {
-    if (readModel.kind !== "current" || pending) return false;
+    if (readModel.kind !== "current" || lifecyclePending) return false;
     setFeedback(undefined);
     let result: ReturnType<TrailCycleInspectorActions["changePlannedEnd"]>;
     try {
-      result = actions.changePlannedEnd(readModel.expectedCycle, plannedEnd);
+      const latest = latestCurrentReadModel();
+      result = actions.changePlannedEnd(latest.expectedCycle, plannedEnd);
     } catch (error: unknown) {
       setFeedback(`Save failed: ${errorMessage(error)}`);
       return false;
@@ -192,35 +184,32 @@ export function TrailCycleInspector({
       return false;
     }
     if (result.kind === "unchanged") return true;
-    setPending(true);
     try {
       await result.receipt.completion;
       return true;
     } catch (error: unknown) {
       setFeedback(`Save failed: ${errorMessage(error)}`);
       return false;
-    } finally {
-      setPending(false);
     }
   };
 
   const closeCycle = async () => {
-    if (readModel.kind !== "current" || pending) return;
+    if (readModel.kind !== "current" || lifecyclePending) return;
     setFeedback(undefined);
     let receipt: ReturnType<TrailCycleInspectorActions["close"]>;
     try {
-      receipt = actions.close(readModel.expectedCycle);
+      receipt = actions.close(latestCurrentReadModel().expectedCycle);
     } catch (error: unknown) {
       setFeedback(`Close failed: ${errorMessage(error)}`);
       return;
     }
-    setPending(true);
+    setLifecyclePending(true);
     try {
       await receipt.completion;
     } catch (error: unknown) {
       setFeedback(`Close failed: ${errorMessage(error)}`);
     } finally {
-      setPending(false);
+      setLifecyclePending(false);
     }
   };
 
@@ -253,7 +242,7 @@ export function TrailCycleInspector({
               <span className="trail-inspector__metadata-value trail-cycle-inspector__property-value">
                 {readModel.kind === "current" ? (
                   <TrailCyclePlannedEndEditor
-                    disabled={pending || state.control.kind !== "ready"}
+                    disabled={lifecyclePending || state.control.kind !== "ready"}
                     onSave={savePlannedEnd}
                     timezone={timezone}
                     value={readModel.plannedEnd}
@@ -275,7 +264,7 @@ export function TrailCycleInspector({
         {readModel.kind === "current" ? (
           <section aria-label="Cycle actions" className="trail-inspector__section trail-cycle-inspector__section trail-cycle-inspector__actions">
             <TrailButton
-              disabled={pending || state.control.kind !== "ready"}
+              disabled={lifecyclePending || state.control.kind !== "ready"}
               onClick={() => setCloseOpen(true)}
             >
               Close cycle
@@ -291,11 +280,11 @@ export function TrailCycleInspector({
       {readModel.kind !== "current" ? null : (
         <TrailConfirmation
           alternateConfirm={{
-            disabled: pending,
+            disabled: lifecyclePending,
             label: "Close and start next",
             onConfirm: () => setStartNextOpen(true),
           }}
-          confirmDisabled={pending}
+          confirmDisabled={lifecyclePending}
           confirmLabel="Close"
           description={(
             <span className="trail-cycle-inspector__close-description">

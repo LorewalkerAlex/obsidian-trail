@@ -6,32 +6,17 @@ import {
   resolveTrailZonedDateTimeParts,
   type TrailCalendarDate,
 } from "../../domain/rules/trail-temporal-rules";
+import {
+  formatTrailCalendarDateInput,
+  TrailCalendarDatePicker,
+} from "../patterns/trail-calendar-date-picker";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
 import { TrailViewPopover } from "../patterns/trail-view-popover";
 import { TrailDueDate } from "./trail-due";
 
-function calendarDateToInputValue(timestamp: TrailTimestamp, timezone: string): string {
+function calendarDateForTimestamp(timestamp: TrailTimestamp, timezone: string): TrailCalendarDate {
   const date = readTrailZonedDateTimeParts(timestamp, timezone);
-  return [
-    String(date.year).padStart(4, "0"),
-    String(date.month).padStart(2, "0"),
-    String(date.day).padStart(2, "0"),
-  ].join("-");
-}
-
-function parseCalendarDate(value: string): TrailCalendarDate | undefined {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (match === null) return undefined;
-  const year = Number.parseInt(match[1], 10);
-  const month = Number.parseInt(match[2], 10);
-  const day = Number.parseInt(match[3], 10);
-  const normalized = new Date(Date.UTC(year, month - 1, day));
-  if (
-    normalized.getUTCFullYear() !== year
-    || normalized.getUTCMonth() + 1 !== month
-    || normalized.getUTCDate() !== day
-  ) return undefined;
-  return { day, month, year };
+  return { day: date.day, month: date.month, year: date.year };
 }
 
 function replaceCalendarDate(
@@ -75,12 +60,25 @@ export function TrailOptionalDuePropertySelect({
   value,
 }: TrailOptionalDuePropertySelectProps) {
   const [open, setOpen] = useState(false);
+  const referenceDate = calendarDateForTimestamp(value ?? referenceTimestamp, timezone);
+  const [draft, setDraft] = useState(
+    () => value === undefined ? "" : formatTrailCalendarDateInput(referenceDate),
+  );
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      setDraft(value === undefined ? "" : formatTrailCalendarDateInput(
+        calendarDateForTimestamp(value, timezone),
+      ));
+    }
+  };
 
   return (
     <TrailViewPopover
       label="Due"
       layer={layer}
-      onOpenChange={setOpen}
+      onOpenChange={handleOpenChange}
       open={open}
       trigger={(
         <TrailPropertyControl
@@ -109,24 +107,20 @@ export function TrailOptionalDuePropertySelect({
             <span>No due</span>
           </button>
         )}
-        <label className="trail-view-popover__date-field">
-          <span>Date</span>
-          <input
-            aria-label="Due date"
-            onChange={(event) => {
-              const date = parseCalendarDate(event.currentTarget.value);
-              if (date === undefined) return;
-              onValueChange(replaceCalendarDate(
-                value ?? referenceTimestamp,
-                timezone,
-                date,
-              ));
-              setOpen(false);
-            }}
-            type="date"
-            value={value === undefined ? "" : calendarDateToInputValue(value, timezone)}
-          />
-        </label>
+        <TrailCalendarDatePicker
+          inputLabel="Due date"
+          onDateSelect={(date) => {
+            onValueChange(replaceCalendarDate(
+              value ?? referenceTimestamp,
+              timezone,
+              date,
+            ));
+            setOpen(false);
+          }}
+          onValueChange={setDraft}
+          referenceDate={referenceDate}
+          value={draft}
+        />
       </div>
     </TrailViewPopover>
   );

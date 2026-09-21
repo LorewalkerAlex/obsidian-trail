@@ -944,7 +944,17 @@ Shared mechanics:
 - top-layer `Esc` and outside-click;
 - focus restoration.
 
-Single-select generally applies and closes. Multi-select applies each toggle to the owning state and remains open until dismissed; no extra Save/Done step is required.
+Temporal Calendar adds one explicit mechanical contract:
+
+```text
+YYYY-MM-DD text field + calendar grid
+month navigation -> viewed month only
+date activation  -> selected calendar date
+```
+
+Month navigation never changes or commits the selected value. Trail owns this calendar surface rather than delegating interaction semantics to the browser-native date popup.
+
+Single-select generally applies and closes. Temporal consumers retain owner commit semantics: Due / optional Due / custom Filter dates may apply immediately, while Cycle Planned end and Cycle Start planning remain draft/confirmation-owned. Multi-select applies each toggle to the owning state and remains open until dismissed; no extra Save/Done step is required.
 
 ### 5.7 Confirmation
 
@@ -1700,6 +1710,8 @@ Info
 
 Do not display physical IDs, carrier paths, parser offsets, schema markers, or implementation timestamps merely because they exist.
 
+Property-save pending state stays local to the property control/editor. Ordinary property persistence must not flash, dim, disable, or remount the whole Inspector; only a lifecycle action whose whole surface is guarded may use Inspector-wide pending treatment.
+
 ### 8.2 Project Inspector
 
 ```text
@@ -1779,7 +1791,7 @@ Planned end   2026-08-24
 Closed        2026-08-24
 ```
 
-Historical Inspector does not emphasize Progress because close-time Issue state is not stored. Effort is a live aggregate of current member Estimate levels under current configured weights, not `Effort at close`.
+Current Planned end uses the shared temporal Calendar as a draft editor: month navigation changes only the viewed month, date activation changes the draft, Save commits, and Cancel discards. Historical Inspector does not emphasize Progress because close-time Issue state is not stored. Effort is a live aggregate of current member Estimate levels under current configured weights, not `Effort at close`.
 
 ### 8.4 Issue Inspector
 

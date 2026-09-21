@@ -181,7 +181,6 @@ export function TrailProjectInspector({
   const now = Date.now();
   const readModel = selectTrailProjectInspectorReadModel(state, projectId, now);
   const [feedback, setFeedback] = useState<string>();
-  const [pending, setPending] = useState(false);
 
   if (readModel === null) {
     return (
@@ -199,14 +198,25 @@ export function TrailProjectInspector({
     );
   }
 
+  const latestReadModel = (): TrailProjectInspectorReadModel => {
+    const latest = selectTrailProjectInspectorReadModel(
+      runtimeStore.getState(),
+      projectId,
+      Date.now(),
+    );
+    if (latest === null) throw new Error("This project is no longer available.");
+    return latest;
+  };
+
   const settle = async (
-    action: () => ReturnType<TrailProjectInspectorActions["projects"]["changeStatus"]>,
+    action: (
+      latest: TrailProjectInspectorReadModel,
+    ) => ReturnType<TrailProjectInspectorActions["projects"]["changeStatus"]>,
   ): Promise<void> => {
-    if (pending) return;
     setFeedback(undefined);
     let result: ReturnType<TrailProjectInspectorActions["projects"]["changeStatus"]>;
     try {
-      result = action();
+      result = action(latestReadModel());
     } catch (error: unknown) {
       setFeedback(`Save failed: ${errorMessage(error)}`);
       return;
@@ -216,24 +226,22 @@ export function TrailProjectInspector({
       return;
     }
     if (result.kind === "unchanged") return;
-    setPending(true);
     try {
       await result.receipt.completion;
     } catch (error: unknown) {
       setFeedback(`Save failed: ${errorMessage(error)}`);
-    } finally {
-      setPending(false);
     }
   };
 
-  const saveProperty = (patch: TrailProjectPropertyPatch) => settle(() => (
+  const saveProperty = (patch: TrailProjectPropertyPatch) => settle((latest) => (
     actions.projects.editProperties(
-      readModel.expectedProject,
-      nextProjectProperties(readModel, patch),
+      latest.expectedProject,
+      nextProjectProperties(latest, patch),
     )
   ));
 
   const timezone = readModel.configuration.temporal.timezone;
+  const writable = state.control.kind === "ready";
 
   return (
     <aside
@@ -249,12 +257,12 @@ export function TrailProjectInspector({
             <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailStatusPropertySelect
                 category={readModel.status.category}
-                disabled={pending}
+                disabled={!writable}
                 entityType="project"
                 label={readModel.status.label}
                 onValueChange={(statusDefinitionId) => {
-                  void settle(() => actions.projects.changeStatus(
-                    readModel.expectedProject,
+                  void settle((latest) => actions.projects.changeStatus(
+                    latest.expectedProject,
                     statusDefinitionId,
                   ));
                 }}
@@ -267,12 +275,12 @@ export function TrailProjectInspector({
             <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Initiative</span>
             <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailRelationPropertySelect
-                disabled={pending}
+                disabled={!writable}
                 label="Initiative"
                 noneLabel="No initiative"
                 onValueChange={(initiativeId) => {
-                  void settle(() => actions.projects.changeInitiative(
-                    readModel.expectedProject,
+                  void settle((latest) => actions.projects.changeInitiative(
+                    latest.expectedProject,
                     initiativeId,
                   ));
                 }}
@@ -285,7 +293,7 @@ export function TrailProjectInspector({
             <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Priority</span>
             <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailPriorityPropertySelect
-                disabled={pending}
+                disabled={!writable}
                 onValueChange={(priority) => { void saveProperty({ kind: "priority", value: priority }); }}
                 value={readModel.priority}
               />
@@ -295,7 +303,7 @@ export function TrailProjectInspector({
             <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Labels</span>
             <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailLabelPropertySelect
-                disabled={pending}
+                disabled={!writable}
                 entityType="project"
                 groups={readModel.configuration.labelGroups}
                 labels={readModel.configuration.labels}
@@ -308,7 +316,7 @@ export function TrailProjectInspector({
             <span className="trail-inspector__metadata-label trail-project-inspector__property-label">Due</span>
             <span className="trail-inspector__metadata-value trail-project-inspector__property-control">
               <TrailOptionalDuePropertySelect
-                disabled={pending}
+                disabled={!writable}
                 onValueChange={(due) => { void saveProperty({ kind: "due", value: due }); }}
                 referenceTimestamp={now}
                 timezone={timezone}
@@ -366,7 +374,7 @@ export function TrailProjectInspector({
         <div className="trail-project-inspector__section-heading">
           <h3 className="trail-inspector__section-title trail-project-inspector__section-title">Milestones</h3>
           <TrailMilestoneQuickCreate
-            disabled={pending || state.control.kind !== "ready"}
+            disabled={!writable}
             onCreate={async (title, due) => {
               const receipt = actions.milestones.create(readModel.expectedProject.id, title, due);
               await receipt.completion;

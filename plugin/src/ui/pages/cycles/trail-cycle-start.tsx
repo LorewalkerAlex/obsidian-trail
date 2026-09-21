@@ -11,10 +11,16 @@ import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-sto
 import { TrailDueDate } from "../../entities/trail-due";
 import { TrailPriorityGlyph } from "../../entities/trail-priority";
 import { TrailStatusGlyph } from "../../entities/trail-status";
+import {
+  formatTrailCalendarDateInput,
+  parseTrailCalendarDateInput,
+  TrailCalendarDatePicker,
+} from "../../patterns/trail-calendar-date-picker";
 import { TrailCollectionRow } from "../../patterns/trail-collection-row";
+import { TrailPropertyControl } from "../../patterns/trail-property-control";
+import { TrailViewPopover } from "../../patterns/trail-view-popover";
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailCheckbox } from "../../primitives/trail-checkbox";
-import { TrailInput } from "../../primitives/trail-input";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 
 type TrailCycleStartBaseProps = {
@@ -33,31 +39,6 @@ type TrailCycleStartProps = TrailCycleStartBaseProps & (
       readonly sourceCycleId: string;
     }
 );
-
-function twoDigits(value: number): string {
-  return String(value).padStart(2, "0");
-}
-
-function calendarDateInputValue(date: TrailCalendarDate): string {
-  return `${date.year}-${twoDigits(date.month)}-${twoDigits(date.day)}`;
-}
-
-function parseCalendarDate(input: string): TrailCalendarDate {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
-  if (match === null) throw new Error("Choose a valid planned end date");
-  const year = Number.parseInt(match[1] ?? "", 10);
-  const month = Number.parseInt(match[2] ?? "", 10);
-  const day = Number.parseInt(match[3] ?? "", 10);
-  const normalized = new Date(Date.UTC(year, month - 1, day));
-  if (
-    normalized.getUTCFullYear() !== year
-    || normalized.getUTCMonth() + 1 !== month
-    || normalized.getUTCDate() !== day
-  ) {
-    throw new Error("Choose a valid planned end date");
-  }
-  return { day, month, year };
-}
 
 function plannedEndTimestamp(date: TrailCalendarDate, timezone: string): number {
   return resolveTrailZonedDateTimeParts({
@@ -101,8 +82,9 @@ export function TrailCycleStart(props: TrailCycleStartProps) {
   const [plannedEndDraft, setPlannedEndDraft] = useState(
     () => initialModel?.suggestedPlannedEndDate === undefined
       ? ""
-      : calendarDateInputValue(initialModel.suggestedPlannedEndDate),
+      : formatTrailCalendarDateInput(initialModel.suggestedPlannedEndDate),
   );
+  const [plannedEndOpen, setPlannedEndOpen] = useState(false);
 
   if (initialModel === null || initialModel.suggestedPlannedEndDate === undefined) return null;
 
@@ -134,7 +116,9 @@ export function TrailCycleStart(props: TrailCycleStartProps) {
 
     let plannedEnd: number;
     try {
-      plannedEnd = plannedEndTimestamp(parseCalendarDate(plannedEndDraft), timezone);
+      const plannedEndDate = parseTrailCalendarDateInput(plannedEndDraft);
+      if (plannedEndDate === undefined) throw new Error("Choose a valid planned end date");
+      plannedEnd = plannedEndTimestamp(plannedEndDate, timezone);
     } catch (error: unknown) {
       setFeedback(errorMessage(error));
       return;
@@ -201,16 +185,38 @@ export function TrailCycleStart(props: TrailCycleStartProps) {
                 {formatReferenceDate(referenceNow, timezone)}
               </span>
             </div>
-            <label className="trail-cycle-start__field">
+            <div className="trail-cycle-start__field">
               <span className="trail-cycle-start__field-label">Planned end</span>
-              <TrailInput
-                aria-label="Planned end date"
-                disabled={pending}
-                onChange={(event) => setPlannedEndDraft(event.currentTarget.value)}
-                type="date"
-                value={plannedEndDraft}
-              />
-            </label>
+              <TrailViewPopover
+                label="Planned end"
+                layer="modal-child"
+                onOpenChange={(nextOpen) => {
+                  if (!pending) setPlannedEndOpen(nextOpen);
+                }}
+                open={plannedEndOpen}
+                trigger={(
+                  <TrailPropertyControl
+                    aria-label={`Planned end: ${plannedEndDraft}`}
+                    disabled={pending}
+                  >
+                    {plannedEndDraft}
+                  </TrailPropertyControl>
+                )}
+                width="compact"
+              >
+                <div className="trail-view-popover__stack">
+                  <div className="trail-view-popover__title">Planned end</div>
+                  <TrailCalendarDatePicker
+                    disabled={pending}
+                    inputLabel="Planned end date"
+                    onDateSelect={() => setPlannedEndOpen(false)}
+                    onValueChange={setPlannedEndDraft}
+                    referenceDate={initialModel.suggestedPlannedEndDate}
+                    value={plannedEndDraft}
+                  />
+                </div>
+              </TrailViewPopover>
+            </div>
           </div>
 
           <div

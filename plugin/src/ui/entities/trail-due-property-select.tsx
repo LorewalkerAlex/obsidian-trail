@@ -7,33 +7,12 @@ import {
   resolveTrailZonedDateTimeParts,
   type TrailCalendarDate,
 } from "../../domain/rules/trail-temporal-rules";
+import {
+  formatTrailCalendarDateInput,
+  TrailCalendarDatePicker,
+} from "../patterns/trail-calendar-date-picker";
 import { TrailPropertyControl } from "../patterns/trail-property-control";
 import { TrailDueDate } from "./trail-due";
-
-function calendarDateToInputValue(date: TrailCalendarDate): string {
-  return [
-    String(date.year).padStart(4, "0"),
-    String(date.month).padStart(2, "0"),
-    String(date.day).padStart(2, "0"),
-  ].join("-");
-}
-
-function parseCalendarDate(value: string): TrailCalendarDate | undefined {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (match === null) return undefined;
-  const year = Number.parseInt(match[1], 10);
-  const month = Number.parseInt(match[2], 10);
-  const day = Number.parseInt(match[3], 10);
-  const normalized = new Date(Date.UTC(year, month - 1, day));
-  if (
-    normalized.getUTCFullYear() !== year
-    || normalized.getUTCMonth() + 1 !== month
-    || normalized.getUTCDate() !== day
-  ) {
-    return undefined;
-  }
-  return { day, month, year };
-}
 
 export function replaceTrailDueCalendarDate(
   timestamp: TrailTimestamp,
@@ -76,16 +55,22 @@ export function TrailDuePropertySelect({
   timezone,
   value,
 }: TrailDuePropertySelectProps) {
-  const [open, setOpen] = useState(false);
   const current = readTrailZonedDateTimeParts(value, timezone);
-  const inputValue = calendarDateToInputValue({
+  const currentDate: TrailCalendarDate = {
     day: current.day,
     month: current.month,
     year: current.year,
-  });
+  };
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(() => formatTrailCalendarDateInput(currentDate));
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) setDraft(formatTrailCalendarDateInput(currentDate));
+  };
 
   return (
-    <Popover.Root onOpenChange={setOpen} open={open}>
+    <Popover.Root onOpenChange={handleOpenChange} open={open}>
       <Popover.Trigger asChild>
         <TrailPropertyControl
           aria-label="Review due"
@@ -106,22 +91,17 @@ export function TrailDuePropertySelect({
           sideOffset={4}
         >
           <div className="trail-due-select__title">Review due</div>
-          <label className="trail-due-select__field">
-            <span>Date</span>
-            <input
-              aria-label="Review due date"
-              autoFocus
-              onChange={(event) => {
-                const date = parseCalendarDate(event.currentTarget.value);
-                if (date !== undefined) {
-                  onValueChange(replaceTrailDueCalendarDate(value, timezone, date));
-                  setOpen(false);
-                }
-              }}
-              type="date"
-              value={inputValue}
-            />
-          </label>
+          <TrailCalendarDatePicker
+            autoFocus
+            inputLabel="Review due date"
+            onDateSelect={(date) => {
+              onValueChange(replaceTrailDueCalendarDate(value, timezone, date));
+              setOpen(false);
+            }}
+            onValueChange={setDraft}
+            referenceDate={currentDate}
+            value={draft}
+          />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

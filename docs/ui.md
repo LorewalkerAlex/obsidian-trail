@@ -642,7 +642,9 @@ temporal                        -> date/calendar Picker
 
 Shared mechanics include focus, keyboard navigation, selected-state grammar, search-field behavior, empty results, Esc/outside-click, focus restoration, and viewport collision. Semantic values and legality remain owned by the relevant entity/query capability.
 
-Single-select applies and closes. Multi-select applies immediately while staying open; no extra Save/Done step is required.
+Temporal Picker is Trail-owned: a `YYYY-MM-DD` text field and calendar grid share one selected calendar date. Month navigation changes only the viewed month; it never changes selection or commits a value. Activating a date changes selection. Browser-native date-picker popups are not a Product authority.
+
+Single-select normally applies and closes. Temporal consumers preserve owner commit semantics: Due / optional Due / custom Filter dates may apply on date selection, while draft-owning flows such as Cycle Planned end or Cycle Start planning may retain explicit Cancel/Save or parent confirmation. Multi-select applies immediately while staying open; no extra Save/Done step is required.
 
 ### 5.6 Confirmation
 
@@ -1144,6 +1146,8 @@ Physical IDs, carrier paths, parser ranges, schema markers, and implementation t
 Useful semantic sections are Properties, Context, derived Progress/Attention summaries, and Info when retained history has real product value.
 
 Inspector follows the current primary Trail Page/entity, not transient hover, keyboard focus, multi-selection, or Peek target.
+
+Normal property mutation feedback and disabled state stay local to the owning property editor. A property save must not dim, disable, or remount the whole Inspector merely because persistence is settling. Lifecycle actions such as Close Cycle may still own a broader guarded pending state when the whole surface participates in that action.
 
 ### 9.2 Issue Full Item
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { TrailInitiative, TrailProject } from "../../../domain/model/trail-entities";
@@ -103,6 +103,43 @@ describe("TrailInitiativeInspector", () => {
       labelIds: initiative.labelIds,
       priority: initiative.priority,
       title: initiative.title,
+    });
+  });
+
+  it("keeps Initiative Inspector chrome stable while an immediate Due save settles", async () => {
+    const { initiative, store } = initiativeStore();
+    let resolveCompletion = () => {};
+    const completion = new Promise<void>((resolve) => {
+      resolveCompletion = resolve;
+    });
+    const editProperties = vi.fn(() => ({
+      kind: "submitted" as const,
+      receipt: {
+        commandId: "command-initiative-due",
+        completion,
+        entityId: initiative.id,
+      },
+    }));
+
+    render(
+      <TrailInitiativeInspector
+        actions={{ editProperties }}
+        initiativeId={initiative.id}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Due: Set" }));
+    fireEvent.click(screen.getByRole("button", { name: "No due" }));
+
+    expect(editProperties).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("combobox", { name: "Priority: High" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Labels: Work" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Due: Set" })).toBeEnabled();
+
+    await act(async () => {
+      resolveCompletion();
+      await completion;
     });
   });
 });
