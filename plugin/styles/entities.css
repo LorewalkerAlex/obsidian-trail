@@ -124,24 +124,10 @@
 }
 
 .trail-due-date {
-  display: inline-grid;
-  grid-template-columns: 4ch 2ch;
-  align-items: baseline;
-  column-gap: 0;
   color: inherit;
   font: inherit;
-  font-family: var(--font-monospace, ui-monospace), "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-
-.trail-due-date__month {
-  min-width: 0;
-}
-
-.trail-due-date__day {
-  min-width: 0;
-  text-align: right;
 }
 
 .trail-label-dots {
@@ -246,7 +232,7 @@ body button.trail-triage-row__title-button:focus-visible {
 }
 
 .trail-triage-row__due {
-  flex: 0 0 48px;
+  flex: 0 0 var(--trail-collection-date-slot-size);
   justify-content: flex-start;
   color: var(--trail-text-secondary);
   font-size: var(--trail-collection-secondary-font-size);

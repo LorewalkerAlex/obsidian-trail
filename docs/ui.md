@@ -1304,7 +1304,7 @@ Cycle is a focused planning/execution workspace over a Cycle-owned set of Workfl
 
 Sidebar has one `Cycles` row. When a Current Cycle exists, it opens Current Cycle. When none exists, Cycles shows a compact Start Cycle surface plus secondary History access. V1 has no Upcoming/Future Cycle object.
 
-Current Cycle identity is its date range, not a persisted title. Page-owned header/breadcrumb may expose History, stable `Add issues`, and low-frequency overflow without reintroducing a global Location Bar.
+Current Cycle identity is `Current: YYYY-MM-DD`, derived from the local calendar date of actual `startedAt`, not a persisted title. Historical Cycle identity is `YYYY-MM-DD to YYYY-MM-DD`, derived from actual `startedAt` and `endedAt`; `plannedEnd` remains a planning fact and never supplies the Historical range. Page-owned header/breadcrumb may expose History, stable `Add issues`, and low-frequency overflow without reintroducing a global Location Bar.
 
 At most one Cycle is Open. Reaching planned end never auto-closes it.
 
@@ -1451,7 +1451,7 @@ Ends
 Close cycle
 ```
 
-`startedAt` is actual read-only history. `plannedEnd` may be edited while Open. Progress/Scope/Effort are derived and not persisted back as Cycle facts.
+`startedAt` is actual read-only history. `plannedEnd` may be edited while Open. Cycle date facts use `YYYY-MM-DD` in scanning/detail UI. Progress/Scope/Effort are derived and not persisted back as Cycle facts.
 
 Historical Cycle Inspector is read-oriented and shows Scope, Effort, Started, Planned end, Closed. It does not emphasize Progress because Trail does not retain close-time Issue state.
 

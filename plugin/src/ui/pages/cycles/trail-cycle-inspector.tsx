@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useStore } from "zustand";
 
+import { formatTrailCalendarDate } from "../../../domain/rules/trail-calendar-date";
+import { formatTrailCycleLabel } from "../../../domain/rules/trail-cycle-label";
 import {
   readTrailZonedDateTimeParts,
   resolveTrailZonedDateTimeParts,
@@ -22,24 +24,6 @@ type TrailCycleInspectorActions = Pick<
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-function formatCycleDate(timestamp: number, timezone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "short",
-    timeZone: timezone,
-    year: "numeric",
-  }).format(new Date(timestamp));
-}
-
-function formatCycleRange(startedAt: number, plannedEnd: number, timezone: string): string {
-  const short = (timestamp: number) => new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "short",
-    timeZone: timezone,
-  }).format(new Date(timestamp));
-  return `${short(startedAt)} – ${short(plannedEnd)}`;
 }
 
 function twoDigits(value: number): string {
@@ -116,7 +100,7 @@ function TrailCyclePlannedEndEditor({
     }
   };
 
-  const formatted = formatCycleDate(value, timezone);
+  const formatted = formatTrailCalendarDate(value, timezone);
   return (
     <TrailViewPopover
       align="end"
@@ -191,7 +175,7 @@ export function TrailCycleInspector({
   }
 
   const timezone = readModel.timezone;
-  const range = formatCycleRange(readModel.startedAt, readModel.plannedEnd, timezone);
+  const cycleLabel = formatTrailCycleLabel(readModel.expectedCycle, timezone);
 
   const savePlannedEnd = async (plannedEnd: number): Promise<boolean> => {
     if (readModel.kind !== "current" || pending) return false;
@@ -261,7 +245,7 @@ export function TrailCycleInspector({
             <div className="trail-inspector__metadata-row trail-cycle-inspector__property-row">
               <span className="trail-inspector__metadata-label trail-cycle-inspector__property-label">Started</span>
               <span className="trail-inspector__metadata-value trail-cycle-inspector__property-value">
-                {formatCycleDate(readModel.startedAt, timezone)}
+                {formatTrailCalendarDate(readModel.startedAt, timezone)}
               </span>
             </div>
             <div className="trail-inspector__metadata-row trail-cycle-inspector__property-row">
@@ -274,14 +258,14 @@ export function TrailCycleInspector({
                     timezone={timezone}
                     value={readModel.plannedEnd}
                   />
-                ) : formatCycleDate(readModel.plannedEnd, timezone)}
+                ) : formatTrailCalendarDate(readModel.plannedEnd, timezone)}
               </span>
             </div>
             {readModel.kind === "historical" ? (
               <div className="trail-inspector__metadata-row trail-cycle-inspector__property-row">
                 <span className="trail-inspector__metadata-label trail-cycle-inspector__property-label">Closed</span>
                 <span className="trail-inspector__metadata-value trail-cycle-inspector__property-value">
-                  {formatCycleDate(readModel.endedAt, timezone)}
+                  {formatTrailCalendarDate(readModel.endedAt, timezone)}
                 </span>
               </div>
             ) : null}
@@ -315,7 +299,7 @@ export function TrailCycleInspector({
           confirmLabel="Close"
           description={(
             <span className="trail-cycle-inspector__close-description">
-              <strong>{range}</strong>
+              <strong>{cycleLabel}</strong>
               <span>{issueSummary}</span>
             </span>
           )}

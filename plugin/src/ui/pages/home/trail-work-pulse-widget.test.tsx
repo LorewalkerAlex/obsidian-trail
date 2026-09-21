@@ -57,7 +57,7 @@ describe("TrailWorkPulseWidget", () => {
     const region = screen.getByRole("region", { name: "Work pulse" });
 
     expect(region).toHaveAttribute("data-home-widget-size", "banner");
-    expect(within(region).getByText("Sep 8 – Sep 20")).toBeInTheDocument();
+    expect(within(region).getByText("Current: 2026-09-08")).toBeInTheDocument();
     expect(within(region).getByText("2 / 4 done")).toBeInTheDocument();
     expect(within(region).getByRole("progressbar", { name: "Current cycle progress" }))
       .toHaveClass("trail-progress--compact");
@@ -71,7 +71,7 @@ describe("TrailWorkPulseWidget", () => {
 
     const cycleRoute = within(region).getByRole("button", { name: "Open current cycle" });
     expect(cycleRoute).toContainElement(within(region).getByText("Current cycle"));
-    expect(cycleRoute).toContainElement(within(region).getByText("Sep 8 – Sep 20"));
+    expect(cycleRoute).toContainElement(within(region).getByText("Current: 2026-09-08"));
 
     const triageRoute = within(region).getByRole("button", { name: "Open Triage" });
     expect(triageRoute).toContainElement(within(region).getByText("Triage"));

@@ -1352,7 +1352,7 @@ Representative Board:
 ```text
 Main View                                                   Right Sidebar
 
-Cycles / Aug 25 - Sep 7                     History   Add issues   Cycle Inspector
+Cycles / Current: 2026-08-25                History   Add issues   Cycle Inspector
 ----------------------------------------------------------------  ----------------
 10 days left   |   12 issues   |   67%
 Filter                                      [ List | Board ]
@@ -1371,7 +1371,7 @@ v Project Notes                                         4
 
 Rules:
 
-- Cycle identity is date range, no persisted title;
+- Current Cycle identity is `Current: YYYY-MM-DD` from actual `startedAt`; Historical identity is `YYYY-MM-DD to YYYY-MM-DD` from actual `startedAt` and `endedAt`; neither is a persisted title, and `plannedEnd` never supplies Historical identity;
 - `Cycles` breadcrumb ancestor;
 - `History` secondary navigation;
 - `Add issues` is a membership action, not creation;
@@ -1445,9 +1445,9 @@ Cycles                                              Start cycle
 
 Previous                                             History
 
-Aug 25 - Sep 7                                      12 issues
-Aug 11 - Aug 24                                     10 issues
-Jul 28 - Aug 10                                     16 issues
+2026-08-25 to 2026-09-07                           12 issues
+2026-08-11 to 2026-08-24                           10 issues
+2026-07-28 to 2026-08-10                           16 issues
 ```
 
 Never-had-a-Cycle first use may show restrained `Start cycle` guidance.
@@ -1474,7 +1474,7 @@ Close confirmation:
 ```text
 +------------------------------------------------------+
 | Close cycle?                                         |
-| Aug 25 - Sep 7                                       |
+| Current: 2026-08-25                                  |
 | 12 issues are currently in this cycle.               |
 | 5 issues are still open.                             |
 | Close keeps the current membership in history.       |
@@ -1742,7 +1742,7 @@ Current:
 
 ```text
 Cycle
-Aug 25 - Sep 7
+Current: 2026-08-25
 10 days left
 
 Progress
@@ -1755,8 +1755,8 @@ Effort
 27
 
 Info
-Started     Aug 25
-Ends        Sep 7
+Started     2026-08-25
+Planned end 2026-09-07
 
 Close cycle
 ```
@@ -1765,7 +1765,7 @@ Historical:
 
 ```text
 Cycle
-Aug 11 - Aug 24
+2026-08-11 to 2026-08-24
 
 Scope
 12 issues
@@ -1774,9 +1774,9 @@ Effort
 27
 
 Info
-Started       Aug 11
-Planned end   Aug 24
-Closed        Aug 24
+Started       2026-08-11
+Planned end   2026-08-24
+Closed        2026-08-24
 ```
 
 Historical Inspector does not emphasize Progress because close-time Issue state is not stored. Effort is a live aggregate of current member Estimate levels under current configured weights, not `Effort at close`.

@@ -73,13 +73,13 @@
 .trail-workflow-issue-row__metadata {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(60px, 88px) 30px 20px 48px;
+  grid-template-columns: minmax(60px, 88px) 30px 20px var(--trail-collection-date-slot-size);
   align-items: center;
   column-gap: var(--trail-space-3);
 }
 
 .trail-workflow-issue-row__metadata--cycle {
-  grid-template-columns: minmax(60px, 88px) 30px 48px 20px 48px;
+  grid-template-columns: minmax(60px, 88px) 30px 48px 20px var(--trail-collection-date-slot-size);
 }
 
 .trail-workflow-issue-row__labels,
@@ -154,7 +154,7 @@
 @container (max-width: 1040px) {
   .trail-workflow-issue-row__metadata,
   .trail-workflow-issue-row__metadata--cycle {
-    grid-template-columns: 30px 48px;
+    grid-template-columns: 30px var(--trail-collection-date-slot-size);
   }
 
   .trail-workflow-issue-row__content--project {
@@ -171,7 +171,7 @@
 @container (max-width: 820px) {
   .trail-workflow-issue-row__metadata,
   .trail-workflow-issue-row__metadata--cycle {
-    grid-template-columns: 48px;
+    grid-template-columns: var(--trail-collection-date-slot-size);
   }
 
   .trail-workflow-issue-row__content--project {
@@ -189,7 +189,7 @@
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) minmax(88px, 112px) 48px;
+    grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) minmax(88px, 112px) var(--trail-collection-date-slot-size);
   }
 }
 
@@ -200,7 +200,7 @@
   }
 
   .trail-workflow-issue-row__content--project {
-    grid-template-columns: minmax(0, 1fr) minmax(88px, 108px) 48px;
+    grid-template-columns: minmax(0, 1fr) minmax(88px, 108px) var(--trail-collection-date-slot-size);
   }
 
   .trail-workflow-issue-row__priority {

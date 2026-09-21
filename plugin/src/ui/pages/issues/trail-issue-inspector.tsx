@@ -284,11 +284,6 @@ export function TrailIssueInspector({
                   timestamp={readModel.currentCycle.expectedCycle.startedAt}
                   timezone={timezone}
                 />
-                <span aria-hidden="true">–</span>
-                <TrailDueDate
-                  timestamp={readModel.currentCycle.expectedCycle.plannedEnd}
-                  timezone={timezone}
-                />
               </span>
               <TrailButton
                 aria-label={readModel.currentCycle.isMember

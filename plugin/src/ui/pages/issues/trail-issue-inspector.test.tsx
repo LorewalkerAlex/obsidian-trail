@@ -133,6 +133,9 @@ describe("TrailIssueInspector", () => {
     expect(screen.getByRole("button", { name: "Milestone: Milestone A" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Labels: Work" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Estimate: Medium" })).toBeInTheDocument();
+    const cycleContext = screen.getByText("Current cycle").nextElementSibling;
+    expect(cycleContext).toHaveTextContent("2026-09-08");
+    expect(cycleContext).not.toHaveTextContent("2026-09-20");
 
     fireEvent.click(screen.getByRole("button", { name: "Remove from current cycle" }));
     expect(uiActions.cycles.changeMembership).toHaveBeenCalledWith(cycle, []);

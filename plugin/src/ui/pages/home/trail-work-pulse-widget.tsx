@@ -1,3 +1,4 @@
+import { formatTrailCycleLabel } from "../../../domain/rules/trail-cycle-label";
 import type { TrailProgressReadModel } from "../../../query/shared/trail-progress-query";
 import { TrailSegmentedSummary } from "../../patterns/trail-segmented-summary";
 import { TrailButton } from "../../primitives/trail-button";
@@ -18,22 +19,6 @@ export interface TrailWorkPulseCurrentCycle {
 }
 
 const VISIBLE_PROJECT_LIMIT = 3;
-
-function formatDate(timestamp: number, timezone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "short",
-    timeZone: timezone,
-  }).format(new Date(timestamp));
-}
-
-function formatCycleRange(
-  startedAt: number,
-  plannedEnd: number,
-  timezone: string,
-): string {
-  return `${formatDate(startedAt, timezone)} – ${formatDate(plannedEnd, timezone)}`;
-}
 
 function progressLabel(progress: TrailProgressReadModel): string {
   if (progress.unavailable === true) return "—";
@@ -115,11 +100,7 @@ export function TrailWorkPulseWidget({
             >
               <span className="trail-home-work-pulse__module-title">Current cycle</span>
               <span className="trail-home-work-pulse__cycle-summary">
-                <span>{formatCycleRange(
-                  currentCycle.startedAt,
-                  currentCycle.plannedEnd,
-                  timezone,
-                )}</span>
+                <span>{formatTrailCycleLabel(currentCycle, timezone)}</span>
                 <span>{progressCount(currentCycle.progress)}</span>
               </span>
               <ProgressBar

@@ -105,7 +105,7 @@ describe("TrailCyclesPage", () => {
     expect(screen.queryByRole("button", { name: /Open / })).not.toBeInTheDocument();
     expect(screen.queryByText(/Completed Aug/)).not.toBeInTheDocument();
 
-    const historyRow = screen.getByRole("link", { name: /Aug 4.*Aug 17.*0 issues/ });
+    const historyRow = screen.getByRole("link", { name: /2026-08-04 to 2026-08-17.*0 issues/ });
     fireEvent.click(historyRow);
     expect(onCycleActivate).toHaveBeenCalledWith(history.id);
 

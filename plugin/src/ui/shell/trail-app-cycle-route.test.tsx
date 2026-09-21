@@ -102,7 +102,7 @@ describe("TrailApp Cycle route", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Sep");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Current: 2026-09-01");
     expect(screen.getAllByRole("button", { name: "Add issues" })).not.toHaveLength(0);
     expect(screen.getByRole("region", { name: "Current cycle board" })).toBeInTheDocument();
     expect(screen.queryByText("This page has not been implemented yet.")).not.toBeInTheDocument();
@@ -128,7 +128,7 @@ describe("TrailApp Cycle route", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Cycles" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Previous" })).toBeInTheDocument();
     expect(screen.queryByText("This page has not been implemented yet.")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("link", { name: /Aug 4.*Aug 17/ }));
+    fireEvent.click(screen.getByRole("link", { name: /2026-08-04 to 2026-08-17/ }));
     expect(onNavigate).toHaveBeenCalledWith({ cycleId: history.id, kind: "cycle" });
     expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-scroll", "nested");
     expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-inset", "none");

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "zustand";
 
+import { formatTrailCycleLabel } from "../../../domain/rules/trail-cycle-label";
 import { selectTrailCyclesPageReadModel } from "../../../query/cycles/trail-cycles-page-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
 import { TrailCollectionRow } from "../../patterns/trail-collection-row";
@@ -11,18 +12,6 @@ import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { TrailCycleStart } from "./trail-cycle-start";
 
 type TrailCyclesPageActions = Pick<TrailUiActions["cycles"], "start">;
-
-function formatCycleDate(timestamp: number, timezone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "short",
-    timeZone: timezone,
-  }).format(new Date(timestamp));
-}
-
-function formatCycleRange(startedAt: number, plannedEnd: number, timezone: string): string {
-  return `${formatCycleDate(startedAt, timezone)} – ${formatCycleDate(plannedEnd, timezone)}`;
-}
 
 export function TrailCyclesPage({
   actions,
@@ -77,7 +66,7 @@ export function TrailCyclesPage({
             </h2>
             <div className="trail-cycles-page__history-list">
               {readModel.history.map((cycle) => {
-                const range = formatCycleRange(cycle.startedAt, cycle.plannedEnd, timezone);
+                const range = formatTrailCycleLabel(cycle, timezone);
                 const issueCount = `${cycle.issueCount} ${cycle.issueCount === 1 ? "issue" : "issues"}`;
                 const activate = () => onCycleActivate(cycle.id);
 

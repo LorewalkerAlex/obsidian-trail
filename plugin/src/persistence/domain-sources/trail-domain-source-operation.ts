@@ -4,6 +4,7 @@ import type {
   TrailInitiative,
   TrailProject,
 } from "../../domain/model/trail-entities";
+import { formatTrailCycleLabel } from "../../domain/rules/trail-cycle-label";
 import { sameTrailDomainEntity } from "../../domain/rules/trail-domain-equality";
 import {
   parseCyclesMarkdown,
@@ -101,24 +102,11 @@ function deleteRecord(markdown: string, range: TrailRecordSourceRange): string {
   return removeMarkdownRange(markdown, range.startOffset, range.endOffset);
 }
 
-function cycleLabel(cycle: TrailCycle, timezone: string): string {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: timezone,
-    year: "numeric",
-  });
-  const parts = Object.fromEntries(
-    formatter.formatToParts(cycle.startedAt).map((part) => [part.type, part.value]),
-  );
-  return `${parts.year}-${parts.month}-${parts.day}`;
-}
-
 function serializeCycleForMutation(cycle: TrailCycle, timezone: string | undefined): string {
   if (timezone === undefined || timezone.trim() === "") {
     throw new Error("Cycle mutation requires a physical timezone");
   }
-  return serializeCycleRecord(cycle, (value) => cycleLabel(value, timezone));
+  return serializeCycleRecord(cycle, (value) => formatTrailCycleLabel(value, timezone));
 }
 
 function projectIssuesSectionOffset(markdown: string): number {

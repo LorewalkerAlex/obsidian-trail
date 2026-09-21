@@ -96,4 +96,44 @@ describe("Trail Domain Source logical mutation", () => {
     ].join("\r\n"));
   });
 
+  it("rewrites a closed Cycle label from Current start to its actual lifecycle span", () => {
+    const before = {
+      id: "cycle-a",
+      issueIds: [],
+      plannedEnd: Date.UTC(2026, 8, 30, 12),
+      startedAt: Date.UTC(2026, 8, 20, 12),
+    };
+    const after = {
+      ...before,
+      endedAt: Date.UTC(2026, 8, 27, 12),
+    };
+    const markdown = [
+      "---",
+      "kind: cycles",
+      "---",
+      "",
+      "# Cycles",
+      "",
+      "## Current: 2026-09-20",
+      '<!-- data {"id":"cycle-a","startedAt":1789905600000,"plannedEnd":1790769600000,"issueIds":[]} -->',
+      "",
+    ].join("\n");
+
+    const next = applyTrailDomainSourceMutation({
+      kind: "cycles",
+      markdown,
+      mutation: {
+        after: { kind: "cycle", value: after },
+        before: { kind: "cycle", value: before },
+        kind: "replace",
+      },
+      options: { cycleTimezone: "UTC" },
+      parseYaml: parseTrailTestYaml,
+      sourcePath: "Trail/Collections/Cycles.md",
+    });
+
+    expect(next).toContain("## 2026-09-20 to 2026-09-27\n");
+    expect(next).not.toContain("## Current: 2026-09-20\n");
+  });
+
 });

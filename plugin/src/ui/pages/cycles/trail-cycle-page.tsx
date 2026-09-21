@@ -5,6 +5,8 @@ import type {
 import { useRef, useState } from "react";
 import { useStore } from "zustand";
 
+import { formatTrailCalendarDate } from "../../../domain/rules/trail-calendar-date";
+import { formatTrailCycleLabel } from "../../../domain/rules/trail-cycle-label";
 import { readTrailZonedDateTimeParts } from "../../../domain/rules/trail-temporal-rules";
 import {
   selectTrailCyclePageReadModel,
@@ -58,18 +60,6 @@ type TrailCyclePageActions = Pick<TrailUiActions["issues"], "changeStatus"> & Pi
   TrailUiActions["cycles"],
   "changeMembership"
 >;
-
-function formatCycleDate(timestamp: number, timezone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "short",
-    timeZone: timezone,
-  }).format(new Date(timestamp));
-}
-
-function formatCycleRange(startedAt: number, plannedEnd: number, timezone: string): string {
-  return `${formatCycleDate(startedAt, timezone)} – ${formatCycleDate(plannedEnd, timezone)}`;
-}
 
 const TRAIL_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -472,11 +462,7 @@ export function TrailCyclePage({
   }
 
   const timezone = readModel.configuration.temporal.timezone;
-  const title = formatCycleRange(
-    readModel.cycle.startedAt,
-    readModel.cycle.plannedEnd,
-    timezone,
-  );
+  const title = formatTrailCycleLabel(readModel.expectedCycle, timezone);
 
   return (
     <section
@@ -507,7 +493,7 @@ export function TrailCyclePage({
           <span>
             {readModel.kind === "current"
               ? formatCurrentCycleTimeRelation(readModel.cycle.plannedEnd, now, timezone)
-              : `Closed ${formatCycleDate(readModel.cycle.endedAt, timezone)}`}
+              : `Closed ${formatTrailCalendarDate(readModel.cycle.endedAt, timezone)}`}
           </span>
           <span aria-hidden="true" className="trail-cycle-page__summary-separator">·</span>
           <span>{readModel.cycle.issueCount} issues</span>

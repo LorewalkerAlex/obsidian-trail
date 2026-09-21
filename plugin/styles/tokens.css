@@ -145,6 +145,7 @@ body {
 
   /* Shared scanning-row grammar. */
   --trail-collection-row-gap: var(--trail-space-6);
+  --trail-collection-date-slot-size: 80px;
 
   /* Elevation and motion. */
   --trail-shadow-overlay: 0 16px 40px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.05);

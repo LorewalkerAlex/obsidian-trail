@@ -134,7 +134,7 @@ describe("TrailCyclePage", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Sep");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Current: 2026-09-01");
     expect(screen.getByRole("button", { name: "Add issues" })).toBeInTheDocument();
     const summary = screen.getByRole("group", { name: "Cycle summary" });
     expect(summary).toHaveTextContent("4 days left");
