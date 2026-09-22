@@ -24,6 +24,7 @@ import {
 } from "./adapters/obsidian/trail-navigation-view";
 import type { TrailObsidianFileKinds } from "./adapters/obsidian/trail-obsidian-file-kinds";
 import { createObsidianPluginDataIO } from "./adapters/obsidian/trail-plugin-data-io-obsidian";
+import { TrailQuickCaptureHost } from "./adapters/obsidian/trail-quick-capture-host";
 import { TrailWorkspaceSettingsTab } from "./adapters/obsidian/trail-workspace-settings-tab";
 import { createObsidianSourceIO } from "./adapters/obsidian/trail-source-io-obsidian";
 import {
@@ -103,6 +104,7 @@ export default class TrailPlugin extends Plugin {
   private inspectorHost: TrailInspectorHost | null = null;
   private mutationQueue: TrailMutationQueue | null = null;
   private navigationStore: TrailNavigationStore | null = null;
+  private quickCaptureHost: TrailQuickCaptureHost | null = null;
   private refreshController: TrailRefreshController | null = null;
 
   public onload(): void {
@@ -201,6 +203,8 @@ export default class TrailPlugin extends Plugin {
         : applicationSession.projects,
       weeklyNote,
     };
+    const quickCaptureHost = new TrailQuickCaptureHost(runtimeStore, actions.triage);
+    this.quickCaptureHost = quickCaptureHost;
     this.addSettingTab(new TrailWorkspaceSettingsTab(
       this.app,
       this,
@@ -290,6 +294,13 @@ export default class TrailPlugin extends Plugin {
         void this.activateView();
       },
     });
+    this.addCommand({
+      id: "quick-capture",
+      name: "Quick capture",
+      callback: () => {
+        quickCaptureHost.open();
+      },
+    });
     if (__TRAIL_DIAGNOSTICS_ENABLED__ && diagnosticStorage !== null) {
       const evidenceExporter = createTrailValidationEvidenceExporter({
         captureManagedEntries: () => captureObsidianTrailManagedEntries(this.app, fileKinds),
@@ -375,6 +386,8 @@ export default class TrailPlugin extends Plugin {
     this.disposeRuntimeDiagnostics?.();
     this.disposeRuntimeDiagnostics = null;
     this.inspectorHost = null;
+    this.quickCaptureHost?.dispose();
+    this.quickCaptureHost = null;
     this.mutationQueue?.dispose();
     this.mutationQueue = null;
     this.navigationStore = null;

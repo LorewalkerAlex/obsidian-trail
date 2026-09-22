@@ -508,13 +508,16 @@ type TriageComposerDraft = Omit<TrailTriageCreateInput, "description" | "due"> &
   readonly due: TrailTimestamp;
 };
 
-function createTriageDraft(defaultDue: TrailTimestamp): TriageComposerDraft {
+function createTriageDraft(
+  defaultDue: TrailTimestamp,
+  title = "",
+): TriageComposerDraft {
   return {
     description: "",
     due: defaultDue,
     labelIds: [],
     priority: undefined,
-    title: "",
+    title,
   };
 }
 
@@ -532,15 +535,20 @@ export function TrailTriageComposer({
   onCreate,
   onOpenChange,
   open,
+  seedTitle = "",
+  seedTitleDirty = false,
 }: {
   readonly configuration: TrailConfiguration;
   readonly defaultDue: TrailTimestamp;
   readonly onCreate: (input: TrailTriageCreateInput) => Promise<void>;
   readonly onOpenChange: (open: boolean) => void;
   readonly open: boolean;
+  readonly seedTitle?: string;
+  readonly seedTitleDirty?: boolean;
 }) {
-  const initialDraft = createTriageDraft(defaultDue);
-  const [baseline, setBaseline] = useState<TriageComposerDraft>(initialDraft);
+  const initialDraft = createTriageDraft(defaultDue, seedTitle);
+  const initialBaseline = seedTitleDirty ? createTriageDraft(defaultDue) : initialDraft;
+  const [baseline, setBaseline] = useState<TriageComposerDraft>(initialBaseline);
   const [draft, setDraft] = useState<TriageComposerDraft>(initialDraft);
   const [feedback, setFeedback] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -551,15 +559,16 @@ export function TrailTriageComposer({
 
   useEffect(() => {
     if (open && !previousOpenRef.current) {
-      const nextDraft = createTriageDraft(defaultDue);
-      setBaseline(nextDraft);
+      const nextDraft = createTriageDraft(defaultDue, seedTitle);
+      const nextBaseline = seedTitleDirty ? createTriageDraft(defaultDue) : nextDraft;
+      setBaseline(nextBaseline);
       setDraft(nextDraft);
       setFeedback(undefined);
       pendingRef.current = false;
       setPending(false);
     }
     previousOpenRef.current = open;
-  }, [defaultDue, open]);
+  }, [defaultDue, open, seedTitle, seedTitleDirty]);
 
   const updateDraft = (patch: Partial<TriageComposerDraft>) => {
     if (pendingRef.current) return;

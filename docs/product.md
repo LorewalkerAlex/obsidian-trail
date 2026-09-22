@@ -22,7 +22,7 @@ Trail V1 covers:
 - Board, List, and lightweight Project Timeline presentations;
 - Filter, Group, Sort, and Search as needed by the supported V1 workflows;
 - Home as a global summary and routing surface;
-- Peek, Context Menu, Selection, Bulk Actions, Command Menu, and keyboard-oriented interaction;
+- Peek, Context Menu, Selection, Bulk Actions, and keyboard-oriented interaction;
 - lightweight entity descriptions and properties;
 - ordinary Obsidian notes as the long-form knowledge/document layer;
 - lightweight Weekly Meeting Notes on Home, backed by the Trail-managed Weekly Update utility.
@@ -43,7 +43,7 @@ Trail does not introduce:
 - a generic query language, BI-style view builder, or arbitrary transaction framework;
 - automatic AI/agent modification of authoritative data without explicit user intent.
 
-Templates, recurring creation, integrations, inbox-like information surfaces, Custom Views, Favorites, and AI/agent conveniences may be added later as capabilities built on the established model; they do not redefine the V1 core domain. Custom Views and Favorites are explicitly deferred beyond the current V1 UI closure and do not shape the V1 navigation or implementation plan.
+Templates, recurring creation, integrations, inbox-like information surfaces, Custom Views, Favorites, a Trail-specific contextual Command Menu, and AI/agent conveniences may be added later as capabilities built on the established model; they do not redefine the V1 core domain. Custom Views, Favorites, and the contextual Command Menu are explicitly deferred beyond the current V1 UI closure and do not shape the V1 navigation or implementation plan.
 
 ## 3. Product Model
 
@@ -368,13 +368,13 @@ A future Workspace-level `Issues` collection may provide an all-Workflow-Issue b
 
 Search is a required V1 temporary Trail Navigation Sidebar mode entered from the Navigation header; it is not a Main View Page/location. It searches exactly Initiatives, Projects, and Workflow Issues. Triage entries, Cycles, and ordinary Obsidian notes are not Sidebar Search result kinds, and Search does not become general Obsidian Vault search or a saved-query system. Opening Search leaves the current Main View and persistent Right Sidebar unchanged and does not create host history. Activating a result closes Search and performs normal stable navigation; Workflow Issue results navigate directly to the normal Issue Full Item route rather than opening Peek over an unrelated current Page.
 
-Command Menu is primarily for actions. Custom Views and Favorites are deferred beyond the current V1 UI closure and therefore do not shape the V1 sidebar or implementation plan.
+A Trail-specific contextual Command Menu may later provide searchable action access over the Action Registry, but it is deferred beyond V1. Obsidian's Command Palette remains the host/global command surface for plugin commands such as Quick Capture. Custom Views and Favorites are deferred beyond the current V1 UI closure and therefore do not shape the V1 sidebar or implementation plan.
 
 ### 4.10 Peek and interaction model
 
 Peek is a cross-workspace interaction capability for inspecting lightweight information without losing the current context.
 
-Peek, Selection, Bulk Actions, Context Menu, Command Menu, keyboard shortcuts, Search, and later recovery/undo capabilities form one interaction system rather than separate per-page inventions.
+Peek, Selection, Bulk Actions, Context Menu, keyboard shortcuts, Search, and later recovery/undo capabilities form one interaction system rather than separate per-page inventions.
 
 Fast successful local operations are normally silent and optimistic. Sustained work may use a quiet shell status; mutation failures use concise transient feedback; persistent Data Issues/read-only state remain visible only while unhealthy. Interactive elements require clear hover, focus, pressed, selected, disabled, and focus-visible states without excessive motion.
 

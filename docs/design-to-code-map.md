@@ -33,7 +33,7 @@ Runtime
 
 | Product / UI responsibility | Canonical basis | Target owners | Primary verification |
 | --- | --- | --- | --- |
-| Quick Capture -> Triage | Triage Issue context + required review Due; no pre-create Domain mutation | Obsidian command adapter, shared creation `ui/interactions`/`ui/patterns`, `application/triage`, Domain planning | Composer interaction + planner/application + representative host |
+| Quick Capture -> Triage | Triage Issue context + required review Due; no pre-create Domain mutation | `adapters/obsidian/trail-quick-capture-host.tsx`, `ui/interactions/trail-quick-capture.tsx`, shared `ui/entities/trail-standard-creation-composers.tsx`, `application/triage`, Domain planning | Quick Capture interaction + shared Composer/Application + representative Obsidian host |
 | Standard Triage/Issue/Project/Initiative creation | existing entity contracts/defaults; no Draft entity | shared Composer `ui/interactions`, `ui/patterns`, entity semantic controls, Query legal-target/default inputs, normal Application use cases | shared UI + target Application/Domain |
 | Triage Queue and Review Set | Triage Issue + Due/Priority/Labels; Review Set derived only | `query/triage` Triage Page Read Model, `ui/pages/triage`, shared Filter/Selection/Action owners | Query + UI |
 | Triage Review progression | page-local visible/ordered projection; Accept/Defer/Delete complete Review | `ui/pages/triage` consuming `query/triage`; ordinary target Applications | UI workflow + Application + host where needed |
@@ -54,7 +54,8 @@ Runtime
 | Selection and Bulk | transient visible/actionable identities; common legal-target intersection | `ui/interactions`, Bulk pattern, Query capability/target selectors | shared UI + focused Application |
 | Workflow Issue Status drag | Status-only mutation on explicit Status spatial targets; same-concrete-Status selection may drag together while mixed-Status selection is not a multi-drag scope | focused `ui/interactions` Status-drag owner, Query legal Status target/input facts, `application/issues` Status intent; Project/Cycle List/Board consumers | shared interaction + Query/Application + representative host pointer evidence |
 | Action Registry | one action identity/context/capability authority | `ui/interactions`, existing Application intents, Query capabilities/targets, Obsidian binding adapter | shared UI + Application + host keybinding |
-| Context Menu / overflow / contextual Command Menu | presentations over Action Registry | Obsidian Menu adapter/mechanics + `ui/interactions` / `ui/patterns` | interaction + representative host |
+| Context Menu / overflow | presentations over Action Registry | Obsidian Menu adapter/mechanics + `ui/interactions` / `ui/patterns` | interaction + representative host |
+| Contextual Command Menu | explicitly deferred beyond V1; any future version must consume Action Registry rather than define separate action semantics | no V1 implementation owner | future Product/UI closure if reactivated |
 | Workflow Issue Peek | read-only transient preview; no navigation/Inspector retarget | `query` Issue presentation projection, `ui/interactions` + Peek surface pattern | Query + UI interaction + responsive/focus host evidence |
 | Picker family | shared select/search/multi/date mechanics; semantic legality outside generic shell | `ui/patterns/trail-calendar-date-picker.tsx` + `styles/patterns-calendar.css` for temporal mechanics; `ui/entities` Due wrappers; `ui/interactions` Filter; Cycle consumers; Query where target legality applies | shared interaction + semantic consumers |
 | Confirmation | top-layer safe Cancel/confirm mechanics | `ui/interactions`, reusable confirmation pattern | interaction/focus + workflow consumer |
@@ -492,25 +493,13 @@ plugin/src/ui/
 
 Styles remain canonically owned under `plugin/styles/` and are deterministically composed by the build into generated Obsidian `styles.css`.
 
-## 6. Known Published-Code Alignment Targets
+## 6. Current Published-Code Alignment State
 
-The map describes **target ownership**, not current implementation state. At the published UI checkpoint `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` (`refactor: align shared ui contracts`), the following alignment facts are established:
+The earlier alignment targets recorded from the `67ba3cdcf81d4127faf08ca1d8edfeb691d5b2b1` UI checkpoint have been closed by subsequent implementation. At the predecessor public checkpoint `223b0c14940d286c2e2393334bdfa97141f2fb37`, V1 production ownership is aligned for normal-flow containment, Sidebar Search, Selection/Action Registry/Context Menu/Bulk/Peek, transient stack/Confirmation/Composer, and the one-readable-snapshot top-level Query rule.
 
-- Workspace Frame / Page Surface ownership is aligned: the mandatory shared Location Bar contract is gone and Page identity remains Page-owned.
-- Collection Controls is composition-oriented and no longer requires a generic `Display` slot.
-- `TrailProgress` owns normal/compact/micro density plus explicit unavailable presentation.
-- Foundation is a development showroom on the shared Page chassis rather than a Product fallback/private component library.
-- `TrailCollectionRow` owns nested interactive-target isolation, and `TrailPropertyControl` exposes normal/compact/disabled reusable states.
+This closure publication adds the previously omitted Quick Capture host command and compact title-first interaction while reusing the standard Triage Composer and ordinary Triage Application path. The Trail-specific contextual Command Menu is explicitly deferred and therefore is not V1 implementation debt.
 
-Known remaining published-code alignment targets include:
-
-1. normal-flow layout containment / spatial ownership is only partially consistent across current compositions. Direct-child owners must prevent sibling overlap, keep essential controls inside their allocated regions, and make intentional overflow ownership explicit.
-2. `ui/interactions` currently proves shared Filter mechanics but does not yet contain the complete Selection/Action Registry/Peek/transient-stack/Confirmation/Composer ownership required by the frozen V1 design.
-3. current Triage composition subscribes broadly to Runtime and combines several raw/focused selectors in the Page. Target: one Triage surface Read Model per top-level evaluation, with Page-local Review/Filter state remaining explicit UI input.
-4. existing shared/derived Query helpers can each acquire a readable Runtime snapshot independently. New surface composition must avoid repeated pending replay/index rebuild inside one top-level Read Model evaluation; introduce caching only if evidence later requires it.
-5. current Search Query still exposes legacy result kinds beyond the frozen Sidebar Search contract. Target result kinds are Initiative, Project, and Workflow Issue only; Search remains Left Sidebar mode rather than a Page/location.
-
-`docs/implementation.md` owns the execution order and current verification status for these gaps.
+No known V1 owner-alignment target remains. `docs/implementation.md` owns the current verification status and closure evidence.
 
 ## 7. Verification Rule
 

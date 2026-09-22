@@ -294,7 +294,7 @@ Production UI must never depend on Foundation-only implementations or fixtures.
 | Picker family mechanics | `ui/interactions` + `ui/patterns` | properties, Filter, Composer, Action targets | select/search/multi/date mechanics, focus, Esc, collision | no `UniversalPicker`; each semantic control owns values/legality |
 | Filter interaction | `ui/interactions` | Projects, Project, Cycle, Triage | one property/value grammar and location-scoped session state | Pages provide only registry/scope; no page-local filter engines |
 | Selection interaction | `ui/interactions` | selectable List/Board/Triage | visible actionable identities, highlight/selection separation, clear rules | no persisted Selection entity |
-| Action Registry | `ui/interactions` | Context Menu, overflow, Bulk, Command Menu, shortcuts | Action ID, scope, capability, target resolution, Application intent | presentations may show different subsets |
+| Action Registry | `ui/interactions` | Context Menu, overflow, Bulk, shortcuts | Action ID, scope, capability, target resolution, Application intent | presentations may show different subsets |
 | Bulk Bar | `ui/patterns` + Selection/Action interactions | selectable collections | count + useful common actions + overflow + clear | no new Bulk legality model |
 | Context Menu presentation | Obsidian Menu mechanic + Trail contract | Row/Card/Peek/Page overflow | action grouping, scope presentation, target handoff | no private action semantics/menu engine |
 | Peek | `ui/interactions` + surface pattern | Workflow Issue collections | read-only preview, retarget, wide/constrained geometry, open Full Item | not editor, Inspector, Triage Review, Search preview, or Project preview |
@@ -728,7 +728,6 @@ current entity / selection / location
    |- Context Menu
    |- ... overflow
    |- Bulk Bar
-   |- contextual Command Menu
    `- keyboard shortcut
 ```
 
@@ -983,19 +982,15 @@ Copy describes concrete consequences. Undo/recovery language appears only when T
 
 Complex workflows such as Project Delete may compose confirmation + searchable Project Picker + consequence counts rather than being reduced to `Are you sure?`.
 
-### 5.8 Contextual Command Menu
+### 5.8 Host Command Palette and deferred contextual Command Menu
 
 ```text
 Obsidian Command Palette / registered plugin commands
 -> host/global intents
 -> open Trail, Quick Capture, global navigation/utility
-
-Trail contextual Command Menu
--> current Trail entity / selection / location actions
--> Action Registry
 ```
 
-The contextual Command Menu is searchable action presentation, not Search navigation and not another action authority. Exact shortcut binding remains host calibration.
+The Trail-specific contextual Command Menu is deferred beyond V1. If reactivated later, it consumes the Action Registry for current Trail entity/selection/location actions; it does not become Search navigation or another action authority.
 
 ### 5.9 Tooltip and focus detail
 
@@ -1140,9 +1135,7 @@ Quick Capture is an Obsidian command/global-hotkey title-first entry into Triage
 
 ```text
 +------------------------------------------+
-| Capture to Triage                        |
-| [ Something to review...               ] |
-| Esc                                Enter |
+| [ Capture to Triage...                 ] |
 +------------------------------------------+
 ```
 
@@ -1155,7 +1148,7 @@ type Title
    `- standard Composer interaction
 ```
 
-The first `Enter` does not create. After expansion there is no Quick-Capture-specific submit mode.
+The title-first layer stays one-field and low-noise: the dialog title remains available to accessibility semantics but is not repeated visually, and there is no persistent Esc/Enter instruction row. The first `Enter` does not create. After expansion there is no Quick-Capture-specific submit mode.
 
 ### 6.6 Milestone quick-create
 
@@ -2072,7 +2065,8 @@ This blueprint does not introduce:
 - generic `Display` shell for every collection;
 - a second document/editor domain;
 - collaboration-first Teams/Assignees/SLA features;
-- Custom Views/Favorites UI in the current V1 closure.
+- Custom Views/Favorites UI in the current V1 closure;
+- Trail-specific contextual Command Menu in V1.
 
 ## 15. Completion rule
 

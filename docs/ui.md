@@ -535,7 +535,6 @@ Consumers include:
 Context Menu
 overflow ...
 Bulk Bar
-contextual Command Menu
 keyboard shortcuts
 ```
 
@@ -659,11 +658,11 @@ Shared Confirmation mechanics:
 
 Delete, Discard draft, and Close Cycle may share mechanics without becoming the same semantic action.
 
-### 5.7 Contextual Command Menu
+### 5.7 Host Command Palette and deferred contextual Command Menu
 
 Obsidian Command Palette remains the host/global command surface for plugin/global commands such as Quick Capture.
 
-Trail contextual Command Menu is a searchable presentation over the same Action Registry for the current Trail entity/selection/context. It is not Search, not navigation, and not a second action authority. Exact shortcut binding is implementation-time Obsidian calibration.
+A Trail-specific contextual Command Menu is explicitly deferred beyond V1. If a later Product/UI closure reactivates it, it must be a searchable presentation over the same Action Registry for the current Trail entity/selection/context rather than Search, navigation, or a second action authority. V1 therefore has no separate Trail command-menu surface or shortcut binding to calibrate.
 
 ## 6. Creation
 
@@ -738,7 +737,7 @@ Quick Capture is an Obsidian command/global-shortcut entry:
 
 ```text
 Quick Capture
--> title-first surface
+-> compact title-first field (`Capture to Triage...`)
 -> Enter
 -> standard Triage Composer
    - user title preserved
@@ -747,7 +746,7 @@ Quick Capture
 -> Create
 ```
 
-The first Enter expands; it does not create. Triage Page and Home open the full Triage Composer directly rather than title-first Quick Capture.
+The initial Quick Capture surface is intentionally one-field and low-noise: its dialog title remains available to accessibility semantics but is not repeated visually, and it does not carry a persistent Esc/Enter instruction row. The first Enter expands; it does not create. Triage Page and Home open the full Triage Composer directly rather than title-first Quick Capture.
 
 ### 6.5 Workflow Issue Composer
 
@@ -1674,7 +1673,7 @@ Startup recovery of a missing persisted `defaultProjectId` remains Source Sync r
 
 The V1 UI rebaseline, Page drawing pass, shared-interaction closure, and owner-extraction pass are complete.
 
-`docs/ui.md` is the canonical behavior/presentation authority. `docs/ui-blueprints.md` is the durable composition/ownership blueprint. Current code is expected to contain alignment debt until implementation catches up.
+`docs/ui.md` is the canonical behavior/presentation authority. `docs/ui-blueprints.md` is the durable composition/ownership blueprint. Production code is expected to preserve this frozen target; implementation deviations are alignment debt rather than new design authority.
 
 Frozen V1 coverage includes:
 
@@ -1687,7 +1686,7 @@ Frozen V1 coverage includes:
 - Home;
 - Issue Full Item and Inspectors;
 - standard Creation surfaces and Milestone quick-create;
-- shared Filter, Selection/Bulk, Action Registry, Context Menu, contextual Command Menu;
+- shared Filter, Selection/Bulk, Action Registry, Context Menu;
 - read-only Workflow Issue Peek;
 - transient interaction stack, Picker family, and Confirmation;
 - layout containment/spatial ownership and responsive composition;
@@ -1702,6 +1701,7 @@ Implementation alignment must not silently reintroduce superseded Search Page, m
 
 - Custom Views user-facing creation/editing/navigation;
 - Favorites user-facing navigation/management;
+- Trail-specific contextual Command Menu;
 - future Workspace Issues collection;
 - future Home analytics/personalization/Health ranking beyond frozen modules;
 - collaboration-first Teams/Assignees/SLA features;

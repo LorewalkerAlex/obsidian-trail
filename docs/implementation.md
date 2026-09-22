@@ -14,7 +14,7 @@ Published Stage 10 checkpoints leading into closure include:
 
 These checkpoints establish the Current Cycle collection, membership flows, Cycles root/history browser, and the reusable Cycle interaction chain over the already accepted Project/Issue/collection/navigation owners. The Stage 10 closing lifecycle slice originally implemented a close-first Start-next flow. Stage 12A.3 real-Obsidian E2E later exposed that ordering as a concrete contradiction with the intended transfer semantics. The repaired flow now keeps the source Open through successor planning; Cancel leaves Domain state unchanged, and final confirmation submits one logical `planning.cycle.close-and-start-next` intent that transfers the confirmed overlap out of the source, closes it with final membership, and creates the successor. The rest of the Stage 10 ownership and persistence model remains closed.
 
-Stages 5 through 11 are closed. Stage 12 implementation, full-system calibration, representative host regression, and repository-wide release validation are complete through `78f6c0800800133e20e988b575a17d38b0795156` / CI #249. This factual documentation calibration is the remaining V1 closure publication step. Existing executable code remains reusable evidence rather than authority over the resolved Product/Domain/UI target.
+Stages 5 through 12 are closed. Subsequent V1 detail corrections are public through `223b0c14940d286c2e2393334bdfa97141f2fb37` / CI #253, including date/cycle presentation and Trail-owned calendar date editing. This closure publication adds the previously omitted Quick Capture host command/title-first flow and explicitly defers the Trail-specific contextual Command Menu from V1. Existing executable code remains reusable evidence rather than authority over the resolved Product/Domain/UI target.
 
 The V1 implementation program now uses the dependency sequence defined in this document. The old Phase A/B/C progression is retained only in Git history; it is no longer the active execution model.
 
@@ -37,8 +37,9 @@ Current V1 alignment state:
 
 1. The top-level Query evaluation rule is satisfied in current production Query code: a state-based top-level Read Model either acquires one readable Effective Runtime snapshot itself or delegates once to a selector that does. Shared nested projections consume `TrailEffectiveRuntimeSnapshot` / `...FromReadableSnapshot` inputs instead of independently replaying pending plans and rebuilding indexes. No generalized memoization/cache framework is introduced or justified for V1.
 2. Stage 12B full-system visual/UI calibration is complete across Inspectors, transient interaction surfaces, shared Page chrome/controls, local visual surfaces, Foundation production-owner coverage, and representative responsive/whole-shell host behavior.
+3. Quick Capture is the Obsidian host/global command entry into Triage creation: one compact title-first field expands on the first Enter into the standard Triage Composer with the user title preserved and the ordinary Triage Due default. The Trail-specific contextual Command Menu is explicitly deferred beyond V1 and is not an implementation requirement.
 
-Stage 12A functional acceptance remains green, including the repaired Cycle `Close and start next` transfer semantics. Stage 12B host evidence and the release checkpoint `78f6c0800800133e20e988b575a17d38b0795156` close the remaining calibration work without introducing new Product concepts. No known implementation alignment debt remains for V1; this document calibration and its publication/verification are the final closure step.
+Stage 12A functional acceptance remains green, including the repaired Cycle `Close and start next` transfer semantics. The final Quick Capture closure slice passed lint, focused Quick Capture tests, the isolated Home creation consumer test, the complete 213-file / 715-test suite under reduced worker concurrency after one default-concurrency Home timeout, production typecheck/build, and representative real-Obsidian verification of command invocation, compact title-first expansion, title preservation, and normal Due default. With the contextual Command Menu explicitly deferred, no known implementation alignment debt remains for V1.
 
 ## 3. Established Foundations
 
@@ -811,11 +812,11 @@ After Stage 12A is functionally green, complete:
 
 Stages 0 through 12 have completed their implementation and required Product/host calibration. Stage 12A whole-product functional acceptance remains green over the longitudinal development fixture and the repaired Cycle rollover semantics.
 
-Stage 12B full-system visual/UI calibration is complete. The closing public checkpoints include `d4158fc1ffdfadc00e0c6eb104f277d7153923bd` for Layout Switch visibility, `e74d19b9963ead2c7cb0bc33a5069974a43d4ae0` for Cycle Add Issues hierarchy, `2c220d72994727c0210f01fa91df2794230adc25` for Sidebar Search containment, and `78f6c0800800133e20e988b575a17d38b0795156` for final responsive containment. Representative real-Obsidian evidence covers the calibrated Inspector/transient/Page-control surfaces plus Projects Timeline, Triage Review, Issue Full Item, Cycle Add Issues, Sidebar Search, narrow Home, narrow Project List/Board, focused narrow Triage Review, and Foundation showroom containment.
+Stage 12B full-system visual/UI calibration is complete. The closing public checkpoints include `d4158fc1ffdfadc00e0c6eb104f277d7153923bd` for Layout Switch visibility, `e74d19b9963ead2c7cb0bc33a5069974a43d4ae0` for Cycle Add Issues hierarchy, `2c220d72994727c0210f01fa91df2794230adc25` for Sidebar Search containment, `78f6c0800800133e20e988b575a17d38b0795156` for final responsive containment, and `223b0c14940d286c2e2393334bdfa97141f2fb37` for Trail-owned calendar date editing plus stable Inspector property-save chrome. Representative real-Obsidian evidence covers the calibrated Inspector/transient/Page-control surfaces plus Projects Timeline, Triage Review, Issue Full Item, Cycle Add Issues, Sidebar Search, narrow Home, narrow Project List/Board, focused narrow Triage Review, Foundation showroom containment, calendar date editing, and Quick Capture title-first expansion.
 
 The V1-exit Query audit also confirms the frozen top-level evaluation rule is already satisfied by current production code: each state-based top-level Read Model either acquires one readable Effective Runtime snapshot or delegates once to a selector that does, while nested shared projections consume snapshot-aware helpers. There is no remaining repeated snapshot-rebuild path requiring a code change, and no memoization/cache framework is introduced.
 
-GitHub CI #249 on `78f6c0800800133e20e988b575a17d38b0795156` completed successfully and executes repository-wide `npm run check`. The only remaining V1 closure task at this point is publishing this factual implementation-plan calibration and verifying the resulting GitHub checkpoint/CI.
+GitHub CI #253 on `223b0c14940d286c2e2393334bdfa97141f2fb37` completed successfully and executes repository-wide `npm run check`. The final Quick Capture slice additionally passed the focused and repository-wide validation recorded above; this publication closes that omitted host entry while recording the contextual Command Menu as deferred. No further V1 feature implementation is planned by this document.
 
 ### Stage 5 closed — Triage vertical
 
@@ -1034,7 +1035,7 @@ V1 UI implementation is complete when:
 - shared owners have correct production ownership and no Page-specific workflow leaks into them;
 - normal-flow layout owners allocate real space to direct children so siblings do not overlap, and intentional overflow/escape has an explicit owner;
 - stale LocationBar/required-Display/Search-Page contracts are removed;
-- Selection/Action/Peek/Composer/Confirmation ownership is shared where frozen;
+- Selection/Action Registry/Context Menu/Bulk/Peek/Composer/Confirmation ownership is shared where frozen, while the contextual Command Menu remains explicitly deferred;
 - Query/Application/Domain remain the single owners of derived facts, legality, and semantic mutation;
 - responsive and host-specific behavior is calibrated in real Obsidian;
 - full-shell visual presentation is coherent across Trail and relevant native host surfaces;
