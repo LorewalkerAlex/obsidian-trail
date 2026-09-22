@@ -1,6 +1,6 @@
 {
   "name": "obsidian-trail",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "description": "A Markdown-first personal project and task management plugin for Obsidian.",
   "type": "module",
