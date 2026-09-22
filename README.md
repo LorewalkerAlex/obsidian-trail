@@ -6,6 +6,10 @@ Trail is a Markdown-first personal project and task management plugin for Obsidi
 
 Current implementation baseline, active gaps, build order, and verification state are maintained in [`docs/implementation.md`](docs/implementation.md).
 
+## Agent workflow
+
+AI-assisted development sessions start from [`AGENTS.md`](AGENTS.md). It defines repository bootstrap, authority lookup, implementation/validation discipline, Web/local execution boundaries, and publication completion. Repository and project facts remain authoritative in the files linked below rather than in chat history.
+
 ## Engineering and project documentation
 
 Repository-level engineering rules live in [`ENGINEERING.md`](ENGINEERING.md).
@@ -64,6 +68,7 @@ obsidian-trail/
 │  ├─ src/               active TypeScript/React implementation
 │  └─ styles/            canonical modular stylesheet sources
 ├─ Trail/                version-controlled host-test observation data
+├─ AGENTS.md             canonical agent workflow and session bootstrap
 ├─ ENGINEERING.md
 ├─ README.md
 └─ ...
