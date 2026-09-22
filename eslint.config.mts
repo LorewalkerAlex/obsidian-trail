@@ -8,6 +8,8 @@ export default defineConfig(
     "coverage/**",
     ".obsidian/**",
     "esbuild.config.mjs",
+    "version-bump.mjs",
+    "release-verify.mjs",
     "package.json",
     "package-lock.json",
     "tsconfig.json",

@@ -70,6 +70,7 @@ obsidian-trail/
 ├─ Trail/                version-controlled host-test observation data
 ├─ AGENTS.md             canonical agent workflow and session bootstrap
 ├─ ENGINEERING.md
+├─ RELEASING.md          canonical stable-release procedure
 ├─ README.md
 └─ ...
 ```
@@ -110,6 +111,7 @@ npm run typecheck
 npm run build
 npm run build:diagnostics
 npm run check
+npm run release:verify
 ```
 
 - `npm run dev` watches active TypeScript/React and canonical stylesheet modules and writes generated Obsidian plugin artifacts.
@@ -119,10 +121,15 @@ npm run check
 - `npm run build` creates the production JavaScript bundle and deterministically composes canonical stylesheet modules into generated Obsidian `styles.css`.
 - `npm run build:diagnostics` creates a diagnostics-enabled development bundle and the same generated stylesheet.
 - `npm run check` runs lint, tests, typecheck, and the production build.
+- `npm run release:verify` checks release-version consistency; release tasks pass the intended tag version as an argument.
 
 During implementation, use focused owner/direct-consumer validation while iterating. Run the full `npm run check` at coherent cross-cutting or release checkpoints rather than after every small internal change.
 
 For interactive development-host work, keep a diagnostics-enabled bundle loaded. `npm run check` ends with the production build and therefore disables diagnostics; after a production build, run `npm run build:diagnostics` before returning to manual Obsidian interaction when operation-trace evidence is needed.
+
+## Releases
+
+Stable release procedure and versioning are defined in [`RELEASING.md`](RELEASING.md). Ordinary commits on `main` are not releases. Stable version tags trigger the release workflow, which rebuilds and verifies the tagged source before publishing `main.js`, `manifest.json`, and `styles.css` as GitHub Release assets.
 
 ## Real Obsidian verification
 

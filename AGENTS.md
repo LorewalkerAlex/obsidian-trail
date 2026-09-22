@@ -164,11 +164,11 @@ If the active environment cannot complete publication, report the exact last ver
 
 A Git commit is not a release.
 
-Normal development may accumulate multiple verified commits on `main` without changing the version installed in the user's real Obsidian Vault. A release is performed only on explicit request and must use the repository release procedure once that procedure is established in `RELEASING.md`.
+Normal development may accumulate multiple verified commits on `main` without changing the version installed in the user's real Obsidian Vault. A release is performed only on explicit request and must follow `RELEASING.md`.
 
-Until `RELEASING.md` exists, do not improvise or silently create a GitHub Release.
+`RELEASING.md` is the canonical release procedure. Do not improvise a parallel release path, silently publish an ordinary commit, or retag an existing released version.
 
-The development Vault may use development/diagnostics builds. A real personal Vault should consume release production artifacts rather than arbitrary development bundles.
+Trail releases use stable `x.y.z` versions unless the release procedure is explicitly revised. The development Vault may use development/diagnostics builds; a real personal Vault should consume release production artifacts rather than arbitrary development bundles.
 
 ## 11. Concurrency and recovery
 
