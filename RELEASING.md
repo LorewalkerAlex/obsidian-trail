@@ -134,9 +134,15 @@ Do not describe a tag push alone as a completed release.
 
 For personal use before Trail is listed in the Obsidian Community directory, use BRAT to track `LorewalkerAlex/obsidian-trail` releases.
 
-The real Vault should track published releases, not `main` development output. After a new release succeeds, use BRAT's update check to move the Vault to that release.
+The normal real-Vault operating mode is:
 
-If a newly published version causes a production problem, stop using that version in the real Vault and select a previously known-good release while the fix is developed. Publish the repair as a new patch version rather than rewriting an existing release.
+- register Trail in BRAT with **Latest version**, not a frozen release;
+- enable BRAT's **Auto-update plugins at startup** setting;
+- consume published GitHub Releases only, never `main` development output or the development Vault bundle.
+
+With this setup, BRAT checks Trail when Obsidian starts and updates it when a newer published release is available. A frozen BRAT version is an exception for rollback or temporary fault isolation and should not be the steady-state configuration. After a rollback, publish the repair as a new patch version rather than rewriting or retagging the broken release, then return the real Vault to **Latest version** once the repaired release is verified.
+
+Trail currently publishes stable `x.y.z` releases only, so BRAT's **Latest version** resolves to the newest stable Trail release. If Trail later adopts prereleases, revisit this real-Vault policy before publishing them because BRAT's latest-release selection can include prereleases.
 
 ## 8. Future Community directory publication
 
