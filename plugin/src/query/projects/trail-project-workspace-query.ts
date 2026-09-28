@@ -2,6 +2,7 @@ import type { TrailConfiguration } from "../../domain/model/trail-configuration"
 import type {
   TrailInitiative,
   TrailMilestone,
+  TrailProject,
   TrailWorkflowIssue,
 } from "../../domain/model/trail-entities";
 import type {
@@ -77,6 +78,7 @@ export interface TrailProjectWorkspaceReadModel {
   readonly configuration: TrailConfiguration;
   readonly creationTargets: readonly TrailProjectWorkspaceCreationTargetReadModel[];
   readonly emptyKind?: "filtered" | "true";
+  readonly expectedProject: TrailProject;
   readonly initiative?: TrailProjectWorkspaceNamedTargetReadModel;
   readonly milestones: readonly TrailProjectWorkspaceNamedTargetReadModel[];
   readonly project: {
@@ -222,6 +224,7 @@ export function selectTrailProjectWorkspaceReadModel(
       : visibleIssues.length === 0 && activeFilter
         ? "filtered"
         : undefined,
+    expectedProject: project,
     initiative: namedInitiative(initiative),
     milestones: milestoneTargets(project.id, readable),
     project: {

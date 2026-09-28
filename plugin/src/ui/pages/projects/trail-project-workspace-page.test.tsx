@@ -142,6 +142,42 @@ function actions() {
 }
 
 describe("TrailProjectWorkspacePage", () => {
+  it("exposes Project title and description editing from the Workspace header", async () => {
+    const { store } = readyStore();
+    const onEditProject = vi.fn((expectedProject: TrailProject) => ({
+      entityId: expectedProject.id,
+      kind: "unchanged" as const,
+    }));
+    render(
+      <TrailProjectWorkspacePage
+        actions={actions()}
+        onEditProject={onEditProject}
+        onInitiativeActivate={vi.fn()}
+        onProjectsActivate={vi.fn()}
+        projectId="project-a"
+        renderMarkdown={renderMarkdown}
+        runtimeStore={store}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit project" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Project title" }), {
+      target: { value: "Project B" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Project description" }), {
+      target: { value: "Updated narrative" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(onEditProject).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "project-a", title: "Project A" }),
+      expect.objectContaining({
+        description: "Updated narrative",
+        title: "Project B",
+      }),
+    ));
+  });
+
   it("composes Project identity, narrative, the complete Status skeleton, Issue rows, and the frozen Filter registry", () => {
     const { store } = readyStore();
     const { container } = render(

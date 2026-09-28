@@ -26,6 +26,7 @@ export interface TrailComposerSurfaceProps {
   readonly onDismiss?: () => void;
   readonly onSubmit: () => void;
   readonly pending?: boolean;
+  readonly pendingLabel?: string;
   readonly submitLabel: string;
 }
 
@@ -39,6 +40,7 @@ export function TrailComposerSurface({
   onDismiss,
   onSubmit,
   pending = false,
+  pendingLabel = "Creating...",
   submitLabel,
 }: TrailComposerSurfaceProps) {
   return (
@@ -72,7 +74,7 @@ export function TrailComposerSurface({
           onClick={onSubmit}
           variant="primary"
         >
-          {pending ? "Creating..." : submitLabel}
+          {pending ? pendingLabel : submitLabel}
         </TrailButton>
       </footer>
     </div>
@@ -101,6 +103,7 @@ export function TrailComposer({
   onSubmit,
   open,
   pending = false,
+  pendingLabel,
   submitLabel,
 }: TrailComposerProps) {
   const dismiss = useTrailComposerDismissState({
@@ -155,6 +158,7 @@ export function TrailComposer({
               onDismiss={dismiss.requestDismiss}
               onSubmit={onSubmit}
               pending={pending}
+              pendingLabel={pendingLabel}
               submitLabel={submitLabel}
             >
               {children}

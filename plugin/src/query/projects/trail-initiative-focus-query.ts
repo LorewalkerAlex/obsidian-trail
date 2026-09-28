@@ -1,5 +1,8 @@
 import type { TrailConfiguration } from "../../domain/model/trail-configuration";
-import type { TrailProject } from "../../domain/model/trail-entities";
+import type {
+  TrailInitiative,
+  TrailProject,
+} from "../../domain/model/trail-entities";
 import type { TrailProjectId, TrailTimestamp } from "../../domain/model/trail-values";
 import type { TrailEffectiveRuntimeSnapshot } from "../../runtime/projection/trail-runtime-projection";
 import type { TrailRuntimeState } from "../../runtime/store/trail-runtime-store";
@@ -31,12 +34,14 @@ export interface TrailInitiativeFocusReadInput {
 export interface TrailInitiativeFocusReadModel {
   readonly configuration: TrailConfiguration;
   readonly emptyKind?: TrailInitiativeFocusEmptyKind;
+  readonly expectedInitiative: TrailInitiative;
   readonly initiative: {
     readonly description?: string;
     readonly id: string;
     readonly title: string;
   };
   readonly initiatives: readonly TrailInitiativeTargetReadModel[];
+  readonly projectCount: number;
   readonly projects: readonly TrailProjectSummaryReadModel[];
   readonly visibleProjectIds: readonly TrailProjectId[];
 }
@@ -81,7 +86,7 @@ export function selectTrailInitiativeFocusReadModel(
   const projects = visibleProjects.map((project) => {
     const status = requireTrailProjectStatus(configuration, project);
     const issues = selectTrailWorkflowIssuesForProject(readable, configuration, project.id);
-    return createTrailProjectSummaryReadModel(project, status, issues);
+    return createTrailProjectSummaryReadModel(configuration, project, status, issues);
   });
   const filterActive = isTrailCollectionFilterActive(input.filter);
   const emptyKind = scopedProjects.length === 0
@@ -93,12 +98,14 @@ export function selectTrailInitiativeFocusReadModel(
   return {
     configuration,
     emptyKind,
+    expectedInitiative: initiative,
     initiative: {
       description: initiative.description,
       id: initiative.id,
       title: initiative.title,
     },
     initiatives: selectTrailInitiativeTargets(readable),
+    projectCount: scopedProjects.length,
     projects,
     visibleProjectIds: projects.map(({ id }) => id),
   };

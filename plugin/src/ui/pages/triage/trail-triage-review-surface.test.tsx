@@ -11,6 +11,7 @@ describe("TrailTriageReviewSurface", () => {
         canNext
         canPrevious
         configuration={createTrailTestConfiguration()}
+        dirty={false}
         draft={{
           description: "Review the current capture before deciding its destination.",
           due: Date.UTC(2026, 8, 12, 4),
@@ -57,6 +58,7 @@ describe("TrailTriageReviewSurface", () => {
       "Review the current capture before deciding its destination.",
     );
     expect(contentScope.getByRole("button", { name: "Accept Triage entry" })).toBeInTheDocument();
+    expect(contentScope.getByRole("button", { name: "Save Triage changes" })).toBeDisabled();
     expect(contentScope.getByRole("button", { name: "Defer Triage entry" })).toBeInTheDocument();
     expect(contentScope.getByRole("button", { name: "Delete Triage entry" })).toBeInTheDocument();
 
@@ -74,6 +76,7 @@ describe("TrailTriageReviewSurface", () => {
         canNext
         canPrevious
         configuration={createTrailTestConfiguration()}
+        dirty={false}
         draft={{
           description: "Review the current capture before deciding its destination.",
           due: Date.UTC(2026, 8, 12, 4),
@@ -102,5 +105,42 @@ describe("TrailTriageReviewSurface", () => {
     expect(screen.queryByText("Accept as")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Issue" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Project" })).toBeInTheDocument();
+  });
+
+  it("provides a stable explicit save action for text drafts without showing edit pending text", () => {
+    const onCommitDraft = vi.fn();
+    render(
+      <TrailTriageReviewSurface
+        canNext={false}
+        canPrevious={false}
+        configuration={createTrailTestConfiguration()}
+        dirty
+        draft={{
+          description: "Changed description",
+          due: Date.UTC(2026, 8, 12, 4),
+          labelIds: [],
+          priority: undefined,
+          title: "Changed title",
+        }}
+        onAccept={vi.fn()}
+        onBack={vi.fn()}
+        onCommitDraft={onCommitDraft}
+        onDefer={vi.fn()}
+        onDelete={vi.fn()}
+        onDescriptionChange={vi.fn()}
+        onDueChange={vi.fn()}
+        onLabelsChange={vi.fn()}
+        onNext={vi.fn()}
+        onPrevious={vi.fn()}
+        onPriorityChange={vi.fn()}
+        onTitleChange={vi.fn()}
+        pending="edit"
+        positionLabel="1 / 1"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Save Triage changes" }));
+    expect(onCommitDraft).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Saving...")).not.toBeInTheDocument();
   });
 });

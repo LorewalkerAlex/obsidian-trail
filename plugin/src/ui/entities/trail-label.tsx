@@ -2,6 +2,13 @@ import type { TrailLabel } from "../../domain/model/trail-configuration";
 
 const TRAIL_LABEL_COLOR_SLOT_COUNT = 6;
 
+function orderedTrailLabels(labels: readonly TrailLabel[]): readonly TrailLabel[] {
+  return [...labels].sort((left, right) => {
+    const nameOrder = left.name.localeCompare(right.name);
+    return nameOrder !== 0 ? nameOrder : left.id.localeCompare(right.id);
+  });
+}
+
 export function trailLabelColorSlot(labelId: string): number {
   let hash = 0x811c9dc5;
   for (let index = 0; index < labelId.length; index += 1) {
@@ -18,10 +25,7 @@ export function TrailLabelDots({
 }) {
   if (labels.length === 0) return null;
 
-  const ordered = [...labels].sort((left, right) => {
-    const nameOrder = left.name.localeCompare(right.name);
-    return nameOrder !== 0 ? nameOrder : left.id.localeCompare(right.id);
-  });
+  const ordered = orderedTrailLabels(labels);
   const names = ordered.map((label) => label.name).join(", ");
 
   return (
@@ -38,6 +42,35 @@ export function TrailLabelDots({
           data-color-slot={trailLabelColorSlot(label.id)}
           key={label.id}
         />
+      ))}
+    </span>
+  );
+}
+
+export function TrailLabelSummary({
+  labels,
+}: {
+  readonly labels: readonly TrailLabel[];
+}) {
+  if (labels.length === 0) return null;
+
+  const ordered = orderedTrailLabels(labels);
+  const names = ordered.map((label) => label.name).join(", ");
+  return (
+    <span
+      aria-label={`Labels: ${names}`}
+      className="trail-label-summary"
+      role="img"
+      title={names}
+    >
+      {ordered.map((label) => (
+        <span aria-hidden="true" className="trail-label-summary__item" key={label.id}>
+          <span
+            className="trail-label-dot"
+            data-color-slot={trailLabelColorSlot(label.id)}
+          />
+          <span className="trail-label-summary__name">{label.name}</span>
+        </span>
       ))}
     </span>
   );

@@ -208,7 +208,7 @@ body .trail-triage-review__title input.trail-input {
   width: 100%;
   height: auto;
   min-height: var(--trail-control-height-lg);
-  padding: 0;
+  padding: 0 var(--trail-space-3);
   border-color: transparent;
   border-radius: var(--trail-radius-xs);
   background: transparent;
@@ -245,7 +245,7 @@ body .trail-triage-review__title input.trail-input:focus {
 body .trail-triage-review__description textarea.trail-textarea {
   width: 100%;
   min-height: 96px;
-  padding: var(--trail-space-4) 0;
+  padding: var(--trail-space-4) var(--trail-space-3);
   border-color: transparent;
   background: transparent;
   color: var(--trail-text-secondary);

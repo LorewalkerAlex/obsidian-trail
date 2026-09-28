@@ -10,6 +10,7 @@ describe("TrailProjectSummaryRow", () => {
     const { container } = render(
       <TrailProjectSummaryRow
         due={REFERENCE_DUE}
+        labels={[{ groupId: "group-a", id: "label-delivery", name: "Delivery" }]}
         priority="high"
         progress={{ max: 12, value: 8 }}
         statusCategory="started"
@@ -29,6 +30,7 @@ describe("TrailProjectSummaryRow", () => {
       .toHaveAttribute("data-status-entity-type", "project");
     expect(container.querySelector(".trail-project-summary-row__status")).toBeNull();
     expect(screen.getByRole("img", { name: "High priority" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Labels: Delivery" })).toHaveTextContent("Delivery");
     expect(screen.getByRole("progressbar", { name: "Foundation visual system progress" }))
       .toHaveClass("trail-progress--micro");
     expect(screen.getByLabelText("September 18, 2026")).toBeInTheDocument();

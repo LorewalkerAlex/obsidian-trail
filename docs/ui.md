@@ -845,7 +845,7 @@ Filter                                      [ List | Timeline ]
 
 No breadcrumb, no Trail Inspector, no generic Display/Sort builder. The default Projects Root filter hides Completed/Canceled Projects; users may include terminal Projects explicitly through the normal Status Filter.
 
-List groups Projects by Initiative, with `No Initiative` last. Initiative identity navigates to Initiative Focus; disclosure only collapses/expands the group. Group order is stable and does not jump according to child urgency.
+List groups Projects by Initiative, with `No Initiative` last. Every Initiative remains visible as a group even when it currently owns zero Projects, so its identity remains a management entry point. Initiative identity navigates to Initiative Focus; disclosure only collapses/expands the group. Group order is stable and does not jump according to child urgency.
 
 Default Project collection order inside each Initiative group:
 
@@ -863,10 +863,10 @@ For Projects, no canonical Product-level Created At ordering fact currently foll
 Project Summary Row remains compact:
 
 ```text
-[Selection] [Status] Project title      Priority      Progress      Due
+[Selection] [Status] Project title      Priority      Labels      Progress      Due
 ```
 
-Selection uses the same shared collection gutter as other selectable rows and does not replace Project Status. Title is strongest. Project lifecycle Status remains visible as its semantic glyph because Projects Root groups by Initiative rather than Status; the configured Status label is not repeated as a parallel text column. Progress is read-only. Labels are not part of the normal scanning row unless a future explicit design reopens that hierarchy.
+Selection uses the same shared collection gutter as other selectable rows and does not replace Project Status. Title is strongest. Project lifecycle Status remains visible as its semantic glyph because Projects Root groups by Initiative rather than Status; the configured Status label is not repeated as a parallel text column. Progress is read-only. Labels show color plus readable names when space permits, collapse to stable-identity dots at medium widths, and leave the scan plane at constrained widths.
 
 Completed/Canceled Projects remain in their actual Initiative group with reduced visual weight when visible; they do not move to a separate Archive model. Canceled Projects with unresolved child work may retain an exception Attention signal.
 
@@ -875,7 +875,7 @@ Completed/Canceled Projects remain in their actual Initiative group with reduced
 Initiative Focus is the same Project collection scoped to one Initiative:
 
 ```text
-Projects / Initiative Alpha                         +
+Projects / Initiative Alpha                      +  ...
 ------------------------------------------------------
 <optional Initiative description>
 ------------------------------------------------------
@@ -884,7 +884,7 @@ Filter
 <Project Summary Rows>
 ```
 
-It is List-only and has no Initiative filter, Board, Timeline, Display builder, or multi-Project Issue workspace. All Project lifecycle states are visible by default because the Initiative Page is already a deliberate scoped focus. `+` opens Project Composer with the current Initiative prefilled/editable. Structured Initiative properties remain compact Inspector material.
+It is List-only and has no Initiative filter, Board, Timeline, Display builder, or multi-Project Issue workspace. All Project lifecycle states are visible by default because the Initiative Page is already a deliberate scoped focus. `+` opens Project Composer with the current Initiative prefilled/editable. The overflow action exposes Initiative title/description editing and confirmed deletion; deletion preserves assigned Projects by making them unassigned. Structured Initiative properties remain compact Inspector material.
 
 True empty may offer `New project`; filtered empty offers `Clear filters` only.
 
@@ -976,7 +976,7 @@ The current Default Project has no special execution privilege.
 Stable composition:
 
 ```text
-Projects / [Initiative /] Project Trail                 +
+Projects / [Initiative /] Project Trail              +  edit  ...
 ----------------------------------------------------------
 <optional Project description>
 ----------------------------------------------------------
@@ -985,7 +985,7 @@ Filter                                      [ List | Board ]
 <Status-first Issue collection>
 ```
 
-Header `+` is stable but enabled only when Project capability allows child Issue creation. An unavailable action may explain that reopening is required; it never silently changes lifecycle.
+Header `+` is stable but enabled only when Project capability allows child Issue creation. An unavailable action may explain that reopening is required; it never silently changes lifecycle. The edit action opens the shared identity editor for Project title and description. The overflow action owns confirmed Project deletion.
 
 ### 8.3 List
 
@@ -1240,14 +1240,14 @@ Priority     Labels     Review Due
 
 Description / body
 
-Accept       Defer      Delete       ...
+Save         Accept       Defer      Delete
 ```
 
 Wide Main View may show Queue + Review side by side. Constrained Main View focuses Review while preserving queue position/Previous/Next and the underlying Filter/Order state. Review has an explicit exit back to full Triage List without leaving the Triage Page.
 
 Previous/Next uses the current visible + ordered Triage projection. If current entry is no longer in that projection, adjacency is unavailable rather than inferred from a stale historical slot.
 
-Uncommitted title/body drafts are transient. Leaving the current Review identity or Triage Page discards them rather than turning navigation into implicit save.
+Title/body drafts may be committed with the stable `Save` action or an eligible editor blur. The Save slot remains present and disabled when clean, while ordinary edit persistence does not insert a transient pending label that shifts the disposition actions. Uncommitted title/body drafts are transient. Leaving the current Review identity or Triage Page discards them rather than turning navigation into implicit save.
 
 ### 10.5 Review-completing progression
 

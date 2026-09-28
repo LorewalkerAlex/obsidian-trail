@@ -379,7 +379,11 @@ describe("TrailTriagePage", () => {
     fireEvent.change(title, { target: { value: "Attempted title" } });
     fireEvent.blur(title);
 
-    expect(await screen.findByText("Saving...")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("region", { name: "Triage review" }))
+        .toHaveAttribute("data-pending", "edit");
+    });
+    expect(screen.queryByText("Saving...")).not.toBeInTheDocument();
     await act(async () => {
       completion.reject(new Error("write failed"));
       try {
@@ -433,7 +437,10 @@ describe("TrailTriagePage", () => {
     fireEvent.change(title, { target: { value: "First title" } });
     fireEvent.blur(title);
 
-    expect(await screen.findByText("Saving...")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("region", { name: "Triage review" }))
+        .toHaveAttribute("data-pending", "edit");
+    });
     expect(title).toBeEnabled();
     expect(screen.getByRole("button", { name: "Defer Triage entry" })).toBeEnabled();
 
@@ -464,7 +471,8 @@ describe("TrailTriagePage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText("Saving...")).not.toBeInTheDocument();
+      expect(screen.getByRole("region", { name: "Triage review" }))
+        .not.toHaveAttribute("data-pending");
     });
     expect(screen.getByRole("textbox", { name: "Triage title" })).toHaveValue("Second title");
   });
@@ -495,7 +503,10 @@ describe("TrailTriagePage", () => {
     const title = screen.getByRole("textbox", { name: "Triage title" });
     fireEvent.change(title, { target: { value: "First title" } });
     fireEvent.blur(title);
-    expect(await screen.findByText("Saving...")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("region", { name: "Triage review" }))
+        .toHaveAttribute("data-pending", "edit");
+    });
 
     fireEvent.change(title, { target: { value: "Second title" } });
     const next = screen.getByRole("button", { name: "Next Triage entry" });

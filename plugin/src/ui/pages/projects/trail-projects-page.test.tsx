@@ -36,6 +36,11 @@ function readyProjectsStore() {
     labelIds: [],
     title: "Alpha",
   };
+  const emptyInitiative: TrailInitiative = {
+    id: "initiative-empty",
+    labelIds: [],
+    title: "Empty initiative",
+  };
   const activeProject: TrailProject = {
     due: NOW + (20 * DAY_MS),
     id: "project-active",
@@ -81,6 +86,11 @@ function readyProjectsStore() {
         initiative,
         kind: "initiative",
         sourcePath: "Trail/Initiatives/0001 Alpha.md",
+      },
+      {
+        initiative: emptyInitiative,
+        kind: "initiative",
+        sourcePath: "Trail/Initiatives/0002 Empty initiative.md",
       },
       {
         issues: [activeIssue],
@@ -155,9 +165,13 @@ describe("TrailProjectsPage", () => {
     expect(within(alphaGroup).getByText("Build the Projects workspace")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "No Initiative projects" }))
       .toHaveTextContent("Unassigned planning project");
+    const emptyGroup = screen.getByRole("region", { name: "Empty initiative projects" });
+    expect(emptyGroup).toHaveTextContent("0");
 
     fireEvent.click(within(alphaGroup).getByRole("button", { name: "Alpha" }));
     expect(onInitiativeActivate).toHaveBeenCalledWith("initiative-alpha");
+    fireEvent.click(within(emptyGroup).getByRole("button", { name: "Empty initiative" }));
+    expect(onInitiativeActivate).toHaveBeenCalledWith("initiative-empty");
 
     fireEvent.click(within(alphaGroup).getByRole("button", { name: "Build the Projects workspace" }));
     expect(onProjectActivate).toHaveBeenCalledWith("project-active");

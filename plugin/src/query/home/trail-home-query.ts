@@ -298,6 +298,7 @@ export function selectTrailHomeReadModel(
     .map((project) => {
       const status = requireTrailProjectStatus(configuration, project);
       const summary = createTrailProjectSummaryReadModel(
+        configuration,
         project,
         status,
         selectTrailWorkflowIssuesForProject(readable, configuration, project.id),

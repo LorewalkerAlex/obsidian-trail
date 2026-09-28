@@ -368,7 +368,10 @@ export function selectTrailProjectsRootReadModel(
   for (const project of visibleProjects) {
     const status = requireTrailProjectStatus(configuration, project);
     const issues = selectTrailWorkflowIssuesForProject(readable, configuration, project.id);
-    summariesById.set(project.id, createTrailProjectSummaryReadModel(project, status, issues));
+    summariesById.set(
+      project.id,
+      createTrailProjectSummaryReadModel(configuration, project, status, issues),
+    );
     const timeline = timelineRow(
       readable,
       configuration,
@@ -396,9 +399,10 @@ export function selectTrailProjectsRootReadModel(
 
   const groups: TrailProjectsRootGroupReadModel[] = [];
   for (const initiative of initiatives) {
-    const projects = visibleByInitiative.get(initiative.id);
-    if (projects === undefined || projects.length === 0) continue;
-    groups.push({ initiative, projects });
+    groups.push({
+      initiative,
+      projects: visibleByInitiative.get(initiative.id) ?? [],
+    });
   }
   if (unassigned.length > 0) groups.push({ projects: unassigned });
 

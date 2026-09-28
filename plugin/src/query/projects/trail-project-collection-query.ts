@@ -1,4 +1,8 @@
-import type { TrailConfiguration, TrailStatusDefinition } from "../../domain/model/trail-configuration";
+import type {
+  TrailConfiguration,
+  TrailLabel,
+  TrailStatusDefinition,
+} from "../../domain/model/trail-configuration";
 import type {
   TrailInitiative,
   TrailProject,
@@ -53,6 +57,7 @@ export interface TrailProjectSummaryReadModel {
   readonly due?: TrailTimestamp;
   readonly id: TrailProjectId;
   readonly initiativeId?: string;
+  readonly labels: readonly TrailLabel[];
   readonly priority: TrailPriority | undefined;
   readonly progress: TrailProjectProgressReadModel;
   readonly statusCategory: TrailProjectStatusCategory;
@@ -227,14 +232,20 @@ function projectProgress(
 }
 
 export function createTrailProjectSummaryReadModel(
+  configuration: TrailConfiguration,
   project: TrailProject,
   status: TrailStatusDefinition & { readonly category: TrailProjectStatusCategory },
   issues: readonly TrailProjectWorkflowIssueProjection[],
 ): TrailProjectSummaryReadModel {
+  const labelsById = new Map(configuration.labels.map((label) => [label.id, label] as const));
   return {
     due: project.due,
     id: project.id,
     initiativeId: project.initiativeId,
+    labels: project.labelIds.flatMap((labelId) => {
+      const label = labelsById.get(labelId);
+      return label === undefined ? [] : [label];
+    }),
     priority: project.priority,
     progress: projectProgress(issues),
     statusCategory: status.category,

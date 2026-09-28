@@ -1206,8 +1206,8 @@ List groups by Initiative:
 ```text
 v  Initiative Alpha                                      2
 
-   [Status] Project A      [Priority] 65%   Sep 08
-   [Status] Project B                 20%   Sep 20
+   [Status] Project A      [Priority] [Labels] 65%   Sep 08
+   [Status] Project B                            20%   Sep 20
 
 v  Initiative Beta                                       1
 
@@ -1218,7 +1218,7 @@ v  No Initiative                                         1
    [Status] Standalone
 ```
 
-- Initiative identity navigates to Initiative Focus;
+- Initiative identity navigates to Initiative Focus, including zero-Project Initiative groups that remain visible as management entry points;
 - disclosure does not navigate;
 - `No Initiative` remains last and is not an entity;
 - group order is stable and does not jump with child urgency;
@@ -1248,16 +1248,16 @@ Constrained List removes secondary metadata progressively. Timeline owns its own
 ```text
 Main View                                                   Right Sidebar
 
-Projects / Initiative Alpha                          +     Initiative Inspector
+Projects / Initiative Alpha                       +  ...   Initiative Inspector
 --------------------------------------------------------
 <optional lightweight description>
 --------------------------------------------------------
 Filter
 --------------------------------------------------------
 
-[Status] Project A      [Priority] 65%   Sep 08
-[Status] Project B                 20%   Sep 20
-[Status] Project C                 40%
+[Status] Project A      [Priority] [Labels] 65%   Sep 08
+[Status] Project B                            20%   Sep 20
+[Status] Project C                            40%
 [Status] Project D                100%
 [Status] Project E
 ```
@@ -1267,6 +1267,7 @@ Rules:
 - `Projects` breadcrumb ancestor -> Projects Root;
 - current Initiative identity is terminal/current title;
 - `+` -> standard Project Composer with Initiative prefilled/editable;
+- `...` -> edit title/description or confirm deletion; deletion preserves child Projects as unassigned;
 - description is omitted when absent, shown fully when short, bounded-expandable when long;
 - a wikilink follows the link rather than toggling description expansion;
 - collection is flat List only;
@@ -1284,7 +1285,7 @@ Stable Page skeleton across lifecycle states:
 ```text
 Main View                                                     Right Sidebar
 
-Projects / [Initiative /] Project Trail                 +     Project Inspector
+Projects / [Initiative /] Project Trail          +  edit  ...  Project Inspector
 -----------------------------------------------------------
 <optional Project description>
 -----------------------------------------------------------
@@ -1303,6 +1304,8 @@ Lifecycle capability:
 | Canceled | disabled | yes | no | cleanup/move/cancel unresolved work |
 
 Disabled header `+` remains in the stable slot and may explain that reopening is required. It never silently changes lifecycle.
+
+`edit` opens the shared Project title/description editor. `...` owns confirmed Project deletion.
 
 List uses the persistent full Status skeleton and within-Status order:
 
@@ -1535,13 +1538,15 @@ Wide Review is Page-local Queue + Review composition:
 |                                  |                                          |
 |                                  | Description / body                       |
 |                                  |                                          |
-|                                  | [ Accept v ] [ Defer v ] Delete   ...   |
+|                                  | [ Save ] [ Accept v ] [ Defer ] Delete  |
 +----------------------------------+------------------------------------------+
 ```
 
 Constrained Review uses focused Main View Review while preserving Queue/Filter/Order state offscreen.
 
 Previous/Next uses current visible + ordered Queue. Ordinary edits do not complete Review. Accept/Defer/Delete do.
+
+Save remains in a stable action slot, is disabled for a clean draft, and commits title/body without requiring focus to leave the editor. Eligible blur may still commit. Ordinary edit persistence does not add/remove pending text beside these actions.
 
 After a successful disposition:
 

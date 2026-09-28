@@ -138,6 +138,7 @@ function TrailProjectsList({
               <TrailProjectSummaryRow
                 due={project.due}
                 key={project.id}
+                labels={project.labels}
                 onActivate={() => onProjectActivate(project.id)}
                 onContextMenu={(event) => onProjectContextMenu(event, project.id)}
                 onSelectionChange={(selected, extendRange) => {
@@ -301,7 +302,7 @@ export function TrailProjectsPage({
             />
 
             <div className="trail-projects-page__content">
-              {readModel.emptyKind === "true" ? (
+              {readModel.emptyKind === "true" && readModel.groups.length === 0 ? (
                 <TrailEmptyState
                   action={(
                     <TrailButton disabled={!writable} onClick={openComposer} variant="primary">
@@ -311,6 +312,31 @@ export function TrailProjectsPage({
                   description="Create a project to collect durable work under a shared outcome."
                   title="No projects yet"
                 />
+              ) : layout === "list" && readModel.groups.length > 0 ? (
+                <>
+                  <TrailProjectsList
+                    collapsedGroupKeys={collapsedGroupKeys}
+                    groups={readModel.groups}
+                    onGroupExpandedChange={updateGroupExpanded}
+                    onInitiativeActivate={onInitiativeActivate}
+                    onProjectActivate={onProjectActivate}
+                    onProjectContextMenu={collectionActions.onProjectContextMenu}
+                    onProjectSelectionChange={selection.setSelected}
+                    selectedProjectIds={selection.selectedIds}
+                    timezone={readModel.configuration.temporal.timezone}
+                  />
+                  {readModel.emptyKind === "filtered" ? (
+                    <TrailEmptyState
+                      action={<TrailButton onClick={filters.clearAll}>Clear filters</TrailButton>}
+                      title="No projects match the filters."
+                    />
+                  ) : readModel.emptyKind === "projection" ? (
+                    <TrailEmptyState
+                      description="Completed and canceled projects are hidden by default. Use the Status filter to include them."
+                      title="No active projects"
+                    />
+                  ) : null}
+                </>
               ) : readModel.emptyKind === "filtered" ? (
                 <TrailEmptyState
                   action={<TrailButton onClick={filters.clearAll}>Clear filters</TrailButton>}
@@ -320,18 +346,6 @@ export function TrailProjectsPage({
                 <TrailEmptyState
                   description="Completed and canceled projects are hidden by default. Use the Status filter to include them."
                   title="No active projects"
-                />
-              ) : layout === "list" ? (
-                <TrailProjectsList
-                  collapsedGroupKeys={collapsedGroupKeys}
-                  groups={readModel.groups}
-                  onGroupExpandedChange={updateGroupExpanded}
-                  onInitiativeActivate={onInitiativeActivate}
-                  onProjectActivate={onProjectActivate}
-                  onProjectContextMenu={collectionActions.onProjectContextMenu}
-                  onProjectSelectionChange={selection.setSelected}
-                  selectedProjectIds={selection.selectedIds}
-                  timezone={readModel.configuration.temporal.timezone}
                 />
               ) : readModel.timeline.projectionEmpty ? (
                 <TrailEmptyState

@@ -76,6 +76,7 @@ export interface TrailTriageReviewSurfaceProps {
   readonly canNext: boolean;
   readonly canPrevious: boolean;
   readonly configuration: TrailConfiguration;
+  readonly dirty: boolean;
   readonly draft: TrailTriageReviewDraft;
   readonly feedback?: string;
   readonly onAccept: (target: TrailTriageAcceptTarget) => void;
@@ -98,6 +99,7 @@ export function TrailTriageReviewSurface({
   canNext,
   canPrevious,
   configuration,
+  dirty,
   draft,
   feedback,
   onAccept,
@@ -117,9 +119,7 @@ export function TrailTriageReviewSurface({
 }: TrailTriageReviewSurfaceProps) {
   const [acceptOpen, setAcceptOpen] = useState(false);
   const mutationLocked = pending === "defer" || pending === "delete";
-  const pendingLabel = pending === "edit"
-    ? "Saving..."
-    : pending === "defer"
+  const pendingLabel = pending === "defer"
       ? "Deferring..."
       : pending === "delete"
         ? "Deleting..."
@@ -128,6 +128,7 @@ export function TrailTriageReviewSurface({
   return (
     <section
       aria-label="Triage review"
+      aria-busy={pending !== undefined}
       className="trail-triage-review"
       data-pending={pending}
     >
@@ -223,6 +224,13 @@ export function TrailTriageReviewSurface({
           {pendingLabel === undefined ? null : (
             <span className="trail-triage-review__pending">{pendingLabel}</span>
           )}
+          <TrailButton
+            aria-label="Save Triage changes"
+            disabled={mutationLocked || !dirty}
+            onClick={onCommitDraft}
+          >
+            Save
+          </TrailButton>
           <TrailViewPopover
             align="start"
             label="Accept Triage entry as"

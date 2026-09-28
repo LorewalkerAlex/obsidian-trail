@@ -138,6 +138,33 @@
   overflow: hidden;
 }
 
+.trail-label-summary,
+.trail-label-summary__item {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.trail-label-summary {
+  gap: var(--trail-space-4);
+  overflow: hidden;
+  color: var(--trail-text-secondary);
+  font-size: var(--trail-collection-secondary-font-size);
+}
+
+.trail-label-summary__item {
+  flex: 0 1 auto;
+  gap: var(--trail-space-2);
+  overflow: hidden;
+}
+
+.trail-label-summary__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .trail-label-property-select__summary {
   min-width: 0;
   flex: 1 1 auto;

@@ -95,6 +95,18 @@ function reviewSessionFromIssue(
   };
 }
 
+function reviewDraftDiffersFromIssue(
+  draft: TrailTriageReviewDraft,
+  issue: TrailTriageIssue,
+): boolean {
+  return draft.description !== (issue.description ?? "")
+    || draft.due !== issue.due
+    || draft.priority !== issue.priority
+    || draft.title !== issue.title
+    || draft.labelIds.length !== issue.labelIds.length
+    || draft.labelIds.some((labelId, index) => labelId !== issue.labelIds[index]);
+}
+
 function currentReviewSlot(
   visibleIssueIds: readonly string[],
   session: TrailTriageReviewSession,
@@ -608,6 +620,10 @@ export function TrailTriagePage({
                 canNext={navigation.canNext}
                 canPrevious={navigation.canPrevious}
                 configuration={configuration}
+                dirty={reviewDraftDiffersFromIssue(
+                  reviewSession.draft,
+                  reviewSession.baseline,
+                )}
                 draft={reviewSession.draft}
                 feedback={reviewSession.feedback}
                 onAccept={openAcceptComposer}

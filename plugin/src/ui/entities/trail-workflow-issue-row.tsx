@@ -14,7 +14,7 @@ import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import { TrailCheckbox } from "../primitives/trail-checkbox";
 import { TrailDueDate } from "./trail-due";
 import { TrailEstimateValue } from "./trail-estimate";
-import { TrailLabelDots } from "./trail-label";
+import { TrailLabelSummary } from "./trail-label";
 import {
   getTrailPriorityPresentation,
   TrailPriorityGlyph,
@@ -172,7 +172,7 @@ export function TrailWorkflowIssueRow({
             {milestoneTitle}
           </span>
           <span className="trail-workflow-issue-row__labels">
-            {labels.length === 0 ? null : <TrailLabelDots labels={labels} />}
+            {labels.length === 0 ? null : <TrailLabelSummary labels={labels} />}
           </span>
           {hasCurrentCycleTrack ? (
             <span className="trail-workflow-issue-row__cycle">

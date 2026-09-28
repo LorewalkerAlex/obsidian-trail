@@ -90,7 +90,7 @@ export function createDiagnosticTrailUiActions(
   >;
   readonly initiatives: Pick<
     TrailApplicationSession["initiatives"],
-    "create" | "editProperties"
+    "create" | "delete" | "editProperties"
   >;
   readonly issues: Pick<
     TrailApplicationSession["issues"],
@@ -209,6 +209,22 @@ export function createDiagnosticTrailUiActions(
           );
         } catch (error: unknown) {
           return recordThrown(diagnostics, "ui.initiative.create", error, data);
+        }
+      },
+      delete(expectedInitiative, replacementInitiativeId): TrailEntityMutationReceipt {
+        const data = {
+          initiativeId: expectedInitiative.id,
+          replacementInitiativeId: replacementInitiativeId ?? null,
+        };
+        try {
+          return observeReceipt(
+            diagnostics,
+            "ui.initiative.delete",
+            session.initiatives.delete(expectedInitiative, replacementInitiativeId),
+            data,
+          );
+        } catch (error: unknown) {
+          return recordThrown(diagnostics, "ui.initiative.delete", error, data);
         }
       },
       editProperties(expectedInitiative, input): TrailMutationActionResult {

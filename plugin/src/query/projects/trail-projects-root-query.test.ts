@@ -150,8 +150,11 @@ describe("Projects Root Query", () => {
     });
     expect(defaultPage?.groups.map((group) => group.initiative?.title ?? "No Initiative")).toEqual([
       "Alpha",
+      "Zeta",
       "No Initiative",
     ]);
+    expect(defaultPage?.groups.find((group) => group.initiative?.id === "initiative-z")?.projects)
+      .toEqual([]);
     expect(defaultPage?.visibleProjectIds).toEqual(["project-alpha", "project-none"]);
     expect(defaultPage?.emptyKind).toBeUndefined();
 
@@ -165,7 +168,8 @@ describe("Projects Root Query", () => {
       now,
     });
     expect(terminalPage?.visibleProjectIds).toEqual(["project-zeta-terminal"]);
-    expect(terminalPage?.groups[0]?.initiative?.title).toBe("Zeta");
+    expect(terminalPage?.groups.find((group) => group.projects.length > 0)?.initiative?.title)
+      .toBe("Zeta");
   });
 
   it("uses OR within a Project property and AND across Status, Initiative, Priority, Labels, and Due", () => {
@@ -235,6 +239,8 @@ describe("Projects Root Query", () => {
     });
 
     expect(page?.visibleProjectIds).toEqual(["project-match"]);
+    expect(page?.groups.find((group) => group.initiative?.id === initiative.id)?.projects[0]?.labels)
+      .toEqual([{ groupId: "group-area", id: "label-work", name: "Work" }]);
 
     const noInitiative = selectTrailProjectsRootReadModel(store.getState(), {
       filter: {

@@ -7,6 +7,7 @@ import {
   type TrailInitiativeFocusFilterPropertyId,
 } from "../../../query/projects/trail-initiative-focus-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
+import { TrailEntityIdentityEditor } from "../../entities/trail-entity-identity-editor";
 import { TrailProjectSummaryRow } from "../../entities/trail-project-summary-row";
 import { TrailProjectComposer } from "../../entities/trail-standard-creation-composers";
 import { useTrailCollectionFilterState } from "../../interactions/trail-collection-filter-state";
@@ -27,6 +28,7 @@ import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
 import { useTrailProjectCollectionActions } from "./trail-project-collection-actions";
+import { TrailInitiativeActions } from "./trail-initiative-actions";
 import { TrailInitiativeViewControls } from "./trail-projects-view-controls";
 
 type TrailInitiativePageActions = Pick<
@@ -47,14 +49,18 @@ function TrailAddIcon() {
 
 export function TrailInitiativePage({
   actions,
+  initiativeActions,
   initiativeId,
+  onInitiativeDeleted,
   onProjectActivate,
   onProjectsActivate,
   renderMarkdown,
   runtimeStore,
 }: {
   readonly actions: TrailInitiativePageActions;
+  readonly initiativeActions?: Pick<TrailUiActions["initiatives"], "delete" | "editProperties">;
   readonly initiativeId: string;
+  readonly onInitiativeDeleted?: () => void;
   readonly onProjectActivate: (projectId: string) => void;
   readonly onProjectsActivate: () => void;
   readonly renderMarkdown: TrailMarkdownRender;
@@ -64,6 +70,7 @@ export function TrailInitiativePage({
   const state = useStore(runtimeStore, (runtimeState) => runtimeState);
   const filters = useTrailCollectionFilterState<TrailInitiativeFocusFilterPropertyId>();
   const [composerReferenceTimestamp, setComposerReferenceTimestamp] = useState<number | null>(null);
+  const [identityEditorOpen, setIdentityEditorOpen] = useState(false);
   const now = Date.now();
   const readModel = selectTrailInitiativeFocusReadModel(state, {
     filter: filters.state,
@@ -134,12 +141,22 @@ export function TrailInitiativePage({
       <div className="trail-initiative-page__scroll">
         <TrailPageHeader
           actions={(
-            <TrailIconButton
-              disabled={!writable}
-              icon={<TrailAddIcon />}
-              label="Add project"
-              onClick={openComposer}
-            />
+            <>
+              <TrailIconButton
+                disabled={!writable}
+                icon={<TrailAddIcon />}
+                label="Add project"
+                onClick={openComposer}
+              />
+              {initiativeActions === undefined || onInitiativeDeleted === undefined ? null : <TrailInitiativeActions
+                actions={initiativeActions}
+                expectedInitiative={readModel.expectedInitiative}
+                onDeleted={onInitiativeDeleted}
+                onEdit={() => setIdentityEditorOpen(true)}
+                projectCount={readModel.projectCount}
+                writable={writable}
+              />}
+            </>
           )}
           breadcrumb={(
             <TrailPageBreadcrumbButton onClick={onProjectsActivate}>
@@ -187,6 +204,7 @@ export function TrailInitiativePage({
                 <TrailProjectSummaryRow
                   due={project.due}
                   key={project.id}
+                  labels={project.labels}
                   onActivate={() => onProjectActivate(project.id)}
                   onContextMenu={(event) => collectionActions.onProjectContextMenu(event, project.id)}
                   onSelectionChange={(selected, extendRange) => {
@@ -229,6 +247,32 @@ export function TrailInitiativePage({
           seedTitle=""
         />
       )}
+
+      {initiativeActions === undefined ? null : <TrailEntityIdentityEditor
+        context="Initiative"
+        description={readModel.initiative.description}
+        onOpenChange={setIdentityEditorOpen}
+        onSave={async (draft) => {
+          const latest = selectTrailInitiativeFocusReadModel(runtimeStore.getState(), {
+            filter: filters.state,
+            initiativeId,
+            now: Date.now(),
+          });
+          if (latest === null) throw new Error("This initiative is no longer available.");
+          const expected = latest.expectedInitiative;
+          const result = initiativeActions.editProperties(expected, {
+            description: draft.description,
+            due: expected.due,
+            labelIds: expected.labelIds,
+            priority: expected.priority,
+            title: draft.title,
+          });
+          if (result.kind === "needs-input") throw new Error(result.input.message);
+          if (result.kind === "submitted") await result.receipt.completion;
+        }}
+        open={identityEditorOpen}
+        title={readModel.initiative.title}
+      />}
     </section>
   );
 }

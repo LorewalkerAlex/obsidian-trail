@@ -73,13 +73,13 @@
 .trail-workflow-issue-row__metadata {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(60px, 88px) 30px 20px var(--trail-collection-date-slot-size);
+  grid-template-columns: minmax(60px, 88px) minmax(96px, 160px) 20px var(--trail-collection-date-slot-size);
   align-items: center;
   column-gap: var(--trail-space-3);
 }
 
 .trail-workflow-issue-row__metadata--cycle {
-  grid-template-columns: minmax(60px, 88px) 30px 48px 20px var(--trail-collection-date-slot-size);
+  grid-template-columns: minmax(60px, 88px) minmax(96px, 160px) 48px 20px var(--trail-collection-date-slot-size);
 }
 
 .trail-workflow-issue-row__labels,
@@ -164,6 +164,10 @@
   .trail-workflow-issue-row__milestone,
   .trail-workflow-issue-row__cycle,
   .trail-workflow-issue-row__estimate {
+    display: none;
+  }
+
+  .trail-workflow-issue-row__labels .trail-label-summary__name {
     display: none;
   }
 }

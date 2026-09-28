@@ -5,7 +5,7 @@ import {
   TrailLabelPropertySelect,
   nextTrailLabelSelection,
 } from "./trail-label-property-select";
-import { TrailLabelDots, trailLabelColorSlot } from "./trail-label";
+import { TrailLabelDots, TrailLabelSummary, trailLabelColorSlot } from "./trail-label";
 
 describe("TrailLabelDots", () => {
   it("keeps presentation color stable by Label identity while current names remain live", () => {
@@ -35,6 +35,20 @@ describe("TrailLabelDots", () => {
 
     expect(screen.getByRole("img", { name: "Labels: Personal, TypeScript" })).toBeInTheDocument();
     expect(container.querySelectorAll(".trail-label-dot")).toHaveLength(2);
+  });
+});
+
+describe("TrailLabelSummary", () => {
+  it("renders readable names alongside the stable color dots", () => {
+    render(
+      <TrailLabelSummary labels={[
+        { groupId: "group-a", id: "label-service", name: "Service" },
+        { groupId: "group-b", id: "label-spike", name: "Spike" },
+      ]} />,
+    );
+
+    expect(screen.getByRole("img", { name: "Labels: Service, Spike" }))
+      .toHaveTextContent("ServiceSpike");
   });
 });
 

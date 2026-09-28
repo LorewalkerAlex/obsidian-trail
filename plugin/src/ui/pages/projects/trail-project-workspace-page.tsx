@@ -16,6 +16,7 @@ import {
   type TrailWorkflowIssueStatusDragItemReadModel,
 } from "../../../query/shared/trail-workflow-issue-status-drag-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
+import { TrailEntityIdentityEditor } from "../../entities/trail-entity-identity-editor";
 import { TrailStatusGlyph } from "../../entities/trail-status";
 import { TrailWorkflowIssueComposer } from "../../entities/trail-standard-creation-composers";
 import { TrailWorkflowIssueRow } from "../../entities/trail-workflow-issue-row";
@@ -73,6 +74,14 @@ type TrailProjectWorkspacePageActions = Pick<
   TrailUiActions["issues"],
   "changeStatus" | "createFromDraft" | "delete" | "moveToProject"
 >;
+
+function TrailEditIcon() {
+  return (
+    <svg aria-hidden="true" className="trail-projects-page__edit-icon" viewBox="0 0 16 16">
+      <path d="M3.5 11.75 4 9.5l6.75-6.75 2.5 2.5L6.5 12zM9.75 3.75l2.5 2.5" />
+    </svg>
+  );
+}
 
 function TrailAddIcon() {
   return (
@@ -191,6 +200,7 @@ export function TrailProjectWorkspacePage({
   onInitiativeActivate,
   onIssueActivate,
   onDeleteProject,
+  onEditProject,
   onProjectDeleted,
   onProjectsActivate,
   projectId,
@@ -201,6 +211,7 @@ export function TrailProjectWorkspacePage({
   readonly onInitiativeActivate: (initiativeId: string) => void;
   readonly onIssueActivate?: (issueId: string) => void;
   readonly onDeleteProject?: NonNullable<TrailUiActions["projects"]["delete"]>;
+  readonly onEditProject?: TrailUiActions["projects"]["editProperties"];
   readonly onProjectDeleted?: () => void;
   readonly onProjectsActivate: () => void;
   readonly projectId: string;
@@ -216,6 +227,7 @@ export function TrailProjectWorkspacePage({
   const [composerReferenceTimestamp, setComposerReferenceTimestamp] = useState<number | null>(null);
   const [deleteContext, setDeleteContext] = useState<TrailWorkflowIssueActionContext | null>(null);
   const [dragFeedback, setDragFeedback] = useState<string>();
+  const [identityEditorOpen, setIdentityEditorOpen] = useState(false);
   const [layout, setLayout] = useState<TrailProjectWorkspaceLayout>("list");
   const deleteReturnFocusRef = useRef<HTMLElement | null>(null);
   const pageRef = useRef<HTMLElement | null>(null);
@@ -589,6 +601,14 @@ export function TrailProjectWorkspacePage({
                 onClick={openComposer}
                 title={addIssueTitle}
               />
+              {onEditProject === undefined ? null : (
+                <TrailIconButton
+                  disabled={!writable}
+                  icon={<TrailEditIcon />}
+                  label="Edit project"
+                  onClick={() => setIdentityEditorOpen(true)}
+                />
+              )}
               {onDeleteProject === undefined || onProjectDeleted === undefined ? null : (
                 <TrailProjectDeleteAction
                   onDelete={onDeleteProject}
@@ -776,6 +796,32 @@ export function TrailProjectWorkspacePage({
           seedTitle=""
         />
       )}
+
+      {onEditProject === undefined ? null : <TrailEntityIdentityEditor
+        context="Project"
+        description={readModel.project.description}
+        onOpenChange={setIdentityEditorOpen}
+        onSave={async (draft) => {
+          const latest = selectTrailProjectWorkspaceReadModel(runtimeStore.getState(), {
+            filter: filters.state,
+            now: Date.now(),
+            projectId,
+          });
+          if (latest === null) throw new Error("This project is no longer available.");
+          const expected = latest.expectedProject;
+          const result = onEditProject(expected, {
+            description: draft.description,
+            due: expected.due,
+            labelIds: expected.labelIds,
+            priority: expected.priority,
+            title: draft.title,
+          });
+          if (result.kind === "needs-input") throw new Error(result.input.message);
+          if (result.kind === "submitted") await result.receipt.completion;
+        }}
+        open={identityEditorOpen}
+        title={readModel.project.title}
+      />}
     </section>
   );
 }

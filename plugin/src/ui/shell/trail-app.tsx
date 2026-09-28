@@ -17,7 +17,10 @@ import type {
   TrailNavigationStore,
   TrailProductLocation,
 } from "./trail-navigation-state";
-import type { TrailUiActions } from "./trail-ui-actions";
+import {
+  bindTrailProjectDeleteAction,
+  type TrailUiActions,
+} from "./trail-ui-actions";
 import {
   TrailPageSurface,
   TrailWorkspaceFrame,
@@ -85,6 +88,7 @@ export function TrailApp({
   const control = useStore(runtimeStore, (state) => state.control);
   const revision = useStore(runtimeStore, (state) => state.committed.revision);
   const currentLocation = visibleLocation(location, showDevelopment);
+  const deleteProject = bindTrailProjectDeleteAction(actions.projects);
 
   return (
     <main
@@ -143,8 +147,12 @@ export function TrailApp({
           <TrailPageSurface>
             <TrailInitiativePage
               actions={actions.projects}
+              initiativeActions={actions.initiatives}
               key={currentLocation.initiativeId}
               initiativeId={currentLocation.initiativeId}
+              onInitiativeDeleted={() => {
+                onNavigate({ kind: "projects" });
+              }}
               onProjectActivate={(projectId) => {
                 onNavigate({ kind: "project", projectId });
               }}
@@ -160,7 +168,10 @@ export function TrailApp({
             <TrailProjectWorkspacePage
               actions={actions.issues}
               key={currentLocation.projectId}
-              onDeleteProject={actions.projects.delete}
+              onDeleteProject={deleteProject}
+              onEditProject={(expectedProject, input) => (
+                actions.projects.editProperties(expectedProject, input)
+              )}
               onInitiativeActivate={(initiativeId) => {
                 onNavigate({ initiativeId, kind: "initiative" });
               }}

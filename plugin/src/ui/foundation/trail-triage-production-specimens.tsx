@@ -87,6 +87,7 @@ export function TrailTriageReviewSpecimen() {
         canNext
         canPrevious
         configuration={TRAIL_FOUNDATION_CONFIGURATION}
+        dirty
         draft={draft}
         onAccept={() => { /* visual calibration only */ }}
         onBack={() => { /* visual calibration only */ }}

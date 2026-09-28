@@ -5,10 +5,12 @@ import type {
   TrailProjectStatusCategory,
   TrailTimestamp,
 } from "../../domain/model/trail-values";
+import type { TrailLabel } from "../../domain/model/trail-configuration";
 import { TrailCollectionRow } from "../patterns/trail-collection-row";
 import { TrailCheckbox } from "../primitives/trail-checkbox";
 import { TrailProgress } from "../primitives/trail-progress";
 import { TrailDueDate } from "./trail-due";
+import { TrailLabelSummary } from "./trail-label";
 import {
   getTrailPriorityPresentation,
   TrailPriorityGlyph,
@@ -30,6 +32,7 @@ export type TrailProjectSummaryProgress =
 export interface TrailProjectSummaryRowProps {
   readonly due?: TrailTimestamp;
   readonly highlighted?: boolean;
+  readonly labels?: readonly TrailLabel[];
   readonly onActivate?: () => void;
   readonly onContextMenu?: MouseEventHandler<HTMLDivElement>;
   readonly onSelectionChange?: (selected: boolean, extendRange: boolean) => void;
@@ -45,6 +48,7 @@ export interface TrailProjectSummaryRowProps {
 export function TrailProjectSummaryRow({
   due,
   highlighted = false,
+  labels = [],
   onActivate,
   onContextMenu,
   onSelectionChange,
@@ -117,6 +121,9 @@ export function TrailProjectSummaryRow({
           title={priorityPresentation.label}
         >
           <TrailPriorityGlyph priority={priority} />
+        </span>
+        <span className="trail-project-summary-row__labels">
+          <TrailLabelSummary labels={labels} />
         </span>
         <span className="trail-project-summary-row__progress">
           {progress.unavailable === true ? (
