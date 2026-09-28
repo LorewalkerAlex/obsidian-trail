@@ -1285,7 +1285,7 @@ Stable Page skeleton across lifecycle states:
 ```text
 Main View                                                     Right Sidebar
 
-Projects / [Initiative /] Project Trail          +  edit  ...  Project Inspector
+Projects / [Initiative /] Project Trail             +  ...  Project Inspector
 -----------------------------------------------------------
 <optional Project description>
 -----------------------------------------------------------
@@ -1305,7 +1305,7 @@ Lifecycle capability:
 
 Disabled header `+` remains in the stable slot and may explain that reopening is required. It never silently changes lifecycle.
 
-`edit` opens the shared Project title/description editor. `...` owns confirmed Project deletion.
+`...` owns low-frequency Project management: it opens the shared title/description editor and, when legal, confirmed Project deletion. The Default Project keeps Edit while omitting Delete.
 
 List uses the persistent full Status skeleton and within-Status order:
 

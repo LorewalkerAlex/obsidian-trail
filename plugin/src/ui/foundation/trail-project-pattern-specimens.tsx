@@ -67,7 +67,7 @@ export function TrailProjectPatternSpecimens() {
   return (
     <>
       <LabSpecimenRow
-        description="Shared page identity and action geometry stays visually above collection controls without turning every page into a universal shell. Projects proves the root form; Initiative Alpha proves the same production breadcrumb branch used by scoped Project Pages."
+        description="Shared page identity and action geometry stays visually above collection controls without turning every page into a universal shell. Projects proves the root form; Initiative Alpha proves the scoped breadcrumb plus creation/management action grouping shared by focused Project Pages."
         kind="composition-gallery"
         owner="TrailPageHeader"
         title="Page header"
@@ -87,10 +87,16 @@ export function TrailProjectPatternSpecimens() {
           <div style={{ width: "100%" }}>
             <TrailPageHeader
               actions={(
-                <TrailIconButton
-                  icon={<TrailAddIcon />}
-                  label="Add initiative project"
-                />
+                <>
+                  <TrailIconButton
+                    icon={<TrailAddIcon />}
+                    label="Add initiative project"
+                  />
+                  <TrailIconButton
+                    icon={<TrailMoreIcon />}
+                    label="More initiative actions"
+                  />
+                </>
               )}
               breadcrumb={(
                 <TrailPageBreadcrumbButton>

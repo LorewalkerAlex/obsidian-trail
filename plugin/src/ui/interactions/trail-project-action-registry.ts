@@ -13,11 +13,15 @@ import type { TrailActionMenuItem } from "./trail-action-menu";
 export const TRAIL_PROJECT_ACTION_IDS = [
   "project.change-status",
   "project.change-initiative",
+  "project.edit",
   "project.delete",
 ] as const;
 export type TrailProjectActionId = (typeof TRAIL_PROJECT_ACTION_IDS)[number];
 
-export type TrailProjectCollectionActionId = Exclude<TrailProjectActionId, "project.delete">;
+export type TrailProjectCollectionActionId = Extract<
+  TrailProjectActionId,
+  "project.change-initiative" | "project.change-status"
+>;
 export type TrailProjectCollectionActionIntents = Pick<
   TrailProjectApplication,
   "changeInitiative" | "changeStatus"
@@ -202,7 +206,7 @@ export async function executeTrailProjectCollectionAction(
   await Promise.all(completions);
 }
 
-/** Stable Project delete action semantics for the focused Project Workspace. */
+/** Stable Project management actions for the focused Project Workspace. */
 export function resolveTrailProjectActionContext(
   deleteReadModel: TrailProjectDeleteReadModel,
   writable: boolean,
@@ -216,19 +220,31 @@ export function resolveTrailProjectActionContext(
   }
   if (deleteReadModel.isDefaultProject) {
     return {
-      actions: [],
+      actions: [{
+        group: "common-mutation",
+        id: "project.edit",
+        label: "Edit project",
+        targets: [],
+      }],
       deleteReadModel,
-      unavailableReason: "Change the Default Project in Trail settings before deleting this project.",
     };
   }
 
   return {
-    actions: [{
-      group: "destructive",
-      id: "project.delete",
-      label: "Delete project",
-      targets: [],
-    }],
+    actions: [
+      {
+        group: "common-mutation",
+        id: "project.edit",
+        label: "Edit project",
+        targets: [],
+      },
+      {
+        group: "destructive",
+        id: "project.delete",
+        label: "Delete project",
+        targets: [],
+      },
+    ],
     deleteReadModel,
   };
 }

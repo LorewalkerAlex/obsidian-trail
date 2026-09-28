@@ -60,7 +60,7 @@ import {
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
 import type { TrailUiActions } from "../../shell/trail-ui-actions";
-import { TrailProjectDeleteAction } from "./trail-project-delete-action";
+import { TrailProjectActions } from "./trail-project-actions";
 import {
   selectTrailProjectWorkspaceBoardSections,
   TrailProjectWorkspaceBoard,
@@ -74,14 +74,6 @@ type TrailProjectWorkspacePageActions = Pick<
   TrailUiActions["issues"],
   "changeStatus" | "createFromDraft" | "delete" | "moveToProject"
 >;
-
-function TrailEditIcon() {
-  return (
-    <svg aria-hidden="true" className="trail-projects-page__edit-icon" viewBox="0 0 16 16">
-      <path d="M3.5 11.75 4 9.5l6.75-6.75 2.5 2.5L6.5 12zM9.75 3.75l2.5 2.5" />
-    </svg>
-  );
-}
 
 function TrailAddIcon() {
   return (
@@ -601,18 +593,13 @@ export function TrailProjectWorkspacePage({
                 onClick={openComposer}
                 title={addIssueTitle}
               />
-              {onEditProject === undefined ? null : (
-                <TrailIconButton
-                  disabled={!writable}
-                  icon={<TrailEditIcon />}
-                  label="Edit project"
-                  onClick={() => setIdentityEditorOpen(true)}
-                />
-              )}
-              {onDeleteProject === undefined || onProjectDeleted === undefined ? null : (
-                <TrailProjectDeleteAction
+              {onDeleteProject === undefined
+                || onEditProject === undefined
+                || onProjectDeleted === undefined ? null : (
+                <TrailProjectActions
                   onDelete={onDeleteProject}
                   onDeleted={onProjectDeleted}
+                  onEdit={() => setIdentityEditorOpen(true)}
                   projectId={readModel.project.id}
                   runtimeStore={runtimeStore}
                 />

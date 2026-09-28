@@ -42,9 +42,10 @@ function consequenceCopy(childIssueCount: number, milestoneCount: number): strin
     : consequences.join(" · ");
 }
 
-export function TrailProjectDeleteAction({
+export function TrailProjectActions({
   onDelete,
   onDeleted,
+  onEdit,
   projectId,
   runtimeStore,
 }: {
@@ -53,6 +54,7 @@ export function TrailProjectDeleteAction({
     replacementProjectId?: string,
   ) => TrailMutationActionResult;
   readonly onDeleted: () => void;
+  readonly onEdit: () => void;
   readonly projectId: string;
   readonly runtimeStore: TrailRuntimeStore;
 }) {
@@ -84,6 +86,10 @@ export function TrailProjectDeleteAction({
     actionMenu.showAtPosition({ x: bounds.right, y: bounds.bottom }, {
       items: context.actions,
       onSelect: (actionId: TrailProjectActionId) => {
+        if (actionId === "project.edit") {
+          onEdit();
+          return;
+        }
         if (actionId !== "project.delete") return;
         setReplacementProjectId(undefined);
         setDeleteContext(context);

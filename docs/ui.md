@@ -976,7 +976,7 @@ The current Default Project has no special execution privilege.
 Stable composition:
 
 ```text
-Projects / [Initiative /] Project Trail              +  edit  ...
+Projects / [Initiative /] Project Trail                 +  ...
 ----------------------------------------------------------
 <optional Project description>
 ----------------------------------------------------------
@@ -985,7 +985,7 @@ Filter                                      [ List | Board ]
 <Status-first Issue collection>
 ```
 
-Header `+` is stable but enabled only when Project capability allows child Issue creation. An unavailable action may explain that reopening is required; it never silently changes lifecycle. The edit action opens the shared identity editor for Project title and description. The overflow action owns confirmed Project deletion.
+Header `+` is stable but enabled only when Project capability allows child Issue creation. An unavailable action may explain that reopening is required; it never silently changes lifecycle. The overflow action owns low-frequency Project management: editing title/description and confirmed deletion. The current Default Project still exposes editing while omitting illegal deletion.
 
 ### 8.3 List
 

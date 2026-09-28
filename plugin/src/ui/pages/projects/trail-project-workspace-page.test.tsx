@@ -144,23 +144,44 @@ function actions() {
 describe("TrailProjectWorkspacePage", () => {
   it("exposes Project title and description editing from the Workspace header", async () => {
     const { store } = readyStore();
+    let invokeEdit: (() => void | Promise<void>) | undefined;
+    const presenter: TrailActionMenuPresenter = {
+      showAtMouseEvent(): void {
+        // This consumer proves the focused header action path only.
+      },
+      showAtPosition<TActionId extends string>(
+        _position: TrailActionMenuPosition,
+        request: TrailActionMenuRequest<TActionId>,
+      ): void {
+        const edit = request.items.find(({ id }) => id === "project.edit");
+        invokeEdit = edit === undefined ? undefined : () => request.onSelect(edit.id);
+      },
+    };
     const onEditProject = vi.fn((expectedProject: TrailProject) => ({
       entityId: expectedProject.id,
       kind: "unchanged" as const,
     }));
     render(
-      <TrailProjectWorkspacePage
-        actions={actions()}
-        onEditProject={onEditProject}
-        onInitiativeActivate={vi.fn()}
-        onProjectsActivate={vi.fn()}
-        projectId="project-a"
-        renderMarkdown={renderMarkdown}
-        runtimeStore={store}
-      />,
+      <TrailActionMenuProvider presenter={presenter}>
+        <TrailProjectWorkspacePage
+          actions={actions()}
+          onDeleteProject={vi.fn(() => ({ entityId: "project-a", kind: "unchanged" as const }))}
+          onEditProject={onEditProject}
+          onInitiativeActivate={vi.fn()}
+          onProjectDeleted={vi.fn()}
+          onProjectsActivate={vi.fn()}
+          projectId="project-a"
+          renderMarkdown={renderMarkdown}
+          runtimeStore={store}
+        />
+      </TrailActionMenuProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit project" }));
+    expect(screen.queryByRole("button", { name: "Edit project" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "More project actions" }));
+    await act(async () => {
+      await invokeEdit?.();
+    });
     fireEvent.change(screen.getByRole("textbox", { name: "Project title" }), {
       target: { value: "Project B" },
     });

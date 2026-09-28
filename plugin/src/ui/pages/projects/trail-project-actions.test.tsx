@@ -25,7 +25,7 @@ import type {
   TrailActionMenuRequest,
 } from "../../interactions/trail-action-menu";
 import { TrailActionMenuProvider } from "../../interactions/trail-action-menu-context";
-import { TrailProjectDeleteAction } from "./trail-project-delete-action";
+import { TrailProjectActions } from "./trail-project-actions";
 
 function project(id: string, title: string): TrailProject {
   return {
@@ -92,8 +92,8 @@ function presenterCapture() {
   };
 }
 
-describe("Project Delete Action", () => {
-  it("opens the destructive Project action and submits a childless deletion", async () => {
+describe("Project Actions", () => {
+  it("opens focused Project management, dispatches edit, and submits childless deletion", async () => {
     const source = project("project-source", "Source");
     const replacement = project("project-replacement", "Replacement");
     const store = readyStore({
@@ -106,12 +106,14 @@ describe("Project Delete Action", () => {
       receipt: { commandId: "delete-project", completion: Promise.resolve(), entityId: source.id },
     }));
     const onDeleted = vi.fn();
+    const onEdit = vi.fn();
 
     render(
       <TrailActionMenuProvider presenter={menu.presenter}>
-        <TrailProjectDeleteAction
+        <TrailProjectActions
           onDelete={onDelete}
           onDeleted={onDeleted}
+          onEdit={onEdit}
           projectId={source.id}
           runtimeStore={store}
         />
@@ -119,11 +121,23 @@ describe("Project Delete Action", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "More project actions" }));
-    expect(menu.request()?.items).toEqual([expect.objectContaining({
-      group: "destructive",
-      id: "project.delete",
-      label: "Delete project",
-    })]);
+    expect(menu.request()?.items).toEqual([
+      expect.objectContaining({
+        group: "common-mutation",
+        id: "project.edit",
+        label: "Edit project",
+      }),
+      expect.objectContaining({
+        group: "destructive",
+        id: "project.delete",
+        label: "Delete project",
+      }),
+    ]);
+
+    await act(async () => {
+      await menu.request()?.onSelect("project.edit");
+    });
+    expect(onEdit).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       await menu.request()?.onSelect("project.delete");
@@ -159,9 +173,10 @@ describe("Project Delete Action", () => {
 
     render(
       <TrailActionMenuProvider presenter={menu.presenter}>
-        <TrailProjectDeleteAction
+        <TrailProjectActions
           onDelete={onDelete}
           onDeleted={vi.fn()}
+          onEdit={vi.fn()}
           projectId={source.id}
           runtimeStore={store}
         />
@@ -196,9 +211,10 @@ describe("Project Delete Action", () => {
     const { container } = render(
       <TrailActionMenuProvider presenter={menu.presenter}>
         <section className="trail-project-workspace-page" tabIndex={-1}>
-          <TrailProjectDeleteAction
+          <TrailProjectActions
             onDelete={vi.fn()}
             onDeleted={vi.fn()}
+            onEdit={vi.fn()}
             projectId={source.id}
             runtimeStore={store}
           />
@@ -223,16 +239,17 @@ describe("Project Delete Action", () => {
     });
   });
 
-  it("keeps the Workspace Default Project undeletable with a Settings recovery path", () => {
+  it("keeps editing available while omitting deletion for the Workspace Default Project", () => {
     const source = project("project-source", "Source");
     const store = readyStore({ defaultProjectId: source.id, projects: [source] });
     const menu = presenterCapture();
 
     render(
       <TrailActionMenuProvider presenter={menu.presenter}>
-        <TrailProjectDeleteAction
+        <TrailProjectActions
           onDelete={vi.fn()}
           onDeleted={vi.fn()}
+          onEdit={vi.fn()}
           projectId={source.id}
           runtimeStore={store}
         />
@@ -240,8 +257,9 @@ describe("Project Delete Action", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "More project actions" }));
-    expect(menu.request()?.items).toEqual([]);
-    expect(menu.request()?.unavailableReason).toMatch(/Default Project/);
-    expect(menu.request()?.unavailableReason).toMatch(/settings/);
+    expect(menu.request()?.items).toEqual([
+      expect.objectContaining({ id: "project.edit", label: "Edit project" }),
+    ]);
+    expect(menu.request()?.unavailableReason).toBeUndefined();
   });
 });

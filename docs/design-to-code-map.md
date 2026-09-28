@@ -316,7 +316,7 @@ Obsidian host
 │     │  ├─ TrailIssuePeek                                 [C Workflow Issue]
 │     │  ├─ TrailBulkBar / TrailConfirmation               [G patterns]
 │     │  ├─ TrailWorkflowIssueComposer                     [C creation]
-│     │  └─ Project Delete flow                            [L]
+│     │  └─ Project management actions / Delete flow       [L]
 │     │
 │     ├─ Cycles Root                                       [L Page]
 │     │  ├─ TrailPageHeader                                [G]
@@ -385,7 +385,7 @@ The Board distinction is deliberate: Project Workspace Board consumes the shared
 | Triage | Workspace Frame / Page Surface; custom Page-owned header | View Bar; Collection Filter; Triage Row -> Collection Row; Priority/Labels/Due | View Popover; Standard Composer family | Queue/Review split; Review progression; review boundary/summary |
 | Projects Root | Workspace Frame / Page Surface; Page Header | View Bar; Filter; Layout Switch; Group Header; Project Summary Row -> Collection Row; Empty State | Selection; Project Action Registry; Context Menu; Bulk Bar; Project Composer | Initiative grouping composition; Project Timeline |
 | Initiative Focus | Workspace Frame / Page Surface; Page Header/breadcrumb; Page Narrative | View Bar; Filter; Project Summary Row -> Collection Row; Empty State | Selection; Project Action Registry; Context Menu; Bulk Bar; Project Composer | Initiative-scoped flat Project composition |
-| Project Workspace | Workspace Frame / Page Surface; Page Header/breadcrumb; Page Narrative | View Bar; Filter; Layout Switch; Group Header; Workflow Issue Row/Card; Collection Row; Board; Empty State | Selection; Status drag; Action Registry/Menu; Peek; Bulk Bar; Confirmation; Issue Composer | Project lifecycle composition; Project Delete flow; List-vs-Board assembly |
+| Project Workspace | Workspace Frame / Page Surface; Page Header/breadcrumb; Page Narrative | View Bar; Filter; Layout Switch; Group Header; Workflow Issue Row/Card; Collection Row; Board; Empty State | Selection; Status drag; Project Action Registry/Menu; identity editor; Peek; Bulk Bar; Confirmation; Issue Composer | Project lifecycle composition; Project management/Delete flow; List-vs-Board assembly |
 | Cycles Root | Workspace Frame / Page Surface; Page Header | Collection Row; Empty State | Cycle Start | Current/Previous Cycle root composition |
 | Cycle | Workspace Frame / Page Surface; Page Header/breadcrumb | View Bar; Filter; Layout Switch; Group Header; Workflow Issue Row/Card; Collection Row; Empty State | Selection; Status drag; Peek; Bulk Bar; Add Issues | Cycle summary; Current Cycle Project-swimlane Board; Historical-vs-current assembly |
 | Issue Full Item | Workspace Frame / Page Surface; shared breadcrumb button only | Markdown content | shared host/editor mechanics only where adopted | document layout; inline title editing; body editor/read transition; save/error presentation |

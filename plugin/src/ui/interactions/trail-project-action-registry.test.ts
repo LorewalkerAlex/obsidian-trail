@@ -98,20 +98,28 @@ function actionIds(context: ReturnType<typeof resolveTrailProjectCollectionActio
 }
 
 describe("Project Action Registry", () => {
-  it("exposes Delete Project as a destructive action for a writable non-default Project", () => {
-    expect(resolveTrailProjectActionContext(deleteReadModel(false), true).actions).toEqual([{
-      group: "destructive",
-      id: "project.delete",
-      label: "Delete project",
-      targets: [],
-    }]);
+  it("exposes focused Project editing before destructive deletion", () => {
+    expect(resolveTrailProjectActionContext(deleteReadModel(false), true).actions).toEqual([
+      {
+        group: "common-mutation",
+        id: "project.edit",
+        label: "Edit project",
+        targets: [],
+      },
+      {
+        group: "destructive",
+        id: "project.delete",
+        label: "Delete project",
+        targets: [],
+      },
+    ]);
   });
 
-  it("keeps Default Project deletion unavailable with a concrete recovery instruction", () => {
+  it("keeps Default Project editing available while omitting illegal deletion", () => {
     const context = resolveTrailProjectActionContext(deleteReadModel(true), true);
-    expect(context.actions).toEqual([]);
-    expect(context.unavailableReason).toMatch(/Default Project/);
-    expect(context.unavailableReason).toMatch(/settings/);
+    expect(context.actions).toEqual([expect.objectContaining({ id: "project.edit" })]);
+    expect(context.actions).not.toContainEqual(expect.objectContaining({ id: "project.delete" }));
+    expect(context.unavailableReason).toBeUndefined();
   });
 
   it("resolves selected and unselected context-menu scope without clearing retained selection", () => {
