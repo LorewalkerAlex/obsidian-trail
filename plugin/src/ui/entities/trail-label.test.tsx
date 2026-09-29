@@ -39,8 +39,8 @@ describe("TrailLabelDots", () => {
 });
 
 describe("TrailLabelSummary", () => {
-  it("renders readable names alongside the stable color dots", () => {
-    render(
+  it("renders each readable name and stable color dot in its own chip", () => {
+    const { container } = render(
       <TrailLabelSummary labels={[
         { groupId: "group-a", id: "label-service", name: "Service" },
         { groupId: "group-b", id: "label-spike", name: "Spike" },
@@ -49,6 +49,9 @@ describe("TrailLabelSummary", () => {
 
     expect(screen.getByRole("img", { name: "Labels: Service, Spike" }))
       .toHaveTextContent("ServiceSpike");
+    expect(container.querySelectorAll(".trail-label-summary__item")).toHaveLength(2);
+    expect(container.querySelectorAll(".trail-label-summary__item .trail-label-dot"))
+      .toHaveLength(2);
   });
 });
 

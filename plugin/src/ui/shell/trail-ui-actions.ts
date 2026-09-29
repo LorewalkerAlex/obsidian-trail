@@ -35,6 +35,35 @@ export interface TrailUiActions {
 }
 
 export type TrailProjectDeleteAction = NonNullable<TrailUiActions["projects"]["delete"]>;
+export type TrailProjectCollectionActions = Pick<
+  TrailUiActions["projects"],
+  "changeInitiative" | "changeStatus"
+>;
+
+type TrailProjectCollectionActionSource = Partial<TrailProjectCollectionActions>;
+
+/** Keeps the Project Application receiver across Project collection action boundaries. */
+export function bindTrailProjectCollectionActions(
+  projects: TrailProjectCollectionActionSource | undefined,
+): TrailProjectCollectionActions | undefined {
+  if (projects?.changeInitiative === undefined || projects.changeStatus === undefined) {
+    return undefined;
+  }
+  const changeInitiative = projects.changeInitiative;
+  const changeStatus = projects.changeStatus;
+  return {
+    changeInitiative: (expectedProject, targetInitiativeId) => changeInitiative.call(
+      projects,
+      expectedProject,
+      targetInitiativeId,
+    ),
+    changeStatus: (expectedProject, targetStatusDefinitionId) => changeStatus.call(
+      projects,
+      expectedProject,
+      targetStatusDefinitionId,
+    ),
+  };
+}
 
 /** Keeps the Project Application receiver when Delete crosses the callback prop boundary. */
 export function bindTrailProjectDeleteAction(

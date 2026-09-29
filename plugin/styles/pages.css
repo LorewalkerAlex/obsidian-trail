@@ -81,6 +81,10 @@
   border-right: 1px solid var(--trail-border-subtle);
 }
 
+.trail-triage-page[data-review-open="true"] .trail-triage-row__labels {
+  max-width: clamp(120px, 16cqi, 200px);
+}
+
 .trail-triage-page__summary {
   display: flex;
   min-height: var(--trail-control-height-lg);

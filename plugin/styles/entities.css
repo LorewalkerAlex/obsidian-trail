@@ -146,16 +146,23 @@
 }
 
 .trail-label-summary {
-  gap: var(--trail-space-4);
+  gap: var(--trail-space-2);
   overflow: hidden;
   color: var(--trail-text-secondary);
   font-size: var(--trail-collection-secondary-font-size);
 }
 
 .trail-label-summary__item {
+  box-sizing: border-box;
+  height: 20px;
+  max-width: 100%;
   flex: 0 1 auto;
-  gap: var(--trail-space-2);
+  gap: var(--trail-space-3);
+  padding: 0 var(--trail-space-3);
   overflow: hidden;
+  border: 1px solid var(--trail-border-subtle);
+  border-radius: var(--trail-radius-xs);
+  background: var(--trail-control-surface);
 }
 
 .trail-label-summary__name {
@@ -174,9 +181,9 @@
 }
 
 .trail-label-dot {
-  width: 6px;
-  height: 6px;
-  flex: 0 0 6px;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
   border-radius: 50%;
   background: var(--trail-label-color-1);
 }
@@ -252,10 +259,33 @@ body button.trail-triage-row__title-button:focus-visible {
 
 .trail-triage-row__labels {
   min-width: 0;
-  max-width: 72px;
+  max-width: 200px;
   flex: 0 1 auto;
-  gap: var(--trail-space-2);
   overflow: hidden;
+}
+
+@container (max-width: 480px) {
+  .trail-triage-row__labels {
+    max-width: 44px;
+  }
+
+  .trail-triage-row__labels .trail-label-summary__item {
+    height: auto;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .trail-triage-row__labels .trail-label-summary__name {
+    display: none;
+  }
+}
+
+@container (max-width: 360px) {
+  .trail-triage-row__labels {
+    display: none;
+  }
 }
 
 .trail-triage-row__due {

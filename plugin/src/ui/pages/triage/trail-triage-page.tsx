@@ -19,7 +19,7 @@ import {
 } from "../../../query/triage/trail-triage-query";
 import type { TrailRuntimeStore } from "../../../runtime/store/trail-runtime-store";
 import { TrailDueDate } from "../../entities/trail-due";
-import { TrailLabelDots } from "../../entities/trail-label";
+import { TrailLabelSummary } from "../../entities/trail-label";
 import {
   TrailProjectComposer,
   TrailWorkflowIssueComposer,
@@ -587,7 +587,7 @@ export function TrailTriagePage({
                         highlighted={reviewSession?.issueId === item.id}
                         labels={item.labels.length === 0
                           ? undefined
-                          : <TrailLabelDots labels={item.labels} />}
+                          : <TrailLabelSummary labels={item.labels} />}
                         onActivate={() => {
                           void activateReview(item.id, index);
                         }}

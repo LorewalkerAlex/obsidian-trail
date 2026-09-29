@@ -9,7 +9,7 @@
   grid-template-columns:
     minmax(0, 1fr)
     var(--trail-collection-semantic-slot-size)
-    minmax(96px, 160px)
+    minmax(144px, 220px)
     minmax(68px, 84px)
     var(--trail-collection-date-slot-size);
   align-items: center;
@@ -68,21 +68,6 @@ body button.trail-project-summary-row__title-button:focus-visible {
   overflow: hidden;
 }
 
-@container (max-width: 1120px) {
-  .trail-project-summary-row__content {
-    grid-template-columns:
-      minmax(0, 1fr)
-      var(--trail-collection-semantic-slot-size)
-      30px
-      minmax(68px, 84px)
-      var(--trail-collection-date-slot-size);
-  }
-
-  .trail-project-summary-row__labels .trail-label-summary__name {
-    display: none;
-  }
-}
-
 .trail-project-summary-row__due {
   min-width: 0;
   overflow: hidden;
@@ -126,7 +111,7 @@ body button.trail-project-summary-row__title-button:focus-visible {
     grid-template-columns:
       minmax(0, 1fr)
       var(--trail-collection-semantic-slot-size)
-      30px
+      minmax(144px, 220px)
       var(--trail-collection-date-slot-size);
   }
 
@@ -137,14 +122,34 @@ body button.trail-project-summary-row__title-button:focus-visible {
 
 @container (max-width: 760px) {
   .trail-project-summary-row__content {
-    grid-template-columns: minmax(0, 1fr) var(--trail-collection-semantic-slot-size);
+    grid-template-columns:
+      minmax(0, 1fr)
+      var(--trail-collection-semantic-slot-size)
+      minmax(120px, 180px);
   }
 
   .trail-project-summary-row__due {
     display: none;
   }
+}
 
-  .trail-project-summary-row__labels {
+@container (max-width: 560px) {
+  .trail-project-summary-row__content {
+    grid-template-columns:
+      minmax(0, 1fr)
+      var(--trail-collection-semantic-slot-size)
+      44px;
+  }
+
+  .trail-project-summary-row__labels .trail-label-summary__item {
+    height: auto;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .trail-project-summary-row__labels .trail-label-summary__name {
     display: none;
   }
 }
@@ -155,6 +160,10 @@ body button.trail-project-summary-row__title-button:focus-visible {
   }
 
   .trail-project-summary-row__priority {
+    display: none;
+  }
+
+  .trail-project-summary-row__labels {
     display: none;
   }
 }

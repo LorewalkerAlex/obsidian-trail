@@ -22,7 +22,10 @@ import { TrailGroupHeader } from "../../patterns/trail-group-header";
 import { TrailPageHeader } from "../../patterns/trail-page-header";
 import { TrailButton } from "../../primitives/trail-button";
 import { TrailIconButton } from "../../primitives/trail-icon-button";
-import type { TrailUiActions } from "../../shell/trail-ui-actions";
+import {
+  bindTrailProjectCollectionActions,
+  type TrailUiActions,
+} from "../../shell/trail-ui-actions";
 import { useTrailProjectCollectionActions } from "./trail-project-collection-actions";
 import { TrailProjectTimeline } from "./trail-project-timeline";
 import {
@@ -220,12 +223,7 @@ export function TrailProjectsPage({
       ));
   const selection = useTrailCollectionSelectionState(visibleProjectIds);
   const writable = readModel !== null && state.control.kind === "ready";
-  const mutationActions = actions.changeInitiative === undefined || actions.changeStatus === undefined
-    ? undefined
-    : {
-        changeInitiative: actions.changeInitiative,
-        changeStatus: actions.changeStatus,
-      };
+  const mutationActions = bindTrailProjectCollectionActions(actions);
   const clearSelection = () => {
     pageRef.current?.focus({ preventScroll: true });
     selection.clear();

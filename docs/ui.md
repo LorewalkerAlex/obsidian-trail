@@ -71,7 +71,7 @@ Examples:
 
 - Status keeps one stable visual identity per semantic status family: Workflow Issue Status uses the circular lifecycle grammar, while Project Status uses the Project-specific hexagonal grammar. Different semantic families do not collapse into one universal Status glyph merely because both are named Status.
 - Priority keeps one compact priority glyph grammar.
-- Labels use deterministic stable-identity colors; dense surfaces may use dots while precise surfaces add names.
+- Labels use deterministic stable-identity colors. Scanning rows show compact bordered chips with a clear color dot and readable name while capacity permits, collapse those chips to unframed dots under real width pressure, and may omit the Label track only at constrained widths. Detail and picker surfaces retain names.
 - Due uses one temporal/calendar identity plus derived Today/Overdue emphasis.
 - Estimate remains the canonical T-Shirt level `S / M / L / XL`, not its aggregation weight.
 - Current Cycle membership uses one stable relation marker where membership is not already expressed by Page scope.
@@ -454,7 +454,7 @@ Rules:
 - Description/body stays out of scanning Row.
 - Milestone, Labels, Current Cycle, Estimate, and Due use stable soft semantic columns after the flexible identity region. Missing values leave their track visually empty rather than rendering placeholder text or causing later properties to shift into a different semantic position.
 - Soft columns provide repeated-property alignment without turning the Row into a rigid spreadsheet: bounded tracks may truncate and lower-priority tracks may disappear as capacity tightens, while Title absorbs ordinary width pressure first.
-- Labels remain compact stable-identity dots; ordinary future Due stays quiet while Today/Overdue may gain emphasis.
+- Labels use compact bordered color-dot + name chips while capacity permits, collapse to unframed stable-identity dots at medium widths, and leave the scan plane only at constrained widths. Ordinary future Due stays quiet while Today/Overdue may gain emphasis.
 - Trail does not introduce a human-readable Workflow Issue identifier merely to create visual spacing between Priority, Status, and Title. Layout solves that presentation problem without adding persisted business truth.
 ### 4.7 Workflow Issue Card
 
@@ -866,7 +866,7 @@ Project Summary Row remains compact:
 [Selection] [Status] Project title      Priority      Labels      Progress      Due
 ```
 
-Selection uses the same shared collection gutter as other selectable rows and does not replace Project Status. Title is strongest. Project lifecycle Status remains visible as its semantic glyph because Projects Root groups by Initiative rather than Status; the configured Status label is not repeated as a parallel text column. Progress is read-only. Labels show color plus readable names when space permits, collapse to stable-identity dots at medium widths, and leave the scan plane at constrained widths.
+Selection uses the same shared collection gutter as other selectable rows and does not replace Project Status. Title is strongest. Project lifecycle Status remains visible as its semantic glyph because Projects Root groups by Initiative rather than Status; the configured Status label is not repeated as a parallel text column. Progress is read-only. Labels use compact bordered color-dot + name chips when space permits. The flexible title track absorbs ordinary width pressure before the bounded Label track collapses to unframed stable-identity dots; Labels leave the scan plane only at constrained widths.
 
 Completed/Canceled Projects remain in their actual Initiative group with reduced visual weight when visible; they do not move to a separate Archive model. Canceled Projects with unresolved child work may retain an exception Attention signal.
 
@@ -1226,6 +1226,8 @@ True empty Triage may show a centered `+ Add to Triage` affordance that opens th
 ```
 
 No Workflow Status, Project, Milestone, Estimate, or Cycle is shown because those are not Triage review semantics. Description/body belongs in Review, not the compact row.
+
+Triage Labels use the same shared compact chip presentation as Project and Workflow Issue rows. The flexible title track yields ordinary width first, so the bounded Label track preserves readable names at ordinary full-list and split-review widths; it collapses to unframed dots and finally leaves the scan plane only as actual Main View capacity becomes constrained.
 
 ### 10.4 Review Surface
 

@@ -185,7 +185,7 @@ describe("TrailTriagePage", () => {
     expect(titles.slice(0, 2)).toEqual(["Urgent same due", "High same due"]);
     expect(container.querySelectorAll("[data-triage-row]")).toHaveLength(12);
     expect(container.querySelectorAll("time.trail-due-date")).toHaveLength(12);
-    expect(screen.getByRole("img", { name: "Labels: Work" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Labels: Work" })).toHaveTextContent("Work");
     const boundary = container.querySelector("[data-review-boundary='true']");
     expect(boundary).not.toBeNull();
     expect(boundary?.previousElementSibling).toHaveTextContent("triage-07");

@@ -73,13 +73,13 @@
 .trail-workflow-issue-row__metadata {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(60px, 88px) minmax(96px, 160px) 20px var(--trail-collection-date-slot-size);
+  grid-template-columns: minmax(60px, 88px) minmax(144px, 220px) 20px var(--trail-collection-date-slot-size);
   align-items: center;
   column-gap: var(--trail-space-3);
 }
 
 .trail-workflow-issue-row__metadata--cycle {
-  grid-template-columns: minmax(60px, 88px) minmax(96px, 160px) 48px 20px var(--trail-collection-date-slot-size);
+  grid-template-columns: minmax(60px, 88px) minmax(144px, 220px) 48px 20px var(--trail-collection-date-slot-size);
 }
 
 .trail-workflow-issue-row__labels,
@@ -154,7 +154,7 @@
 @container (max-width: 1040px) {
   .trail-workflow-issue-row__metadata,
   .trail-workflow-issue-row__metadata--cycle {
-    grid-template-columns: 30px var(--trail-collection-date-slot-size);
+    grid-template-columns: minmax(144px, 220px) var(--trail-collection-date-slot-size);
   }
 
   .trail-workflow-issue-row__content--project {
@@ -166,28 +166,43 @@
   .trail-workflow-issue-row__estimate {
     display: none;
   }
+}
+
+@container (max-width: 820px) {
+  .trail-workflow-issue-row__content--project {
+    grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) minmax(92px, 120px) auto;
+  }
+}
+
+@container (max-width: 600px) {
+  .trail-workflow-issue-row__metadata,
+  .trail-workflow-issue-row__metadata--cycle {
+    grid-template-columns: 44px var(--trail-collection-date-slot-size);
+  }
+
+  .trail-workflow-issue-row__labels .trail-label-summary__item {
+    height: auto;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
 
   .trail-workflow-issue-row__labels .trail-label-summary__name {
     display: none;
   }
 }
 
-@container (max-width: 820px) {
+@container (max-width: 520px) {
   .trail-workflow-issue-row__metadata,
   .trail-workflow-issue-row__metadata--cycle {
     grid-template-columns: var(--trail-collection-date-slot-size);
   }
 
-  .trail-workflow-issue-row__content--project {
-    grid-template-columns: var(--trail-collection-semantic-slot-size) minmax(0, 1fr) minmax(92px, 120px) auto;
-  }
-
   .trail-workflow-issue-row__labels {
     display: none;
   }
-}
 
-@container (max-width: 520px) {
   .trail-workflow-issue-row__content:not(.trail-workflow-issue-row__content--project) .trail-workflow-issue-row__metadata {
     display: none;
   }

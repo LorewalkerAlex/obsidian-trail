@@ -123,24 +123,34 @@ function readyStore() {
 }
 
 function projectActions() {
-  const changeInitiative = vi.fn((project: TrailProject, _target?: string): TrailMutationActionResult => ({
-    entityId: project.id,
-    kind: "unchanged",
-  }));
-  const changeStatus = vi.fn((project: TrailProject, _target: string): TrailMutationActionResult => ({
-    entityId: project.id,
-    kind: "unchanged",
-  }));
-  return {
-    actions: {
-      changeInitiative,
-      changeStatus,
-      createFromDraft: vi.fn(() => ({
-        commandId: "project-create",
-        completion: Promise.resolve(),
-        entityId: "created-project",
-      })),
+  const actions = {
+    marker: "project-application",
+    changeInitiative(
+      this: { readonly marker: string },
+      project: TrailProject,
+      _target?: string,
+    ): TrailMutationActionResult {
+      expect(this.marker).toBe("project-application");
+      return { entityId: project.id, kind: "unchanged" };
     },
+    changeStatus(
+      this: { readonly marker: string },
+      project: TrailProject,
+      _target: string,
+    ): TrailMutationActionResult {
+      expect(this.marker).toBe("project-application");
+      return { entityId: project.id, kind: "unchanged" };
+    },
+    createFromDraft: vi.fn(() => ({
+      commandId: "project-create",
+      completion: Promise.resolve(),
+      entityId: "created-project",
+    })),
+  };
+  const changeInitiative = vi.spyOn(actions, "changeInitiative");
+  const changeStatus = vi.spyOn(actions, "changeStatus");
+  return {
+    actions,
     changeInitiative,
     changeStatus,
   };

@@ -6,7 +6,7 @@ import {
 } from "../../domain/model/trail-values";
 import type { TrailRuntimeControl } from "../../runtime/control/trail-runtime-control";
 import { TrailDueDate } from "../entities/trail-due";
-import { TrailLabelDots } from "../entities/trail-label";
+import { TrailLabelSummary } from "../entities/trail-label";
 import { TrailPriorityPropertySelect } from "../entities/trail-priority-property-select";
 import { TrailStatusGlyph } from "../entities/trail-status";
 import { TrailTriageRow } from "../entities/trail-triage-row";
@@ -497,7 +497,7 @@ export function TrailFoundationLab({ control, revision }: TrailFoundationLabProp
               <span>2 states</span>
             </div>
             <TrailTriageRow
-              labels={<TrailLabelDots labels={foundationLabels} />}
+              labels={<TrailLabelSummary labels={foundationLabels} />}
               priority="urgent"
               reviewDue={(
                 <TrailDueDate

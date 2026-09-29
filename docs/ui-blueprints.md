@@ -539,8 +539,8 @@ Rules:
 - Current Cycle marker is omitted when Cycle Page scope already expresses membership.
 - Description/body stays out of Row.
 - Milestone, Labels, Current Cycle, Estimate, and Due occupy stable soft semantic tracks after the flexible identity region. Missing values leave their own track visually empty instead of displaying dashes or causing later properties to slide into another semantic position.
-- Milestone keeps its meaningful name. Labels use compact stable-identity color dots; full names belong in detail/picker/tooltip contexts. Estimate uses S / M / L / XL. Ordinary future Due is quiet; Today/Overdue may gain emphasis.
-- The soft-column model provides approximate vertical alignment without spreadsheet rigidity: bounded metadata tracks may truncate or disappear progressively under width pressure, while Status + Title are preserved longest.
+- Milestone keeps its meaningful name. Labels use compact bordered color-dot + name chips while capacity permits, collapse to unframed stable-identity dots under medium width pressure, and disappear only at constrained widths. Estimate uses S / M / L / XL. Ordinary future Due is quiet; Today/Overdue may gain emphasis.
+- The soft-column model provides approximate vertical alignment without spreadsheet rigidity: the flexible Title track absorbs ordinary width pressure before the bounded Label track collapses from named chips to dots; lower-priority metadata tracks may truncate or disappear progressively as capacity tightens.
 - No human-readable Workflow Issue identifier is introduced merely as a visual separator between Priority, Status, and Title.
 
 ### 4.7 Workflow Issue Card
@@ -1524,6 +1524,8 @@ Triage Row:
 ```
 
 No Workflow Status, Project, Milestone, Estimate, or Cycle.
+
+Triage reuses the shared Label chip owner: its flexible Title track yields ordinary width before the bounded Label track, ordinary full-list and split-review Queue widths retain color-dot + name chips, and only constrained widths collapse them to unframed dots and finally omit the Label track.
 
 Review Set boundary appears only when the Queue is unfiltered and ordered by Review Due. With Filter or Priority ordering, keep any count clearly global (`10 to review overall`) and remove the misleading boundary.
 
