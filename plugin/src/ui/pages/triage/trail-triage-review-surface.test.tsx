@@ -5,7 +5,7 @@ import { createTrailTestConfiguration } from "../../../test/trail-test-fixtures"
 import { TrailTriageReviewSurface } from "./trail-triage-review-surface";
 
 describe("TrailTriageReviewSurface", () => {
-  it("keeps navigation in the header and disposition actions after the editor body", () => {
+  it("keeps navigation in the header and stable disposition actions after the flexible editor body", () => {
     render(
       <TrailTriageReviewSurface
         canNext
@@ -38,9 +38,13 @@ describe("TrailTriageReviewSurface", () => {
     const review = screen.getByRole("region", { name: "Triage review" });
     const header = review.querySelector(".trail-triage-review__header");
     const content = review.querySelector(".trail-triage-review__content");
+    const description = review.querySelector(".trail-triage-review__description");
+    const actions = review.querySelector(".trail-triage-review__actions");
 
     expect(header).not.toBeNull();
     expect(content).not.toBeNull();
+    expect(description).not.toBeNull();
+    expect(actions).not.toBeNull();
 
     const headerScope = within(header as HTMLElement);
     expect(headerScope.getByRole("button", { name: "Previous Triage entry" })).toBeInTheDocument();
@@ -61,6 +65,10 @@ describe("TrailTriageReviewSurface", () => {
     expect(contentScope.getByRole("button", { name: "Save Triage changes" })).toBeDisabled();
     expect(contentScope.getByRole("button", { name: "Defer Triage entry" })).toBeInTheDocument();
     expect(contentScope.getByRole("button", { name: "Delete Triage entry" })).toBeInTheDocument();
+    expect(description).toContainElement(
+      contentScope.getByRole("textbox", { name: "Triage description" }),
+    );
+    expect(description?.nextElementSibling).toBe(actions);
 
     expect(Array.from(contentElement.children).map((element) => element.className)).toEqual([
       "trail-triage-review__title",

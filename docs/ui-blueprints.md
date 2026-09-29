@@ -1546,6 +1546,8 @@ Wide Review is Page-local Queue + Review composition:
 
 Constrained Review uses focused Main View Review while preserving Queue/Filter/Order state offscreen.
 
+Within either composition, navigation, title, properties, optional feedback, and disposition actions retain their intrinsic height. Description/body receives the remaining Review height with a useful minimum; once its content exceeds that allocation, the editor scrolls internally while the disposition actions remain available below it.
+
 Previous/Next uses current visible + ordered Queue. Ordinary edits do not complete Review. Accept/Defer/Delete do.
 
 Save remains in a stable action slot, is disabled for a clean draft, and commits title/body without requiring focus to leave the editor. Eligible blur may still commit. Ordinary edit persistence does not add/remove pending text beside these actions.

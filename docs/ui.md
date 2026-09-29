@@ -1247,6 +1247,8 @@ Save         Accept       Defer      Delete
 
 Wide Main View may show Queue + Review side by side. Constrained Main View focuses Review while preserving queue position/Previous/Next and the underlying Filter/Order state. Review has an explicit exit back to full Triage List without leaving the Triage Page.
 
+The Description/body editor absorbs the Review surface's remaining vertical capacity after navigation, title, properties, feedback, and disposition actions receive their required space. The disposition actions remain available below the editor; when body content exceeds the allocated editor capacity, the editor owns vertical scrolling instead of expanding through or displacing the action region.
+
 Previous/Next uses the current visible + ordered Triage projection. If current entry is no longer in that projection, adjacency is unavailable rather than inferred from a stale historical slot.
 
 Title/body drafts may be committed with the stable `Save` action or an eligible editor blur. The Save slot remains present and disabled when clean, while ordinary edit persistence does not insert a transient pending label that shifts the disposition actions. Uncommitted title/body drafts are transient. Leaving the current Review identity or Triage Page discards them rather than turning navigation into implicit save.
