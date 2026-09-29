@@ -1652,9 +1652,9 @@ Mutation controls are disabled only as broadly as canonical health/ownership rul
 
 A quiet workspace-level warning may indicate Data Issues outside the current entity so Home/Sidebar Search/aggregate views do not imply total freshness.
 
-## 15. Default Project Settings
+## 15. Trail Settings
 
-Default Project is a Workspace preference, not a high-frequency Project property.
+Trail Settings is a low-frequency management surface over Workspace State and Configuration. Its root remains a concise overview rather than expanding every mutable definition into one continuous form.
 
 ```text
 Trail Settings
@@ -1663,15 +1663,47 @@ Workspace
 --------------------------------
 Default project
 Trail                                      Change
+
+Configuration
+--------------------------------
+Workflow statuses                9 statuses  >
+Labels                    2 groups · 4 labels  >
 ```
 
-`Change` opens the shared searchable Project Picker. There is no `No default project`/Clear option in normal V1 UI.
+Default Project is a Workspace preference, not a high-frequency Project property. `Change` opens the shared searchable Project Picker. There is no `No default project`/Clear option in normal V1 UI.
 
 Changing Default Project changes only `workspaceState.defaultProjectId`. It does not move Issues, change Project lifecycle, change Initiative membership, rename Projects, or recreate Standalone. A downstream workflow may prefill Default only when that Project is legal for that operation.
 
 The current Default Project cannot be deleted. The user first selects another existing Project as Default; after that independent mutation succeeds, the former Default is an ordinary non-Default Project and may use normal Delete Project flow.
 
 Startup recovery of a missing persisted `defaultProjectId` remains Source Sync responsibility and is not a Settings workflow.
+
+`Workflow statuses` and `Labels` use Obsidian-native Settings pages and lists. Trail does not create a parallel settings shell.
+
+### 15.1 Workflow Statuses
+
+The Workflow Statuses page first separates Issue and Project workflows. Each entry reports category and Status counts. Issue and Project pages then show their fixed semantic categories as compact mutable lists.
+
+- categories are fixed and cannot be added, removed, reordered, or crossed;
+- Status definitions remain category-scoped and may be renamed, added, reordered, selected as category default, or deleted when Domain rules allow;
+- the default Status is presented as state, not as a disabled action;
+- list drag handles own ordering instead of persistent Move up/Move down buttons;
+- a category with one Status omits inapplicable reorder/delete affordances;
+- category-header Add opens a focused name dialog instead of reserving a permanent input row;
+- deleting a referenced/default Status retains the existing replacement/default-resolution flow.
+
+### 15.2 Labels
+
+The Labels page shows one compact Label Group list. Each entry reports selection mode, registered entity types, and Label count, then opens the Group detail page.
+
+- Add Label Group is a focused dialog rather than an always-expanded root form;
+- Group detail owns name, selection mode, entity-type registration, and an explicit Save action;
+- the Group's Labels are a nested compact list with focused add/edit dialogs;
+- Label edit may move the Label to another Group;
+- Delete Label Group is isolated in the Group detail danger area;
+- existing invalid-reference cleanup confirmation remains authoritative for Label, Group, and registration changes.
+
+Settings availability follows Runtime control. Readable values remain visible while mutation affordances are disabled when Configuration is not writable. Root/page summary values refresh from the effective readable Configuration after committed mutations.
 
 ## 16. V1 UI Freeze
 

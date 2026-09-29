@@ -1922,9 +1922,9 @@ Content remains readable. Mutation affordances are disabled only as broadly as c
 
 A full blocking error replaces content only when Trail cannot establish a trustworthy readable state.
 
-## 11. Default Project Settings blueprint
+## 11. Trail Settings blueprint
 
-Default Project is a Workspace preference, not a high-frequency Project property.
+Trail Settings uses the host's native Settings navigation and mutable-list grammar. The root is an overview over distinct Workspace State and Configuration owners rather than a flattened editor for every definition.
 
 ```text
 Trail Settings
@@ -1933,13 +1933,24 @@ Workspace
 --------------------------------
 Default project
 Trail                                      Change
+
+Configuration
+--------------------------------
+Workflow statuses                9 statuses  >
+Labels                    2 groups · 4 labels  >
 ```
 
-`Change` opens the shared searchable Project Picker. There is no `No default project`/Clear choice.
+Default Project is a Workspace preference, not a high-frequency Project property. `Change` opens the shared searchable Project Picker. There is no `No default project`/Clear choice.
 
 Changing Default Project changes only the Workspace reference. It does not move Issues, change lifecycle, change Initiative relations, rename Projects, or bypass later operation legality.
 
 The current Default Project cannot be deleted until another existing Project has independently become Default.
+
+Workflow Statuses drills into Issue and Project pages. Each entity page keeps the fixed Domain categories visible as compact native lists; rows expose Status name/default state, focused edit/default actions, native ordering, and guarded deletion. Category-header Add opens a focused dialog. One-item categories omit impossible reorder/delete affordances.
+
+Labels opens a native Label Group list. Each Group entry summarizes selection mode, entity registration, and Label count and navigates to a detail page. Group detail owns editable Group properties, one nested Label list, and a separated destructive Group action. Add/edit dialogs keep transient form state out of the overview and list geometry.
+
+All writes continue through Workspace/Configuration Application owners. Status replacement/default resolution and Label invalid-reference cleanup remain existing mutation flows; Settings navigation and compact presentation do not acquire Domain legality.
 
 ## 12. Implementation alignment
 

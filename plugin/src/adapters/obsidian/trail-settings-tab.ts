@@ -4,8 +4,10 @@ import {
   PluginSettingTab,
   Setting,
   type App,
+  type ButtonComponent,
   type Plugin,
   type SettingDefinitionItem,
+  type SettingDefinitionList,
   type SettingGroupItem,
 } from "obsidian";
 
@@ -13,6 +15,8 @@ import type { TrailConfigurationApplication } from "../../application/configurat
 import type { TrailMutationCommandResult } from "../../application/trail-application-support";
 import type {
   TrailConfiguration,
+  TrailLabel,
+  TrailLabelGroup,
   TrailStatusDefinition,
 } from "../../domain/model/trail-configuration";
 import {
@@ -59,6 +63,25 @@ function statusCategoryLabel(category: TrailStatusCategory): string {
   }
 }
 
+function countLabel(count: number, singular: string, plural = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function selectionModeLabel(selectionMode: TrailLabelSelectionMode): string {
+  return selectionMode === "single" ? "One label" : "Multiple labels";
+}
+
+function labelGroupSummary(
+  group: TrailLabelGroup,
+  labels: readonly TrailLabel[],
+): string {
+  return [
+    selectionModeLabel(group.selectionMode),
+    countLabel(group.registeredEntityTypes.length, "entity type"),
+    countLabel(labels.length, "label"),
+  ].join(" · ");
+}
+
 class TrailSettingsConfirmationModal extends Modal {
   private settled = false;
 
@@ -75,7 +98,7 @@ class TrailSettingsConfirmationModal extends Modal {
     this.contentEl.empty();
     this.contentEl.createEl("h2", { text: this.title });
     this.contentEl.createEl("p", { text: this.message });
-    const actions = this.contentEl.createDiv();
+    const actions = this.contentEl.createDiv({ cls: "modal-button-container" });
     const cancel = actions.createEl("button", { text: "Cancel" });
     cancel.addEventListener("click", () => this.finish(false));
     const confirm = actions.createEl("button", { text: "Continue" });
@@ -96,6 +119,253 @@ class TrailSettingsConfirmationModal extends Modal {
     this.settled = true;
     this.resolveResult(confirmed);
     this.close();
+  }
+}
+
+class TrailNameInputModal extends Modal {
+  private submitButton: HTMLButtonElement | null = null;
+  private value: string;
+
+  public constructor(
+    app: App,
+    private readonly title: string,
+    private readonly fieldName: string,
+    private readonly initialValue: string,
+    private readonly placeholder: string,
+    private readonly submitLabel: string,
+    private readonly onSubmit: (value: string) => void,
+  ) {
+    super(app);
+    this.value = initialValue;
+  }
+
+  public onOpen(): void {
+    this.contentEl.empty();
+    this.contentEl.createEl("h2", { text: this.title });
+    new Setting(this.contentEl)
+      .setName(this.fieldName)
+      .addText((text) => {
+        text.setValue(this.value);
+        text.setPlaceholder(this.placeholder);
+        text.onChange((value) => {
+          this.value = value;
+          this.updateSubmitAvailability();
+        });
+        text.inputEl.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" || event.isComposing) return;
+          event.preventDefault();
+          this.finish();
+        });
+        text.inputEl.focus();
+        text.inputEl.select();
+      });
+
+    const actions = this.contentEl.createDiv({ cls: "modal-button-container" });
+    const cancel = actions.createEl("button", { text: "Cancel" });
+    cancel.addEventListener("click", () => this.close());
+    this.submitButton = actions.createEl("button", { text: this.submitLabel });
+    this.submitButton.addClass("mod-cta");
+    this.submitButton.addEventListener("click", () => this.finish());
+    this.updateSubmitAvailability();
+  }
+
+  public onClose(): void {
+    this.submitButton = null;
+    this.contentEl.empty();
+  }
+
+  private finish(): void {
+    const value = this.value.trim();
+    if (!this.canSubmit(value)) return;
+    this.onSubmit(value);
+    this.close();
+  }
+
+  private updateSubmitAvailability(): void {
+    if (this.submitButton === null) return;
+    this.submitButton.disabled = !this.canSubmit(this.value.trim());
+  }
+
+  private canSubmit(value: string): boolean {
+    return value !== "" && (this.initialValue === "" || value !== this.initialValue.trim());
+  }
+}
+
+interface TrailLabelGroupDraft {
+  readonly name: string;
+  readonly registeredEntityTypes: readonly TrailLabelEntityType[];
+  readonly selectionMode: TrailLabelSelectionMode;
+}
+
+class TrailLabelGroupCreateModal extends Modal {
+  private name = "";
+  private readonly registeredEntityTypes = new Set<TrailLabelEntityType>(TRAIL_LABEL_ENTITY_TYPES);
+  private selectionMode: TrailLabelSelectionMode = "single";
+  private submitButton: HTMLButtonElement | null = null;
+
+  public constructor(
+    app: App,
+    private readonly onSubmit: (draft: TrailLabelGroupDraft) => void,
+  ) {
+    super(app);
+  }
+
+  public onOpen(): void {
+    this.contentEl.empty();
+    this.contentEl.createEl("h2", { text: "Add label group" });
+    new Setting(this.contentEl)
+      .setName("Name")
+      .setDesc("Examples: Area, technology, context")
+      .addText((text) => {
+        text.setPlaceholder("Group name");
+        text.onChange((value) => {
+          this.name = value;
+          this.updateSubmitAvailability();
+        });
+        text.inputEl.focus();
+      });
+    new Setting(this.contentEl)
+      .setName("Selection")
+      .setDesc("Choose whether an item may use one or several labels from this group.")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("single", "One label");
+        dropdown.addOption("multiple", "Multiple labels");
+        dropdown.setValue(this.selectionMode);
+        dropdown.onChange((value) => {
+          this.selectionMode = value as TrailLabelSelectionMode;
+        });
+      });
+    for (const entityType of TRAIL_LABEL_ENTITY_TYPES) {
+      new Setting(this.contentEl)
+        .setName(labelEntityTypeLabel(entityType))
+        .setDesc(`Allow this group on ${labelEntityTypeLabel(entityType).toLowerCase()}.`)
+        .addToggle((toggle) => {
+          toggle.setValue(true);
+          toggle.onChange((enabled) => {
+            if (enabled) this.registeredEntityTypes.add(entityType);
+            else this.registeredEntityTypes.delete(entityType);
+          });
+        });
+    }
+
+    const actions = this.contentEl.createDiv({ cls: "modal-button-container" });
+    const cancel = actions.createEl("button", { text: "Cancel" });
+    cancel.addEventListener("click", () => this.close());
+    this.submitButton = actions.createEl("button", { text: "Create label group" });
+    this.submitButton.addClass("mod-cta");
+    this.submitButton.addEventListener("click", () => this.finish());
+    this.updateSubmitAvailability();
+  }
+
+  public onClose(): void {
+    this.submitButton = null;
+    this.contentEl.empty();
+  }
+
+  private finish(): void {
+    const name = this.name.trim();
+    if (name === "") return;
+    this.onSubmit({
+      name,
+      registeredEntityTypes: [...this.registeredEntityTypes],
+      selectionMode: this.selectionMode,
+    });
+    this.close();
+  }
+
+  private updateSubmitAvailability(): void {
+    if (this.submitButton === null) return;
+    this.submitButton.disabled = this.name.trim() === "";
+  }
+}
+
+interface TrailLabelDraft {
+  readonly groupId: string;
+  readonly name: string;
+}
+
+class TrailLabelEditModal extends Modal {
+  private groupId: string;
+  private readonly initialGroupId: string;
+  private readonly initialName: string;
+  private name: string;
+  private submitButton: HTMLButtonElement | null = null;
+
+  public constructor(
+    app: App,
+    private readonly title: string,
+    private readonly groups: readonly TrailLabelGroup[],
+    label: TrailLabelDraft,
+    private readonly submitLabel: string,
+    private readonly onSubmit: (draft: TrailLabelDraft) => void,
+  ) {
+    super(app);
+    this.groupId = label.groupId;
+    this.initialGroupId = label.groupId;
+    this.initialName = label.name;
+    this.name = label.name;
+  }
+
+  public onOpen(): void {
+    this.contentEl.empty();
+    this.contentEl.createEl("h2", { text: this.title });
+    new Setting(this.contentEl)
+      .setName("Name")
+      .addText((text) => {
+        text.setValue(this.name);
+        text.setPlaceholder("Label name");
+        text.onChange((value) => {
+          this.name = value;
+          this.updateSubmitAvailability();
+        });
+        text.inputEl.focus();
+        text.inputEl.select();
+      });
+    new Setting(this.contentEl)
+      .setName("Label group")
+      .addDropdown((dropdown) => {
+        for (const group of this.groups) {
+          dropdown.addOption(group.id, group.name);
+        }
+        dropdown.setValue(this.groupId);
+        dropdown.onChange((value) => {
+          this.groupId = value;
+          this.updateSubmitAvailability();
+        });
+      });
+
+    const actions = this.contentEl.createDiv({ cls: "modal-button-container" });
+    const cancel = actions.createEl("button", { text: "Cancel" });
+    cancel.addEventListener("click", () => this.close());
+    this.submitButton = actions.createEl("button", { text: this.submitLabel });
+    this.submitButton.addClass("mod-cta");
+    this.submitButton.addEventListener("click", () => this.finish());
+    this.updateSubmitAvailability();
+  }
+
+  public onClose(): void {
+    this.submitButton = null;
+    this.contentEl.empty();
+  }
+
+  private finish(): void {
+    const name = this.name.trim();
+    if (!this.canSubmit(name)) return;
+    this.onSubmit({ groupId: this.groupId, name });
+    this.close();
+  }
+
+  private updateSubmitAvailability(): void {
+    if (this.submitButton === null) return;
+    this.submitButton.disabled = !this.canSubmit(this.name.trim());
+  }
+
+  private canSubmit(name: string): boolean {
+    return (
+      name !== ""
+      && this.groupId !== ""
+      && (name !== this.initialName.trim() || this.groupId !== this.initialGroupId)
+    );
   }
 }
 
@@ -163,7 +433,7 @@ class TrailStatusDeleteModal extends Modal {
         });
     }
 
-    const actions = this.contentEl.createDiv();
+    const actions = this.contentEl.createDiv({ cls: "modal-button-container" });
     const cancel = actions.createEl("button", { text: "Cancel" });
     cancel.addEventListener("click", () => this.close());
     this.confirmButton = actions.createEl("button", { text: "Delete status" });
@@ -223,16 +493,7 @@ export class TrailSettingsTab extends PluginSettingTab {
   public getSettingDefinitions(): SettingDefinitionItem[] {
     const runtime = this.runtimeStore.getState();
     const configuration = selectTrailReadableConfiguration(runtime);
-    const items: SettingDefinitionItem[] = [
-      {
-        heading: "Statuses",
-        items: [{
-          desc: "Issue and project workflows keep fixed semantic categories. Customize the named statuses inside each category.",
-          name: "Workflow statuses",
-        }],
-        type: "group",
-      },
-    ];
+    const items: SettingDefinitionItem[] = [];
 
     if (configuration === null) {
       items.push({
@@ -258,25 +519,53 @@ export class TrailSettingsTab extends PluginSettingTab {
       });
     }
 
-    for (const entityType of TRAIL_STATUS_ENTITY_TYPES) {
-      for (const group of selectTrailStatusOptionGroups(configuration, entityType)) {
-        items.push(this.statusCategoryDefinition(configuration, entityType, group, writable));
-      }
-    }
-
     items.push({
-      heading: "Labels",
-      items: [{
-        desc: "Label groups define structured workspace classification. Single groups allow one label per item; multiple groups allow several.",
-        name: "Structured labels",
-      }],
+      heading: "Configuration",
+      items: [
+        this.workflowStatusesPage(configuration, writable),
+        this.labelsPage(configuration, writable),
+      ],
       type: "group",
     });
-    items.push(this.createGroupDefinition(configuration, writable));
-    for (const group of configuration.labelGroups) {
-      items.push(this.groupDefinition(configuration, group.id, writable));
-    }
     return items;
+  }
+
+  private workflowStatusesPage(
+    configuration: TrailConfiguration,
+    writable: boolean,
+  ): SettingGroupItem {
+    return {
+      desc: "Customize the names and order used inside Trail's fixed Issue and Project workflow categories.",
+      displayValue: countLabel(configuration.statusDefinitions.length, "status", "statuses"),
+      items: [{
+        heading: "Entity types",
+        items: TRAIL_STATUS_ENTITY_TYPES.map((entityType) => (
+          this.statusEntityPage(configuration, entityType, writable)
+        )),
+        type: "group",
+      }],
+      name: "Workflow statuses",
+      status: writable ? null : "warning",
+      type: "page",
+    };
+  }
+
+  private statusEntityPage(
+    configuration: TrailConfiguration,
+    entityType: TrailStatusEntityType,
+    writable: boolean,
+  ): SettingGroupItem {
+    const groups = selectTrailStatusOptionGroups(configuration, entityType);
+    const statusCount = groups.reduce((count, group) => count + group.definitions.length, 0);
+    return {
+      desc: `Manage the fixed ${statusEntityTypeLabel(entityType).toLowerCase()} workflow categories.`,
+      displayValue: `${countLabel(groups.length, "category", "categories")} · ${countLabel(statusCount, "status", "statuses")}`,
+      items: groups.map((group) => (
+        this.statusCategoryDefinition(configuration, entityType, group, writable)
+      )),
+      name: `${statusEntityTypeLabel(entityType)} statuses`,
+      type: "page",
+    };
   }
 
   private statusCategoryDefinition(
@@ -284,126 +573,87 @@ export class TrailSettingsTab extends PluginSettingTab {
     entityType: TrailStatusEntityType,
     optionGroup: TrailStatusOptionGroup,
     writable: boolean,
-  ): SettingDefinitionItem {
+  ): SettingDefinitionList {
     const category = optionGroup.category;
     const definitions = optionGroup.definitions;
-    const items = definitions.map((definition, index) => this.statusDefinitionItem(
+    const items = definitions.map((definition) => this.statusDefinitionItem(
       configuration,
       definition,
-      definitions,
       optionGroup.defaultId,
-      index,
       writable,
     ));
 
-    let newStatusName = "";
-    items.push({
-      name: "Add status",
-      render: (setting) => {
-        setting
-          .addText((text) => {
-            text.setPlaceholder("Status name");
-            text.setDisabled(!writable);
-            text.onChange((value) => {
-              newStatusName = value;
-            });
-          })
-          .addButton((button) => {
-            button.setButtonText("Add");
-            button.setDisabled(!writable);
-            button.onClick(() => {
-              void this.runStatusMutation(() => this.configurationApplication.createStatusDefinition({
-                category,
-                entityType,
-                expectedConfiguration: configuration,
-                name: newStatusName,
-              }), "Status created");
-            });
-          });
-      },
-    });
-
     return {
-      heading: `${statusEntityTypeLabel(entityType)} statuses · ${statusCategoryLabel(category)}`,
+      ...(writable ? {
+        addItem: {
+          action: () => {
+            new TrailNameInputModal(
+              this.app,
+              `Add ${statusCategoryLabel(category)} status`,
+              "Status name",
+              "",
+              "Status name",
+              "Add status",
+              (name) => {
+                void this.runStatusMutation(() => this.configurationApplication.createStatusDefinition({
+                  category,
+                  entityType,
+                  expectedConfiguration: configuration,
+                  name,
+                }), "Status created");
+              },
+            ).open();
+          },
+          name: `Add status to ${statusCategoryLabel(category)}`,
+        },
+      } : {}),
+      ...(writable && definitions.length > 1 ? {
+        onDelete: (index: number) => {
+          const definition = definitions[index];
+          if (definition === undefined) return;
+          this.openStatusDeleteModal(configuration, definition, definitions, optionGroup.defaultId);
+        },
+        onReorder: (oldIndex: number, newIndex: number) => {
+          if (
+            oldIndex === newIndex
+            || definitions[oldIndex] === undefined
+            || definitions[newIndex] === undefined
+          ) return;
+          const definitionIds = definitions.map(({ id }) => id);
+          const [movedId] = definitionIds.splice(oldIndex, 1);
+          if (movedId === undefined) return;
+          definitionIds.splice(newIndex, 0, movedId);
+          void this.runStatusMutation(() => this.configurationApplication.reorderStatusDefinitions({
+            category,
+            definitionIds,
+            entityType,
+            expectedConfiguration: configuration,
+          }), "Status order saved");
+        },
+      } : {}),
+      heading: statusCategoryLabel(category),
       items,
-      type: "group",
+      type: "list",
     };
   }
 
   private statusDefinitionItem(
     configuration: TrailConfiguration,
     definition: TrailStatusDefinition,
-    definitions: readonly TrailStatusDefinition[],
     defaultId: string,
-    index: number,
     writable: boolean,
   ): SettingGroupItem {
-    let name = definition.name;
     const isDefault = definition.id === defaultId;
     return {
       desc: isDefault ? "Default for category-level actions." : undefined,
       name: definition.name,
       render: (setting) => {
-        setting
-          .addText((text) => {
-            text.setValue(definition.name);
-            text.setDisabled(!writable);
-            text.onChange((value) => {
-              name = value;
-            });
-          })
-          .addButton((button) => {
-            button.setButtonText("Save");
+        if (!isDefault) {
+          setting.addExtraButton((button) => {
+            button.setIcon("star");
+            button.setTooltip("Set as category default");
             button.setDisabled(!writable);
             button.onClick(() => {
-              void this.runStatusMutation(() => this.configurationApplication.renameStatusDefinition({
-                expectedConfiguration: configuration,
-                name,
-                statusDefinitionId: definition.id,
-              }), "Status saved");
-            });
-          })
-          .addButton((button) => {
-            button.setButtonText("Move up");
-            button.setDisabled(!writable || index === 0);
-            button.onClick(() => {
-              if (index === 0) return;
-              const definitionIds = definitions.map(({ id }) => id);
-              [definitionIds[index - 1], definitionIds[index]] = [
-                definitionIds[index],
-                definitionIds[index - 1],
-              ];
-              void this.runStatusMutation(() => this.configurationApplication.reorderStatusDefinitions({
-                category: definition.category,
-                definitionIds,
-                entityType: definition.entityType,
-                expectedConfiguration: configuration,
-              }), "Status order saved");
-            });
-          })
-          .addButton((button) => {
-            button.setButtonText("Move down");
-            button.setDisabled(!writable || index >= definitions.length - 1);
-            button.onClick(() => {
-              if (index >= definitions.length - 1) return;
-              const definitionIds = definitions.map(({ id }) => id);
-              [definitionIds[index], definitionIds[index + 1]] = [
-                definitionIds[index + 1],
-                definitionIds[index],
-              ];
-              void this.runStatusMutation(() => this.configurationApplication.reorderStatusDefinitions({
-                category: definition.category,
-                definitionIds,
-                entityType: definition.entityType,
-                expectedConfiguration: configuration,
-              }), "Status order saved");
-            });
-          })
-          .addButton((button) => {
-            button.setButtonText(isDefault ? "Default" : "Set default");
-            button.setDisabled(!writable || isDefault);
-            button.onClick(() => {
-              if (isDefault) return;
               void this.runStatusMutation(() => this.configurationApplication.setStatusCategoryDefault({
                 category: definition.category,
                 entityType: definition.entityType,
@@ -411,15 +661,30 @@ export class TrailSettingsTab extends PluginSettingTab {
                 statusDefinitionId: definition.id,
               }), "Status default saved");
             });
-          })
-          .addButton((button) => {
-            button.setButtonText("Delete");
-            button.setDestructive();
-            button.setDisabled(!writable);
-            button.onClick(() => {
-              this.openStatusDeleteModal(configuration, definition, definitions, defaultId);
-            });
           });
+        }
+        setting.addExtraButton((button) => {
+          button.setIcon("pencil");
+          button.setTooltip(`Rename ${definition.name}`);
+          button.setDisabled(!writable);
+          button.onClick(() => {
+            new TrailNameInputModal(
+              this.app,
+              `Rename ${definition.name}`,
+              "Status name",
+              definition.name,
+              "Status name",
+              "Save",
+              (name) => {
+                void this.runStatusMutation(() => this.configurationApplication.renameStatusDefinition({
+                  expectedConfiguration: configuration,
+                  name,
+                  statusDefinitionId: definition.id,
+                }), "Status saved");
+              },
+            ).open();
+          });
+        });
       },
     };
   }
@@ -456,103 +721,86 @@ export class TrailSettingsTab extends PluginSettingTab {
     ).open();
   }
 
-  private createGroupDefinition(
+  private labelsPage(
     configuration: TrailConfiguration,
     writable: boolean,
-  ): SettingDefinitionItem {
-    let name = "";
-    let selectionMode: TrailLabelSelectionMode = "single";
-    const registeredEntityTypes = new Set<TrailLabelEntityType>(TRAIL_LABEL_ENTITY_TYPES);
-    const items: SettingGroupItem[] = [
-      {
-        desc: "Examples: Area, technology, context",
-        name: "Name",
-        render: (setting) => {
-          setting.addText((text) => {
-            text.setDisabled(!writable);
-            text.onChange((value) => {
-              name = value;
-            });
-          });
-        },
-      },
-      {
-        desc: "Single permits one label from this group; multiple permits several.",
-        name: "Selection",
-        render: (setting) => {
-          setting.addDropdown((dropdown) => {
-            dropdown.addOption("single", "Single");
-            dropdown.addOption("multiple", "Multiple");
-            dropdown.setValue(selectionMode);
-            dropdown.setDisabled(!writable);
-            dropdown.onChange((value) => {
-              selectionMode = value as TrailLabelSelectionMode;
-            });
-          });
-        },
-      },
-    ];
-
-    for (const entityType of TRAIL_LABEL_ENTITY_TYPES) {
-      items.push({
-        desc: `Allow this group on ${labelEntityTypeLabel(entityType).toLowerCase()}.`,
-        name: labelEntityTypeLabel(entityType),
-        render: (setting) => {
-          setting.addToggle((toggle) => {
-            toggle.setValue(true);
-            toggle.setDisabled(!writable);
-            toggle.onChange((enabled) => {
-              if (enabled) registeredEntityTypes.add(entityType);
-              else registeredEntityTypes.delete(entityType);
-            });
-          });
-        },
-      });
-    }
-
-    items.push({
-      name: "Create label group",
-      render: (setting) => {
-        setting.addButton((button) => {
-          button.setButtonText("Create label group");
-          button.setCta();
-          button.setDisabled(!writable);
-          button.onClick(() => {
-            void this.runLabelMutation(() => this.configurationApplication.createLabelGroup({
-              expectedConfiguration: configuration,
-              name,
-              registeredEntityTypes: [...registeredEntityTypes],
-              selectionMode,
-            }), "Label group created");
-          });
-        });
-      },
-    });
-
+  ): SettingGroupItem {
     return {
-      heading: "Add label group",
-      items,
-      type: "group",
+      desc: "Manage structured Label Groups and the Labels they own.",
+      displayValue: `${countLabel(configuration.labelGroups.length, "group")} · ${countLabel(configuration.labels.length, "label")}`,
+      items: [{
+        ...(writable ? {
+          addItem: {
+            action: () => {
+              new TrailLabelGroupCreateModal(this.app, (draft) => {
+                void this.runLabelMutation(() => this.configurationApplication.createLabelGroup({
+                  expectedConfiguration: configuration,
+                  name: draft.name,
+                  registeredEntityTypes: draft.registeredEntityTypes,
+                  selectionMode: draft.selectionMode,
+                }), "Label group created");
+              }).open();
+            },
+            name: "Add label group",
+          },
+        } : {}),
+        emptyState: "No label groups yet.",
+        heading: "Label groups",
+        items: configuration.labelGroups.map((group) => (
+          this.labelGroupPage(configuration, group, writable)
+        )),
+        type: "list",
+      }],
+      name: "Labels",
+      status: writable ? null : "warning",
+      type: "page",
     };
   }
 
-  private groupDefinition(
+  private labelGroupPage(
     configuration: TrailConfiguration,
-    groupId: string,
+    group: TrailLabelGroup,
+    writable: boolean,
+  ): SettingGroupItem {
+    const labels = configuration.labels.filter(({ groupId }) => groupId === group.id);
+    return {
+      desc: "Manage this Group's selection rule, availability, and Labels.",
+      displayValue: labelGroupSummary(group, labels),
+      items: [
+        this.labelGroupSettingsDefinition(configuration, group, writable),
+        this.labelListDefinition(configuration, group, labels, writable),
+        this.labelGroupDangerDefinition(configuration, group, writable),
+      ],
+      name: group.name,
+      type: "page",
+    };
+  }
+
+  private labelGroupSettingsDefinition(
+    configuration: TrailConfiguration,
+    group: TrailLabelGroup,
     writable: boolean,
   ): SettingDefinitionItem {
-    const group = configuration.labelGroups.find(({ id }) => id === groupId);
-    if (group === undefined) {
-      return {
-        heading: "Labels",
-        items: [],
-        type: "group",
-      };
-    }
-
     let name = group.name;
     let selectionMode = group.selectionMode;
     const registeredEntityTypes = new Set<TrailLabelEntityType>(group.registeredEntityTypes);
+    let saveButton: ButtonComponent | null = null;
+    const updateSaveAvailability = (): void => {
+      if (saveButton === null) return;
+      const sameEntityTypes = (
+        registeredEntityTypes.size === group.registeredEntityTypes.length
+        && group.registeredEntityTypes.every((entityType) => registeredEntityTypes.has(entityType))
+      );
+      saveButton.setDisabled(
+        !writable
+        || name.trim() === ""
+        || (
+          name.trim() === group.name
+          && selectionMode === group.selectionMode
+          && sameEntityTypes
+        ),
+      );
+    };
     const items: SettingGroupItem[] = [
       {
         name: "Group name",
@@ -562,20 +810,23 @@ export class TrailSettingsTab extends PluginSettingTab {
             text.setDisabled(!writable);
             text.onChange((value) => {
               name = value;
+              updateSaveAvailability();
             });
           });
         },
       },
       {
+        desc: "Choose whether an item may use one or several Labels from this Group.",
         name: "Selection",
         render: (setting) => {
           setting.addDropdown((dropdown) => {
-            dropdown.addOption("single", "Single");
-            dropdown.addOption("multiple", "Multiple");
+            dropdown.addOption("single", "One label");
+            dropdown.addOption("multiple", "Multiple labels");
             dropdown.setValue(group.selectionMode);
             dropdown.setDisabled(!writable);
             dropdown.onChange((value) => {
               selectionMode = value as TrailLabelSelectionMode;
+              updateSaveAvailability();
             });
           });
         },
@@ -584,6 +835,7 @@ export class TrailSettingsTab extends PluginSettingTab {
 
     for (const entityType of TRAIL_LABEL_ENTITY_TYPES) {
       items.push({
+        desc: `Allow this Group on ${labelEntityTypeLabel(entityType).toLowerCase()}.`,
         name: labelEntityTypeLabel(entityType),
         render: (setting) => {
           setting.addToggle((toggle) => {
@@ -592,6 +844,7 @@ export class TrailSettingsTab extends PluginSettingTab {
             toggle.onChange((enabled) => {
               if (enabled) registeredEntityTypes.add(entityType);
               else registeredEntityTypes.delete(entityType);
+              updateSaveAvailability();
             });
           });
         },
@@ -599,19 +852,21 @@ export class TrailSettingsTab extends PluginSettingTab {
     }
 
     items.push({
-      desc: "Apply the group name, selection mode, and entity availability above. If existing selections become invalid, Trail asks before clearing them.",
+      desc: "Apply the Group name, selection mode, and entity availability above. Trail asks before clearing selections that become invalid.",
       name: "Save group changes",
       render: (setting) => {
         setting.addButton((button) => {
+          saveButton = button;
           button.setButtonText("Save group");
           button.setCta();
-          button.setDisabled(!writable);
+          updateSaveAvailability();
           button.onClick(() => {
+            const trimmedName = name.trim();
             void this.runLabelMutation(
               () => this.configurationApplication.editLabelGroup({
                 expectedConfiguration: configuration,
                 groupId: group.id,
-                name,
+                name: trimmedName,
                 registeredEntityTypes: [...registeredEntityTypes],
                 selectionMode,
               }),
@@ -620,7 +875,7 @@ export class TrailSettingsTab extends PluginSettingTab {
                 clearInvalidSelections: true,
                 expectedConfiguration: configuration,
                 groupId: group.id,
-                name,
+                name: trimmedName,
                 registeredEntityTypes: [...registeredEntityTypes],
                 selectionMode,
               }),
@@ -630,148 +885,150 @@ export class TrailSettingsTab extends PluginSettingTab {
       },
     });
 
-    items.push({
-      desc: "Remove this group and all Label definitions it owns. Work items are preserved; Trail asks before clearing affected selections.",
-      name: "Delete label group",
-      render: (setting) => {
-        setting.addButton((button) => {
-          button.setButtonText("Delete group");
-          button.setDestructive();
-          button.setDisabled(!writable);
-          button.onClick(() => {
-            void this.confirmDeleteAndRunLabelMutation(
-              `Delete ${group.name}?`,
-              "The label group and its labels will be removed. Existing work items are preserved; any now-invalid label selections require explicit cleanup confirmation.",
-              () => this.configurationApplication.deleteLabelGroup({
-                expectedConfiguration: configuration,
-                groupId: group.id,
-              }),
-              () => this.configurationApplication.deleteLabelGroup({
-                clearInvalidSelections: true,
-                expectedConfiguration: configuration,
-                groupId: group.id,
-              }),
-              "Label group deleted",
-            );
-          });
-        });
-      },
-    });
-
-    for (const label of configuration.labels.filter(({ groupId: ownerId }) => ownerId === group.id)) {
-      items.push(this.labelDefinition(configuration, label.id, writable));
-    }
-
-    let newLabelName = "";
-    items.push({
-      name: "Add label",
-      render: (setting) => {
-        setting
-          .addText((text) => {
-            text.setPlaceholder("Label name");
-            text.setDisabled(!writable);
-            text.onChange((value) => {
-              newLabelName = value;
-            });
-          })
-          .addButton((button) => {
-            button.setButtonText("Add");
-            button.setDisabled(!writable);
-            button.onClick(() => {
-              void this.runLabelMutation(() => this.configurationApplication.createLabel({
-                expectedConfiguration: configuration,
-                groupId: group.id,
-                name: newLabelName,
-              }), "Label created");
-            });
-          });
-      },
-    });
-
     return {
-      heading: group.name,
+      heading: "Group",
       items,
       type: "group",
     };
   }
 
+  private labelListDefinition(
+    configuration: TrailConfiguration,
+    group: TrailLabelGroup,
+    labels: readonly TrailLabel[],
+    writable: boolean,
+  ): SettingDefinitionList {
+    return {
+      ...(writable ? {
+        addItem: {
+          action: () => {
+            new TrailNameInputModal(
+              this.app,
+              `Add label to ${group.name}`,
+              "Label name",
+              "",
+              "Label name",
+              "Add label",
+              (name) => {
+                void this.runLabelMutation(() => this.configurationApplication.createLabel({
+                  expectedConfiguration: configuration,
+                  groupId: group.id,
+                  name,
+                }), "Label created");
+              },
+            ).open();
+          },
+          name: `Add label to ${group.name}`,
+        },
+        onDelete: (index: number) => {
+          const label = labels[index];
+          if (label === undefined) return;
+          this.deleteLabel(configuration, label);
+        },
+      } : {}),
+      emptyState: "No labels in this Group yet.",
+      heading: "Labels",
+      items: labels.map((label) => this.labelDefinition(configuration, label, writable)),
+      type: "list",
+    };
+  }
+
   private labelDefinition(
     configuration: TrailConfiguration,
-    labelId: string,
+    label: TrailLabel,
     writable: boolean,
   ): SettingGroupItem {
-    const label = configuration.labels.find(({ id }) => id === labelId);
-    if (label === undefined) {
-      return { name: "Unavailable label" };
-    }
-
-    let name = label.name;
-    let groupId = label.groupId;
     return {
       name: label.name,
       render: (setting) => {
-        setting
-          .addText((text) => {
-            text.setValue(label.name);
-            text.setDisabled(!writable);
-            text.onChange((value) => {
-              name = value;
-            });
-          })
-          .addDropdown((dropdown) => {
-            for (const group of configuration.labelGroups) {
-              dropdown.addOption(group.id, group.name);
-            }
-            dropdown.setValue(label.groupId);
-            dropdown.setDisabled(!writable);
-            dropdown.onChange((value) => {
-              groupId = value;
-            });
-          })
-          .addButton((button) => {
-            button.setButtonText("Save");
-            button.setDisabled(!writable);
-            button.onClick(() => {
-              void this.runLabelMutation(
-                () => this.configurationApplication.editLabel({
-                  expectedConfiguration: configuration,
-                  groupId,
-                  labelId: label.id,
-                  name,
-                }),
-                "Label saved",
-                () => this.configurationApplication.editLabel({
-                  clearInvalidSelections: true,
-                  expectedConfiguration: configuration,
-                  groupId,
-                  labelId: label.id,
-                  name,
-                }),
-              );
-            });
-          })
-          .addButton((button) => {
-            button.setButtonText("Delete");
+        setting.addExtraButton((button) => {
+          button.setIcon("pencil");
+          button.setTooltip(`Edit ${label.name}`);
+          button.setDisabled(!writable);
+          button.onClick(() => {
+            new TrailLabelEditModal(
+              this.app,
+              `Edit ${label.name}`,
+              configuration.labelGroups,
+              label,
+              "Save",
+              (draft) => {
+                void this.runLabelMutation(
+                  () => this.configurationApplication.editLabel({
+                    expectedConfiguration: configuration,
+                    groupId: draft.groupId,
+                    labelId: label.id,
+                    name: draft.name,
+                  }),
+                  "Label saved",
+                  () => this.configurationApplication.editLabel({
+                    clearInvalidSelections: true,
+                    expectedConfiguration: configuration,
+                    groupId: draft.groupId,
+                    labelId: label.id,
+                    name: draft.name,
+                  }),
+                );
+              },
+            ).open();
+          });
+        });
+      },
+    };
+  }
+
+  private deleteLabel(configuration: TrailConfiguration, label: TrailLabel): void {
+    void this.confirmDeleteAndRunLabelMutation(
+      `Delete ${label.name}?`,
+      "The label definition will be removed. Existing work items are preserved; any now-invalid label selections require explicit cleanup confirmation.",
+      () => this.configurationApplication.deleteLabel({
+        expectedConfiguration: configuration,
+        labelId: label.id,
+      }),
+      () => this.configurationApplication.deleteLabel({
+        clearInvalidSelections: true,
+        expectedConfiguration: configuration,
+        labelId: label.id,
+      }),
+      "Label deleted",
+    );
+  }
+
+  private labelGroupDangerDefinition(
+    configuration: TrailConfiguration,
+    group: TrailLabelGroup,
+    writable: boolean,
+  ): SettingDefinitionItem {
+    return {
+      heading: "Danger zone",
+      items: [{
+        desc: "Remove this Group and all Labels it owns. Work items are preserved; Trail asks before clearing affected selections.",
+        name: "Delete label group",
+        render: (setting) => {
+          setting.addButton((button) => {
+            button.setButtonText("Delete group");
             button.setDestructive();
             button.setDisabled(!writable);
             button.onClick(() => {
               void this.confirmDeleteAndRunLabelMutation(
-                `Delete ${label.name}?`,
-                "The label definition will be removed. Existing work items are preserved; any now-invalid label selections require explicit cleanup confirmation.",
-                () => this.configurationApplication.deleteLabel({
+                `Delete ${group.name}?`,
+                "The label group and its labels will be removed. Existing work items are preserved; any now-invalid label selections require explicit cleanup confirmation.",
+                () => this.configurationApplication.deleteLabelGroup({
                   expectedConfiguration: configuration,
-                  labelId: label.id,
+                  groupId: group.id,
                 }),
-                () => this.configurationApplication.deleteLabel({
+                () => this.configurationApplication.deleteLabelGroup({
                   clearInvalidSelections: true,
                   expectedConfiguration: configuration,
-                  labelId: label.id,
+                  groupId: group.id,
                 }),
-                "Label deleted",
+                "Label group deleted",
               );
             });
           });
-      },
+        },
+      }],
+      type: "group",
     };
   }
 
