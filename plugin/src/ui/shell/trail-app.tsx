@@ -18,6 +18,7 @@ import type {
   TrailProductLocation,
 } from "./trail-navigation-state";
 import {
+  bindTrailCyclePageActions,
   bindTrailProjectDeleteAction,
   type TrailUiActions,
 } from "./trail-ui-actions";
@@ -192,7 +193,7 @@ export function TrailApp({
         ) : currentLocation.kind === "cycles" ? (
           <TrailPageSurface>
             <TrailCyclesPage
-              actions={{ start: actions.cycles.start }}
+              actions={actions.cycles}
               onCycleActivate={(cycleId) => {
                 onNavigate({ cycleId, kind: "cycle" });
               }}
@@ -202,10 +203,7 @@ export function TrailApp({
         ) : currentLocation.kind === "cycle" ? (
           <TrailPageSurface>
             <TrailCyclePage
-              actions={{
-                changeMembership: actions.cycles.changeMembership,
-                changeStatus: actions.issues.changeStatus,
-              }}
+              actions={bindTrailCyclePageActions(actions.cycles, actions.issues)}
               cycleId={currentLocation.cycleId}
               key={currentLocation.cycleId}
               onCyclesActivate={() => {

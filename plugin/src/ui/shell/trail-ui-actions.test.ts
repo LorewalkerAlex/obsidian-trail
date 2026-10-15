@@ -1,13 +1,67 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { TrailProject } from "../../domain/model/trail-entities";
+import type {
+  TrailCycle,
+  TrailProject,
+  TrailWorkflowIssue,
+} from "../../domain/model/trail-entities";
 import {
+  bindTrailCyclePageActions,
   bindTrailProjectCollectionActions,
   bindTrailProjectDeleteAction,
   type TrailUiActions,
 } from "./trail-ui-actions";
 
 describe("Trail UI actions", () => {
+  it("preserves the Cycle and Issue Application receivers across the Cycle Page boundary", () => {
+    const cycle: TrailCycle = {
+      id: "cycle-a",
+      issueIds: ["issue-a"],
+      plannedEnd: 2,
+      startedAt: 1,
+    };
+    const issue: TrailWorkflowIssue = {
+      context: "workflow",
+      createdAt: 1,
+      id: "issue-a",
+      labelIds: [],
+      projectId: "project-a",
+      statusDefinitionId: "issue-started",
+      title: "Issue A",
+    };
+    const cycles = {
+      marker: "cycle-application",
+      changeMembership(
+        this: { readonly marker: string },
+        expectedCycle: TrailCycle,
+        _issueIds: readonly string[],
+      ) {
+        expect(this.marker).toBe("cycle-application");
+        return { entityId: expectedCycle.id, kind: "unchanged" as const };
+      },
+    };
+    const issues = {
+      marker: "issue-application",
+      changeStatus(
+        this: { readonly marker: string },
+        expectedIssue: TrailWorkflowIssue,
+        _targetStatusDefinitionId: string,
+      ) {
+        expect(this.marker).toBe("issue-application");
+        return { entityId: expectedIssue.id, kind: "unchanged" as const };
+      },
+    };
+    const membershipSpy = vi.spyOn(cycles, "changeMembership");
+    const statusSpy = vi.spyOn(issues, "changeStatus");
+
+    const cyclePageActions = bindTrailCyclePageActions(cycles, issues);
+    cyclePageActions.changeMembership(cycle, []);
+    cyclePageActions.changeStatus(issue, "issue-completed");
+
+    expect(membershipSpy).toHaveBeenCalledWith(cycle, []);
+    expect(statusSpy).toHaveBeenCalledWith(issue, "issue-completed", undefined);
+  });
+
   it("preserves the Project Application receiver across collection action boundaries", () => {
     const project: TrailProject = {
       id: "project-a",

@@ -45,7 +45,7 @@ import {
   TrailPageHeader,
 } from "../../patterns/trail-page-header";
 import { TrailButton } from "../../primitives/trail-button";
-import type { TrailUiActions } from "../../shell/trail-ui-actions";
+import type { TrailCyclePageActions } from "../../shell/trail-ui-actions";
 import { TrailCycleAddIssues } from "./trail-cycle-add-issues";
 import {
   selectTrailCycleBoardSections,
@@ -55,11 +55,6 @@ import {
   TrailCycleViewControls,
   type TrailCycleLayout,
 } from "./trail-cycle-view-controls";
-
-type TrailCyclePageActions = Pick<TrailUiActions["issues"], "changeStatus"> & Pick<
-  TrailUiActions["cycles"],
-  "changeMembership"
->;
 
 const TRAIL_DAY_MS = 24 * 60 * 60 * 1000;
 

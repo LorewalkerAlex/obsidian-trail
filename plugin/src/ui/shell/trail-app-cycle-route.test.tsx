@@ -1,4 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -26,7 +32,7 @@ const renderMarkdown: TrailMarkdownRender = (markdown, container) => {
   };
 };
 
-function readyCycleStore() {
+function readyCycleStore(includeCurrent = true) {
   const project = {
     id: "project-a",
     labelIds: [],
@@ -61,7 +67,7 @@ function readyCycleStore() {
         sourcePath: "Trail/Projects/0001 Project Alpha.md",
       },
       {
-        cycles: [history, cycle],
+        cycles: includeCurrent ? [history, cycle] : [history],
         kind: "cycles",
         sourcePath: "Trail/Collections/Cycles.md",
       },
@@ -132,5 +138,50 @@ describe("TrailApp Cycle route", () => {
     expect(onNavigate).toHaveBeenCalledWith({ cycleId: history.id, kind: "cycle" });
     expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-scroll", "nested");
     expect(container.querySelector(".trail-page-surface")).toHaveAttribute("data-inset", "none");
+  });
+
+  it("preserves the Cycle Application receiver when Cycles root starts a Cycle", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 8, 10, 4));
+    const { store } = readyCycleStore(false);
+    const navigationStore = createTrailNavigationStore({ kind: "cycles" });
+    const onNavigate = vi.fn();
+    const baseActions = actions();
+    const cycles = {
+      ...baseActions.cycles,
+      marker: "cycle-application",
+      start(
+        this: { readonly marker: string },
+        _input: { readonly issueIds?: readonly string[]; readonly plannedEnd: number },
+      ) {
+        expect(this.marker).toBe("cycle-application");
+        return {
+          commandId: "command-cycle-start",
+          completion: Promise.resolve(),
+          entityId: "cycle-new",
+        };
+      },
+    };
+    const startSpy = vi.spyOn(cycles, "start");
+
+    render(
+      <TrailApp
+        actions={{ ...baseActions, cycles }}
+        navigationStore={navigationStore}
+        onNavigate={onNavigate}
+        renderMarkdown={renderMarkdown}
+        runtimeStore={store}
+        showDevelopment={false}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Start cycle" })[0]);
+    const dialog = screen.getByRole("dialog", { name: "Start cycle" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Start cycle" }));
+
+    await waitFor(() => expect(startSpy).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith({
+      cycleId: "cycle-new",
+      kind: "cycle",
+    }));
   });
 });

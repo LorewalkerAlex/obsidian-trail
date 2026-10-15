@@ -35,10 +35,36 @@ export interface TrailUiActions {
 }
 
 export type TrailProjectDeleteAction = NonNullable<TrailUiActions["projects"]["delete"]>;
+export type TrailCyclePageActions = Pick<
+  TrailUiActions["cycles"],
+  "changeMembership"
+> & Pick<TrailUiActions["issues"], "changeStatus">;
 export type TrailProjectCollectionActions = Pick<
   TrailUiActions["projects"],
   "changeInitiative" | "changeStatus"
 >;
+
+/** Keeps the Cycle and Issue Application receivers across the combined Cycle Page boundary. */
+export function bindTrailCyclePageActions(
+  cycles: Pick<TrailUiActions["cycles"], "changeMembership">,
+  issues: Pick<TrailUiActions["issues"], "changeStatus">,
+): TrailCyclePageActions {
+  const changeMembership = cycles.changeMembership;
+  const changeStatus = issues.changeStatus;
+  return {
+    changeMembership: (expectedCycle, issueIds) => changeMembership.call(
+      cycles,
+      expectedCycle,
+      issueIds,
+    ),
+    changeStatus: (expectedIssue, targetStatusDefinitionId, estimate) => changeStatus.call(
+      issues,
+      expectedIssue,
+      targetStatusDefinitionId,
+      estimate,
+    ),
+  };
+}
 
 type TrailProjectCollectionActionSource = Partial<TrailProjectCollectionActions>;
 
